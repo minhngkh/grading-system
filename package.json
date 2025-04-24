@@ -1,18 +1,36 @@
 {
-  "name": "@repo/source",
+  "name": "@grading-system/source",
   "version": "0.0.0",
-  "license": "MIT",
-  "scripts": {},
   "private": true,
-  "dependencies": {},
+  "license": "MIT",
+  "scripts": {
+    "prepare": "nx g @nx-dotnet/core:restore"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "moleculer": "^0.14.35",
+    "moleculer-web": "^0.10.8",
+    "moleculer-zod-validator": "^3.3.1",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.2"
+  },
   "devDependencies": {
+    "@antfu/eslint-config": "^4.12.0",
+    "@nx-dotnet/core": "^2.5.0",
+    "@nx/eslint": "20.8.0",
     "@nx/js": "20.8.0",
+    "@nx/next": "^20.8.0",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
+    "@types/supertest": "^6.0.3",
+    "eslint": "^9.24.0",
     "nx": "20.8.0",
-    "prettier": "^2.6.2",
+    "prettier": "^3.5.3",
+    "supertest": "^7.1.0",
     "tslib": "^2.3.0",
-    "typescript": "~5.7.2"
+    "tsx": "^4.19.3",
+    "typescript": "~5.8.3",
+    "vitest": "^3.0.9"
   }
 }

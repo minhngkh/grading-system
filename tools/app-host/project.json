@@ -1,0 +1,18 @@
+{
+  "targets": {
+    "start:http": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet run --launch-profile http",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "start:https": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet run --launch-profile https",
+        "cwd": "{projectRoot}"
+      }
+    }
+  }
+}

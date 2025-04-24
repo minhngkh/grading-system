@@ -1,0 +1,19 @@
+{
+  "name": "@grading-system/example-grading-service",
+  "type": "module",
+  "private": true,
+  "module": "index.ts",
+  "scripts": {
+    "start": "node run src/index.ts",
+    "dev": "moleculer-runner --repl",
+    "test": "vitest",
+    "demo": "tsx examples/demo-grader-test.ts"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.44",
+    "@langchain/google-genai": "^0.2.3",
+    "@langchain/langgraph": "^0.2.64",
+    "@langchain/openai": "^0.5.5",
+    "langchain": "^0.3.21"
+  }
+}
