@@ -1,10 +1,11 @@
-import UploadStep from "./upload-step";
+import type { Step } from "@stepperize/react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { defineStepper } from "@stepperize/react";
+import React from "react";
 import GradingProgressStep from "./grading-step";
 import ResultsStep from "./result-step";
-import { defineStepper, Step } from "@stepperize/react";
-import { Button } from "@/components/ui/button";
-import React from "react";
-import { Separator } from "@/components/ui/separator";
+import UploadStep from "./upload-step";
 
 type StepData = {
   title: string;
@@ -12,17 +13,17 @@ type StepData = {
 
 const { useStepper, steps, utils } = defineStepper<StepData[]>(
   {
-    id: "Upload",
+    id: "upload",
     title: "Upload Files",
   },
   {
-    id: "Grading",
+    id: "grading",
     title: "Grade Files",
   },
   {
-    id: "Review",
+    id: "review",
     title: "Review Results",
-  }
+  },
 );
 
 export default function UploadAssignmentPage() {
@@ -46,7 +47,8 @@ export default function UploadAssignmentPage() {
       <nav aria-label="Checkout Steps" className="group my-4">
         <ol
           className="flex items-center justify-between gap-2"
-          aria-orientation="horizontal">
+          aria-orientation="horizontal"
+        >
           {stepper.all.map((step, index, array) => (
             <React.Fragment key={step.id}>
               <li className="flex items-center gap-4 flex-shrink-0">
@@ -54,22 +56,19 @@ export default function UploadAssignmentPage() {
                   type="button"
                   role="tab"
                   variant={index <= currentIndex ? "default" : "secondary"}
-                  aria-current={
-                    stepper.current.id === step.id ? "step" : undefined
-                  }
+                  aria-current={stepper.current.id === step.id ? "step" : undefined}
                   aria-posinset={index + 1}
                   aria-setsize={steps.length}
                   aria-selected={stepper.current.id === step.id}
-                  className="flex size-8 items-center justify-center rounded-full">
+                  className="flex size-8 items-center justify-center rounded-full"
+                >
                   {index + 1}
                 </Button>
                 <span className="text-sm font-medium">{step.title}</span>
               </li>
               {index < array.length - 1 && (
                 <Separator
-                  className={`flex-1 ${
-                    index < currentIndex ? "bg-primary" : "bg-muted"
-                  }`}
+                  className={`flex-1 ${index < currentIndex ? "bg-primary" : "bg-muted"}`}
                 />
               )}
             </React.Fragment>
@@ -77,17 +76,18 @@ export default function UploadAssignmentPage() {
         </ol>
       </nav>
       <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
-        {stepper.switch({
-          Upload: () => <UploadStep />,
-          Grading: () => <GradingProgressStep />,
-          Review: () => <ResultsStep />,
-        })}
+        {
+          // TODO: lint error, solution is to change the id to lowercase, check if there
+          // is any error
+          stepper.switch({
+            upload: () => <UploadStep />,
+            grading: () => <GradingProgressStep />,
+            review: () => <ResultsStep />,
+          })
+        }
 
         <div className="flex w-full justify-end gap-4">
-          <Button
-            variant="secondary"
-            onClick={stepper.prev}
-            disabled={stepper.isFirst}>
+          <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
             Back
           </Button>
           <Button disabled={isNextButtonDisabled()} onClick={handleNext}>

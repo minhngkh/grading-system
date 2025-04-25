@@ -1,4 +1,4 @@
-import { Criteria, Rubric } from "@/types/rubric";
+import type { Criteria, Rubric } from "@/types/rubric";
 import { cn } from "@/lib/utils";
 
 interface RubricViewProps {

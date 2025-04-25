@@ -1,14 +1,14 @@
-import React, { useState, useRef, useEffect } from "react";
+import type { Message } from "@/types/chat";
+import type { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Upload, Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
-import { Message } from "@/types/chat";
-import { Rubric } from "@/types/rubric";
+import { cn } from "@/lib/utils";
 import * as ChatService from "@/services/chatService";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, Send, Upload } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 import RubricTable from "./rubric-table";
 
 interface ChatWindowProps {

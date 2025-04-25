@@ -1,16 +1,16 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   File,
-  FileText,
-  ImageIcon,
-  FileCode,
   FileArchive,
-  Music,
-  Video,
-  Trash2,
+  FileCode,
+  FileText,
   FolderOpen,
+  ImageIcon,
+  Music,
+  Trash2,
+  Video,
 } from "lucide-react";
 
 interface FileListProps {

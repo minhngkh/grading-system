@@ -1,7 +1,7 @@
 import { useState } from "react";
-import TabsSection from "./tab-assignment";
-import ScoreAdjust from "./score-adjust";
 import Header from "./header";
+import ScoreAdjust from "./score-adjust";
+import TabsSection from "./tab-assignment";
 
 const sampleCode = `#include <stdio.h>
 #include <math.h>

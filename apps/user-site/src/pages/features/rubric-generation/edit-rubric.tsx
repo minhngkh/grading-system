@@ -1,3 +1,5 @@
+import type { Criteria, Rubric} from "@/types/rubric";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,13 +17,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Criteria, Rubric, RubricSchema } from "@/types/rubric";
-import { useState } from "react";
-import { AlertCircle, PencilIcon, PlusCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useForm } from "react-hook-form";
+import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, PencilIcon, PlusCircle, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 interface EditRubricProps {
   rubricData: Rubric;
@@ -79,7 +80,7 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
       const newLevel = {
         description: value,
         points: 0,
-        performanceTag: performanceTag,
+        performanceTag,
       };
 
       if (levelIndex === -1) {
@@ -358,7 +359,7 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
                                       handleLevelPointChange(
                                         index,
                                         tagIndex,
-                                        parseInt(e.target.value) || 0
+                                        Number.parseInt(e.target.value) || 0
                                       )
                                     }
                                     className="w-full"

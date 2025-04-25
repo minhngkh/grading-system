@@ -1,4 +1,4 @@
-import { Rubric } from "@/types/rubric";
+import type { Rubric } from "@/types/rubric";
 import { RubricDataTable } from "./data-table";
 
 interface ManageRubricsPageProps {

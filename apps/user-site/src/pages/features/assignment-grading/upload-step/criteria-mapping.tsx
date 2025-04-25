@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -7,9 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { ManualLocationDialog } from "./manual-location-dialog";
+import { useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
+import { ManualLocationDialog } from "./manual-location-dialog";
 
 enum SelectLocationType {
   Manual,

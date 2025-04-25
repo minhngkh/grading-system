@@ -1,18 +1,15 @@
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { AuthContext, useAuth } from "@/components/context/auth-provider";
+import type { AuthContextProps} from "@/components/context/auth-provider";
+import { useAuth } from "@/components/context/auth-provider";
 import { ThemeProvider } from "@/components/context/theme-provider";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppNavbar } from "@/pages/navbar";
 import { AppSidebar } from "@/pages/sidebar";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 interface MyRouterContext {
-  auth: AuthContext;
+  auth: AuthContextProps;
 }
-
-export const Route = createRootRouteWithContext<MyRouterContext>()({
-  component: () => <Root />,
-});
 
 const Root = () => {
   const auth = useAuth();
@@ -34,3 +31,8 @@ const Root = () => {
     </>
   );
 };
+
+export const Route = createRootRouteWithContext<MyRouterContext>()({
+  component: () => <Root />,
+});
+

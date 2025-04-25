@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { ToolsFilterProps, ToolType } from "@/types/tool";
+import { type ToolsFilterProps, ToolType } from "@/types/tool";
 
 const toolTypeList = Object.values(ToolType);
 

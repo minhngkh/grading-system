@@ -1,6 +1,5 @@
-import { Bell, Settings, User } from "lucide-react";
+import { useTheme } from "@/components/context/theme-provider";
 import { Button } from "@/components/ui/button";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,23 +10,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useNavigate, useRouter } from "@tanstack/react-router";
-import { useTheme } from "@/components/context/theme-provider";
-import { useClerk, useUser, SignedIn, SignedOut } from "@clerk/clerk-react";
-import { Link } from "@tanstack/react-router";
-
-export function AppNavbar() {
-  return (
-    <>
-      <SignedOut>
-        <UnauthenticatedNavBar />
-      </SignedOut>
-      <SignedIn>
-        <AuthenticatedNavBar />
-      </SignedIn>
-    </>
-  );
-}
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SignedIn, SignedOut, useClerk, useUser } from "@clerk/clerk-react";
+import { Link, useNavigate, useRouter  } from "@tanstack/react-router";
+import { Bell, Settings, User } from "lucide-react";
 
 const UnauthenticatedNavBar = () => {
   const navigate = useNavigate();
@@ -126,3 +112,16 @@ const AuthenticatedNavBar = () => {
     </header>
   );
 };
+
+export function AppNavbar() {
+  return (
+    <>
+      <SignedOut>
+        <UnauthenticatedNavBar />
+      </SignedOut>
+      <SignedIn>
+        <AuthenticatedNavBar />
+      </SignedIn>
+    </>
+  );
+}

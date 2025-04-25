@@ -1,3 +1,5 @@
+import type { Tool} from "@/types/tool";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -5,8 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tool, ToolType } from "@/types/tool";
+import { ToolType } from "@/types/tool";
 import { Link } from "@tanstack/react-router";
 
 interface ToolsListProps {

@@ -1,13 +1,13 @@
-import { useUser, useAuth as useClerkAuth } from "@clerk/clerk-react";
+import { useAuth as useClerkAuth, useUser } from "@clerk/clerk-react";
 import React from "react";
 
-export interface AuthContext {
+export interface AuthContextProps {
   isAuthenticated: boolean;
   logout: () => Promise<void>;
   user: string | null;
 }
 
-const AuthContext = React.createContext<AuthContext | null>(null);
+const AuthContext = React.createContext<AuthContextProps | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
@@ -20,7 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider
+    <AuthContext
       value={{
         isAuthenticated,
         user: user?.id ?? null,
@@ -28,12 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-    </AuthContext.Provider>
+    </AuthContext>
   );
 }
 
 export function useAuth() {
-  const context = React.useContext(AuthContext);
+  const context = React.use(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }

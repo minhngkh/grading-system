@@ -1,6 +1,7 @@
-import { Rubric } from "@/types/rubric";
+import type { Rubric } from "@/types/rubric";
+import type { AxiosRequestConfig } from "axios";
+import axios from "axios";
 import { Deserializer } from "jsonapi-serializer";
-import axios, { AxiosRequestConfig } from "axios";
 
 const configHeaders: AxiosRequestConfig = {
   headers: {

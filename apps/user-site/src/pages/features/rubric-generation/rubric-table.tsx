@@ -1,5 +1,5 @@
+import type { Criteria, Rubric } from "@/types/rubric";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Criteria, Rubric } from "@/types/rubric";
 import { cn } from "@/lib/utils";
 import EditRubric from "./edit-rubric";
 

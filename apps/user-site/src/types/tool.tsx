@@ -1,5 +1,7 @@
-import { LinkProps } from "@tanstack/react-router";
+import type { LinkProps } from "@tanstack/react-router";
 
+// TODO: This is not a type
+// https://2ality.com/2025/01/typescript-enum-patterns.html#alternative-to-enum%3A-union-of-string-literal-types
 export enum ToolType {
   Rubric = "Rubric",
   Management = "Management",

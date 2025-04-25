@@ -1,5 +1,6 @@
-import { useState } from "react";
+import type { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
+import { FileUploader } from "@/components/ui/file-uploader";
 import {
   Select,
   SelectContent,
@@ -7,10 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileUploader } from "@/components/ui/file-uploader";
-import { Rubric } from "@/types/rubric";
-import { FileList } from "./file-list";
+import { useState } from "react";
 import CriteriaSelector from "./criteria-mapping";
+import { FileList } from "./file-list";
 
 export default function UploadStep() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);

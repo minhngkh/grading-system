@@ -1,4 +1,4 @@
-import { Home, LifeBuoy, Package, Settings } from "lucide-react";
+import type { NavigationData } from "@/types/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { NavigationData } from "@/types/navigation";
+import { Home, LifeBuoy, Package, Settings } from "lucide-react";
 
 const navigationItems: NavigationData[] = [
   {

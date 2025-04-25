@@ -1,5 +1,5 @@
-import { LinkProps } from "@tanstack/react-router";
-import { ReactElement } from "react";
+import type { LinkProps } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 
 export type NavigationData = {
   title: string;

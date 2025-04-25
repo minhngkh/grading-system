@@ -1,4 +1,4 @@
-import { ChatResponse } from "@/types/chat";
+import type { ChatResponse } from "@/types/chat";
 
 const MOCK_RESPONSES = [
   "I understand you want to create a rubric. Let me help you with that. A good rubric should include clear criteria, performance levels, and scoring guidelines.",
@@ -22,7 +22,7 @@ export const sendMessage = async (
 
       for (const word of words) {
         await new Promise((resolve) => setTimeout(resolve, 100));
-        controller.enqueue({ content: word + " ", done: false });
+        controller.enqueue({ content: `${word  } `, done: false });
       }
 
       controller.enqueue({ content: "", done: true });

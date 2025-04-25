@@ -1,15 +1,16 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import type { Rubric } from "@/types/rubric";
+import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { defineStepper, Step } from "@stepperize/react";
 import ChatWindow from "@/pages/features/rubric-generation/chat-window";
-import type { Rubric } from "@/types/rubric";
-import { RubricSchema } from "@/types/rubric";
-import RubricTable from "./rubric-table";
 import { updateRubric } from "@/services/rubricService";
-import { Fragment } from "react";
+import { RubricSchema } from "@/types/rubric";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { defineStepper } from "@stepperize/react";
 import { useNavigate } from "@tanstack/react-router";
+import { Fragment } from "react";
+import { useForm } from "react-hook-form";
+import RubricTable from "./rubric-table";
 
 const itemIdentifier = "rubric-gen";
 

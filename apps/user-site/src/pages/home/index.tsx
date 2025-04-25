@@ -1,6 +1,7 @@
+import type { Tool} from "@/types/tool";
 import ToolsFilter from "@/pages/home/tool-filter";
 import { ToolsList } from "@/pages/home/tool-list";
-import { Tool, ToolType } from "@/types/tool";
+import { ToolType } from "@/types/tool";
 import { useState } from "react";
 
 const tools: Tool[] = [

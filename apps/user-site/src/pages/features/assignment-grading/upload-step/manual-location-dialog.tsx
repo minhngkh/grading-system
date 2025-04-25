@@ -1,20 +1,12 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  memo,
-} from "react";
-import { ChevronDown, ChevronRight, Folder, File } from "lucide-react";
+// TODO: Move this to the global context folder, or if colocation matter, change the file
+// name at least to specify that this is a context
+
+import type { ZipNode } from "@/lib/zip";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ZipNode, parseZipToTree } from "@/lib/zip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { parseZipToTree } from "@/lib/zip";
+import { ChevronDown, ChevronRight, File, Folder } from "lucide-react";
+import { createContext, memo, use, useCallback, useEffect, useState } from "react";
 
 interface ManualDialogProps {
   open: boolean;
@@ -38,26 +30,26 @@ interface FileTreeNodeProps {
   currentPath: string;
 }
 
-const FileTreeContext = createContext<FileTreeContextType>(
-  {} as FileTreeContextType
-);
+const FileTreeContext = createContext<FileTreeContextType>({} as FileTreeContextType);
 
 const FileTreeNode = memo(({ node, level, currentPath }: FileTreeNodeProps) => {
-  const { expandedFolders, onToggle, onSelect } = useContext(FileTreeContext);
+  const { expandedFolders, onToggle, onSelect } = use(FileTreeContext);
   const isExpanded = expandedFolders[currentPath] || false;
 
   if (node.type === "file") {
     return (
       <div
         className="flex items-center py-1 px-2 hover:bg-muted rounded-sm"
-        style={{ marginLeft: `${(level + 1) * 12}px` }}>
+        style={{ marginLeft: `${(level + 1) * 12}px` }}
+      >
         <File className="h-4 w-4 mr-2" />
         <span>{node.name}</span>
         <Button
           variant="ghost"
           size="sm"
           className="ml-auto h-6"
-          onClick={() => onSelect(currentPath)}>
+          onClick={() => onSelect(currentPath)}
+        >
           Select
         </Button>
       </div>
@@ -69,7 +61,8 @@ const FileTreeNode = memo(({ node, level, currentPath }: FileTreeNodeProps) => {
       <div
         className="flex items-center py-1 px-2 hover:bg-muted rounded-sm"
         style={{ marginLeft: `${level * 12}px` }}
-        onClick={() => onToggle(currentPath)}>
+        onClick={() => onToggle(currentPath)}
+      >
         {isExpanded ? (
           <ChevronDown className="h-4 w-4 mr-1" />
         ) : (
@@ -84,16 +77,15 @@ const FileTreeNode = memo(({ node, level, currentPath }: FileTreeNodeProps) => {
           onClick={(e) => {
             e.stopPropagation();
             onSelect(currentPath);
-          }}>
+          }}
+        >
           Select
         </Button>
       </div>
 
       {isExpanded &&
         node.children?.map((child) => {
-          const childPath = currentPath
-            ? `${currentPath}/${child.name}`
-            : child.name;
+          const childPath = currentPath ? `${currentPath}/${child.name}` : child.name;
           return (
             <FileTreeNode
               key={childPath}
@@ -115,9 +107,7 @@ export function ManualLocationDialog({
   uploadedFiles,
   onSelect,
 }: ManualDialogProps) {
-  const [expandedFolders, setExpandedFolders] = useState<
-    Record<string, boolean>
-  >({
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
     root: true,
   });
   const [fileSystem, setFileSystem] = useState<ZipNode | null>(null);
@@ -155,30 +145,32 @@ export function ManualLocationDialog({
     (node: ZipNode, criterionIndex: number, parentPath = "", level = 0) => {
       const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
       return (
-        <FileTreeContext.Provider
+        <FileTreeContext
           value={{
             expandedFolders,
             onToggle: toggleFolder,
             criterionIndex,
             onSelect: (path) => onSelect(criterionIndex, path),
-          }}>
+          }}
+        >
           <FileTreeNode
             key={currentPath}
             node={node}
             level={level}
             currentPath={currentPath}
           />
-        </FileTreeContext.Provider>
+        </FileTreeContext>
       );
     },
-    [expandedFolders, toggleFolder, onSelect]
+    [expandedFolders, toggleFolder, onSelect],
   );
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="min-w-3xl max-h-[80vh] overflow-y-auto">
+        className="min-w-3xl max-h-[80vh] overflow-y-auto"
+      >
         <DialogHeader>
           <DialogTitle>Select File Location for {criterionName}</DialogTitle>
         </DialogHeader>
