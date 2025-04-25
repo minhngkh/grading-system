@@ -1,8 +1,8 @@
 {
-  "name": "ai-grading-assitant",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@grading-system/user-site",
   "type": "module",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -50,13 +50,15 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@tanstack/eslint-plugin-query": "^5.73.3",
+    "@tanstack/eslint-plugin-router": "^1.115.0",
     "@tanstack/router-plugin": "^1.114.13",
     "@types/jsonapi-serializer": "^3.6.8",
     "@types/node": "^22.13.10",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@types/react-syntax-highlighter": "^15.5.13",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^4.4.1",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
