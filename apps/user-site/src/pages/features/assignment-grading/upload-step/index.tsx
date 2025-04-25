@@ -35,7 +35,7 @@ export default function UploadStep() {
 
   const handleFileUpload = (files: File[]) => {
     const newFiles: File[] = files.filter(
-      (file) => !uploadedFiles.some((existing) => existing.name === file.name)
+      (file) => !uploadedFiles.some((existing) => existing.name === file.name),
     );
 
     if (newFiles.length > 0) {
@@ -53,7 +53,8 @@ export default function UploadStep() {
             value={selectedRubric}
             onValueChange={(value) => {
               setSelectedRubric(value);
-            }}>
+            }}
+          >
             <SelectTrigger className="w-[280px]">
               <SelectValue placeholder="Select a rubric" />
             </SelectTrigger>
@@ -82,7 +83,8 @@ export default function UploadStep() {
               variant="ghost"
               size="sm"
               onClick={handleRemoveAllFiles}
-              className="text-destructive hover:text-destructive">
+              className="text-destructive hover:text-destructive"
+            >
               Remove All
             </Button>
           )}

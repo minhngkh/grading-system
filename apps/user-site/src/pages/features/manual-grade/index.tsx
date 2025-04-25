@@ -94,14 +94,8 @@ export default function ManualAdjustScore() {
   const [activeTab, setActiveTab] = useState("code");
   const [activeScoreTab, setActiveScoreTab] = useState(criteria[0].name);
   const [scores, setScores] = useState<Record<string, number>>({});
-  const maxScore = criteria.reduce(
-    (sum, criterion) => sum + criterion.maxScore,
-    0
-  );
-  const currentScore = Object.values(scores).reduce(
-    (sum, score) => sum + score,
-    0
-  );
+  const maxScore = criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+  const currentScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
 
   const handleScoreChange = (criterionName: string, score: number) => {
     setScores((prevScores) => ({
@@ -117,11 +111,7 @@ export default function ManualAdjustScore() {
   return (
     <div className="w-full flex flex-col px-4">
       <Header studentName="Student's Name" />
-      <TabsSection
-        tabs={tabs}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+      <TabsSection tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
       <ScoreAdjust
         criteria={criteria}
         scores={scores}

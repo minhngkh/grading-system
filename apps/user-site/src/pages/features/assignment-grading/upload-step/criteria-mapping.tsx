@@ -26,9 +26,7 @@ interface CriteriaSelectorProps {
   uploadedFiles: File[];
 }
 
-export default function CriteriaSelector({
-  uploadedFiles,
-}: CriteriaSelectorProps) {
+export default function CriteriaSelector({ uploadedFiles }: CriteriaSelectorProps) {
   const [criteria, setCriteria] = useState<Criterion[]>([
     {
       name: "Docker file convention",
@@ -46,17 +44,13 @@ export default function CriteriaSelector({
 
   const updateCriterionMethod = (index: number, method: SelectLocationType) => {
     setCriteria((prev) =>
-      prev.map((criterion, i) =>
-        i === index ? { ...criterion, method } : criterion
-      )
+      prev.map((criterion, i) => (i === index ? { ...criterion, method } : criterion)),
     );
   };
 
   const updateCriterionValue = (index: number, value: string) => {
     setCriteria((prev) =>
-      prev.map((criterion, i) =>
-        i === index ? { ...criterion, value } : criterion
-      )
+      prev.map((criterion, i) => (i === index ? { ...criterion, value } : criterion)),
     );
   };
 
@@ -99,9 +93,10 @@ export default function CriteriaSelector({
                 onValueChange={(value) =>
                   updateCriterionMethod(
                     index,
-                    SelectLocationType[value as keyof typeof SelectLocationType]
+                    SelectLocationType[value as keyof typeof SelectLocationType],
                   )
-                }>
+                }
+              >
                 <SelectTrigger className="w-full h-[100%]">
                   <SelectValue placeholder="Select method" />
                 </SelectTrigger>
@@ -121,24 +116,22 @@ export default function CriteriaSelector({
                 onClick={() => {
                   openDialog(criterion.method);
                 }}
-                disabled={!SelectLocationType[criterion.method]}>
-                {criterion.value.length === 0
-                  ? "Choose File or Folder"
-                  : criterion.value}
+                disabled={!SelectLocationType[criterion.method]}
+              >
+                {criterion.value.length === 0 ? "Choose File or Folder" : criterion.value}
               </Button>
 
               {/* Manual File Location Dialog */}
-              {uploadedFiles.length &&
-                criterion.method === SelectLocationType.Manual && (
-                  <ManualLocationDialog
-                    open={dialogType === SelectLocationType.Manual}
-                    onClose={closeDialog}
-                    criterionName={criterion.name}
-                    criterionIndex={index}
-                    uploadedFiles={uploadedFiles}
-                    onSelect={selectLocation}
-                  />
-                )}
+              {uploadedFiles.length && criterion.method === SelectLocationType.Manual && (
+                <ManualLocationDialog
+                  open={dialogType === SelectLocationType.Manual}
+                  onClose={closeDialog}
+                  criterionName={criterion.name}
+                  criterionIndex={index}
+                  uploadedFiles={uploadedFiles}
+                  onSelect={selectLocation}
+                />
+              )}
 
               {/* Exact Path Dialog */}
               {criterion.method === SelectLocationType.Exact && (

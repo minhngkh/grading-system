@@ -92,7 +92,8 @@ export function FileList({ files, onDelete }: FileListProps) {
               return (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors">
+                  className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+                >
                   <div className="flex items-center space-x-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-background">
                       {icon}
@@ -106,7 +107,8 @@ export function FileList({ files, onDelete }: FileListProps) {
                         variant="ghost"
                         size="icon"
                         onClick={() => onDelete(file.name)}
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full h-8 w-8">
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full h-8 w-8"
+                      >
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete</span>
                       </Button>

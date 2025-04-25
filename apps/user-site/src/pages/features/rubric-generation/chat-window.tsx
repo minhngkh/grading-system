@@ -56,15 +56,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
         fullResponse += value.content;
         setMessages((prev) =>
           prev.map((msg, idx) =>
-            idx === prev.length - 1 ? { ...msg, content: fullResponse } : msg
-          )
+            idx === prev.length - 1 ? { ...msg, content: fullResponse } : msg,
+          ),
         );
       }
 
       setMessages((prev) =>
         prev.map((msg, idx) =>
-          idx === prev.length - 1 ? { ...msg, isStreaming: false } : msg
-        )
+          idx === prev.length - 1 ? { ...msg, isStreaming: false } : msg,
+        ),
       );
     } catch (error) {
       console.error("Error streaming response:", error);
@@ -93,9 +93,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
     await streamResponse(inputMessage);
   };
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       try {
@@ -114,17 +112,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
             width: rubric ? "40%" : "80%",
           }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="relative flex flex-col justify-center h-[600px] rounded-2xl">
+          className="relative flex flex-col justify-center h-[600px] rounded-2xl"
+        >
           <motion.div
             initial={{ height: 0 }}
             animate={{ height: hasStarted ? "100%" : 0 }}
             transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="overflow-hidden">
+            className="overflow-hidden"
+          >
             <ScrollArea
               className={cn(
                 "h-full px-2 md:px-4 py-4",
-                hasStarted && "border rounded-lg"
-              )}>
+                hasStarted && "border rounded-lg",
+              )}
+            >
               <AnimatePresence initial={false}>
                 {messages.map((message, index) => (
                   <motion.div
@@ -134,20 +135,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
                     transition={{ duration: 0.5 }}
                     className={cn(
                       "flex mb-4",
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    )}>
+                      message.role === "user" ? "justify-end" : "justify-start",
+                    )}
+                  >
                     <div
                       className={cn(
                         "max-w-[80%]",
-                        message.role === "user" ? "text-right" : "text-left"
-                      )}>
+                        message.role === "user" ? "text-right" : "text-left",
+                      )}
+                    >
                       <div
                         className={cn(
                           "inline-block rounded-2xl px-4 py-2 text-sm transition-all",
                           message.role === "user"
                             ? "bg-primary text-primary-foreground"
-                            : "bg-muted/60"
-                        )}>
+                            : "bg-muted/60",
+                        )}
+                      >
                         {message.content}
                       </div>
                     </div>
@@ -157,7 +161,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex justify-start mb-4">
+                    className="flex justify-start mb-4"
+                  >
                     <div className="bg-muted/60 rounded-2xl px-4 py-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
@@ -193,7 +198,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
                 variant="ghost"
                 size="icon"
                 asChild
-                disabled={isLoading || isStreaming}>
+                disabled={isLoading || isStreaming}
+              >
                 <label htmlFor="file-upload" className="cursor-pointer">
                   <Upload className="h-4 w-4" />
                 </label>
@@ -201,7 +207,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
               <Button
                 onClick={handleSendMessage}
                 size="icon"
-                disabled={isLoading || isStreaming || !inputMessage.trim()}>
+                disabled={isLoading || isStreaming || !inputMessage.trim()}
+              >
                 <Send className="h-4 w-4" />
               </Button>
               <Input
@@ -222,7 +229,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
               animate={{ width: "60%", opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="h-[600px]">
+              className="h-[600px]"
+            >
               <RubricTable rubricData={rubric} onUpdate={onUpdate} />
             </motion.div>
           )}

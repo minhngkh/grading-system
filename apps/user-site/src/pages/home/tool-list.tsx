@@ -1,4 +1,4 @@
-import type { Tool} from "@/types/tool";
+import type { Tool } from "@/types/tool";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -31,7 +31,8 @@ export function ToolsList({ tools }: ToolsListProps) {
         <Link
           key={index}
           to={tool.navigation}
-          preload={tool.navigation === "/rubric-generation" ? false : "intent"}>
+          preload={tool.navigation === "/rubric-generation" ? false : "intent"}
+        >
           <Card className="h-full">
             <CardHeader>
               <CardTitle>{tool.name}</CardTitle>

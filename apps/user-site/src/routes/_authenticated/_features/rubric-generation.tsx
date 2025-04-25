@@ -4,9 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const itemIdentifier = "rubric-gen";
 
-export const Route = createFileRoute(
-  "/_authenticated/_features/rubric-generation"
-)({
+export const Route = createFileRoute("/_authenticated/_features/rubric-generation")({
   component: RoutePage,
   loader: async () => {
     try {
@@ -21,12 +19,7 @@ export const Route = createFileRoute(
       const mockRubric = {
         id: "rubric-123",
         rubricName: "Essay Writing Rubric",
-        performanceTags: [
-          "Excellent",
-          "Good",
-          "Satisfactory",
-          "Needs Improvement",
-        ],
+        performanceTags: ["Excellent", "Good", "Satisfactory", "Needs Improvement"],
         criteria: [
           {
             name: "Thesis Statement",

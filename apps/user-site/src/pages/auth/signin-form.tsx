@@ -6,10 +6,7 @@ export function LoginForm({
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   return (
-    <div
-      className={cn("flex justify-center min-h-screen", className)}
-      {...props}
-    >
+    <div className={cn("flex justify-center min-h-screen", className)} {...props}>
       <SignIn signUpUrl="/signup" forceRedirectUrl="/" />
     </div>
   );

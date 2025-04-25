@@ -39,6 +39,6 @@ if (!rootElement.innerHTML) {
           <App />
         </AuthProvider>
       </ClerkProvider>
-    </StrictMode>
+    </StrictMode>,
   );
 }

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { SignedIn, SignedOut, useClerk, useUser } from "@clerk/clerk-react";
-import { Link, useNavigate, useRouter  } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { Bell, Settings, User } from "lucide-react";
 
 const UnauthenticatedNavBar = () => {

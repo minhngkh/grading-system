@@ -8,13 +8,8 @@ export const LevelSchema = z.object({
 
 export const CriteriaSchema = z.object({
   name: z.string().min(1, "Criterion name is required"),
-  totalCriterionPoints: z
-    .number()
-    .min(0, "Total points must be non-negative")
-    .optional(),
-  levels: z
-    .array(LevelSchema)
-    .min(1, "At least one level is required for criterion"),
+  totalCriterionPoints: z.number().min(0, "Total points must be non-negative").optional(),
+  levels: z.array(LevelSchema).min(1, "At least one level is required for criterion"),
 });
 
 export const RubricSchema = z.object({
@@ -23,9 +18,7 @@ export const RubricSchema = z.object({
   performanceTags: z
     .array(z.string().min(1, "Level name is required"))
     .min(1, "At least one performance tag is required"),
-  criteria: z
-    .array(CriteriaSchema)
-    .min(1, "At least one criterion is required"),
+  criteria: z.array(CriteriaSchema).min(1, "At least one criterion is required"),
   updatedOn: z.date().optional(),
   status: z.string().optional(),
 });

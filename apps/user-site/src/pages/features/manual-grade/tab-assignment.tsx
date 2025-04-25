@@ -29,11 +29,7 @@ const TabsSection = ({
             className="p-1 border bg-white rounded shadow h-[50vh] overflow-auto"
           >
             {value === "code" ? (
-              <SyntaxHighlighter
-                language={language}
-                style={oneLight}
-                showLineNumbers
-              >
+              <SyntaxHighlighter language={language} style={oneLight} showLineNumbers>
                 {content}
               </SyntaxHighlighter>
             ) : (

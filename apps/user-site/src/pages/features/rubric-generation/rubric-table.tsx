@@ -28,9 +28,7 @@ export default function RubricTable({
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">
-            {rubricData.rubricName} Rubric
-          </CardTitle>
+          <CardTitle className="text-lg">{rubricData.rubricName} Rubric</CardTitle>
           {canEdit && onUpdate && (
             <EditRubric rubricData={rubricData} onUpdate={onUpdate} />
           )}
@@ -45,20 +43,17 @@ export default function RubricTable({
                   <th className="text-left p-2 border-r font-medium w-[150px]">
                     Criterion
                   </th>
-                  {rubricData.performanceTags.map(
-                    (header: string, index: number) => (
-                      <th
-                        key={index}
-                        className={cn(
-                          "text-center p-2 font-medium w-[150px]",
-                          index !== rubricData.performanceTags.length - 1
-                            ? "border-r"
-                            : ""
-                        )}>
-                        {header}
-                      </th>
-                    )
-                  )}
+                  {rubricData.performanceTags.map((header: string, index: number) => (
+                    <th
+                      key={index}
+                      className={cn(
+                        "text-center p-2 font-medium w-[150px]",
+                        index !== rubricData.performanceTags.length - 1 ? "border-r" : "",
+                      )}
+                    >
+                      {header}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -72,7 +67,7 @@ export default function RubricTable({
                       </td>
                       {rubricData.performanceTags.map((tag, index) => {
                         const criterionLevel = criterion.levels.find(
-                          (level) => level.performanceTag === tag
+                          (level) => level.performanceTag === tag,
                         );
 
                         return (
@@ -82,8 +77,9 @@ export default function RubricTable({
                               "p-2 text-sm",
                               index !== rubricData.performanceTags.length - 1
                                 ? "border-r"
-                                : ""
-                            )}>
+                                : "",
+                            )}
+                          >
                             {criterionLevel ? (
                               <div>
                                 <div className="font-semibold text-blue-400 mb-1">

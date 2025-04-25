@@ -1,4 +1,4 @@
-import type { AuthContextProps} from "@/components/context/auth-provider";
+import type { AuthContextProps } from "@/components/context/auth-provider";
 import { useAuth } from "@/components/context/auth-provider";
 import { ThemeProvider } from "@/components/context/theme-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -35,4 +35,3 @@ const Root = () => {
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => <Root />,
 });
-

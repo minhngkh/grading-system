@@ -3,12 +3,7 @@
 import type { Rubric } from "@/types/rubric";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,8 +68,7 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
     const matchesSearch = rubric.rubricName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || rubric?.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || rubric?.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -177,7 +171,8 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
               variant="ghost"
               size="sm"
               className="absolute right-0 top-0 h-9 w-9 p-0"
-              onClick={() => setSearchTerm("")}>
+              onClick={() => setSearchTerm("")}
+            >
               <X className="h-4 w-4" />
               <span className="sr-only">Clear search</span>
             </Button>
@@ -188,7 +183,8 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
           onValueChange={(value) => {
             setStatusFilter(value);
             setCurrentPage(1);
-          }}>
+          }}
+        >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
@@ -199,10 +195,7 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
           </SelectContent>
         </Select>
         {(searchTerm || statusFilter !== "all") && (
-          <Button
-            variant="ghost"
-            onClick={clearFilters}
-            className="w-full sm:w-auto">
+          <Button variant="ghost" onClick={clearFilters} className="w-full sm:w-auto">
             Clear Filters
           </Button>
         )}
@@ -221,23 +214,17 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead
-                onClick={() => requestSort("rubricName")}
-                className="w-[40%]">
+              <TableHead onClick={() => requestSort("rubricName")} className="w-[40%]">
                 <div className="flex items-center cursor-pointer">
                   Rubric Name {getSortIcon("rubricName")}
                 </div>
               </TableHead>
-              <TableHead
-                onClick={() => requestSort("updatedOn")}
-                className="w-[20%]">
+              <TableHead onClick={() => requestSort("updatedOn")} className="w-[20%]">
                 <div className="flex items-center cursor-pointer">
                   Updated On {getSortIcon("updatedOn")}
                 </div>
               </TableHead>
-              <TableHead
-                onClick={() => requestSort("status")}
-                className="w-[20%]">
+              <TableHead onClick={() => requestSort("status")} className="w-[20%]">
                 <div className="flex items-center cursor-pointer">
                   Status {getSortIcon("status")}
                 </div>
@@ -255,9 +242,7 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
             ) : (
               paginatedData.map((rubric) => (
                 <TableRow key={rubric.id}>
-                  <TableCell className="font-semibold">
-                    {rubric.rubricName}
-                  </TableCell>
+                  <TableCell className="font-semibold">{rubric.rubricName}</TableCell>
                   <TableCell>
                     {rubric.updatedOn
                       ? format(rubric.updatedOn, "MMM d, yyyy")
@@ -279,7 +264,8 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
                           onClick={() => {
                             setSelectedRubric(rubric);
                             setIsViewDialogOpen(true);
-                          }}>
+                          }}
+                        >
                           View Rubric
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -308,7 +294,8 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
             onValueChange={(value) => {
               setRowsPerPage(Number.parseInt(value));
               setCurrentPage(1);
-            }}>
+            }}
+          >
             <SelectTrigger className="w-[70px]">
               <SelectValue placeholder="5" />
             </SelectTrigger>
@@ -326,7 +313,8 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
             variant="outline"
             size="icon"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}>
+            disabled={currentPage === 1}
+          >
             <ChevronLeft className="h-4 w-4" />
             <span className="sr-only">Previous page</span>
           </Button>
@@ -346,7 +334,8 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
                   variant={currentPage === pageNum ? "default" : "outline"}
                   size="icon"
                   className="w-8 h-8"
-                  onClick={() => setCurrentPage(pageNum)}>
+                  onClick={() => setCurrentPage(pageNum)}
+                >
                   {pageNum}
                 </Button>
               );
@@ -361,7 +350,8 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
                 variant={currentPage === totalPages ? "default" : "outline"}
                 size="icon"
                 className="w-8 h-8"
-                onClick={() => setCurrentPage(totalPages)}>
+                onClick={() => setCurrentPage(totalPages)}
+              >
                 {totalPages}
               </Button>
             )}
@@ -369,10 +359,9 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
           <Button
             variant="outline"
             size="icon"
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage === totalPages || totalPages === 0}>
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages || totalPages === 0}
+          >
             <ChevronRight className="h-4 w-4" />
             <span className="sr-only">Next page</span>
           </Button>

@@ -63,9 +63,8 @@ export function ExactLocationDialog({
             <div className="text-sm font-medium">Location Type</div>
             <Select
               value={locationType}
-              onValueChange={(value) =>
-                setLocationType(value as "file" | "folder")
-              }>
+              onValueChange={(value) => setLocationType(value as "file" | "folder")}
+            >
               <SelectTrigger className="w-[120px]">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>

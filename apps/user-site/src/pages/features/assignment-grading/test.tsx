@@ -1,24 +1,24 @@
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
-import { defineStepper } from '@stepperize/react';
-import * as React from 'react';
-import './App.css';
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { defineStepper } from "@stepperize/react";
+import * as React from "react";
+import "./App.css";
 
 const { useStepper, steps, utils } = defineStepper(
   {
-    id: 'shipping',
-    title: 'Shipping',
-    description: 'Enter your shipping details',
+    id: "shipping",
+    title: "Shipping",
+    description: "Enter your shipping details",
   },
   {
-    id: 'payment',
-    title: 'Payment',
-    description: 'Enter your payment details',
+    id: "payment",
+    title: "Payment",
+    description: "Enter your payment details",
   },
-  { id: 'complete', title: 'Complete', description: 'Checkout complete' }
+  { id: "complete", title: "Complete", description: "Checkout complete" },
 );
 
 const ShippingComponent = () => {
@@ -51,18 +51,11 @@ const PaymentComponent = () => {
         <label htmlFor="card-number" className="text-sm font-medium text-start">
           Card Number
         </label>
-        <Input
-          id="card-number"
-          placeholder="4111 1111 1111 1111"
-          className="w-full"
-        />
+        <Input id="card-number" placeholder="4111 1111 1111 1111" className="w-full" />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
-          <label
-            htmlFor="expiry-date"
-            className="text-sm font-medium text-start"
-          >
+          <label htmlFor="expiry-date" className="text-sm font-medium text-start">
             Expiry Date
           </label>
           <Input id="expiry-date" placeholder="MM/YY" className="w-full" />
@@ -108,10 +101,8 @@ function App() {
                 <Button
                   type="button"
                   role="tab"
-                  variant={index <= currentIndex ? 'default' : 'secondary'}
-                  aria-current={
-                    stepper.current.id === step.id ? 'step' : undefined
-                  }
+                  variant={index <= currentIndex ? "default" : "secondary"}
+                  aria-current={stepper.current.id === step.id ? "step" : undefined}
                   aria-posinset={index + 1}
                   aria-setsize={steps.length}
                   aria-selected={stepper.current.id === step.id}
@@ -124,9 +115,7 @@ function App() {
               </li>
               {index < array.length - 1 && (
                 <Separator
-                  className={`flex-1 ${
-                    index < currentIndex ? 'bg-primary' : 'bg-muted'
-                  }`}
+                  className={`flex-1 ${index < currentIndex ? "bg-primary" : "bg-muted"}`}
                 />
               )}
             </React.Fragment>
@@ -141,16 +130,10 @@ function App() {
         })}
         {!stepper.isLast ? (
           <div className="flex justify-end gap-4">
-            <Button
-              variant="secondary"
-              onClick={stepper.prev}
-              disabled={stepper.isFirst}
-            >
+            <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
               Back
             </Button>
-            <Button onClick={stepper.next}>
-              {stepper.isLast ? 'Complete' : 'Next'}
-            </Button>
+            <Button onClick={stepper.next}>{stepper.isLast ? "Complete" : "Next"}</Button>
           </div>
         ) : (
           <Button onClick={stepper.reset}>Reset</Button>
@@ -159,7 +142,5 @@ function App() {
     </div>
   );
 }
-
-
 
 export default App;

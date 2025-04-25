@@ -36,23 +36,16 @@ export async function getRubric(id: string): Promise<Rubric> {
 }
 
 export async function createRubric(): Promise<string> {
-  const response = await axios.post(
-    API_URL,
-    { name: "New Rubric" },
-    configHeaders
-  );
+  const response = await axios.post(API_URL, { name: "New Rubric" }, configHeaders);
 
   return response.data;
 }
 
-export async function updateRubric(
-  id: string,
-  rubric: Partial<Rubric>
-): Promise<Rubric> {
+export async function updateRubric(id: string, rubric: Partial<Rubric>): Promise<Rubric> {
   const response = await axios.patch(
     `${API_URL}/${id}`,
     { ...rubric, name: rubric.rubricName },
-    configHeaders
+    configHeaders,
   );
   return response.data;
 }

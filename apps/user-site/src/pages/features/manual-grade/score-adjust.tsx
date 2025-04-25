@@ -26,11 +26,7 @@ const ScoreAdjust = ({
 }) => (
   <div className="border-t py-2 mt-4 flex flex-col">
     {/* Adjust Score Section */}
-    <Tabs
-      value={activeScoreTab}
-      onValueChange={setActiveScoreTab}
-      className="mt-2"
-    >
+    <Tabs value={activeScoreTab} onValueChange={setActiveScoreTab} className="mt-2">
       <TabsList className="flex border-b w-full">
         {criteria.map((criterion) => (
           <TabsTrigger
@@ -78,10 +74,7 @@ const ScoreAdjust = ({
 
     {/* Submit Section */}
     <div className="flex items-stretch w-full h-full border rounded-lg mt-4">
-      <Button
-        className="bg-black text-white px-6 py-2 rounded-r-none"
-        onClick={onSubmit}
-      >
+      <Button className="bg-black text-white px-6 py-2 rounded-r-none" onClick={onSubmit}>
         Submit
       </Button>
       <div className="flex-1 text-right pr-4 font-medium flex items-center justify-end">

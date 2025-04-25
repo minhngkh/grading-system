@@ -1,4 +1,4 @@
-import type { Tool} from "@/types/tool";
+import type { Tool } from "@/types/tool";
 import ToolsFilter from "@/pages/home/tool-filter";
 import { ToolsList } from "@/pages/home/tool-list";
 import { ToolType } from "@/types/tool";
@@ -7,8 +7,7 @@ import { useState } from "react";
 const tools: Tool[] = [
   {
     name: "Generate Rubric",
-    details:
-      "Features include code completion, debugging tools, and Git integration.",
+    details: "Features include code completion, debugging tools, and Git integration.",
     type: ToolType.Rubric,
     isFavorite: true,
     navigation: "/rubric-generation",
@@ -23,8 +22,7 @@ const tools: Tool[] = [
   },
   {
     name: "Grade Assignments",
-    details:
-      "Create task lists, set deadlines, and monitor progress on your projects.",
+    details: "Create task lists, set deadlines, and monitor progress on your projects.",
     type: ToolType.Grading,
     isFavorite: false,
     navigation: "/assignment-grading",
@@ -38,16 +36,14 @@ const tools: Tool[] = [
   },
   {
     name: "AI Chat",
-    details:
-      "Channels, direct messages, and file sharing to keep your team connected.",
+    details: "Channels, direct messages, and file sharing to keep your team connected.",
     type: ToolType.Communication,
     isFavorite: false,
     navigation: "/",
   },
   {
     name: "Analytics Dashboard",
-    details:
-      "Interactive charts and reports to help you make data-driven decisions.",
+    details: "Interactive charts and reports to help you make data-driven decisions.",
     type: ToolType.Analytics,
     isFavorite: false,
     navigation: "/",
@@ -75,9 +71,7 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold tracking-tight">All Tools</h2>
           <ToolsFilter currentFilter={filter} filterFunction={handleFilter} />
         </div>
-        <ToolsList
-          tools={tools.filter((tool) => !filter || tool.type === filter)}
-        />
+        <ToolsList tools={tools.filter((tool) => !filter || tool.type === filter)} />
       </section>
     </div>
   );

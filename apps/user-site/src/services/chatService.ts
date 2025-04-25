@@ -12,7 +12,7 @@ const getRandomResponse = (): string => {
 };
 
 export const sendMessage = async (
-  message: string
+  message: string,
 ): Promise<ReadableStream<ChatResponse>> => {
   message = "";
   return new ReadableStream({
@@ -22,7 +22,7 @@ export const sendMessage = async (
 
       for (const word of words) {
         await new Promise((resolve) => setTimeout(resolve, 100));
-        controller.enqueue({ content: `${word  } `, done: false });
+        controller.enqueue({ content: `${word} `, done: false });
       }
 
       controller.enqueue({ content: "", done: true });

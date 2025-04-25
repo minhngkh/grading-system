@@ -30,7 +30,7 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
   {
     id: "complete",
     title: "Complete",
-  }
+  },
 );
 
 interface RubricGenerationPageProps {
@@ -84,7 +84,8 @@ export default function RubricGenerationPage({
       <nav aria-label="Checkout Steps" className="group my-4">
         <ol
           className="flex items-center justify-between gap-2"
-          aria-orientation="horizontal">
+          aria-orientation="horizontal"
+        >
           {stepper.all.map((step, index, array) => (
             <Fragment key={step.id}>
               <li className="flex items-center gap-4 flex-shrink-0">
@@ -92,22 +93,19 @@ export default function RubricGenerationPage({
                   type="button"
                   role="tab"
                   variant={index <= currentIndex ? "default" : "secondary"}
-                  aria-current={
-                    stepper.current.id === step.id ? "step" : undefined
-                  }
+                  aria-current={stepper.current.id === step.id ? "step" : undefined}
                   aria-posinset={index + 1}
                   aria-setsize={steps.length}
                   aria-selected={stepper.current.id === step.id}
-                  className="flex size-8 items-center justify-center rounded-full">
+                  className="flex size-8 items-center justify-center rounded-full"
+                >
                   {index + 1}
                 </Button>
                 <span className="text-sm font-medium">{step.title}</span>
               </li>
               {index < array.length - 1 && (
                 <Separator
-                  className={`flex-1 ${
-                    index < currentIndex ? "bg-primary" : "bg-muted"
-                  }`}
+                  className={`flex-1 ${index < currentIndex ? "bg-primary" : "bg-muted"}`}
                 />
               )}
             </Fragment>
@@ -116,9 +114,7 @@ export default function RubricGenerationPage({
       </nav>
       <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
         {stepper.switch({
-          input: () => (
-            <ChatWindow rubric={form.getValues()} onUpdate={onUpdateRubric} />
-          ),
+          input: () => <ChatWindow rubric={form.getValues()} onUpdate={onUpdateRubric} />,
           edit: () =>
             form.getValues() ? (
               <RubricTable rubricData={form.getValues()} canEdit={false} />
@@ -130,15 +126,10 @@ export default function RubricGenerationPage({
         })}
 
         <div className="flex w-full justify-end gap-4">
-          <Button
-            variant="secondary"
-            onClick={stepper.prev}
-            disabled={stepper.isFirst}>
+          <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
             Back
           </Button>
-          <Button onClick={handleNext}>
-            {stepper.isLast ? "Save" : "Next"}
-          </Button>
+          <Button onClick={handleNext}>{stepper.isLast ? "Save" : "Next"}</Button>
         </div>
       </div>
     </div>

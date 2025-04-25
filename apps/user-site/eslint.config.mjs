@@ -22,12 +22,12 @@ export default combine(
     files: ["tsconfig?(.*).json"],
     rules: {
       "jsonc/sort-keys": "off",
-    }
+    },
   },
   ...pluginQuery.configs["flat/recommended"],
   ...pluginRouter.configs["flat/recommended"],
   {
-    // TODO: either linting and move custom components out of ui or apply linting fix for
+    // TODO: either lint and move custom components out of ui or apply linting fix for
     // all of the shadcn components
     files: ["src/components/ui/*.tsx"],
     rules: {

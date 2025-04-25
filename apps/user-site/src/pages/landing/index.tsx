@@ -31,8 +31,8 @@ export default function LandingPage() {
                     Streamline your workflow, amplify your productivity
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    The all-in-one platform that helps teams manage projects,
-                    automate workflows, and collaborate seamlessly.
+                    The all-in-one platform that helps teams manage projects, automate
+                    workflows, and collaborate seamlessly.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -56,9 +56,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <section
-          id="features"
-          className="w-full py-6 md:py-12 lg:py-16 bg-muted">
+        <section id="features" className="w-full py-6 md:py-12 lg:py-16 bg-muted">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -69,8 +67,8 @@ export default function LandingPage() {
                   Everything you need to succeed
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl">
-                  Our platform provides all the tools you need to manage your
-                  projects efficiently and collaborate with your team.
+                  Our platform provides all the tools you need to manage your projects
+                  efficiently and collaborate with your team.
                 </p>
               </div>
             </div>
@@ -80,8 +78,7 @@ export default function LandingPage() {
                   <LayoutGrid className="h-10 w-10 text-primary mb-2" />
                   <CardTitle>Project Management</CardTitle>
                   <CardDescription>
-                    Organize tasks, set deadlines, and track progress all in one
-                    place.
+                    Organize tasks, set deadlines, and track progress all in one place.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -90,8 +87,7 @@ export default function LandingPage() {
                   <MessageSquare className="h-10 w-10 text-primary mb-2" />
                   <CardTitle>Team Collaboration</CardTitle>
                   <CardDescription>
-                    Communicate effectively with integrated chat and file
-                    sharing.
+                    Communicate effectively with integrated chat and file sharing.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -129,8 +125,8 @@ export default function LandingPage() {
                   Trusted by teams worldwide
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl">
-                  See what our customers have to say about how StreamLine has
-                  transformed their workflow.
+                  See what our customers have to say about how StreamLine has transformed
+                  their workflow.
                 </p>
               </div>
             </div>
@@ -147,17 +143,15 @@ export default function LandingPage() {
                     />
                     <div>
                       <CardTitle className="text-base">Sarah Johnson</CardTitle>
-                      <CardDescription>
-                        Product Manager at TechCorp
-                      </CardDescription>
+                      <CardDescription>Product Manager at TechCorp</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    "StreamLine has completely transformed how our team manages
-                    projects. The intuitive interface and powerful features have
-                    boosted our productivity by 30%."
+                    "StreamLine has completely transformed how our team manages projects.
+                    The intuitive interface and powerful features have boosted our
+                    productivity by 30%."
                   </p>
                 </CardContent>
               </Card>
@@ -179,9 +173,8 @@ export default function LandingPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    "The automation features in StreamLine have saved us
-                    countless hours of manual work. Our team can now focus on
-                    what really matters."
+                    "The automation features in StreamLine have saved us countless hours
+                    of manual work. Our team can now focus on what really matters."
                   </p>
                 </CardContent>
               </Card>
@@ -196,18 +189,16 @@ export default function LandingPage() {
                       className="rounded-full"
                     />
                     <div>
-                      <CardTitle className="text-base">
-                        Emily Rodriguez
-                      </CardTitle>
+                      <CardTitle className="text-base">Emily Rodriguez</CardTitle>
                       <CardDescription>Team Lead at DesignHub</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    "As a design team, we needed a tool that was both powerful
-                    and visually appealing. StreamLine delivers on both fronts
-                    and has become essential to our workflow."
+                    "As a design team, we needed a tool that was both powerful and
+                    visually appealing. StreamLine delivers on both fronts and has become
+                    essential to our workflow."
                   </p>
                 </CardContent>
               </Card>
@@ -216,9 +207,7 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing Section */}
-        <section
-          id="pricing"
-          className="w-full py-6 md:py-12 lg:py-16 bg-muted">
+        <section id="pricing" className="w-full py-6 md:py-12 lg:py-16 bg-muted">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -365,8 +354,8 @@ export default function LandingPage() {
                   Ready to streamline your workflow?
                 </h2>
                 <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                  Join thousands of teams that use StreamLine to boost
-                  productivity and collaboration.
+                  Join thousands of teams that use StreamLine to boost productivity and
+                  collaboration.
                 </p>
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
