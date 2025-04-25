@@ -1,7 +1,7 @@
-import type { AuthContextProps } from "@/components/context/auth-provider";
-import { useAuth } from "@/components/context/auth-provider";
-import { ThemeProvider } from "@/components/context/theme-provider";
+import type { AuthContextProps } from "@/context/auth-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { useAuth } from "@/context/auth-provider";
+import { ThemeProvider } from "@/context/theme-provider";
 import { AppNavbar } from "@/pages/navbar";
 import { AppSidebar } from "@/pages/sidebar";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";

@@ -1,8 +1,8 @@
+import { AuthProvider, useAuth } from "@/context/auth-provider";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
-import { AuthProvider, useAuth } from "./components/context/auth-provider";
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
 
