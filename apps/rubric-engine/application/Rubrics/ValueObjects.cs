@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using RubricEngine.Application.Shared;
 
 namespace RubricEngine.Application.Rubrics;
 

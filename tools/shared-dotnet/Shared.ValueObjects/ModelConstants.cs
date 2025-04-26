@@ -1,4 +1,4 @@
-﻿namespace RubricEngine.Application.Shared;
+﻿namespace Shared.ValueObjects;
 
 /// <summary>
 /// Defines standardized text field length constants for use throughout the application.

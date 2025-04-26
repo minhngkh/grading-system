@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace RubricEngine.Application.Shared;
+namespace Shared.ValueObjects;
 
 public abstract class SingleValueObjectConverter<TValueObject, TValue>(Func<TValue, TValueObject> factoryMethod) : JsonConverter<TValueObject>
     where TValueObject : SingleValueObject<TValue>

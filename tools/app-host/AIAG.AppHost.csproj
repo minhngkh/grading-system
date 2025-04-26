@@ -13,11 +13,13 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\apps\assignment-flow\AssignmentFlow.Application\AssignmentFlow.Application.csproj" />
     <ProjectReference Include="..\..\apps\rubric-engine\application\RubricEngine.Application.csproj" />
   </ItemGroup>
 
