@@ -43,7 +43,7 @@ export default function UploadAssignmentPage() {
   };
 
   return (
-    <div className="container flex flex-col h-full p-10 space-y-10">
+    <div className="flex flex-col h-full">
       <nav aria-label="Checkout Steps" className="group my-4">
         <ol
           className="flex items-center justify-between gap-2"

@@ -2,13 +2,13 @@ import { z } from "zod";
 
 export const LevelSchema = z.object({
   description: z.string(),
-  points: z.number().min(0, "Points must be non-negative"),
+  weight: z.number().min(0, "Weight must be non-negative"),
   performanceTag: z.string().min(1, "Performance tag is required"),
 });
 
 export const CriteriaSchema = z.object({
   name: z.string().min(1, "Criterion name is required"),
-  totalCriterionPoints: z.number().min(0, "Total points must be non-negative").optional(),
+  weight: z.number().min(0, "Weight must be non-negative").optional(),
   levels: z.array(LevelSchema).min(1, "At least one level is required for criterion"),
 });
 

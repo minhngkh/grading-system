@@ -1,4 +1,4 @@
-import type { Criteria, Rubric } from "@/types/rubric";
+import type { Rubric } from "@/types/rubric";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import EditRubric from "./edit-rubric";
@@ -14,16 +14,6 @@ export default function RubricTable({
   onUpdate,
   canEdit = true,
 }: RubricTableProps) {
-  const getMaxPoint = (criteria: Criteria) => {
-    if (!criteria.levels.length) return 0;
-
-    const highestLevel = criteria.levels.reduce((max, level) => {
-      return level.points > max.points ? level : max;
-    }, criteria.levels[0]);
-
-    return highestLevel.points;
-  };
-
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
@@ -62,7 +52,7 @@ export default function RubricTable({
                     <tr key={index} className="border-t">
                       <td className="p-2 border-r">
                         <div className="font-medium">
-                          {criterion.name} ({getMaxPoint(criterion)} pts)
+                          {criterion.name} ({criterion.weight} %)
                         </div>
                       </td>
                       {rubricData.performanceTags.map((tag, index) => {
@@ -81,9 +71,9 @@ export default function RubricTable({
                             )}
                           >
                             {criterionLevel ? (
-                              <div>
+                              <div className="size-full">
                                 <div className="font-semibold text-blue-400 mb-1">
-                                  {criterionLevel.points} points
+                                  {criterionLevel.weight} %
                                 </div>
                                 {criterionLevel.description}
                               </div>

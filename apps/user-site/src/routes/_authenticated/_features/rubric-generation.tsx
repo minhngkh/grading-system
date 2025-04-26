@@ -23,78 +23,78 @@ export const Route = createFileRoute("/_authenticated/_features/rubric-generatio
         criteria: [
           {
             name: "Thesis Statement",
-            totalCriterionPoints: 10,
+            weight: 10,
             levels: [
               {
                 description: "Clear and well-defined thesis",
-                points: 10,
+                weight: 10,
                 performanceTag: "Excellent",
               },
               {
                 description: "Mostly clear thesis",
-                points: 8,
+                weight: 8,
                 performanceTag: "Good",
               },
               {
                 description: "Basic or unclear thesis",
-                points: 5,
+                weight: 5,
                 performanceTag: "Satisfactory",
               },
               {
                 description: "No clear thesis",
-                points: 2,
+                weight: 2,
                 performanceTag: "Needs Improvement",
               },
             ],
           },
           {
             name: "Organization",
-            totalCriterionPoints: 10,
+            weight: 10,
             levels: [
               {
                 description: "Logical and well-structured",
-                points: 10,
+                weight: 10,
                 performanceTag: "Excellent",
               },
               {
                 description: "Mostly organized",
-                points: 8,
+                weight: 8,
                 performanceTag: "Good",
               },
               {
                 description: "Somewhat disorganized",
-                points: 5,
+                weight: 5,
                 performanceTag: "Satisfactory",
               },
               {
                 description: "Lacks clear structure",
-                points: 2,
+                weight: 2,
                 performanceTag: "Needs Improvement",
               },
             ],
           },
           {
             name: "Grammar and Mechanics",
-            totalCriterionPoints: 10,
+            weight: 10,
             levels: [
               {
                 description: "Few or no errors",
-                points: 10,
+                weight: 10,
                 performanceTag: "Excellent",
               },
               {
                 description: "Some minor errors",
-                points: 8,
+                weight: 8,
                 performanceTag: "Good",
               },
               {
                 description: "Noticeable errors",
-                points: 5,
+                weight: 5,
                 performanceTag: "Satisfactory",
               },
               {
                 description: "Frequent and distracting errors",
-                points: 2,
+                weight: 2,
                 performanceTag: "Needs Improvement",
               },
             ],

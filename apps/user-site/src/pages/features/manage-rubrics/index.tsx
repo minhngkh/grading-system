@@ -6,9 +6,5 @@ interface ManageRubricsPageProps {
 }
 
 export default function ManageRubricsPage({ rubrics }: ManageRubricsPageProps) {
-  return (
-    <div className="container flex flex-col h-full p-10">
-      <RubricDataTable rubrics={rubrics} />
-    </div>
-  );
+  return <RubricDataTable rubrics={rubrics} />;
 }
