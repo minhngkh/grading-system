@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\apps\assignment-flow\AssignmentFlow.Application\AssignmentFlow.Application.csproj" />
     <ProjectReference Include="..\..\apps\rubric-engine\application\RubricEngine.Application.csproj" />
   </ItemGroup>
 

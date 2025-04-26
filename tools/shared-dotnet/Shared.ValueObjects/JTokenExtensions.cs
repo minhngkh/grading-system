@@ -3,7 +3,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Shared.ValueObjects;
 
-internal static class JTokenExtensions
+public static class JTokenExtensions
 {
     public static TValue GetRequired<TValue>(this JToken jToken, string propertyPath, string? errorMessageWhenNull = null)
     {
