@@ -3,7 +3,7 @@ using Aspire.Hosting;
 var builder = DistributedApplication.CreateBuilder(args);
 
 var postgres = builder.AddPostgres("postgres")
-                    //.WithLifetime(ContainerLifetime.Persistent)
+                    .WithLifetime(ContainerLifetime.Persistent)
                     .WithPgAdmin();
 
 var postgresdb = postgres.AddDatabase("rubricdb");

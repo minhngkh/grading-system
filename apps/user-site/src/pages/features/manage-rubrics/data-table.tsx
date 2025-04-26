@@ -1,5 +1,3 @@
-"use client";
-
 import type { Rubric } from "@/types/rubric";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import RubricView from "./rubric-view";
+import RubricView from "../../../components/rubric-view";
 
 type SortConfig = {
   key: "rubricName" | "updatedOn" | "status" | null;
@@ -206,7 +204,11 @@ export function RubricDataTable({ rubrics }: RubricDataTableProps) {
           <DialogHeader>
             <DialogTitle>{selectedRubric?.rubricName}</DialogTitle>
           </DialogHeader>
-          {selectedRubric && <RubricView rubricData={selectedRubric} />}
+          {selectedRubric && (
+            <div className="w-full h-full flex flex-col">
+              <RubricView rubricData={selectedRubric} />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

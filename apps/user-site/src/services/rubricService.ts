@@ -21,6 +21,12 @@ const configHeaders: AxiosRequestConfig = {
 
 const rubricDeserializer = new Deserializer({
   keyForAttribute: "camelCase",
+  transform: (record: Rubric) => {
+    if (record.updatedOn) {
+      record.updatedOn = new Date(record.updatedOn);
+    }
+    return record;
+  },
 });
 
 const API_URL = "https://localhost:7101/api/v1/rubrics";
@@ -37,7 +43,6 @@ export async function getRubric(id: string): Promise<Rubric> {
 
 export async function createRubric(): Promise<string> {
   const response = await axios.post(API_URL, { name: "New Rubric" }, configHeaders);
-
   return response.data;
 }
 

@@ -67,7 +67,7 @@ export default function RubricGenerationPage({
       return;
     }
 
-    stepper.next();
+    if (form.getValues()) stepper.next();
   };
 
   const onUpdateRubric = async (updatedRubric: Rubric) => {
@@ -116,14 +116,8 @@ export default function RubricGenerationPage({
       <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
         {stepper.switch({
           input: () => <ChatWindow rubric={form.getValues()} onUpdate={onUpdateRubric} />,
-          edit: () =>
-            form.getValues() ? (
-              <RubricTable rubricData={form.getValues()} canEdit={false} />
-            ) : null,
-          complete: () =>
-            form.getValues() ? (
-              <RubricTable rubricData={form.getValues()} canEdit={false} />
-            ) : null,
+          edit: () => <RubricTable rubricData={form.getValues()} canEdit={false} />,
+          complete: () => <RubricTable rubricData={form.getValues()} canEdit={false} />,
         })}
 
         <div className="flex w-full justify-end gap-4">
