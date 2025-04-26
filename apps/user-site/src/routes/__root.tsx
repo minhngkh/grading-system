@@ -1,7 +1,7 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ThemeProvider } from "@/context/theme-provider";
-import { AppNavbar } from "@/pages/navbar";
-import { AppSidebar } from "@/pages/sidebar";
+import { AppNavbar } from "@/components/layout/navbar";
+import { AppSidebar } from "@/components/layout/sidebar";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { useAuth } from "@clerk/clerk-react";

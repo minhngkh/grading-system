@@ -42,6 +42,16 @@ export default function UploadAssignmentPage() {
     return false;
   };
 
+  const nextButtonTitle = () => {
+    if (stepper.isFirst) {
+      return "Start Grading";
+    }
+
+    if (stepper.isLast) return "Finish";
+
+    return "View Results";
+  };
+
   return (
     <div className="flex flex-col h-full">
       <nav aria-label="Checkout Steps" className="group my-4">
@@ -75,7 +85,7 @@ export default function UploadAssignmentPage() {
           ))}
         </ol>
       </nav>
-      <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
+      <div className="mt-8 space-y-4 flex-1">
         {
           // TODO: lint error, solution is to change the id to lowercase, check if there
           // is any error
@@ -85,15 +95,14 @@ export default function UploadAssignmentPage() {
             review: () => <ResultsStep />,
           })
         }
-
-        <div className="flex w-full justify-end gap-4">
-          <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
-            Back
-          </Button>
-          <Button disabled={isNextButtonDisabled()} onClick={handleNext}>
-            {stepper.isLast ? "Save" : "Start Grading"}
-          </Button>
-        </div>
+      </div>
+      <div className="flex w-full justify-end gap-4">
+        <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
+          Back
+        </Button>
+        <Button disabled={isNextButtonDisabled()} onClick={handleNext}>
+          {nextButtonTitle()}
+        </Button>
       </div>
     </div>
   );
