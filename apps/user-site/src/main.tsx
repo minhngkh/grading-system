@@ -1,10 +1,11 @@
-import { AuthProvider, useAuth } from "@/context/auth-provider";
+import { useAuth } from "@clerk/clerk-react";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
+import { LoadingScreen } from "./components/loading-screen";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -26,6 +27,10 @@ declare module "@tanstack/react-router" {
 function App() {
   const auth = useAuth();
 
+  if (!auth.isLoaded) {
+    return <LoadingScreen />;
+  }
+
   return <RouterProvider router={router} context={{ auth }} />;
 }
 
@@ -35,9 +40,7 @@ if (!rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <ClerkProvider publishableKey={clerkPubKey}>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <App />
       </ClerkProvider>
     </StrictMode>,
   );
