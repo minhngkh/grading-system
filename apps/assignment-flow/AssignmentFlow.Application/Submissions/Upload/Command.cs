@@ -21,7 +21,7 @@ public class CommandHandler(
             return ;
 
         var container = client.GetBlobContainerClient("submissions-store");
-        var blob = container.GetBlobClient($"{command.AggregateId.Value}/{command.File.FileName}");
+        var blob = container.GetBlobClient(command.AggregateId.Value);
 
         using var stream = command.File.OpenReadStream();
         await blob.UploadAsync(stream, new BlobUploadOptions(), cancellationToken);
