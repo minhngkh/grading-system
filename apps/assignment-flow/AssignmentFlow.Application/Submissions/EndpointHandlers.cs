@@ -1,4 +1,5 @@
-﻿using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
+﻿using AssignmentFlow.Application.Submissions.Upload;
+using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
 namespace AssignmentFlow.Application.Submissions;
 
@@ -9,7 +10,8 @@ internal static class EndpointHandlers
         // Add your endpoint mappings here
         routeBuilder.MapGroup("/api/v1/submissions")
             .AddFluentValidationAutoValidation()
-            .WithTags("Submissions");
+            .WithTags("Submissions")
+            .MapUploadSubmission();
             
         return routeBuilder;
     }

@@ -77,6 +77,7 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddServiceBootstrapping(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddTransient<DbInitializer>();
+        services.AddAntiforgery();
 
         //services.AddAuthentication()
         //    .AddJwtBearer("jwt-scheme", jwtOptions =>
