@@ -1,5 +1,4 @@
 using EventFlow.Aggregates;
-using RubricEngine.Application.Shared;
 namespace RubricEngine.Application.Rubrics;
 
 public class RubricWriteModel

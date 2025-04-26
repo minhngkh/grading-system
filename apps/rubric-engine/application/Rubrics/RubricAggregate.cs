@@ -1,7 +1,6 @@
 using EventFlow.Aggregates;
 using EventFlow.Core;
 using EventFlow.Extensions;
-using RubricEngine.Application.Shared;
 
 namespace RubricEngine.Application.Rubrics;
 

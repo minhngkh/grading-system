@@ -7,9 +7,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIAG.AppHost", "tools\app-h
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIAG.ServiceDefaults", "tools\service-defaults\AIAG.ServiceDefaults.csproj", "{35005C9B-2C08-DFDE-5CB0-8EFA148BFF6B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RubricEngine", "apps\rubric-engine", "{B3C4D51A-C51D-B81D-13CA-FB50A433AEB1}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RubricEngine", "RubricEngine", "{B3C4D51A-C51D-B81D-13CA-FB50A433AEB1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RubricEngine.Application", "apps\rubric-engine\application\RubricEngine.Application.csproj", "{E4BC8486-5061-490C-9995-F31F6FCD57B2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AssignmentFlow", "AssignmentFlow", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{95014506-39BA-4665-9E30-E55F9F54C91C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.ValueObjects", "tools\shared-dotnet\Shared.ValueObjects\Shared.ValueObjects.csproj", "{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,12 +63,25 @@ Global
 		{E4BC8486-5061-490C-9995-F31F6FCD57B2}.Release|x64.Build.0 = Release|Any CPU
 		{E4BC8486-5061-490C-9995-F31F6FCD57B2}.Release|x86.ActiveCfg = Release|Any CPU
 		{E4BC8486-5061-490C-9995-F31F6FCD57B2}.Release|x86.Build.0 = Release|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Debug|x64.Build.0 = Debug|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Debug|x86.Build.0 = Debug|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Release|x64.ActiveCfg = Release|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Release|x64.Build.0 = Release|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Release|x86.ActiveCfg = Release|Any CPU
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E4BC8486-5061-490C-9995-F31F6FCD57B2} = {B3C4D51A-C51D-B81D-13CA-FB50A433AEB1}
+		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D} = {95014506-39BA-4665-9E30-E55F9F54C91C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {11EEC79A-F410-4748-BA91-DD0D9CBE9CE9}

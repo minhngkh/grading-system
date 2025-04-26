@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using EventFlow.ValueObjects;
 
-namespace RubricEngine.Application.Shared;
+namespace Shared.ValueObjects;
 
 /// <summary>
 /// Base class for string-based value objects with validation for length constraints.
@@ -237,7 +237,7 @@ public sealed class ScoreRange : ValueObject
         if (MinScore == MaxScore)
             return Percentage.OneHundred;
 
-        var percentage = ((score - MinScore) / (MaxScore - MinScore)) * 100M;
+        var percentage = (score - MinScore) / (MaxScore - MinScore) * 100M;
         return new Percentage(percentage);
     }
 
@@ -256,7 +256,7 @@ public sealed class ScoreRange : ValueObject
         if (MinScore == MaxScore)
             return targetRange.MaxScore;
 
-        var normalizedValue = ((score - MinScore) / (MaxScore - MinScore)) *
+        var normalizedValue = (score - MinScore) / (MaxScore - MinScore) *
                              (targetRange.MaxScore - targetRange.MinScore) +
                              targetRange.MinScore;
 

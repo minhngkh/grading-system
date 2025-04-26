@@ -4,7 +4,6 @@ using EventFlow.ReadStores;
 using JsonApiDotNetCore.Controllers;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
-using RubricEngine.Application.Shared;
 
 using static JsonApiDotNetCore.Resources.Annotations.AttrCapabilities;
 

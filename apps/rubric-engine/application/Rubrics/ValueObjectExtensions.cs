@@ -1,6 +1,4 @@
-﻿using RubricEngine.Application.Shared;
-
-namespace RubricEngine.Application.Rubrics;
+﻿namespace RubricEngine.Application.Rubrics;
 
 public static class ValueObjectExtensions
 {

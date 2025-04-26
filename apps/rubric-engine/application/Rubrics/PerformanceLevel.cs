@@ -1,7 +1,6 @@
 ﻿using EventFlow.ValueObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RubricEngine.Application.Shared;
 
 namespace RubricEngine.Application.Rubrics;
 

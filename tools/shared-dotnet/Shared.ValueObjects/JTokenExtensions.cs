@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace RubricEngine.Application.Shared;
+namespace Shared.ValueObjects;
 
 internal static class JTokenExtensions
 {
