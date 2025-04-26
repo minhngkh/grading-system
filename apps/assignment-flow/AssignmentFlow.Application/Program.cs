@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddNpgsqlDbContext<AssignmentFlowDbContext>(connectionName: "assignmentflowdb");
 builder.AddRabbitMQClient(connectionName: "messaging");
+builder.AddAzureBlobClient("submissions-store");
 
 builder.Services.AddBootstrapping(builder.Configuration, builder.Environment);
 builder.Services.AddShared(builder.Configuration, builder.Environment);
