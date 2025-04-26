@@ -7,7 +7,7 @@ interface RubricViewProps {
 
 export default function RubricView({ rubricData }: RubricViewProps) {
   return (
-    <div className="w-full h-full flex flex-col">
+    <>
       {rubricData.performanceTags.length > 0 && (
         <div className="border rounded-md overflow-auto h-full">
           <table className="w-full h-full table-fixed text-sm">
@@ -53,7 +53,16 @@ export default function RubricView({ rubricData }: RubricViewProps) {
                               : "",
                           )}
                         >
-                          {criterionLevel ? criterionLevel.description : ""}
+                          {criterionLevel ? (
+                            <div className="size-full whitespace-pre-line">
+                              <div className="font-semibold text-blue-400 mb-1">
+                                {criterionLevel.weight} %
+                              </div>
+                              {criterionLevel.description}
+                            </div>
+                          ) : (
+                            ""
+                          )}
                         </td>
                       );
                     })}
@@ -64,6 +73,6 @@ export default function RubricView({ rubricData }: RubricViewProps) {
           </table>
         </div>
       )}
-    </div>
+    </>
   );
 }

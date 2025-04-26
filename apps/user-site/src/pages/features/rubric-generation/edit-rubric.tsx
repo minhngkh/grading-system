@@ -27,7 +27,7 @@ import { useForm } from "react-hook-form";
 
 interface EditRubricProps {
   rubricData: Rubric;
-  onUpdate: (rubric: Rubric) => void;
+  onUpdate?: (rubric: Rubric) => void;
 }
 
 type FormState = {
@@ -35,7 +35,7 @@ type FormState = {
   message?: string;
 };
 
-export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
+export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubricProps) {
   const [open, setOpen] = useState(false);
   const [errorsState, setErrorState] = useState<FormState>({
     errors: {},
@@ -77,16 +77,16 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
         newCriteria[criterionIndex].levels.splice(levelIndex, 1);
       }
     } else {
-      const newLevel: Level = {
-        description: value,
-        weight: 0,
-        performanceTag,
-      };
-
       if (levelIndex === -1) {
+        const newLevel: Level = {
+          description: value,
+          weight: 0,
+          performanceTag,
+        };
+
         newCriteria[criterionIndex].levels.push(newLevel);
       } else {
-        newCriteria[criterionIndex].levels[levelIndex] = newLevel;
+        newCriteria[criterionIndex].levels[levelIndex].description = value;
       }
     }
 
