@@ -25,7 +25,9 @@ function Root() {
           <SidebarInset>
             <main className="flex-1 flex flex-col items-center">
               <AppNavbar />
-              <Outlet />
+              <div className="container space-y-10 p-10 flex-1 size-full">
+                <Outlet />
+              </div>
             </main>
           </SidebarInset>
         </SidebarProvider>

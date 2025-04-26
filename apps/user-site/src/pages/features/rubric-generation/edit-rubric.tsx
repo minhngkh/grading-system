@@ -1,4 +1,4 @@
-import type { Criteria, Rubric } from "@/types/rubric";
+import type { Criteria, Level, Rubric } from "@/types/rubric";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,7 +53,7 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
   const handleCriterionChange = (
     index: number,
     field: keyof (typeof rubricData.criteria)[0],
-    value: string,
+    value: string | number,
   ) => {
     const newCriteria = [...formData.criteria];
     newCriteria[index] = { ...newCriteria[index], [field]: value };
@@ -76,9 +77,9 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
         newCriteria[criterionIndex].levels.splice(levelIndex, 1);
       }
     } else {
-      const newLevel = {
+      const newLevel: Level = {
         description: value,
-        points: 0,
+        weight: 0,
         performanceTag,
       };
 
@@ -92,7 +93,7 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
     form.setValue("criteria", newCriteria);
   };
 
-  const handleLevelPointChange = (
+  const handleLevelWeightChange = (
     criterionIndex: number,
     tagIndex: number,
     points: number,
@@ -105,7 +106,7 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
     );
 
     if (levelIndex !== -1) {
-      newCriteria[criterionIndex].levels[levelIndex].points = points;
+      newCriteria[criterionIndex].levels[levelIndex].weight = points;
     }
 
     form.setValue("criteria", newCriteria);
@@ -153,7 +154,7 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
       ...formData.criteria,
       {
         name: `Criterion ${formData.criteria.length + 1}`,
-        totalCriterionPoints: 0,
+        weight: 0,
         levels: [],
       },
     ];
@@ -280,7 +281,14 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
                     <tr key={index} className="border-t">
                       <td className="p-2 border-r">
                         <div className="space-y-2">
+                          {/* Move labels to the left of inputs using shadcn/ui Label */}
                           <div className="flex items-center gap-2">
+                            <Label
+                              className="text-xs font-medium text-muted-foreground w-12"
+                              htmlFor={`criterion-name-${index}`}
+                            >
+                              Name
+                            </Label>
                             <Input
                               id={`criterion-name-${index}`}
                               value={criterion.name}
@@ -297,6 +305,32 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
                             >
                               <Trash2 />
                             </Button>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Label
+                              className="text-xs font-medium text-muted-foreground w-12"
+                              htmlFor={`criterion-weight-${index}`}
+                            >
+                              Weight
+                            </Label>
+                            <Input
+                              id={`criterion-weight-${index}`}
+                              type="number"
+                              min={0}
+                              value={criterion.weight}
+                              onChange={(e) =>
+                                handleCriterionChange(
+                                  index,
+                                  "weight",
+                                  Number.parseInt(e.target.value) || 0,
+                                )
+                              }
+                              className="w-16"
+                              placeholder="Weight"
+                            />
+                            <span className="text-sm text-muted-foreground whitespace-nowrap">
+                              %
+                            </span>
                           </div>
                         </div>
                       </td>
@@ -316,6 +350,13 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
                             )}
                           >
                             <div className="space-y-2">
+                              {/* Add description label above textarea */}
+                              <Label
+                                className="text-xs font-medium text-muted-foreground"
+                                htmlFor={`description-${index}-${tagIndex}`}
+                              >
+                                Description
+                              </Label>
                               <Textarea
                                 id={`description-${index}-${tagIndex}`}
                                 value={criterionLevel ? criterionLevel.description : ""}
@@ -330,22 +371,30 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
                               />
                               {criterionLevel && (
                                 <div className="flex items-center gap-2">
+                                  {/* Add weight label to the left of weight input */}
+                                  <Label
+                                    className="text-xs font-medium text-muted-foreground w-12"
+                                    htmlFor={`level-weight-${index}-${tagIndex}`}
+                                  >
+                                    Weight
+                                  </Label>
                                   <Input
+                                    id={`level-weight-${index}-${tagIndex}`}
                                     type="number"
                                     min={0}
-                                    value={criterionLevel.points}
+                                    value={criterionLevel.weight}
                                     onChange={(e) =>
-                                      handleLevelPointChange(
+                                      handleLevelWeightChange(
                                         index,
                                         tagIndex,
                                         Number.parseInt(e.target.value) || 0,
                                       )
                                     }
                                     className="w-full"
-                                    placeholder="Points"
+                                    placeholder="Weight"
                                   />
                                   <span className="text-sm text-muted-foreground whitespace-nowrap">
-                                    points
+                                    %
                                   </span>
                                 </div>
                               )}

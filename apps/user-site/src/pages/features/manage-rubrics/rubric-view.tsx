@@ -1,4 +1,4 @@
-import type { Criteria, Rubric } from "@/types/rubric";
+import type { Rubric } from "@/types/rubric";
 import { cn } from "@/lib/utils";
 
 interface RubricViewProps {
@@ -6,16 +6,6 @@ interface RubricViewProps {
 }
 
 export default function RubricView({ rubricData }: RubricViewProps) {
-  const getMaxPoint = (criteria: Criteria) => {
-    if (!criteria.levels.length) return 0;
-
-    const highestLevel = criteria.levels.reduce((max, level) => {
-      return level.points > max.points ? level : max;
-    }, criteria.levels[0]);
-
-    return highestLevel.points;
-  };
-
   return (
     <div className="w-full h-full flex flex-col">
       {rubricData.performanceTags.length > 0 && (
@@ -45,7 +35,7 @@ export default function RubricView({ rubricData }: RubricViewProps) {
                   <tr key={index} className="border-t">
                     <td className="p-2 border-r">
                       <div className="font-medium">
-                        {criterion.name} ({getMaxPoint(criterion)} pts)
+                        {criterion.name} ({criterion.weight} %)
                       </div>
                     </td>
                     {rubricData.performanceTags.map((tag, index) => {
