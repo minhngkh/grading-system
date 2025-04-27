@@ -31,6 +31,16 @@ builder.Services.AddEventFlow(ef => ef
     .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
 );
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -40,7 +50,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
 }
 
-//app.UseCors("AllowAll");
+app.UseCors("AllowAll");
 
 //TODO: Add authentication and authorization middleware
 
