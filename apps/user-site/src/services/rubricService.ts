@@ -23,7 +23,9 @@ const API_URL = "https://localhost:7101/api/v1/rubrics";
 
 interface GetRubricsResult {
   data: Rubric[];
-  meta: Record<string, any>;
+  meta: {
+    total: number;
+  };
 }
 
 export async function getRubrics(

@@ -16,19 +16,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
+import { CriteriaMapping } from "@/types/grading";
 
 interface ExactDialogProps {
   open: boolean;
   onClose: () => void;
-  criterionName: string;
-  criterionIndex: number;
+  criterionMapping: CriteriaMapping;
   onConfirm: (path: string) => void;
 }
 
 export function ExactLocationDialog({
   open,
   onClose,
-  criterionName,
+  criterionMapping,
   onConfirm,
 }: ExactDialogProps) {
   const [pathSegments, setPathSegments] = useState<string[]>([]);
@@ -49,14 +49,21 @@ export function ExactLocationDialog({
   };
 
   const handleConfirm = () => {
-    onConfirm(pathSegments.join("/"));
+    const segments = ["root", ...pathSegments];
+    if (currentInput.trim()) {
+      segments.push(currentInput.trim());
+    }
+
+    onConfirm(segments.join("/"));
   };
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent aria-describedby={undefined} className="min-w-[60vw]">
         <DialogHeader>
-          <DialogTitle>Specify Exact Path for {criterionName}</DialogTitle>
+          <DialogTitle>
+            Specify Exact Path for {criterionMapping.criteriaName}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">

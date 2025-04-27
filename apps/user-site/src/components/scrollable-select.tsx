@@ -1,4 +1,3 @@
-import * as React from "react";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,36 +13,37 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useDebounce } from "@/hooks/use-debounce";
 import { getRubrics } from "@/services/rubricService";
 import { Rubric } from "@/types/rubric";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface ScrollableSelectProps {
   placeholder?: string;
   emptyMessage?: string;
   className?: string;
-  onChange?: (value: string) => void;
+  onChange?: (value: Rubric | undefined) => void;
 }
 
-export function ScrollableSelect({
+export function RubricSelect({
   placeholder = "Select an item",
   emptyMessage = "No items found.",
   className,
   onChange,
 }: ScrollableSelectProps) {
-  const [open, setOpen] = React.useState(false);
-  const [selectedValue, setSelectedValue] = React.useState("");
-  const [items, setItems] = React.useState<Rubric[]>([]);
-  const [page, setPage] = React.useState(1);
-  const [loading, setLoading] = React.useState(false);
-  const [hasMore, setHasMore] = React.useState(true);
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [isSearching, setIsSearching] = React.useState(false);
-  const listRef = React.useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [selectedValue, setSelectedValue] = useState<Rubric | undefined>();
+  const [items, setItems] = useState<Rubric[]>([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
   const pageSize = 20;
 
   // Use the debounce hook for search term
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   // Load data based on current search and page
-  const loadData = React.useCallback(
+  const loadData = useCallback(
     async (currentPage: number, search: string, resetItems = false) => {
       setLoading(true);
       try {
@@ -55,8 +55,7 @@ export function ScrollableSelect({
           setItems((prev) => [...prev, ...result.data]);
         }
 
-        const hasMore = result.meta["total-items"] === items.length;
-        setHasMore(hasMore);
+        setHasMore(result.meta.total === items.length);
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
@@ -68,12 +67,12 @@ export function ScrollableSelect({
   );
 
   // Load initial data
-  React.useEffect(() => {
+  useEffect(() => {
     loadData(1, "", true);
   }, [loadData]);
 
   // React to changes in the debounced search term
-  React.useEffect(() => {
+  useEffect(() => {
     // Skip the initial render
     if (debouncedSearchTerm !== searchTerm) {
       return;
@@ -109,15 +108,13 @@ export function ScrollableSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn("justify-between", className)}
         >
-          {selectedValue
-            ? items.find((item) => item.rubricName === selectedValue)?.rubricName
-            : placeholder}
+          {selectedValue ? selectedValue.rubricName : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent className="p-0">
         <Command>
           <CommandInput
             placeholder="Search items..."
@@ -142,21 +139,28 @@ export function ScrollableSelect({
             >
               {items.map((item) => (
                 <CommandItem
+                  className="flex justify-between"
                   key={item.id}
                   value={item.rubricName}
                   onSelect={(currentValue) => {
-                    setSelectedValue(currentValue === selectedValue ? "" : currentValue);
-                    onChange?.(currentValue === selectedValue ? "" : currentValue);
+                    setSelectedValue(
+                      currentValue === selectedValue?.rubricName ? undefined : item,
+                    );
+                    onChange?.(
+                      currentValue === selectedValue?.rubricName ? undefined : item,
+                    );
                     setOpen(false);
                   }}
                 >
+                  {item.rubricName}
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedValue === item.rubricName ? "opacity-100" : "opacity-0",
+                      "ml-2 h-4 w-4",
+                      selectedValue?.rubricName === item.rubricName
+                        ? "opacity-100"
+                        : "opacity-0",
                     )}
                   />
-                  {item.rubricName}
                 </CommandItem>
               ))}
               {/* Only show loading indicator here if we have items AND we're not searching */}
@@ -166,11 +170,6 @@ export function ScrollableSelect({
                   <span className="ml-2 text-sm text-muted-foreground">
                     Loading more items...
                   </span>
-                </div>
-              )}
-              {!hasMore && items.length > 0 && !isSearching && !loading && (
-                <div className="py-2 text-center text-sm text-muted-foreground">
-                  No more items to load
                 </div>
               )}
             </CommandList>
