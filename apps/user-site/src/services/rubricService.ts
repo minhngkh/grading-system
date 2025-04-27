@@ -9,16 +9,6 @@ const configHeaders: AxiosRequestConfig = {
   },
 };
 
-// const rubricSerializer = new Serializer("rubrics", {
-//   attributes: ["name", "performanceTags", "criteria"],
-//   criteria: {
-//     attributes: ["name", "totalCriterionPoints", "levels"],
-//     levels: {
-//       attributes: ["performanceTag", "description", "points"],
-//     },
-//   },
-// });
-
 const rubricDeserializer = new Deserializer({
   keyForAttribute: "camelCase",
   transform: (record: Rubric) => {
@@ -31,9 +21,29 @@ const rubricDeserializer = new Deserializer({
 
 const API_URL = "https://localhost:7101/api/v1/rubrics";
 
-export async function getRubrics(): Promise<Rubric[]> {
-  const response = await axios.get(`${API_URL}`, configHeaders);
-  return rubricDeserializer.deserialize(response.data);
+interface GetRubricsResult {
+  data: Rubric[];
+  meta: Record<string, any>;
+}
+
+export async function getRubrics(
+  page?: number,
+  perPage?: number,
+  search?: string,
+): Promise<GetRubricsResult> {
+  const params = new URLSearchParams();
+
+  if (page !== undefined) params.append("page[number]", page.toString());
+  if (perPage !== undefined) params.append("page[size]", perPage.toString());
+  if (search && search.length > 0)
+    params.append("filter", `contains(rubricName,'${search}')`);
+
+  const url = `${API_URL}?${params.toString()}`;
+  const response = await axios.get(url, configHeaders);
+  const data = await rubricDeserializer.deserialize(response.data);
+  const meta = response.data.meta;
+
+  return { data, meta };
 }
 
 export async function getRubric(id: string): Promise<Rubric> {

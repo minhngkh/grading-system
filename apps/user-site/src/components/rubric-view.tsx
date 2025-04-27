@@ -8,7 +8,7 @@ interface RubricViewProps {
 export default function RubricView({ rubricData }: RubricViewProps) {
   return (
     <>
-      {rubricData.performanceTags.length > 0 && (
+      {rubricData.performanceTags.length > 0 ? (
         <div className="border rounded-md overflow-auto h-full">
           <table className="w-full h-full table-fixed text-sm">
             <thead>
@@ -71,6 +71,10 @@ export default function RubricView({ rubricData }: RubricViewProps) {
               })}
             </tbody>
           </table>
+        </div>
+      ) : (
+        <div className="p-4 size-full flex justify-center items-center">
+          <div>This rubric is empty.</div>
         </div>
       )}
     </>
