@@ -1,5 +1,4 @@
 ﻿using EventFlow.Commands;
-using RubricEngine.Application.Shared;
 
 namespace RubricEngine.Application.Rubrics.Create;
 

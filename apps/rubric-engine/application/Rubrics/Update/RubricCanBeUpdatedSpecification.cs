@@ -1,6 +1,6 @@
 ﻿using EventFlow.Specifications;
 
-namespace RubricEngine.Application.Rubrics;
+namespace RubricEngine.Application.Rubrics.Update;
 
 public class RubricCanBeUpdatedSpecification : Specification<RubricWriteModel>
 {

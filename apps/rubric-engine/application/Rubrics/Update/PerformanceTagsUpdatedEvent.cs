@@ -1,7 +1,7 @@
 ﻿using EventFlow.Aggregates;
 using EventFlow.EventStores;
 
-namespace RubricEngine.Application.Rubrics;
+namespace RubricEngine.Application.Rubrics.Update;
 
 [EventVersion("performanceTagsUpdated", 1)]
 public class PerformanceTagsUpdatedEvent : AggregateEvent<RubricAggregate, RubricId>

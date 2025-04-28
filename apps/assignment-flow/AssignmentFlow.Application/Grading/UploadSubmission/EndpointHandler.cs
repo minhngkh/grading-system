@@ -2,13 +2,13 @@
 using EventFlow.Queries;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AssignmentFlow.Application.Submissions.Upload;
+namespace AssignmentFlow.Application.Grading.Upload;
 
 public static class EndpointHandler
 {
     public static IEndpointRouteBuilder MapUploadSubmission(this IEndpointRouteBuilder endpoint)
     {
-        endpoint.MapPost("/", UploadSubmission)
+        endpoint.MapPost("/{gradingId}", UploadSubmission)
             .WithName("UploadSubmission")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .DisableAntiforgery(); // Disable for now
@@ -17,21 +17,21 @@ public static class EndpointHandler
     }
 
     private static async Task<IResult> UploadSubmission(
-        [FromForm] UploadSubmissionRequest request,
+        [FromRoute] string gradingId,
+        [FromForm] IFormFile file, //zip only
         ICommandBus commandBus,
         IQueryProcessor queryProcessor,
         IHttpContextAccessor contextAccessor,
         CancellationToken cancellationToken)
     {
-        var submissionId = SubmissionId.New;
+        
+
         await commandBus.PublishAsync(
-            new Command(submissionId)
+            new Command(GradingId.With(gradingId))
             {
-                StudentId = request.StudentId,
-                AssignmentId = request.AssignmentId,
-                File = request.File
+                File = file
             }, cancellationToken);
 
-        return TypedResults.Created<string>("", submissionId.Value);
+        return TypedResults.Created();
     }
 }
