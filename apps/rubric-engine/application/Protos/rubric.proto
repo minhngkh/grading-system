@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option csharp_namespace = "RubricEngine.Application.Rubrics.Protos";
+option csharp_namespace = "RubricEngine.Application.Protos";
 
 package rubric;
 
@@ -24,7 +24,6 @@ message Rubric {
   repeated string performance_tags = 4;
   repeated Criterion criteria = 5;
   string status = 6; // "Draft" or "Used"
-  string grading_id = 7;
 }
 
 message Criterion {
@@ -36,5 +35,5 @@ message Criterion {
 message PerformanceLevel {
   string tag = 1;
   string description = 2;
-  double score = 3;
+  double weight = 3;
 }
