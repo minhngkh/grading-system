@@ -28,7 +28,7 @@ namespace AssignmentFlow.Application.Migrations
                     Id = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     TeacherId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     RubricId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    CriteriaFilesMappings = table.Column<string>(type: "jsonb", nullable: true)
+                    CriterionAttachmentsSelectors = table.Column<string>(type: "jsonb", nullable: true)
                 },
                 constraints: table =>
                 {

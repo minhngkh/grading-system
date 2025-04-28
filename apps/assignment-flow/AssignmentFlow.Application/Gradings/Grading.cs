@@ -25,21 +25,14 @@ public class Grading
     public string RubricId { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView)]
-    public List<CriteriaFilesMappingApiContract> CriteriaFilesMappings { get; set; } = [];
+    public List<CriterionAttachmentsSelectorApiContract> CriterionAttachmentsSelectors { get; set; } = [];
 }
 
 [NoResource]
-public class CriteriaFilesMappingApiContract
+public class CriterionAttachmentsSelectorApiContract
 {
-    public CriterionIdentityApiContract CriterionIdentity { get; init; } = new();
-    public ContentSelectorApiContract ContentSelector { get; init; } = new();
-}
-
-[NoResource]
-public class CriterionIdentityApiContract
-{
-    public string RubricId { get; init; } = string.Empty;
-    public string CriterionName { get; init; } = string.Empty;
+    public string Criterion { get; init; } = string.Empty;
+    public ContentSelectorApiContract Selector { get; init; } = new();
 }
 
 [NoResource]

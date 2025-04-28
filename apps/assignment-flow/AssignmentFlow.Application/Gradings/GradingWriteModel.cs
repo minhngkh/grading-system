@@ -6,11 +6,11 @@ namespace AssignmentFlow.Application.Gradings;
 public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, GradingWriteModel>
 {
     public TeacherId TeacherId { get; private set; } = TeacherId.Empty;
-    public List<CriteriaFilesMapping> CriteriaFilesMappings { get; private set; } = [];
+    public List<CriterionAttachmentsSelector> CriteriaFilesMappings { get; private set; } = [];
 
     internal void Apply(GradingStartedEvent @event)
     {
         TeacherId = @event.TeacherId;
-        CriteriaFilesMappings = @event.CriteriaFilesMappings;
+        CriteriaFilesMappings = @event.Selectors;
     }
 }

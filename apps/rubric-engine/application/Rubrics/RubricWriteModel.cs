@@ -39,6 +39,7 @@ public class RubricWriteModel
 
     internal void Apply(RubricUsedEvent @event)
     {
+        GradingId = @event.GradingId;
         Status = RubricStatus.Used.ToString();
     }
 }

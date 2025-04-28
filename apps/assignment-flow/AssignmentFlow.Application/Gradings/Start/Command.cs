@@ -6,7 +6,7 @@ public class Command(GradingId id) : Command<GradingAggregate, GradingId>(id)
 {
     public required TeacherId TeacherId { get; init; }
     public required string RubricId { get; init; }
-    public required List<CriteriaFilesMapping> CriteriaFilesMappings { get; init; }
+    public required List<CriterionAttachmentsSelector> CriterionAttachmentsSelectors { get; init; }
 }
 
 public class CommandHandler : CommandHandler<GradingAggregate, GradingId, Command>

@@ -2,16 +2,13 @@
 
 public static class ValueObjectExtensions
 {
-    public static List<CriteriaFilesMapping> ToCriteriaFilesMappings(this List<CriteriaFilesMappingApiContract> apiContract)
-        => apiContract.ConvertAll(x => x.ToCriteriaFilesMapping());
+    public static List<CriterionAttachmentsSelector> ToCriterionAttachmentsSelectors(this List<CriterionAttachmentsSelectorApiContract> apiContract)
+        => apiContract.ConvertAll(x => x.ToCriterionAttachmentsSelector());
 
-    public static CriteriaFilesMapping ToCriteriaFilesMapping(this CriteriaFilesMappingApiContract apiContract)
-        => CriteriaFilesMapping.New(
-            apiContract.CriterionIdentity.ToCriterionIdentity(),
-            apiContract.ContentSelector.ToContentSelector());
-
-    public static CriterionIdentity ToCriterionIdentity(this CriterionIdentityApiContract apiContract)
-        => CriterionIdentity.New(apiContract.RubricId, apiContract.CriterionName);
+    public static CriterionAttachmentsSelector ToCriterionAttachmentsSelector(this CriterionAttachmentsSelectorApiContract apiContract)
+        => CriterionAttachmentsSelector.New(
+            CriterionName.New(apiContract.Criterion),
+            apiContract.Selector.ToContentSelector());
 
     public static ContentSelector ToContentSelector(this ContentSelectorApiContract apiContract)
         => ContentSelector.New(apiContract.Pattern, apiContract.Strategy);

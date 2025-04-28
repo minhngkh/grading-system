@@ -25,7 +25,7 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         {
             TeacherId = command.TeacherId,
             RubricId = command.RubricId,
-            CriteriaFilesMappings = command.CriteriaFilesMappings
+            Selectors = command.CriterionAttachmentsSelectors
         });
     }
 
@@ -33,11 +33,11 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
     public void AddSubmission(List<Uri> uris)
     {
         // Create criteria-files mappings
-        var criteriaFiles = new Dictionary<CriterionIdentity, List<Attachment>>();
+        var criteriaFiles = new Dictionary<CriterionName, List<Attachment>>();
         foreach (var mapping in State.CriteriaFilesMappings)
         {
             //Get BlobReferences from
-            criteriaFiles[mapping.Identity] = uris
+            criteriaFiles[mapping.Criterion] = uris
                 .Where(uri => uri.AbsoluteUri.Contains(mapping.ContentSelector.Pattern))
                 .Select(uri => new Attachment(uri.ToString()))
                 .ToList();

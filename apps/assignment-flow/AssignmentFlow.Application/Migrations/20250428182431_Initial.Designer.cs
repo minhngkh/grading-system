@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AssignmentFlow.Application.Migrations
 {
     [DbContext(typeof(AssignmentFlowDbContext))]
-    [Migration("20250428170323_Initial")]
+    [Migration("20250428182431_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -58,7 +58,7 @@ namespace AssignmentFlow.Application.Migrations
 
             modelBuilder.Entity("AssignmentFlow.Application.Gradings.Grading", b =>
                 {
-                    b.OwnsMany("AssignmentFlow.Application.Gradings.CriteriaFilesMappingApiContract", "CriteriaFilesMappings", b1 =>
+                    b.OwnsMany("AssignmentFlow.Application.Gradings.CriterionAttachmentsSelectorApiContract", "CriterionAttachmentsSelectors", b1 =>
                         {
                             b1.Property<string>("GradingId")
                                 .HasColumnType("character varying(50)");
@@ -67,21 +67,25 @@ namespace AssignmentFlow.Application.Migrations
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("integer");
 
+                            b1.Property<string>("Criterion")
+                                .IsRequired()
+                                .HasColumnType("text");
+
                             b1.HasKey("GradingId", "__synthesizedOrdinal");
 
                             b1.ToTable("Gradings");
 
-                            b1.ToJson("CriteriaFilesMappings");
+                            b1.ToJson("CriterionAttachmentsSelectors");
 
                             b1.WithOwner()
                                 .HasForeignKey("GradingId");
 
-                            b1.OwnsOne("AssignmentFlow.Application.Gradings.ContentSelectorApiContract", "ContentSelector", b2 =>
+                            b1.OwnsOne("AssignmentFlow.Application.Gradings.ContentSelectorApiContract", "Selector", b2 =>
                                 {
-                                    b2.Property<string>("CriteriaFilesMappingApiContractGradingId")
+                                    b2.Property<string>("CriterionAttachmentsSelectorApiContractGradingId")
                                         .HasColumnType("character varying(50)");
 
-                                    b2.Property<int>("CriteriaFilesMappingApiContract__synthesizedOrdinal")
+                                    b2.Property<int>("CriterionAttachmentsSelectorApiContract__synthesizedOrdinal")
                                         .HasColumnType("integer");
 
                                     b2.Property<string>("Pattern")
@@ -92,50 +96,21 @@ namespace AssignmentFlow.Application.Migrations
                                         .IsRequired()
                                         .HasColumnType("text");
 
-                                    b2.HasKey("CriteriaFilesMappingApiContractGradingId", "CriteriaFilesMappingApiContract__synthesizedOrdinal");
+                                    b2.HasKey("CriterionAttachmentsSelectorApiContractGradingId", "CriterionAttachmentsSelectorApiContract__synthesizedOrdinal");
 
                                     b2.ToTable("Gradings");
 
-                                    b2.ToJson("ContentSelector");
+                                    b2.ToJson("Selector");
 
                                     b2.WithOwner()
-                                        .HasForeignKey("CriteriaFilesMappingApiContractGradingId", "CriteriaFilesMappingApiContract__synthesizedOrdinal");
+                                        .HasForeignKey("CriterionAttachmentsSelectorApiContractGradingId", "CriterionAttachmentsSelectorApiContract__synthesizedOrdinal");
                                 });
 
-                            b1.OwnsOne("AssignmentFlow.Application.Gradings.CriterionIdentityApiContract", "CriterionIdentity", b2 =>
-                                {
-                                    b2.Property<string>("CriteriaFilesMappingApiContractGradingId")
-                                        .HasColumnType("character varying(50)");
-
-                                    b2.Property<int>("CriteriaFilesMappingApiContract__synthesizedOrdinal")
-                                        .HasColumnType("integer");
-
-                                    b2.Property<string>("CriterionName")
-                                        .IsRequired()
-                                        .HasColumnType("text");
-
-                                    b2.Property<string>("RubricId")
-                                        .IsRequired()
-                                        .HasColumnType("text");
-
-                                    b2.HasKey("CriteriaFilesMappingApiContractGradingId", "CriteriaFilesMappingApiContract__synthesizedOrdinal");
-
-                                    b2.ToTable("Gradings");
-
-                                    b2.ToJson("CriterionIdentity");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("CriteriaFilesMappingApiContractGradingId", "CriteriaFilesMappingApiContract__synthesizedOrdinal");
-                                });
-
-                            b1.Navigation("ContentSelector")
-                                .IsRequired();
-
-                            b1.Navigation("CriterionIdentity")
+                            b1.Navigation("Selector")
                                 .IsRequired();
                         });
 
-                    b.Navigation("CriteriaFilesMappings");
+                    b.Navigation("CriterionAttachmentsSelectors");
                 });
 #pragma warning restore 612, 618
         }

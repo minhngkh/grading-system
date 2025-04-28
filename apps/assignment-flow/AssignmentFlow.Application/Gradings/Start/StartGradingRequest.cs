@@ -3,5 +3,5 @@
 public class StartGradingRequest
 {
     public string RubricId { get; init; } = string.Empty;
-    public List<CriteriaFilesMappingApiContract> CriteriaFilesMappings { get; set; } = [];
+    public List<CriterionAttachmentsSelectorApiContract> AttachmentsSelectors { get; set; } = [];
 }

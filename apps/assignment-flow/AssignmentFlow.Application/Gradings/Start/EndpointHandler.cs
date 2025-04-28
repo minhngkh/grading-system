@@ -29,7 +29,7 @@ public static class EndpointHandler
         {
             TeacherId = teacherId,
             RubricId = request.RubricId,
-            CriteriaFilesMappings = request.CriteriaFilesMappings.ToCriteriaFilesMappings()
+            CriterionAttachmentsSelectors = request.AttachmentsSelectors.ToCriterionAttachmentsSelectors()
         }, cancellationToken);
 
         return TypedResults.Created();
