@@ -1,12 +1,12 @@
 ﻿using EventFlow.Commands;
 
-namespace AssignmentFlow.Application.Grading.Start;
+namespace AssignmentFlow.Application.Gradings.Start;
 
 public class Command(GradingId id) : Command<GradingAggregate, GradingId>(id)
 {
     public required TeacherId TeacherId { get; init; }
-    public string RubricId { get; init; } = string.Empty;
-    public List<CriteriaFilesMapping> CriteriaFilesMappings { get; set; } = [];
+    public required string RubricId { get; init; }
+    public required List<CriteriaFilesMapping> CriteriaFilesMappings { get; init; }
 }
 
 public class CommandHandler : CommandHandler<GradingAggregate, GradingId, Command>

@@ -2,7 +2,7 @@
 using EventFlow.Queries;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AssignmentFlow.Application.Grading.Upload;
+namespace AssignmentFlow.Application.Gradings.UploadSubmission;
 
 public static class EndpointHandler
 {

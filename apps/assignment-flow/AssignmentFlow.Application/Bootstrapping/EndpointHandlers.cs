@@ -1,4 +1,4 @@
-﻿using AssignmentFlow.Application.Grading;
+﻿using AssignmentFlow.Application.Gradings;
 
 namespace AssignmentFlow.Application.Bootstrapping;
 

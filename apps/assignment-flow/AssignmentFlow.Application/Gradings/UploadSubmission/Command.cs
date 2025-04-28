@@ -4,7 +4,7 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using EventFlow.Commands;
 
-namespace AssignmentFlow.Application.Grading.Upload;
+namespace AssignmentFlow.Application.Gradings.UploadSubmission;
 
 public class Command(GradingId aggregateId) : Command<GradingAggregate, GradingId>(aggregateId)
 {

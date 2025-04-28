@@ -3,7 +3,7 @@ using EventFlow.Aggregates;
 using EventFlow.Subscribers;
 using MassTransit;
 
-namespace AssignmentFlow.Application.Grading.Start;
+namespace AssignmentFlow.Application.Gradings.Start;
 
 public class GradingStartedEventSubscriber(
     IPublishEndpoint publishEndpoint)
@@ -13,8 +13,8 @@ public class GradingStartedEventSubscriber(
     {
         await publishEndpoint.Publish<GradingStarted>(new
         {
-            TeacherId = domainEvent.AggregateEvent.TeacherId,
-            RubricId = domainEvent.AggregateEvent.RubricId,
+            domainEvent.AggregateEvent.TeacherId,
+            domainEvent.AggregateEvent.RubricId,
             GradingId = domainEvent.AggregateIdentity.Value
         });
     }

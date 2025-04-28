@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-using AssignmentFlow.Application.Grading.Start;
+﻿using AssignmentFlow.Application.Gradings.Start;
 using EventFlow.Aggregates;
 using EventFlow.Core;
 
-namespace AssignmentFlow.Application.Grading;
+namespace AssignmentFlow.Application.Gradings;
 
 public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
 {
@@ -20,16 +19,17 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         Register(State);
     }
 
-    public void StartGrading(Start.Command command)
+    public void StartGrading(Command command)
     {
         Emit(new GradingStartedEvent
         {
             TeacherId = command.TeacherId,
             RubricId = command.RubricId,
-            Criteria = command.CriteriaFilesMappings
+            CriteriaFilesMappings = command.CriteriaFilesMappings
         });
     }
 
+    //TODO: Handle difference selection strategies
     public void AddSubmission(List<Uri> uris)
     {
         // Create criteria-files mappings
@@ -38,7 +38,7 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         {
             //Get BlobReferences from
             criteriaFiles[mapping.Identity] = uris
-                .Where(uri => uri.AbsoluteUri.Contains(mapping.ContentSelectorStrategy.Name))
+                .Where(uri => uri.AbsoluteUri.Contains(mapping.ContentSelector.Pattern))
                 .Select(uri => new Attachment(uri.ToString()))
                 .ToList();
         }

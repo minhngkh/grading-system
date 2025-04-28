@@ -1,8 +1,8 @@
-﻿using AssignmentFlow.Application.Grading.Start;
-using AssignmentFlow.Application.Grading.Upload;
+﻿using AssignmentFlow.Application.Gradings.Start;
+using AssignmentFlow.Application.Gradings.UploadSubmission;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
-namespace AssignmentFlow.Application.Grading;
+namespace AssignmentFlow.Application.Gradings;
 
 internal static class EndpointHandlers
 {

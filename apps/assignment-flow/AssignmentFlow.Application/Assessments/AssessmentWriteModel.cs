@@ -1,5 +1,4 @@
-﻿using AssignmentFlow.Application.Submissions;
-using EventFlow.Aggregates;
+﻿using EventFlow.Aggregates;
 namespace AssignmentFlow.Application.Assessments;
 
 public class AssessmentWriteModel

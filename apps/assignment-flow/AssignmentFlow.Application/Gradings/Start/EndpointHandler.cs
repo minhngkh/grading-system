@@ -2,7 +2,7 @@
 using EventFlow.Queries;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AssignmentFlow.Application.Grading.Start;
+namespace AssignmentFlow.Application.Gradings.Start;
 
 public static class EndpointHandler
 {
@@ -22,11 +22,14 @@ public static class EndpointHandler
         IHttpContextAccessor contextAccessor,
         CancellationToken cancellationToken)
     {
+        var teacherId = TeacherId.New("teacher");
+
         var gradingId = GradingId.NewComb();
         await commandBus.PublishAsync(new Command(gradingId)
         {
+            TeacherId = teacherId,
             RubricId = request.RubricId,
-            CriteriaFilesMappings = request.CriteriaFilesMappings
+            CriteriaFilesMappings = request.CriteriaFilesMappings.ToCriteriaFilesMappings()
         }, cancellationToken);
 
         return TypedResults.Created();
