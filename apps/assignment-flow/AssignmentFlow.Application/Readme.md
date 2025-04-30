@@ -1,79 +1,111 @@
-﻿# Assignments, Submissions, and Assessments: A Complete Overview
+﻿ Grading & Assessment Business and Domain Modeling
 
-These three terms are fundamental components of educational processes, each serving distinct but interconnected purposes in learning environments. Let me explain each one in detail.
+This document outlines the business requirements, core concepts, behaviors, and proposed data/domain model for a grading system intended to grade submissions and support ongoing assessment adjustments.
 
-## Assignments
+## Business Context
 
-Assignments are structured tasks given to students to apply, practice, or demonstrate their understanding of subject matter. They serve as bridges between instruction and assessment.
+- The system supports a separation of concerns, using **vertical slice architecture**, **Domain Driven Design**, and event-driven integration (EventFlow).
+- **Grading** focuses on the evaluation of student submissions using a predefined rubric.
+- **Assessment** captures the outcome of a grading process, including any subsequent adjustments.
 
-**Key characteristics of assignments:**
-- They provide opportunities for students to engage with material actively
-- They often include specific instructions, requirements, and deadlines
-- They can range from simple exercises to complex, multi-stage projects
-- They may be completed individually or collaboratively
+---
 
-**Examples of assignments include:**
-- Problem sets in mathematics
-- Essays in humanities courses
-- Laboratory experiments in sciences
-- Case studies in business courses
-- Creative projects in arts subjects
-- Code development in computer science
+## Core Concepts & Requirements
 
-Assignments help solidify learning by requiring students to process information at deeper cognitive levels than passive reading or listening. They also build skills like time management, organization, and independent work habits.
+### Key Requirements
 
-## Submissions
+1. **Grading Submissions**
+    - A Grading process evaluates **many submissions**, each submitted by a student, using a Rubric (criteria, levels, weights).
+    - Each submission is its own aggregate with a complete lifecycle that includes creation, file attachment references, and metadata.
+    - Each submission is graded individually through the Grading process.
 
-Submissions represent the completed work that students provide in response to assignments. The submission is the tangible product that will be evaluated.
+2. **Assessment Adjustments**
+    - Assessment results for individual submissions can be changed (e.g. via regrade/appeal/AI moderation).
+    - Each adjustment is recorded as a transaction, capturing:
+      - Final score after adjustment,
+      - Delta (how much it changed),
+      - Who/what made the adjustment (Teacher, AI, etc.),
+      - Reason/source.
 
-**Key aspects of submissions:**
-- They are the fulfillment of assignment requirements
-- They follow specific formats (digital uploads, physical papers, presentations, etc.)
-- They adhere to submission guidelines (file formats, word counts, etc.)
-- They are typically time-bound with specific due dates
+3. **Traceability & Audit**
+    - Each grading, submission, assessment, and adjustment must be traceable and auditable.
 
-The submission process itself often involves important educational elements:
-- Following formatting requirements
-- Meeting deadlines
-- Ensuring work is complete and properly presented
-- Understanding submission systems (online portals, email protocols, etc.)
+4. **Submission as Aggregate**
+    - Submission is an aggregate root with its own lifecycle.
+    - File and attachment information is included at submission creation time.
+    - The Submission aggregate is responsible for maintaining its own integrity.
 
-In academic and professional contexts, proper submission practices are themselves valuable skills.
+5. **Bounded Context Separation**
+    - Submissions exist in their own bounded context
+    - Grading is a process/saga that orchestrates interactions between Submissions and Assessments
+    - All assessment-related adjustments are managed _inside_ the Assessment bounded context.
 
-## Assessments
+---
 
-Assessments are systematic methods for evaluating student learning, understanding, or skill development. They provide feedback about performance and progress.
+## Business Model
 
-**Key characteristics of assessments:**
-- They measure achievement against defined learning objectives
-- They can be formative (ongoing, providing guidance) or summative (final evaluation)
-- They may be criterion-referenced (measured against standards) or norm-referenced (compared to peers)
-- They generate feedback that guides further learning
+### Entities & Value Objects
 
-**Examples of assessments include:**
-- Quizzes and tests
-- Rubric-based evaluations of assignments
-- Peer reviews
-- Self-assessments
-- Observations of performance
-- Portfolio evaluations
+- **Rubric:** Defines the rules, criteria, levels and weights.
+- **Teacher:** Educator performing the grading.
+- **Grading (Process/Saga):** Orchestrates the grading workflow, referencing submissions by ID and coordinating assessment creation.
+- **Submission (Aggregate):** Student's submitted work including references to attached files/evidence.
+- **Assessment (Aggregate):** Result of grading a specific submission, subject to adjustments.
+- **AssessmentAdjustment (Transaction):** One adjustment of the assessment, keeping a record of what, how, by whom.
+- **CriterionAttachmentsSelector:** Maps rubric criteria to evidence in submission (passed as part of grading commands, not stored).
 
-Assessments are crucial for:
-- Measuring learning progress
-- Identifying knowledge gaps
-- Guiding instructional decisions
-- Motivating students
-- Providing accountability
+**Relationship:**
+- A Grading process involves multiple Submissions (by reference)
+- Each Submission can be graded to produce one Assessment
+- Each Assessment can have many AssessmentAdjustments
 
-## The Relationship Between These Elements
+---
 
-These three components work together in a cyclical process:
+## Behaviors
 
-1. **Assignments** provide structure and direction for learning activities
-2. **Submissions** represent the completed work produced through those activities
-3. **Assessments** evaluate those submissions to measure learning and provide feedback
-4. This feedback then informs future assignments, continuing the cycle
+### Submission Management
+- **CreateSubmission:** Student or system creates a new submission with attached files/evidence
+- **FinalizeSubmission:** Mark a submission as ready for grading
 
-Understanding this relationship helps learners approach their work strategically, with awareness of how each piece contributes to their overall educational development.
+### Grading (Process/Saga)
 
-Would you like me to elaborate on any particular aspect of these concepts, such as strategies for effective assignment completion or assessment techniques?
+- **StartGrading:** Teacher (or AI) initiates grading using a Rubric, referencing a set of Submission IDs.
+- **AssignSubmissionForGrading:** Associate a specific submission with a grader.
+- **GradeSubmission:** System evaluates a submission according to Rubric, producing an Assessment.
+- When Assessment is created, Submission is updated with a reference to its Assessment.
+
+### Assessment Adjustments
+
+- **RequestAdjustment:** For a specific Assessment, an actor (teacher, AI, admin) suggests a score review/change, specifying new score, delta, and reasoning.
+- **ApplyAdjustment:** System records a new `AssessmentAdjustment` transaction capturing source, delta, and resulting final score.
+- **Assessment History:** Each Assessment is a chain of adjustments, with the most recent representing the current "final" score.
+
+### Read Model
+
+- **Query Assessment/History:** Retrieve the latest score and the full audit trail of adjustments with source/timestamp for each submission.
+
+---
+
+## Implementation Patterns
+
+1. **Event-Driven Integration**
+   - Submission creation emits events that can trigger workflow processes
+   - Assessment creation updates Submission through event handlers
+   - All adjustments generate auditable events
+
+2. **Process/Saga Coordination**
+   - Grading is modeled as a process manager or saga that:
+     - Tracks which submissions need grading
+     - Assigns graders
+     - Monitors progress
+     - Initiates assessment creation
+   - No business state duplication between contexts
+
+3. **File Selection Simplification**
+   - File mappings are included in submission creation
+   - Criterion-to-evidence mapping is passed as a command parameter during grading
+   - No need to persist the mapping process itself
+
+---
+
+## Data Model (Conceptual)

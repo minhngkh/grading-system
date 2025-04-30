@@ -16,6 +16,7 @@
 	<PackageReference Include="EventFlow.PostgreSql" />
 	<PackageReference Include="FluentValidation" />
 	<PackageReference Include="FluentValidation.AspNetCore" />
+	<PackageReference Include="Grpc.AspNetCore" />
 	<PackageReference Include="JsonApiDotNetCore" />
 	<PackageReference Include="MassTransit" />
 	<PackageReference Include="MassTransit.RabbitMQ" />
@@ -41,6 +42,12 @@
   <ItemGroup>
     <Folder Include="Assessments\Create\" />
     <Folder Include="Migrations\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="..\..\rubric-engine\application\Protos\rubric.proto" GrpcServices="Client">
+      <Link>Protos\rubric.proto</Link>
+    </Protobuf>
   </ItemGroup>
 
 </Project>

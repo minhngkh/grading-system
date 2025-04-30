@@ -4,9 +4,7 @@ using RubricEngine.Application.Protos;
 
 namespace RubricEngine.Application.Rubrics.Grpc;
 
-public class RubricService
-    (RubricDbContext dbContext, ILogger<RubricService> logger)
-    : RubricProtoService.RubricProtoServiceBase
+public class RubricService(RubricDbContext dbContext) : RubricProtoService.RubricProtoServiceBase
 {
     public override Task<GetRubricResponse> GetRubric(GetRubricRequest request, ServerCallContext context)
     {
