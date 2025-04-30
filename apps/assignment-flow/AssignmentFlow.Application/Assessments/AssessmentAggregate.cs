@@ -21,6 +21,18 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
         Register(State);
     }
+
+    public void CreateAssessment(Create.Command command)
+    {
+
+    }
+
+    public void AdjustScore()
+    {
+
+    }
+
+    public void UpdateFeedBack() { }
 }
 
 public class AssessmentId(string id) : Identity<AssessmentId>(id) { }

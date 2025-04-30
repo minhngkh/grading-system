@@ -7,6 +7,10 @@ public class AssessmentEntityTypeConfiguration : IEntityTypeConfiguration<Assess
 {
     public void Configure(EntityTypeBuilder<Assessment> builder)
     {
-
+        builder.OwnsMany(a => a.ScoreBreakdowns, sb =>
+        {
+            sb.ToJson();
+            sb.OwnsMany(sb => sb.FeedbackItems);
+        });
     }
 }

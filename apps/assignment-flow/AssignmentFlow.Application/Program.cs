@@ -31,6 +31,8 @@ builder.Services.AddEventFlow(ef => ef
     .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
 );
 
+builder.AddServiceDefaults();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

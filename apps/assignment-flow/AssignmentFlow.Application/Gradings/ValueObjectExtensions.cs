@@ -1,4 +1,6 @@
-﻿namespace AssignmentFlow.Application.Gradings;
+﻿using AssignmentFlow.Application.Shared;
+
+namespace AssignmentFlow.Application.Gradings;
 
 public static class ValueObjectExtensions
 {

@@ -4,6 +4,7 @@ using FluentValidation;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
 using MassTransit;
+using RubricEngine.Application.Protos;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 namespace AssignmentFlow.Application.Bootstrapping;
 
@@ -18,6 +19,7 @@ public static class ServiceCollectionExtensions
             .AddMessageBus(configuration, typeof(Program).Assembly)
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
+            .AddGrpcClients(configuration)
             .AddServiceBootstrapping(configuration);
 
         return services;
@@ -71,6 +73,26 @@ public static class ServiceCollectionExtensions
         services
             .AddValidatorsFromAssemblyContaining<Program>()
             .AddFluentValidationAutoValidation();
+        return services;
+    }
+
+    private static IServiceCollection AddGrpcClients(this IServiceCollection services, IConfiguration configuration)
+    {
+        //Grpc Services
+        services.AddGrpcClient<RubricProtoService.RubricProtoServiceClient>(opts =>
+        {
+            opts.Address = new Uri("https://rubric-engine");
+        })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                var handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+
+                return handler;
+            });
         return services;
     }
 

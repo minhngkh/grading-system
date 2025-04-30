@@ -1,11 +1,12 @@
-﻿using EventFlow.Commands;
+﻿using AssignmentFlow.Application.Shared;
+using EventFlow.Commands;
 
 namespace AssignmentFlow.Application.Gradings.Start;
 
 public class Command(GradingId id) : Command<GradingAggregate, GradingId>(id)
 {
     public required TeacherId TeacherId { get; init; }
-    public required string RubricId { get; init; }
+    public required RubricId RubricId { get; init; }
     public required List<CriterionAttachmentsSelector> CriterionAttachmentsSelectors { get; init; }
 }
 

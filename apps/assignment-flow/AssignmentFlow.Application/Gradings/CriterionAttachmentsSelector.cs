@@ -1,4 +1,5 @@
-﻿using EventFlow.ValueObjects;
+﻿using AssignmentFlow.Application.Shared;
+using EventFlow.ValueObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -24,16 +25,6 @@ public sealed class CriterionAttachmentsSelector : ValueObject
         yield return Criterion;
         yield return ContentSelector;   
     }
-}
-
-public sealed class CriterionName : StringValueObject
-{
-    public static CriterionName Empty => new();
-    private CriterionName() { }
-    [JsonConstructor]
-    public CriterionName(string value) : base(value) { }
-    protected override int? MaxLength => ModelConstants.ShortMediumText;
-    public static CriterionName New(string value) => new(value);
 }
 
 [JsonConverter(typeof(ContenSelectorConverter))]

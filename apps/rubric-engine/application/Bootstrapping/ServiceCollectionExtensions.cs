@@ -3,7 +3,6 @@ using FluentValidation;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
 using MassTransit;
-using Microsoft.IdentityModel.Tokens;
 using RubricEngine.Application.Models;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 namespace RubricEngine.Application.Bootstrapping;
@@ -20,6 +19,8 @@ public static class ServiceCollectionExtensions
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
             .AddServiceBootstrapping(configuration);
+
+        services.AddGrpc();
 
         return services;
     }
