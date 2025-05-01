@@ -17,19 +17,10 @@ public class ScoreBreakdownApiContract
     /// Gets or sets the performance tag associated with this criterion.
     /// </summary>
     public required string PerformanceTag { get; set; }
-
+    
     /// <summary>
-    /// Gets or sets the score awarded for this criterion.
+    /// Gets or sets the raw unprocessed score for this criterion,
+    /// as originally assigned during assessment.
     /// </summary>
-    public required int Score { get; set; }
-
-    /// <summary>
-    /// Gets or sets the general comment for this criterion.
-    /// </summary>
-    public required string Comment { get; set; }
-
-    /// <summary>
-    /// Gets or sets the collection of detailed feedback items for this criterion.
-    /// </summary>
-    public List<FeedbackItemApiContract> FeedbackItems { get; set; } = new();
+    public decimal RawScore { get; set; }
 }

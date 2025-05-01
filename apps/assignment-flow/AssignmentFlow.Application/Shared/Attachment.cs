@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace AssignmentFlow.Application.Gradings;
+namespace AssignmentFlow.Application.Shared;
 
 public sealed class Attachment : StringValueObject
 {

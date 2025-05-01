@@ -1,4 +1,5 @@
-﻿using AssignmentFlow.Application.Gradings.Start;
+﻿using AssignmentFlow.Application.Gradings.Create;
+using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
@@ -12,8 +13,9 @@ internal static class EndpointHandlers
         routeBuilder.MapGroup("/api/v1/gradings")
             .AddFluentValidationAutoValidation()
             .WithTags("Gradings")
-            .MapStartGrading()
-            .MapUploadSubmission();
+            .MapCreateGrading()
+            .MapUploadSubmission()
+            .MapStartGrading();
             
         return routeBuilder;
     }

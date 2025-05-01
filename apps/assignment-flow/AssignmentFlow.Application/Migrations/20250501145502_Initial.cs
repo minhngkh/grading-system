@@ -11,14 +11,21 @@ namespace AssignmentFlow.Application.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Assessment",
+                name: "Assessments",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
+                    Id = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    TeacherId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    GradingId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    ScaleFactor = table.Column<decimal>(type: "numeric", nullable: false),
+                    RawScore = table.Column<decimal>(type: "numeric", nullable: false),
+                    AdjustedCount = table.Column<int>(type: "integer", nullable: false),
+                    Feedbacks = table.Column<string>(type: "jsonb", nullable: true),
+                    ScoreBreakdowns = table.Column<string>(type: "jsonb", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Assessment", x => x.Id);
+                    table.PrimaryKey("PK_Assessments", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -28,7 +35,9 @@ namespace AssignmentFlow.Application.Migrations
                     Id = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     TeacherId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     RubricId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    CriterionAttachmentsSelectors = table.Column<string>(type: "jsonb", nullable: true)
+                    ScaleFactor = table.Column<decimal>(type: "numeric", nullable: false),
+                    CriterionAttachmentsSelectors = table.Column<string>(type: "jsonb", nullable: true),
+                    Submissions = table.Column<string>(type: "jsonb", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -40,7 +49,7 @@ namespace AssignmentFlow.Application.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Assessment");
+                name: "Assessments");
 
             migrationBuilder.DropTable(
                 name: "Gradings");

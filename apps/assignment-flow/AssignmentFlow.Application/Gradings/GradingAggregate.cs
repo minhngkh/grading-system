@@ -1,7 +1,7 @@
 ﻿using AssignmentFlow.Application.Gradings.Start;
-using AssignmentFlow.Application.Shared;
 using EventFlow.Aggregates;
 using EventFlow.Core;
+using EventFlow.Exceptions;
 
 namespace AssignmentFlow.Application.Gradings;
 
@@ -20,31 +20,34 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         Register(State);
     }
 
-    public void StartGrading(Command command)
+    public void CreateGrading(Create.Command command)
     {
-        Emit(new GradingStartedEvent
+        Emit(new Create.GradingCreatedEvent
         {
             TeacherId = command.TeacherId,
             RubricId = command.RubricId,
+            ScaleFactor = command.ScaleFactor,
             Selectors = command.CriterionAttachmentsSelectors
         });
     }
 
-    //TODO: Handle difference selection strategies
-    public void AddSubmission(List<Uri> uris)
-    {
-        // Create criteria-files mappings
-        var criteriaFiles = new Dictionary<CriterionName, List<Attachment>>();
-        foreach (var mapping in State.CriteriaFilesMappings)
-        {
-            //Get BlobReferences from
-            criteriaFiles[mapping.Criterion] = uris
-                .Where(uri => uri.AbsoluteUri.Contains(mapping.ContentSelector.Pattern))
-                .Select(uri => new Attachment(uri.ToString()))
-                .ToList();
-        }
+    public List<CriterionAttachmentsSelector> GetCriterionAttachmentsSelectors() => this.State.CriteriaFilesMappings;
 
-        //Emit(new SubmissionAddedEvent(uri));
+    public void AddSubmission(Submission submission)
+    {
+        if(this.State.IsGradingStarted)
+            throw DomainError.With("Cannot add submission after grading has started");
+
+        Emit(new UploadSubmission.SubmissionAddedEvent(submission));
+    }
+
+    public void StartGrading()
+    {
+        if (!this.State.HasGradingFinished)
+            throw DomainError.With("Grading has already started");
+
+        // TODO: Add Specification to check if we can start grading
+        Emit(new GradingStartedEvent());
     }
 }
 

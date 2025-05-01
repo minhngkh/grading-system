@@ -17,19 +17,15 @@ public sealed class ScoreBreakdownItem : ValueObject
     public CriterionName CriterionName { get; private set; }
 
     /// <summary>
-    /// Gets or sets the score for this breakdown item.
+    /// Gets or sets the raw percentage score awarded for this breakdown item.
+    /// This represents the assessed percentage for the criterion before aggregation into the final score.
     /// </summary>
-    public required Score Score { get; init; }
+    public required Percentage RawScore { get; init; }
 
     /// <summary>
     /// Gets or sets the performance tag for this breakdown item.
     /// </summary>
     public required PerformanceTag PerformanceTag { get; init; }
-
-    /// <summary>
-    /// Gets the feedbacks related to this score breakdown item.
-    /// </summary>
-    public Feedback[] Feedbacks { get; init; } = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ScoreBreakdownItem"/> class with the specified criterion.
@@ -47,12 +43,8 @@ public sealed class ScoreBreakdownItem : ValueObject
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return CriterionName;
-        yield return Score;
+        yield return RawScore;
         yield return PerformanceTag;
-        foreach (var feedback in Feedbacks)
-        {
-            yield return feedback;
-        }
     }
 }
 
@@ -64,15 +56,13 @@ public sealed class ScoreBreakdownItemConverter : JsonConverter<ScoreBreakdownIt
             return null;
         var jObject = JObject.Load(reader);
         var criterionIdentity = jObject.GetRequired<CriterionName>("CriterionName");
-        var score = jObject.GetRequired<Score>("Score");
+        var score = jObject.GetRequired<Percentage>("RawScore");
         var performanceTag = jObject.GetRequired<PerformanceTag>("PerformanceTag");
-        var feedbacks = jObject.Get<Feedback[]>("Feedbacks");
 
         return new ScoreBreakdownItem(criterionIdentity)
         {
-            Score = score,
+            RawScore = score,
             PerformanceTag = performanceTag,
-            Feedbacks = feedbacks ?? []
         };
     }
     public override bool CanWrite => false;

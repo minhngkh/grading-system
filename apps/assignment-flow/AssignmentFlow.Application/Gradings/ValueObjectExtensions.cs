@@ -1,6 +1,4 @@
-﻿using AssignmentFlow.Application.Shared;
-
-namespace AssignmentFlow.Application.Gradings;
+﻿namespace AssignmentFlow.Application.Gradings;
 
 public static class ValueObjectExtensions
 {
@@ -14,4 +12,17 @@ public static class ValueObjectExtensions
 
     public static ContentSelector ToContentSelector(this ContentSelectorApiContract apiContract)
         => ContentSelector.New(apiContract.Pattern, apiContract.Strategy);
+    
+    public static Submission ToSubmission(this SubmissionApiContract apiContract)
+    {
+        var reference = SubmissionReference.New(apiContract.Reference);
+        var criteriaFiles = apiContract.CriteriaFiles
+            .Select(c =>
+                CriterionFiles.New(
+                    CriterionName.New(c.Criterion),
+                    c.Files.ConvertAll(Attachment.New)))
+            .ToHashSet();
+
+        return Submission.New(reference, criteriaFiles);
+    }
 }

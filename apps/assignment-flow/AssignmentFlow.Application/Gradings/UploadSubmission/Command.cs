@@ -1,40 +1,36 @@
-﻿using System.IO.Compression;
-using System.Reflection.Metadata;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
-using EventFlow.Commands;
+﻿using EventFlow.Commands;
 
 namespace AssignmentFlow.Application.Gradings.UploadSubmission;
 
 public class Command(GradingId aggregateId) : Command<GradingAggregate, GradingId>(aggregateId)
 {
-    public required IFormFile File { get; init; }
+    public required SubmissionReference Reference { get; init; }
+    public required List<Uri> BlobEntries { get; init; }
 }
 
-public class CommandHandler(
-    BlobServiceClient client) : CommandHandler<GradingAggregate, GradingId, Command>
+public class CommandHandler : CommandHandler<GradingAggregate, GradingId, Command>
 {
-    public override async Task ExecuteAsync(GradingAggregate aggregate, Command command,
+    public override Task ExecuteAsync(GradingAggregate aggregate, Command command,
         CancellationToken cancellationToken)
     {
         if (!aggregate.IsNew)
-            return ;
+            return Task.CompletedTask;
 
-        var container = client.GetBlobContainerClient("submissions-store");
-
-        using var stream = command.File.OpenReadStream();
-        using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
-
-        var blobEntries = new List<Uri>();
-        foreach (var entry in archive.Entries)
+        var criteriaFiles = new HashSet<CriterionFiles>();
+        foreach (var mapping in aggregate.GetCriterionAttachmentsSelectors())
         {
-            var blobName = $"{command.AggregateId.Value}/{entry.FullName}";
-            var blob = container.GetBlobClient(blobName);
-            await blob.UploadAsync(entry.Open(), new BlobUploadOptions(), cancellationToken);
-
-            blobEntries.Add(blob.Uri);
+            //TODO: Create Factory service for creating this mapping, which supports multiple strategies
+            criteriaFiles.Add(
+                CriterionFiles.New(
+                    CriterionName.New(mapping.Criterion), 
+                [.. command.BlobEntries
+                        .Where(uri => uri.AbsoluteUri.Contains(mapping.ContentSelector.Pattern))
+                        .Select(x => Attachment.New(x.AbsoluteUri))]));
         }
 
-        aggregate.AddSubmission(blobEntries);
+        var submission = Submission.New(command.Reference, criteriaFiles);
+        aggregate.AddSubmission(submission);
+
+        return Task.CompletedTask;
     }
 }

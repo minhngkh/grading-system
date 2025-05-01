@@ -40,8 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Assessments\AdjustCriterionScore\" />
-    <Folder Include="Assessments\UpdateFeedBack\" />
+    <Folder Include="Gradings\UpdateScaleFactor\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 

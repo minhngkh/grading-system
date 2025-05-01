@@ -1,18 +1,26 @@
-﻿using AssignmentFlow.Application.Gradings;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace RubricEngine.Application.Rubrics;
+namespace AssignmentFlow.Application.Gradings;
 
 public class GradingEntityTypeConfiguration : IEntityTypeConfiguration<Grading>
 {
     public void Configure(EntityTypeBuilder<Grading> builder)
     {
         builder
-            .OwnsMany(r => r.CriterionAttachmentsSelectors, c =>
+            .OwnsMany(g => g.CriterionAttachmentsSelectors, c =>
             {
                 c.ToJson();
                 c.OwnsOne(c => c.Selector, cc => cc.ToJson());
+            });
+
+        builder
+            .OwnsMany(g => g.Submissions, s =>
+            {
+                s.ToJson();
+                s.OwnsMany(
+                    s => s.CriteriaFiles, 
+                    cf => cf.ToJson());
             });
     }
 }

@@ -18,12 +18,12 @@ public sealed class ScoreBreakdowns : ValueObject
     /// <summary>
     /// Gets the array of score breakdown items.
     /// </summary>
-    public ScoreBreakdownItem[] BreakdownItems { get; private set; } = [];
+    public ScoreBreakdownItem[] BreakdownItems { get; private set; }
 
     /// <summary>
-    /// Gets the total score calculated from the breakdown items.
+    /// Gets the total percentage score calculated from the breakdown items.
     /// </summary>
-    public Score TotalScore => Score.New(BreakdownItems.Sum(x => x.Score));
+    public Percentage TotalRawScore => Percentage.New(BreakdownItems.Sum(x => x.RawScore));
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ScoreBreakdowns"/> class with the specified breakdown items.
@@ -43,7 +43,7 @@ public sealed class ScoreBreakdowns : ValueObject
     /// <summary>
     /// Provides the components used for equality comparison.
     /// </summary>
-    /// <returns>An enumerable of equality components.</returns>
+    /// <returns>An enumerable list of equality components.</returns>
     protected override IEnumerable<object> GetEqualityComponents()
     {
         foreach (var item in BreakdownItems)

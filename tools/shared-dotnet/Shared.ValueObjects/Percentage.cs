@@ -30,8 +30,6 @@ public sealed class Percentage : SingleValueObject<decimal>
             throw new ArgumentOutOfRangeException(nameof(value), "Percentage value cannot exceed 100%");
     }
 
-
-
     public static implicit operator decimal(Percentage valueObject) => valueObject.Value;
 
     /// <summary>

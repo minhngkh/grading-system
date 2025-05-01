@@ -1,41 +1,41 @@
 using EventFlow.ValueObjects;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace AssignmentFlow.Application.Assessments;
 
 /// <summary>
 /// Represents feedback associated with a score breakdown item.
 /// </summary>
+[JsonConverter(typeof(FeedbackConverter))]
 public sealed class Feedback : ValueObject
 {
+    public CriterionName Criterion { get; private set; }
     /// <summary>
     /// Gets the comment associated with the feedback.
     /// </summary>
-    public string Comment { get; private set; }
+    public Comment Comment { get; private set; }
+    
+    /// <summary>
+    /// Gets the tag associated with the feedback, which indicates the type or category such as "info", "success", "notice", "tip", or "caution".
+    /// </summary>
+    public Tag Tag { get; private set; }
 
     /// <summary>
     /// Gets the attachments related to the feedback, used for highlighting or annotating content in documents.
     /// </summary>
     public FeedbackAttachment Attachment { get; private set; }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Feedback"/> class with the specified comment.
-    /// </summary>
-    /// <param name="comment">The feedback comment.</param>
-    /// <param name="attachment">The feedback attachment.</param>
-    public Feedback(string comment, FeedbackAttachment attachment)
+    private Feedback(CriterionName criterion, Comment comment, FeedbackAttachment attachment, Tag tag)
     {
+        Criterion = criterion;
         Comment = comment;
         Attachment = attachment;
+        Tag = tag;
     }
 
-    /// <summary>
-    /// Creates a new instance of <see cref="Feedback"/> with the specified comment and attachment.
-    /// </summary>
-    /// <param name="comment">The feedback comment.</param>
-    /// <param name="attachment">The feedback attachment.</param>
-    /// <returns>A new <see cref="Feedback"/> instance.</returns>
-    public static Feedback New(string comment, FeedbackAttachment attachment) => new(comment, attachment);
+    public static Feedback New(CriterionName criterion, Comment comment, FeedbackAttachment attachment, Tag tag)
+        => new(criterion, comment, attachment, tag);
 
     /// <summary>
     /// Provides the components used for equality comparison.
@@ -43,7 +43,66 @@ public sealed class Feedback : ValueObject
     /// <returns>An enumerable of equality components.</returns>
     protected override IEnumerable<object> GetEqualityComponents()
     {
+        yield return Criterion;
         yield return Comment;
         yield return Attachment;
+        yield return Tag;
     }
+}
+
+public sealed class FeedbackConverter : JsonConverter<Feedback>
+{
+    public override Feedback? ReadJson(JsonReader reader, Type objectType, Feedback? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        if (reader.TokenType == JsonToken.Null)
+            return null;
+        var jObject = JObject.Load(reader);
+        var criterion = jObject.GetRequired<CriterionName>("Criterion");
+        var comment = jObject.GetRequired<Comment>("Comment");
+        var attachment = jObject.GetRequired<FeedbackAttachment>("Attachment");
+        var tag = jObject.GetRequired<Tag>("Tag");
+        return Feedback.New(criterion, comment, attachment, tag);
+    }
+    public override bool CanWrite => false;
+    public override void WriteJson(JsonWriter writer, Feedback? value, JsonSerializer serializer) => throw new NotSupportedException();
+}
+
+
+public sealed class Comment : StringValueObject
+{
+    public static Comment Empty => new();
+    private Comment() { }
+    [JsonConstructor]
+    public Comment(string value) : base(value) { }
+    protected override int? MaxLength => ModelConstants.VeryLongText;
+    public static Comment New(string value) => new(value);
+}
+
+public sealed class Tag : StringValueObject
+{
+    private static Tag Info => new("info");
+    private static Tag Success => new("success");
+    private static Tag Notice => new("notice");
+    private static Tag Tip => new("tip");
+    private static Tag Caution => new("caution");
+    private Tag() { }
+
+    [JsonConstructor]
+    public Tag(string value) : base(GetPredefinedTagOrThrow(value).Value)
+    {
+    }
+
+    private static Tag GetPredefinedTagOrThrow(string value)
+        => value switch
+        {
+            "info" => Info,
+            "success" => Success,
+            "notice" => Notice,
+            "tip" => Tip,
+            "caution" => Caution,
+            _ => throw new ArgumentException("Invalid tag value", nameof(value)),
+        };
+    
+    protected override int? MaxLength => ModelConstants.TinyText;
+    public static Tag New(string value) => new(value);
 }

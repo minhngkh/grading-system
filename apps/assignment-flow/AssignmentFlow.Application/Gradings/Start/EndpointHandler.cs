@@ -1,8 +1,5 @@
-﻿using AssignmentFlow.Application.Shared;
-using EventFlow;
-using EventFlow.Queries;
+﻿using EventFlow;
 using Microsoft.AspNetCore.Mvc;
-using RubricEngine.Application.Protos;
 
 namespace AssignmentFlow.Application.Gradings.Start;
 
@@ -10,7 +7,7 @@ public static class EndpointHandler
 {
     public static IEndpointRouteBuilder MapStartGrading(this IEndpointRouteBuilder endpoint)
     {
-        endpoint.MapPost("/", StartGrading)
+        endpoint.MapPost("/{id}/start", StartGrading)
             .WithName("StartGrading")
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
@@ -18,27 +15,14 @@ public static class EndpointHandler
     }
 
     private static async Task<IResult> StartGrading(
-        [FromBody] StartGradingRequest request,
+        [FromRoute] string id,
         ICommandBus commandBus,
-        IQueryProcessor queryProcessor,
         IHttpContextAccessor contextAccessor,
-        RubricProtoService.RubricProtoServiceClient rubricProto,
         CancellationToken cancellationToken)
     {
-        var teacherId = TeacherId.New("teacher");
-        var rubric = await rubricProto.GetRubricAsync(new GetRubricRequest
-        {
-            RubricId = request.RubricId
-        }, cancellationToken: cancellationToken);
-        var gradingId = GradingId.NewComb();
+        var gradingId = GradingId.With(id);
+        await commandBus.PublishAsync(new Command(gradingId), cancellationToken);
 
-        await commandBus.PublishAsync(new Command(gradingId)
-        {
-            TeacherId = teacherId,
-            RubricId = RubricId.New(rubric.Id),
-            CriterionAttachmentsSelectors = request.AttachmentsSelectors.ToCriterionAttachmentsSelectors()
-        }, cancellationToken);
-
-        return TypedResults.Created();
+        return TypedResults.Created("/", gradingId.Value);
     }
 }

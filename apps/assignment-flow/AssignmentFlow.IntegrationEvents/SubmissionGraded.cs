@@ -3,23 +3,12 @@
 /// <summary>
 /// Represents an event that is published when a submission has been graded.
 /// </summary>
-public class SubmissionGradedEvent
+public class SubmissionGraded
 {
-    public required string TeacherId { get; set; }
     /// <summary>
     /// Gets or sets the unique identifier for the submission.
     /// </summary>
-    public required string SubmissionId { get; set; }
-
-    /// <summary>
-    /// Gets or sets the unique identifier for the grading.
-    /// </summary>
-    public required string GradingId { get; set; }
-
-    /// <summary>
-    /// Gets or sets the unique identifier for the rubric used in grading.
-    /// </summary>
-    public required string RubricId { get; set; }
+    public required string AssessmentId { get; set; }
 
     /// <summary>
     /// Gets or sets the collection of score breakdowns for each criterion.
@@ -41,21 +30,18 @@ public class ScoreBreakdownDto
     /// Gets or sets the performance tag associated with this criterion.
     /// </summary>
     public required string PerformanceTag { get; set; }
-
+    
     /// <summary>
-    /// Gets or sets the score awarded for this criterion.
+    /// Gets or sets the raw score (as a percentage) awarded for this criterion. 
+    /// For example, 75.5 represents 75.5% achieved for the criterion.
+    /// This value is used for further aggregation into the final submission score.
     /// </summary>
-    public required int Score { get; set; }
-
-    /// <summary>
-    /// Gets or sets the general comment for this criterion.
-    /// </summary>
-    public required string Comment { get; set; }
+    public required decimal RawScore { get; set; } // e.g. 75.5m for 75.5%
 
     /// <summary>
     /// Gets or sets the collection of detailed feedback items for this criterion.
     /// </summary>
-    public List<FeedbackItemDto> FeedbackItems { get; set; } = new();
+    public List<FeedbackItemDto> FeedbackItems { get; set; } = [];
 }
 
 /// <summary>
@@ -63,6 +49,8 @@ public class ScoreBreakdownDto
 /// </summary>
 public class FeedbackItemDto
 {
+    public required string Criterion { get; set; }
+
     /// <summary>
     /// Gets or sets the file reference identifier.
     /// </summary>
@@ -92,4 +80,6 @@ public class FeedbackItemDto
     /// Gets or sets the feedback comment text.
     /// </summary>
     public required string Comment { get; set; }
+
+    public required string Tag { get; set; }
 }

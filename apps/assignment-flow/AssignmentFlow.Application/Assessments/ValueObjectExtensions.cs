@@ -1,24 +1,22 @@
-﻿using AssignmentFlow.Application.Shared;
-using AssignmentFlow.IntegrationEvents;
+﻿using AssignmentFlow.IntegrationEvents;
 
 namespace AssignmentFlow.Application.Assessments;
 
 public static class ValueObjectExtensions
 {
-    public static ScoreBreakdowns ToScoreBreakdowns(this IEnumerable<ScoreBreakdownApiContract> dtos)
-        => ScoreBreakdowns.New([.. dtos.Select(ToScoreBreakdownItem)]);
+    public static ScoreBreakdowns ToScoreBreakdowns(this IEnumerable<ScoreBreakdownApiContract> apiContracts)
+        => ScoreBreakdowns.New([.. apiContracts.Select(ToScoreBreakdownItem)]);
 
     public static ScoreBreakdowns ToScoreBreakdowns(this IEnumerable<ScoreBreakdownDto> dtos)
         => ScoreBreakdowns.New([.. dtos.Select(ToScoreBreakdownItem)]);
 
-    public static ScoreBreakdownItem ToScoreBreakdownItem(this ScoreBreakdownApiContract dto)
+    public static ScoreBreakdownItem ToScoreBreakdownItem(this ScoreBreakdownApiContract apiContract)
     {
         return new ScoreBreakdownItem(
-            CriterionName.New(dto.CriterionName))
+            CriterionName.New(apiContract.CriterionName))
             {
-                Score = Score.New(dto.Score),
-                PerformanceTag = PerformanceTag.New(dto.PerformanceTag),
-                Feedbacks = [.. dto.FeedbackItems.Select(ToFeedback)]
+                RawScore = Percentage.New(apiContract.RawScore),
+                PerformanceTag = PerformanceTag.New(apiContract.PerformanceTag)
             };
     }
 
@@ -27,19 +25,26 @@ public static class ValueObjectExtensions
         return new ScoreBreakdownItem(
             CriterionName.New(dto.CriterionName))
         {
-            Score = Score.New(dto.Score),
-            PerformanceTag = PerformanceTag.New(dto.PerformanceTag),
-            Feedbacks = [.. dto.FeedbackItems.Select(ToFeedback)]
+            RawScore = Percentage.New(dto.RawScore),
+            PerformanceTag = PerformanceTag.New(dto.PerformanceTag)
         };
     }
 
-    public static Feedback ToFeedback(this FeedbackItemApiContract dto)
-        => Feedback.New(dto.Comment,
-            FeedbackAttachment.CreateHighlight(
-                dto.FileRef, dto.FromLine, dto.ToLine, dto.FromCol, dto.ToCol));
+    public static Feedback ToFeedback(this FeedbackItemApiContract apiContract)
+        => Feedback.New(
+            CriterionName.New(apiContract.Criterion),
+            Comment.New(apiContract.Comment),
+            FeedbackAttachment.New(
+                Attachment.New(apiContract.FileRef),
+                DocumentLocation.New(apiContract.FromLine, apiContract.ToLine, apiContract.FromCol, apiContract.ToCol)),
+            Tag.New(apiContract.Tag));
 
     public static Feedback ToFeedback(this FeedbackItemDto dto)
-    => Feedback.New(dto.Comment,
-        FeedbackAttachment.CreateHighlight(
-            dto.FileRef, dto.FromLine, dto.ToLine, dto.FromCol, dto.ToCol));
+        => Feedback.New(
+            CriterionName.New(dto.Criterion),
+            Comment.New(dto.Comment),
+            FeedbackAttachment.New(
+                Attachment.New(dto.FileRef),
+                DocumentLocation.New(dto.FromLine, dto.ToLine, dto.FromCol, dto.ToCol)),
+            Tag.New(dto.Tag));
 }

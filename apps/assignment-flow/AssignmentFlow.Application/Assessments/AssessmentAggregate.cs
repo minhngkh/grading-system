@@ -24,7 +24,7 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void CreateAssessment(Create.Command command)
     {
-
+        
     }
 
     public void AdjustScore()
