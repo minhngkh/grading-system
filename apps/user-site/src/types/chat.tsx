@@ -1,3 +1,5 @@
+import type { Rubric } from "./rubric";
+
 export interface Message {
   role: "user" | "assistant";
   content: string;

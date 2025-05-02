@@ -3,7 +3,7 @@ import { z } from "zod";
 export const LevelSchema = z.object({
   description: z.string(),
   weight: z.number().min(0, "Weight must be non-negative"),
-  performanceTag: z.string().min(1, "Performance tag is required"),
+  tag: z.string().min(1, "Performance tag is required"),
 });
 
 export const CriteriaSchema = z.object({
@@ -15,7 +15,7 @@ export const CriteriaSchema = z.object({
 export const RubricSchema = z.object({
   id: z.string().optional(),
   rubricName: z.string().min(1, "Rubric name is required"),
-  performanceTags: z
+  tags: z
     .array(z.string().min(1, "Level name is required"))
     .min(1, "At least one performance tag is required"),
   criteria: z.array(CriteriaSchema).min(1, "At least one criterion is required"),

@@ -19,7 +19,7 @@ export default function UploadStep() {
   const rubrics: Rubric[] = [
     {
       rubricName: "Programming Assignment Rubric",
-      performanceTags: [],
+      tags: [],
       criteria: [],
     },
   ];

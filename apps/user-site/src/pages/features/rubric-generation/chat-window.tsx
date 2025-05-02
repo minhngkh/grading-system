@@ -45,27 +45,48 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
     setMessages((prev) => [...prev, newMessage]);
 
     try {
-      const stream = await ChatService.sendMessage(messageContent);
-      const reader = stream.getReader();
-      let fullResponse = "";
+      const response = await ChatService.sendMessage(messageContent);
+      switch (response.type) {
+        case "chat": {
+          const reader = response.data.getReader();
+          let fullResponse = "";
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
 
-        fullResponse += value.content;
-        setMessages((prev) =>
-          prev.map((msg, idx) =>
-            idx === prev.length - 1 ? { ...msg, content: fullResponse } : msg,
-          ),
-        );
+            fullResponse += value.content;
+            setMessages((prev) =>
+              prev.map((msg, idx) =>
+                idx === prev.length - 1 ? { ...msg, content: fullResponse } : msg,
+              ),
+            );
+          }
+
+          setMessages((prev) =>
+            prev.map((msg, idx) =>
+              idx === prev.length - 1 ? { ...msg, isStreaming: false } : msg,
+            ),
+          );
+
+          break;
+        }
+
+        case "rubric": {
+          const MOCK_RESPONSE = "Your rubric has been updated";
+          const rubric = response.data;
+          onUpdate(rubric);
+          setMessages((prev) =>
+            prev.map((msg, idx) =>
+              idx === prev.length - 1
+                ? { ...msg, isStreaming: false, content: MOCK_RESPONSE }
+                : msg,
+            ),
+          );
+
+          break;
+        }
       }
-
-      setMessages((prev) =>
-        prev.map((msg, idx) =>
-          idx === prev.length - 1 ? { ...msg, isStreaming: false } : msg,
-        ),
-      );
     } catch (error) {
       console.error("Error streaming response:", error);
     } finally {
