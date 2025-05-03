@@ -27,11 +27,11 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
             TeacherId = command.TeacherId,
             RubricId = command.RubricId,
             ScaleFactor = command.ScaleFactor,
-            Selectors = command.CriterionAttachmentsSelectors
+            Selectors = command.Selectors
         });
     }
 
-    public List<CriterionAttachmentsSelector> GetCriterionAttachmentsSelectors() => this.State.CriteriaFilesMappings;
+    public List<Selector> GetCriterionAttachmentsSelectors() => this.State.Selectors;
 
     public void AddSubmission(Submission submission)
     {

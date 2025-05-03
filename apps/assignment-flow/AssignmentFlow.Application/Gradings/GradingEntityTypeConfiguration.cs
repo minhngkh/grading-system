@@ -8,11 +8,7 @@ public class GradingEntityTypeConfiguration : IEntityTypeConfiguration<Grading>
     public void Configure(EntityTypeBuilder<Grading> builder)
     {
         builder
-            .OwnsMany(g => g.CriterionAttachmentsSelectors, c =>
-            {
-                c.ToJson();
-                c.OwnsOne(c => c.Selector, cc => cc.ToJson());
-            });
+            .OwnsMany(g => g.Selectors, s => s.ToJson());
 
         builder
             .OwnsMany(g => g.Submissions, s =>

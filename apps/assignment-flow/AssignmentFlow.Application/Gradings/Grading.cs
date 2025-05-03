@@ -33,7 +33,7 @@ public class Grading
     public decimal ScaleFactor { get; set; } = 10M;
 
     [Attr(Capabilities = AllowView)]
-    public List<CriterionAttachmentsSelectorApiContract> CriterionAttachmentsSelectors { get; set; } = [];
+    public List<SelectorApiContract> Selectors { get; set; } = [];
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public List<SubmissionApiContract> Submissions { get; set; } = [];
@@ -46,24 +46,17 @@ public class Grading
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
         RubricId = domainEvent.AggregateEvent.RubricId.Value;
         ScaleFactor = domainEvent.AggregateEvent.ScaleFactor;
-        CriterionAttachmentsSelectors = domainEvent.AggregateEvent.Selectors
-            .ConvertAll(selector => new CriterionAttachmentsSelectorApiContract
+        Selectors = domainEvent.AggregateEvent.Selectors
+            .ConvertAll<SelectorApiContract>(s => new()
             {
-                Criterion = selector.Criterion.Value,
-                Selector = new ContentSelectorApiContract
-                {
-                    Pattern = selector.ContentSelector.Pattern,
-                    Strategy = selector.ContentSelector.Strategy
-                }
+                Criterion = s.Criterion,
+                Pattern = s.Pattern
             });
 
         return Task.CompletedTask;
     }
 
-    public Task ApplyAsync(
-        IReadModelContext context,
-        IDomainEvent<GradingAggregate, GradingId, SubmissionAddedEvent> domainEvent,
-        CancellationToken cancellationToken)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, SubmissionAddedEvent> domainEvent, CancellationToken cancellationToken)
     {
         var submission = domainEvent.AggregateEvent.Submission;
         Submissions.Add(new()
@@ -76,21 +69,14 @@ public class Grading
                     Files = c.Files.ConvertAll(x => x.Value)
                 })]
         });
-        
+
         return Task.CompletedTask;
     }
 }
 
 [NoResource]
-public class CriterionAttachmentsSelectorApiContract
+public class SelectorApiContract
 {
-    public string Criterion { get; init; } = string.Empty;
-    public ContentSelectorApiContract Selector { get; init; } = new();
-}
-
-[NoResource]
-public class ContentSelectorApiContract
-{
-    public string Pattern { get; init; } = string.Empty;
-    public string Strategy { get; init; } = string.Empty;
+    public string Criterion { get; set; } = string.Empty;
+    public string Pattern { get; set; } = string.Empty;
 }

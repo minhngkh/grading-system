@@ -17,14 +17,14 @@ public class CommandHandler : CommandHandler<GradingAggregate, GradingId, Comman
             return Task.CompletedTask;
 
         var criteriaFiles = new HashSet<CriterionFiles>();
-        foreach (var mapping in aggregate.GetCriterionAttachmentsSelectors())
+        foreach (var selector in aggregate.GetCriterionAttachmentsSelectors())
         {
-            //TODO: Create Factory service for creating this mapping, which supports multiple strategies
+            var attachments = new List<Attachment>();
             criteriaFiles.Add(
                 CriterionFiles.New(
-                    CriterionName.New(mapping.Criterion), 
-                [.. command.BlobEntries
-                        .Where(uri => uri.AbsoluteUri.Contains(mapping.ContentSelector.Pattern))
+                    CriterionName.New(selector.Criterion), 
+                    [.. command.BlobEntries
+                        .Where(uri => selector.Pattern.Contains(uri.AbsoluteUri))
                         .Select(x => Attachment.New(x.AbsoluteUri))]));
         }
 

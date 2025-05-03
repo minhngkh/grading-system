@@ -11,7 +11,7 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
     
     public ScaleFactor ScaleFactor { get; private set; } = ScaleFactor.TenPoint;
 
-    public List<CriterionAttachmentsSelector> CriteriaFilesMappings { get; private set; } = [];
+    public List<Selector> Selectors { get; private set; } = [];
 
     public List<Submission> Submissions { get; private set; } = [];
 
@@ -21,7 +21,7 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
     internal void Apply(GradingCreatedEvent @event)
     {
         TeacherId = @event.TeacherId;
-        CriteriaFilesMappings = @event.Selectors;
+        Selectors = @event.Selectors;
     }
 
     internal void Apply(SubmissionAddedEvent @event)
@@ -34,3 +34,4 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
         IsGradingStarted = true;
     }
 }
+
