@@ -3,6 +3,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -35,8 +36,7 @@ type FormState = {
   message?: string;
 };
 
-export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubricProps) {
-  const [open, setOpen] = useState(false);
+export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
   const [errorsState, setErrorState] = useState<FormState>({
     errors: {},
     message: "",
@@ -66,10 +66,10 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
     value: string,
   ) => {
     const newCriteria = [...formData.criteria];
-    const performanceTag = formData.performanceTags[tagIndex];
+    const performanceTag = formData.tags[tagIndex];
 
     const levelIndex = newCriteria[criterionIndex].levels.findIndex(
-      (level) => level.performanceTag === performanceTag,
+      (level) => level.tag === performanceTag,
     );
 
     if (value.length === 0) {
@@ -81,7 +81,7 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
         const newLevel: Level = {
           description: value,
           weight: 0,
-          performanceTag,
+          tag: performanceTag,
         };
 
         newCriteria[criterionIndex].levels.push(newLevel);
@@ -99,10 +99,10 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
     points: number,
   ) => {
     const newCriteria = [...formData.criteria];
-    const performanceTag = formData.performanceTags[tagIndex];
+    const performanceTag = formData.tags[tagIndex];
 
     const levelIndex = newCriteria[criterionIndex].levels.findIndex(
-      (level) => level.performanceTag === performanceTag,
+      (level) => level.tag === performanceTag,
     );
 
     if (levelIndex !== -1) {
@@ -136,17 +136,13 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
       errors: {},
       message: "",
     });
-    onUpdate(formData);
-    setOpen(false);
+    onUpdate?.(formData);
   };
 
   const handleAddLevel = () => {
-    const newHeaders = [
-      ...formData.performanceTags,
-      `Level ${formData.performanceTags.length + 1}`,
-    ];
+    const newHeaders = [...formData.tags, `Level ${formData.tags.length + 1}`];
 
-    form.setValue("performanceTags", newHeaders);
+    form.setValue("tags", newHeaders);
   };
 
   const handleAddCriterion = () => {
@@ -163,16 +159,14 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
   };
 
   const handleDeleteLevel = (indexToDelete: number) => {
-    const newHeaders = formData.performanceTags.filter(
-      (_, index) => index !== indexToDelete,
-    );
+    const newHeaders = formData.tags.filter((_, index) => index !== indexToDelete);
     const newCriteria = formData.criteria.map((criterion) => ({
       ...criterion,
       levels: criterion.levels.filter(
-        (level) => level.performanceTag !== formData.performanceTags[indexToDelete],
+        (level) => level.tag !== formData.tags[indexToDelete],
       ),
     }));
-    form.setValue("performanceTags", newHeaders);
+    form.setValue("tags", newHeaders);
     form.setValue("criteria", newCriteria);
   };
 
@@ -189,7 +183,7 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
   };
 
   return (
-    <Dialog open={open}>
+    <Dialog>
       <DialogTrigger asChild>
         <Button
           onClick={() => {
@@ -198,7 +192,6 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
               errors: {},
               message: "",
             });
-            setOpen(true);
           }}
           variant="ghost"
           size="icon"
@@ -244,12 +237,12 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
                     <th className="text-left p-2 border-r font-medium w-[250px]">
                       Criterion
                     </th>
-                    {formData.performanceTags?.map((header: string, index: number) => (
+                    {formData.tags?.map((header: string, index: number) => (
                       <th
                         key={index}
                         className={cn(
                           "p-2 w-[150px]",
-                          index !== formData.performanceTags.length - 1 ? "border-r" : "",
+                          index !== formData.tags.length - 1 ? "border-r" : "",
                         )}
                       >
                         <div className="flex items-center gap-2">
@@ -257,9 +250,9 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
                             id={`level-header-${index}`}
                             value={header}
                             onChange={(e) => {
-                              const newHeaders = [...formData.performanceTags];
+                              const newHeaders = [...formData.tags];
                               newHeaders[index] = e.target.value;
-                              form.setValue("performanceTags", newHeaders);
+                              form.setValue("tags", newHeaders);
                             }}
                             className="font-medium text-center break-words whitespace-normal h-auto min-h-[2.5rem] py-2"
                           />
@@ -334,9 +327,9 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
                           </div>
                         </div>
                       </td>
-                      {formData.performanceTags.map((tag, tagIndex) => {
+                      {formData.tags.map((tag, tagIndex) => {
                         const criterionLevel = criterion.levels.find(
-                          (level) => level.performanceTag === tag,
+                          (level) => level.tag === tag,
                         );
 
                         return (
@@ -344,9 +337,7 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
                             key={tagIndex}
                             className={cn(
                               "p-2 h-full",
-                              tagIndex !== formData.performanceTags.length - 1
-                                ? "border-r"
-                                : "",
+                              tagIndex !== formData.tags.length - 1 ? "border-r" : "",
                             )}
                           >
                             <div className="space-y-2">
@@ -437,10 +428,12 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
             </TooltipProvider>
           </div>
           <DialogFooter className="sm:justify-end">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button onClick={handleSave}>Save Changes</Button>
+            </DialogClose>
           </DialogFooter>
         </div>
       </DialogContent>

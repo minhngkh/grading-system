@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/_features/rubric-generatio
       const mockRubric = {
         id: "rubric-123",
         rubricName: "Essay Writing Rubric",
-        performanceTags: ["Excellent", "Good", "Satisfactory", "Needs Improvement"],
+        tags: ["Excellent", "Good", "Satisfactory", "Needs Improvement"],
         criteria: [
           {
             name: "Thesis Statement",
@@ -28,22 +28,22 @@ export const Route = createFileRoute("/_authenticated/_features/rubric-generatio
               {
                 description: "Clear and well-defined thesis",
                 weight: 10,
-                performanceTag: "Excellent",
+                tag: "Excellent",
               },
               {
                 description: "Mostly clear thesis",
                 weight: 8,
-                performanceTag: "Good",
+                tag: "Good",
               },
               {
                 description: "Basic or unclear thesis",
                 weight: 5,
-                performanceTag: "Satisfactory",
+                tag: "Satisfactory",
               },
               {
                 description: "No clear thesis",
                 weight: 2,
-                performanceTag: "Needs Improvement",
+                tag: "Needs Improvement",
               },
             ],
           },
@@ -54,22 +54,22 @@ export const Route = createFileRoute("/_authenticated/_features/rubric-generatio
               {
                 description: "Logical and well-structured",
                 weight: 10,
-                performanceTag: "Excellent",
+                tag: "Excellent",
               },
               {
                 description: "Mostly organized",
                 weight: 8,
-                performanceTag: "Good",
+                tag: "Good",
               },
               {
                 description: "Somewhat disorganized",
                 weight: 5,
-                performanceTag: "Satisfactory",
+                tag: "Satisfactory",
               },
               {
                 description: "Lacks clear structure",
                 weight: 2,
-                performanceTag: "Needs Improvement",
+                tag: "Needs Improvement",
               },
             ],
           },
@@ -80,22 +80,22 @@ export const Route = createFileRoute("/_authenticated/_features/rubric-generatio
               {
                 description: "Few or no errors",
                 weight: 10,
-                performanceTag: "Excellent",
+                tag: "Excellent",
               },
               {
                 description: "Some minor errors",
                 weight: 8,
-                performanceTag: "Good",
+                tag: "Good",
               },
               {
                 description: "Noticeable errors",
                 weight: 5,
-                performanceTag: "Satisfactory",
+                tag: "Satisfactory",
               },
               {
                 description: "Frequent and distracting errors",
                 weight: 2,
-                performanceTag: "Needs Improvement",
+                tag: "Needs Improvement",
               },
             ],
           },

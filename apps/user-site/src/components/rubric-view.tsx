@@ -8,7 +8,7 @@ interface RubricViewProps {
 export default function RubricView({ rubricData }: RubricViewProps) {
   return (
     <>
-      {rubricData.performanceTags.length > 0 ? (
+      {rubricData.tags.length > 0 ? (
         <div className="border rounded-md overflow-auto h-full">
           <table className="w-full h-full table-fixed text-sm">
             <thead>
@@ -16,12 +16,12 @@ export default function RubricView({ rubricData }: RubricViewProps) {
                 <th className="text-left p-2 border-r font-medium w-[150px]">
                   Criterion
                 </th>
-                {rubricData.performanceTags.map((header: string, index: number) => (
+                {rubricData.tags.map((header: string, index: number) => (
                   <th
                     key={index}
                     className={cn(
                       "text-center p-2 font-medium w-[150px]",
-                      index !== rubricData.performanceTags.length - 1 ? "border-r" : "",
+                      index !== rubricData.tags.length - 1 ? "border-r" : "",
                     )}
                   >
                     {header}
@@ -38,9 +38,9 @@ export default function RubricView({ rubricData }: RubricViewProps) {
                         {criterion.name} ({criterion.weight} %)
                       </div>
                     </td>
-                    {rubricData.performanceTags.map((tag, index) => {
+                    {rubricData.tags.map((tag, index) => {
                       const criterionLevel = criterion.levels.find(
-                        (level) => level.performanceTag === tag,
+                        (level) => level.tag === tag,
                       );
 
                       return (
@@ -48,9 +48,7 @@ export default function RubricView({ rubricData }: RubricViewProps) {
                           key={index}
                           className={cn(
                             "p-2 text-sm",
-                            index !== rubricData.performanceTags.length - 1
-                              ? "border-r"
-                              : "",
+                            index !== rubricData.tags.length - 1 ? "border-r" : "",
                           )}
                         >
                           {criterionLevel ? (
