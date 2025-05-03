@@ -31,6 +31,7 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         });
     }
 
+    public Pattern GetGlobalPattern() => this.State.GlobalPattern;
     public List<Selector> GetCriterionAttachmentsSelectors() => this.State.Selectors;
 
     public void AddSubmission(Submission submission)
