@@ -98,7 +98,7 @@ namespace RubricEngine.Application.Migrations
                                         .IsRequired()
                                         .HasColumnType("text");
 
-                                    b2.Property<string>("PerformanceTag")
+                                    b2.Property<string>("Tag")
                                         .IsRequired()
                                         .HasColumnType("text");
 

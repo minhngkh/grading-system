@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.Contracts;
+using System.Text.Json.Serialization;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Controllers;
@@ -33,7 +35,7 @@ public class Rubric :
     [MaxLength(ModelConstants.MediumLongText)]
     public string RubricName { get; set; } = string.Empty;
 
-    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter, PublicName = "tags")]
     public List<string> PerformanceTags { get; set; } = [];
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]

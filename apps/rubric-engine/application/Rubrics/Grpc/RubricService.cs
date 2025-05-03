@@ -23,7 +23,7 @@ public class RubricService(RubricDbContext dbContext) : RubricProtoService.Rubri
                     Weight = decimal.ToDouble(c.Weight),
                     Levels = { c.Levels.Select(l => new PerformanceLevelModel
                     {
-                        Tag = l.PerformanceTag,
+                        Tag = l.Tag,
                         Description = l.Description,
                         Weight = decimal.ToDouble(l.Weight)
                     }) }
