@@ -85,7 +85,7 @@ public sealed class Pattern : StringValueObject
     /// <returns>
     /// <c>true</c> if the specified string matches this pattern; otherwise, <c>false</c>.
     /// </returns>
-    public bool Match(string value)
+    public bool Match(string rootDir, string value)
     {
         if (string.IsNullOrWhiteSpace(value))
             return false;
@@ -94,7 +94,7 @@ public sealed class Pattern : StringValueObject
             return true;
             
         // Use the direct matching method
-        return _matcher.Match(value).HasMatches;
+        return _matcher.Match(rootDir, value).HasMatches;
     }
     
     /// <summary>
