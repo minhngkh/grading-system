@@ -235,8 +235,6 @@ namespace AssignmentFlow.Application.Migrations
 
                                     b2.ToTable("Gradings");
 
-                                    b2.ToJson("CriteriaFiles");
-
                                     b2.WithOwner()
                                         .HasForeignKey("SubmissionApiContractGradingId", "SubmissionApiContract__synthesizedOrdinal");
                                 });

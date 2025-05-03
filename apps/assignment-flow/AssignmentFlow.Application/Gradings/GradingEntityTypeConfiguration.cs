@@ -14,9 +14,7 @@ public class GradingEntityTypeConfiguration : IEntityTypeConfiguration<Grading>
             .OwnsMany(g => g.Submissions, s =>
             {
                 s.ToJson();
-                s.OwnsMany(
-                    s => s.CriteriaFiles, 
-                    cf => cf.ToJson());
+                s.OwnsMany(s => s.CriteriaFiles);
             });
     }
 }

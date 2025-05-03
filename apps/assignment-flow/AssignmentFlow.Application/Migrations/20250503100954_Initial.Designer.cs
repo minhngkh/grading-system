@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AssignmentFlow.Application.Migrations
 {
     [DbContext(typeof(AssignmentFlowDbContext))]
-    [Migration("20250503083905_Initial")]
+    [Migration("20250503100954_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -237,8 +237,6 @@ namespace AssignmentFlow.Application.Migrations
                                     b2.HasKey("SubmissionApiContractGradingId", "SubmissionApiContract__synthesizedOrdinal", "__synthesizedOrdinal");
 
                                     b2.ToTable("Gradings");
-
-                                    b2.ToJson("CriteriaFiles");
 
                                     b2.WithOwner()
                                         .HasForeignKey("SubmissionApiContractGradingId", "SubmissionApiContract__synthesizedOrdinal");
