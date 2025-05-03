@@ -10,5 +10,7 @@ public sealed class Attachment : StringValueObject
     [JsonConstructor]
     public Attachment(string value) : base(value) { }
 
+    protected override int? MaxLength => ModelConstants.MediumText;
+
     public static Attachment New(string value) => new(value);
 }
