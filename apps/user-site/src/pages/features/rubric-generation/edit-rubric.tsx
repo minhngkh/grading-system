@@ -10,7 +10,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -18,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -141,10 +141,7 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
   };
 
   const handleAddLevel = () => {
-    const newHeaders = [
-      ...formData.tags,
-      `Level ${formData.tags.length + 1}`,
-    ];
+    const newHeaders = [...formData.tags, `Level ${formData.tags.length + 1}`];
 
     form.setValue("tags", newHeaders);
   };
@@ -163,9 +160,7 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
   };
 
   const handleDeleteLevel = (indexToDelete: number) => {
-    const newHeaders = formData.tags.filter(
-      (_, index) => index !== indexToDelete,
-    );
+    const newHeaders = formData.tags.filter((_, index) => index !== indexToDelete);
     const newCriteria = formData.criteria.map((criterion) => ({
       ...criterion,
       levels: criterion.levels.filter(
@@ -344,9 +339,7 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
                             key={tagIndex}
                             className={cn(
                               "p-2 h-full",
-                              tagIndex !== formData.tags.length - 1
-                                ? "border-r"
-                                : "",
+                              tagIndex !== formData.tags.length - 1 ? "border-r" : "",
                             )}
                           >
                             <div className="space-y-2">
