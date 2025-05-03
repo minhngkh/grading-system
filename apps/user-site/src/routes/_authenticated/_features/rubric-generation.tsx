@@ -16,94 +16,7 @@ export const Route = createFileRoute("/_authenticated/_features/rubric-generatio
 
       return await getRubric(curRubricId);
     } catch (err) {
-      const mockRubric = {
-        id: "rubric-123",
-        rubricName: "Essay Writing Rubric",
-        tags: ["Excellent", "Good", "Satisfactory", "Needs Improvement"],
-        criteria: [
-          {
-            name: "Thesis Statement",
-            weight: 10,
-            levels: [
-              {
-                description: "Clear and well-defined thesis",
-                weight: 10,
-                tag: "Excellent",
-              },
-              {
-                description: "Mostly clear thesis",
-                weight: 8,
-                tag: "Good",
-              },
-              {
-                description: "Basic or unclear thesis",
-                weight: 5,
-                tag: "Satisfactory",
-              },
-              {
-                description: "No clear thesis",
-                weight: 2,
-                tag: "Needs Improvement",
-              },
-            ],
-          },
-          {
-            name: "Organization",
-            weight: 10,
-            levels: [
-              {
-                description: "Logical and well-structured",
-                weight: 10,
-                tag: "Excellent",
-              },
-              {
-                description: "Mostly organized",
-                weight: 8,
-                tag: "Good",
-              },
-              {
-                description: "Somewhat disorganized",
-                weight: 5,
-                tag: "Satisfactory",
-              },
-              {
-                description: "Lacks clear structure",
-                weight: 2,
-                tag: "Needs Improvement",
-              },
-            ],
-          },
-          {
-            name: "Grammar and Mechanics",
-            weight: 10,
-            levels: [
-              {
-                description: "Few or no errors",
-                weight: 10,
-                tag: "Excellent",
-              },
-              {
-                description: "Some minor errors",
-                weight: 8,
-                tag: "Good",
-              },
-              {
-                description: "Noticeable errors",
-                weight: 5,
-                tag: "Satisfactory",
-              },
-              {
-                description: "Frequent and distracting errors",
-                weight: 2,
-                tag: "Needs Improvement",
-              },
-            ],
-          },
-        ],
-        updatedOn: new Date(),
-        status: "completed",
-      };
-      return mockRubric;
+      console.log(err);
     }
   },
   errorComponent: () => ErrorComponent(),
@@ -128,5 +41,8 @@ function ErrorComponent() {
 
 function RoutePage() {
   const rubric = Route.useLoaderData();
-  return <RubricGenerationPage initialRubric={rubric} />;
+
+  if (rubric) return <RubricGenerationPage initialRubric={rubric} />;
+
+  return <div>Service not available!</div>;
 }

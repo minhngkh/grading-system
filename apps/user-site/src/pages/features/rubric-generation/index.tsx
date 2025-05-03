@@ -59,11 +59,11 @@ export default function RubricGenerationPage({
       try {
         await updateRubric(initialRubric?.id!, form.getValues());
         sessionStorage.removeItem(itemIdentifier);
+        navigate({ to: "/manage-rubrics" });
       } catch (err) {
         console.error(err);
-      } finally {
-        navigate({ to: "/manage-rubrics" });
       }
+
       return;
     }
 
