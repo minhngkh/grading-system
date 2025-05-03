@@ -13,7 +13,7 @@ public class CommandHandler : CommandHandler<GradingAggregate, GradingId, Comman
     public override Task ExecuteAsync(GradingAggregate aggregate, Command command,
         CancellationToken cancellationToken)
     {
-        if (!aggregate.IsNew)
+        if (aggregate.IsNew)
             return Task.CompletedTask;
 
         var criteriaFiles = new HashSet<CriterionFiles>();
