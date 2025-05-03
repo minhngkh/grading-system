@@ -44,7 +44,7 @@ public static class EndpointHandler
             blobEntries.Add(blob.Uri);
         } 
 
-        var reference = SubmissionReference.New(file.Name);
+        var reference = SubmissionReference.New(file.FileName);
 
         await commandBus.PublishAsync(
             new Command(gradingId)
