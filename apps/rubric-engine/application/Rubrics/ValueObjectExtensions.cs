@@ -12,5 +12,5 @@ public static class ValueObjectExtensions
             => Criterion.New(CriterionName.New(criterion.Name), Percentage.New(criterion.Weight), criterion.Levels.ToPerformanceLevels());
 
     public static List<PerformanceLevel> ToPerformanceLevels(this List<PerformanceLevelApiContract> levels)
-            => [.. levels.Select(x => PerformanceLevel.New(PerformanceTag.New(x.PerformanceTag), x.Description, Percentage.New(x.Weight)))];
+            => [.. levels.Select(x => PerformanceLevel.New(PerformanceTag.New(x.Tag), x.Description, Percentage.New(x.Weight)))];
 }
