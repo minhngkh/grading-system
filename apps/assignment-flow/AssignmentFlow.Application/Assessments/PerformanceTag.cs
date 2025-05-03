@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace AssignmentFlow.Application.Shared;
+namespace AssignmentFlow.Application.Assessments;
 
 /// <summary>
 /// Represents a performance tag associated with a score breakdown item.

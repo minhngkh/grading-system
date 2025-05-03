@@ -35,7 +35,7 @@ public static class EndpointHandler
         {
             TeacherId = teacherId,
             RubricId = RubricId.New(rubric.Id),
-            CriterionAttachmentsSelectors = request.AttachmentsSelectors.ToCriterionAttachmentsSelectors()
+            Selectors = request.Selectors.ConvertAll(s => s.ToValueObject())
         }, cancellationToken);
 
         return TypedResults.Created("/", gradingId.Value);

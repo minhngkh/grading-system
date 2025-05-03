@@ -36,7 +36,7 @@ namespace AssignmentFlow.Application.Migrations
                     TeacherId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     RubricId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     ScaleFactor = table.Column<decimal>(type: "numeric", nullable: false),
-                    CriterionAttachmentsSelectors = table.Column<string>(type: "jsonb", nullable: true),
+                    Selectors = table.Column<string>(type: "jsonb", nullable: true),
                     Submissions = table.Column<string>(type: "jsonb", nullable: true)
                 },
                 constraints: table =>

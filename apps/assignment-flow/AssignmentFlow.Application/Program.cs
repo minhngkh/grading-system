@@ -1,4 +1,6 @@
+using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Bootstrapping;
+using AssignmentFlow.Application.Gradings;
 using AssignmentFlow.Application.Shared;
 using EventFlow.EntityFramework;
 using EventFlow.EntityFramework.Extensions;
@@ -29,6 +31,8 @@ builder.Services.AddEventFlow(ef => ef
     .UseEventPersistence<PostgreSqlEventPersistence>()
     .AddDefaults(typeof(Program).Assembly)
     .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
+    .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
+    .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
 );
 
 builder.Services.AddCors(options =>

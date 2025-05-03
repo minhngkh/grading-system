@@ -2,18 +2,12 @@
 
 public static class ValueObjectExtensions
 {
-    public static List<CriterionAttachmentsSelector> ToCriterionAttachmentsSelectors(this List<CriterionAttachmentsSelectorApiContract> apiContract)
-        => apiContract.ConvertAll(x => x.ToCriterionAttachmentsSelector());
-
-    public static CriterionAttachmentsSelector ToCriterionAttachmentsSelector(this CriterionAttachmentsSelectorApiContract apiContract)
-        => CriterionAttachmentsSelector.New(
+    public static Selector ToValueObject(this SelectorApiContract apiContract)
+    => Selector.New(
             CriterionName.New(apiContract.Criterion),
-            apiContract.Selector.ToContentSelector());
+            Pattern.New(apiContract.Pattern));
 
-    public static ContentSelector ToContentSelector(this ContentSelectorApiContract apiContract)
-        => ContentSelector.New(apiContract.Pattern, apiContract.Strategy);
-    
-    public static Submission ToSubmission(this SubmissionApiContract apiContract)
+    public static Submission ToValueObject(this SubmissionApiContract apiContract)
     {
         var reference = SubmissionReference.New(apiContract.Reference);
         var criteriaFiles = apiContract.CriteriaFiles
