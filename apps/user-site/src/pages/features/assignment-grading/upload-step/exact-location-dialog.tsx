@@ -8,20 +8,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useState } from "react";
-import { CriteriaMapping } from "@/types/grading";
+import { CriteriaSelector } from "@/types/grading";
 
 interface ExactDialogProps {
   open: boolean;
   onClose: () => void;
-  criterionMapping: CriteriaMapping;
+  criterionMapping: CriteriaSelector;
   onConfirm: (path: string) => void;
 }
 
@@ -33,7 +26,6 @@ export function ExactLocationDialog({
 }: ExactDialogProps) {
   const [pathSegments, setPathSegments] = useState<string[]>([]);
   const [currentInput, setCurrentInput] = useState<string>("");
-  const [locationType, setLocationType] = useState<"file" | "folder">("folder");
 
   const addPathSegment = () => {
     if (currentInput.trim()) {
@@ -42,7 +34,7 @@ export function ExactLocationDialog({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyUp = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       addPathSegment();
     }
@@ -61,27 +53,33 @@ export function ExactLocationDialog({
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent aria-describedby={undefined} className="min-w-[60vw]">
         <DialogHeader>
-          <DialogTitle>
-            Specify Exact Path for {criterionMapping.criteriaName}
-          </DialogTitle>
+          <DialogTitle>Specify Exact Path for {criterionMapping.criterion}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <div className="text-sm font-medium">Location Type</div>
-            <Select
-              value={locationType}
-              onValueChange={(value) => setLocationType(value as "file" | "folder")}
-            >
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="folder">Folder</SelectItem>
-                <SelectItem value="file">File</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="space-y-2">
+          <div className="rounded bg-muted p-3 text-xs text-muted-foreground">
+            <div className="font-semibold mb-1">How to specify a path:</div>
+            <ul className="list-disc list-inside space-y-1">
+              <li>
+                Use <code>*</code> for wildcard matching. Examples:
+                <ul className="list-disc list-inside ml-4">
+                  <li>
+                    <code>*/file.pdf</code> matches <code>file.pdf</code> in any folder.
+                  </li>
+                  <li>
+                    <code>*.txt</code> matches all <code>.txt</code> files.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                Press <b>Enter</b> to input the next file or folder segment.
+              </li>
+              <li>
+                In the last input, enter a file extension (e.g. <code>.pdf</code>,{" "}
+                <code>.txt</code>) to register a file path instead of a folder.
+              </li>
+            </ul>
           </div>
-
+          {/* End Guide Section */}
           <div className="space-y-2">
             <div className="text-sm font-medium">Path Segments</div>
             <div className="flex items-center space-x-2">
@@ -99,7 +97,7 @@ export function ExactLocationDialog({
                       }
                       setPathSegments(newSegments);
                     }}
-                    onKeyDown={handleKeyDown}
+                    onKeyUp={handleKeyUp}
                     className="max-w-24"
                   />
                   <div className="h-full flex items-center">/</div>
@@ -108,7 +106,7 @@ export function ExactLocationDialog({
               <Input
                 value={currentInput}
                 onChange={(e) => setCurrentInput(e.target.value)}
-                onKeyDown={handleKeyDown}
+                onKeyUp={handleKeyUp}
                 className="max-w-24"
               />
             </div>

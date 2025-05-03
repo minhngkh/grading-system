@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
 import { ManualLocationDialog } from "./manual-location-dialog";
-import { CriteriaMapping } from "@/types/grading";
+import { GradingAttempt } from "@/types/grading";
 
 enum SelectLocationType {
   Manual,
@@ -18,26 +18,24 @@ enum SelectLocationType {
 }
 
 interface CriteriaSelectorProps {
-  criteriaMapping: CriteriaMapping[];
-  onCriteriaMappingChange?: React.Dispatch<React.SetStateAction<CriteriaMapping[]>>;
+  gradingAttempt: GradingAttempt;
   uploadedFiles: File[];
+  onGradingAttemptChange?: (attempt: GradingAttempt) => void;
 }
 
-export default function CriteriaSelector({
+export default function CriteriaMapper({
   uploadedFiles,
-  criteriaMapping,
-  onCriteriaMappingChange,
+  gradingAttempt,
+  onGradingAttemptChange,
 }: CriteriaSelectorProps) {
   const [dialogType, setDialogType] = useState<SelectLocationType | null>(null);
   const [criterionPathType, setCriterionPathType] = useState<Record<number, string>>({});
   const [criteriaIndex, setCriteriaIndex] = useState<number>();
 
   const updateCriterionValue = (index: number, value: string) => {
-    onCriteriaMappingChange?.((prev) =>
-      prev.map((criterion, i) =>
-        i === index ? { ...criterion, filePath: value } : criterion,
-      ),
-    );
+    const updatedGradingAttempt = { ...gradingAttempt };
+    updatedGradingAttempt.selectors[index].pattern = value;
+    onGradingAttemptChange?.(updatedGradingAttempt);
   };
 
   const openDialog = (index: number, type: SelectLocationType | undefined) => {
@@ -72,10 +70,10 @@ export default function CriteriaSelector({
             <div></div>
           </div>
 
-          {criteriaMapping.map((criterion, index) => (
+          {gradingAttempt.selectors.map((criterion, index) => (
             <div key={index} className="grid grid-cols-3 gap-4 items-center">
               <div className="border rounded-md px-2 h-full flex items-center">
-                {criterion.criteriaName}
+                {criterion.criterion}
               </div>
 
               <Select
@@ -114,9 +112,7 @@ export default function CriteriaSelector({
                 }}
               >
                 <div className="truncate">
-                  {criterion.filePath.length === 0
-                    ? "Choose File or Folder"
-                    : criterion.filePath}
+                  {criterion.pattern === "*" ? "All files" : criterion.pattern}
                 </div>
               </Button>
             </div>
@@ -127,7 +123,7 @@ export default function CriteriaSelector({
           <ManualLocationDialog
             open={dialogType === SelectLocationType.Manual}
             onClose={closeDialog}
-            criterionName={criteriaMapping[criteriaIndex].criteriaName}
+            criterionName={gradingAttempt.selectors[criteriaIndex].criterion}
             criterionIndex={criteriaIndex}
             uploadedFiles={uploadedFiles}
             onSelect={selectLocation}
@@ -138,7 +134,7 @@ export default function CriteriaSelector({
           <ExactLocationDialog
             open={dialogType === SelectLocationType.Exact}
             onClose={closeDialog}
-            criterionMapping={criteriaMapping[criteriaIndex]}
+            criterionMapping={gradingAttempt.selectors[criteriaIndex]}
             onConfirm={(path) => {
               updateCriterionValue(criteriaIndex, path);
               closeDialog();

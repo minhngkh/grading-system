@@ -7,30 +7,26 @@ export enum GradingStatus {
   Failed,
 }
 
-export const CriteriaMappingSchema = z.object({
-  criteriaName: z.string({ required_error: "Criteria name is required" }),
-  filePath: z
-    .string({ required_error: "File path is required" })
-    .min(1, { message: "File path cannot be empty" }),
+export const SelectorSchema = z.object({
+  criterion: z.string({ required_error: "Criteria name is required" }),
+  pattern: z
+    .string({ required_error: "Pattern is required" })
+    .min(1, { message: "Pattern cannot be empty" }),
 });
 
-export const GradingMappingSchema = z.object({
+export const GradingSchema = z.object({
   rubricId: z.string({ required_error: "Rubric ID is required" }),
-  files: z
-    .array(z.instanceof(File), {
-      invalid_type_error: "Files must be an array of File objects",
+  scaleFactor: z.number().min(1).optional(),
+  selectors: z
+    .array(SelectorSchema, {
+      invalid_type_error: "Selectors must be an array",
     })
-    .min(0),
-  criteriaMappings: z.array(CriteriaMappingSchema, {
-    invalid_type_error: "Criteria mappings must be an array",
-  }),
+    .min(1, { message: "Selectors cannot be empty" }),
 });
 
-export const GradingAttemptSchema = z.object({
-  fileName: z.string({ required_error: "File name is required" }),
-  status: z.nativeEnum(GradingStatus, { invalid_type_error: "Invalid grading status" }),
-});
-
-export type CriteriaMapping = z.infer<typeof CriteriaMappingSchema>;
-export type GradingMapping = z.infer<typeof GradingMappingSchema>;
-export type GradingAttempt = z.infer<typeof GradingAttemptSchema>;
+export type CriteriaSelector = z.infer<typeof SelectorSchema>;
+export type GradingAttempt = z.infer<typeof GradingSchema>;
+export type FileGradingStatus = {
+  fileName: string;
+  status: GradingStatus;
+};

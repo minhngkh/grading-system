@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { GradingStatus, GradingAttempt } from "@/types/grading";
+import { GradingStatus, FileGradingStatus } from "@/types/grading";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Mock data: multiple files, each with grading progress steps
-const initialAttempts: GradingAttempt[] = [
+const initialAttempts: FileGradingStatus[] = [
   {
     fileName: "assignment1.pdf",
     status: GradingStatus.Extracting,
@@ -62,7 +62,7 @@ function Spinner() {
 }
 
 export default function GradingProgressStep() {
-  const [attempts, setAttempts] = useState<GradingAttempt[]>(initialAttempts);
+  const [attempts, setAttempts] = useState<FileGradingStatus[]>(initialAttempts);
 
   useEffect(() => {
     const interval = setInterval(() => {

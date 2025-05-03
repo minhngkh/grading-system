@@ -2,45 +2,59 @@ import type { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/ui/file-uploader";
 import { useState } from "react";
-import CriteriaSelector from "./criteria-mapping";
 import { FileList } from "./file-list";
 import { RubricSelect } from "@/components/scrollable-select";
-import { CriteriaMapping } from "@/types/grading";
+import { GradingAttempt } from "@/types/grading";
+import CriteriaMapper from "./criteria-mapping";
 
-export default function UploadStep() {
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [selectedRubric, setSelectedRubric] = useState<Rubric | undefined>();
-  const [criteriaMapping, setCriteriaMapping] = useState<CriteriaMapping[]>([]);
+interface UploadStepProps {
+  uploadedFiles: File[];
+  onFilesChange: (files: File[]) => void;
+  onGradingAttemptChange: (gradingAttempt?: GradingAttempt) => void;
+}
+
+export default function UploadStep({
+  uploadedFiles,
+  onFilesChange,
+  onGradingAttemptChange,
+}: UploadStepProps) {
+  const [gradingAttempt, setGradingAttempt] = useState<GradingAttempt>();
 
   const handleSelectRubric = (rubric: Rubric | undefined) => {
-    setSelectedRubric(rubric);
     if (rubric) {
-      const newMapping: CriteriaMapping[] = rubric.criteria.map((criterion) => {
-        return { criteriaName: criterion.name, filePath: "" };
-      });
+      const newGradingAttempt: GradingAttempt = {
+        rubricId: rubric.id ?? "",
+        selectors: rubric.criteria.map((criterion) => {
+          return { criterion: criterion.name, pattern: "*" };
+        }),
+      };
 
-      setCriteriaMapping(newMapping);
+      handleGradingAttemptChange(newGradingAttempt);
+    } else {
+      handleGradingAttemptChange(undefined);
     }
   };
 
-  const handleRemoveFile = (fileName: string) => {
-    const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
-    setUploadedFiles(updatedFiles);
-  };
-
-  const handleRemoveAllFiles = () => {
-    setUploadedFiles([]);
+  const handleGradingAttemptChange = (attempt?: GradingAttempt) => {
+    setGradingAttempt(attempt);
+    onGradingAttemptChange(attempt);
   };
 
   const handleFileUpload = (files: File[]) => {
-    const newFiles: File[] = files.filter(
+    const newFiles = files.filter(
       (file) => !uploadedFiles.some((existing) => existing.name === file.name),
     );
 
-    if (newFiles.length > 0) {
-      const updatedFiles = [...uploadedFiles, ...newFiles];
-      setUploadedFiles(updatedFiles);
-    }
+    onFilesChange([...uploadedFiles, ...newFiles]);
+  };
+
+  const handleRemoveFile = (i: number) => {
+    const updatedFiles = uploadedFiles.filter((_, index) => index !== i);
+    onFilesChange(updatedFiles);
+  };
+
+  const handleRemoveAllFiles = () => {
+    onFilesChange([]);
   };
 
   return (
@@ -73,10 +87,10 @@ export default function UploadStep() {
           )}
         </div>
         <FileList files={uploadedFiles} onDelete={handleRemoveFile} />
-        {selectedRubric && uploadedFiles.length > 0 && (
-          <CriteriaSelector
-            criteriaMapping={criteriaMapping}
-            onCriteriaMappingChange={setCriteriaMapping}
+        {gradingAttempt && uploadedFiles.length > 0 && (
+          <CriteriaMapper
+            gradingAttempt={gradingAttempt}
+            onGradingAttemptChange={handleGradingAttemptChange}
             uploadedFiles={uploadedFiles}
           />
         )}

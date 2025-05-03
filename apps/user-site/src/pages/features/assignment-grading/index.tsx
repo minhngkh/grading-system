@@ -2,10 +2,13 @@ import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { defineStepper } from "@stepperize/react";
-import React from "react";
+import React, { useState } from "react";
 import GradingProgressStep from "./grading-step";
 import ResultsStep from "./result-step";
 import UploadStep from "./upload-step";
+import { GradingAttempt, GradingSchema } from "@/types/grading";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 type StepData = {
   title: string;
@@ -29,6 +32,16 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
 export default function UploadAssignmentPage() {
   const stepper = useStepper();
   const currentIndex = utils.getIndex(stepper.current.id);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+  const gradingAttempt = useForm<GradingAttempt>({
+    resolver: zodResolver(GradingSchema),
+  });
+
+  const handleUpdateGradingAttempt = (updated?: GradingAttempt) => {
+    console.log(updated);
+    gradingAttempt.reset(updated);
+  };
 
   const handleNext = () => {
     stepper.next();
@@ -90,7 +103,13 @@ export default function UploadAssignmentPage() {
           // TODO: lint error, solution is to change the id to lowercase, check if there
           // is any error
           stepper.switch({
-            upload: () => <UploadStep />,
+            upload: () => (
+              <UploadStep
+                onGradingAttemptChange={handleUpdateGradingAttempt}
+                uploadedFiles={uploadedFiles}
+                onFilesChange={setUploadedFiles}
+              />
+            ),
             grading: () => <GradingProgressStep />,
             review: () => <ResultsStep />,
           })
