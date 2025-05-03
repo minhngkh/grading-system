@@ -11,7 +11,7 @@ interface RubricTableProps {
 
 export default function RubricTable({
   rubricData,
-  onUpdate = () => {},
+  onUpdate,
   canEdit = true,
 }: RubricTableProps) {
   return (

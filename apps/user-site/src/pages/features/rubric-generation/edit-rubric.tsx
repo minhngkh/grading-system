@@ -3,6 +3,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -35,8 +36,7 @@ type FormState = {
   message?: string;
 };
 
-export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubricProps) {
-  const [open, setOpen] = useState(false);
+export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
   const [errorsState, setErrorState] = useState<FormState>({
     errors: {},
     message: "",
@@ -136,8 +136,7 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
       errors: {},
       message: "",
     });
-    onUpdate(formData);
-    setOpen(false);
+    onUpdate?.(formData);
   };
 
   const handleAddLevel = () => {
@@ -184,7 +183,7 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
   };
 
   return (
-    <Dialog open={open}>
+    <Dialog>
       <DialogTrigger asChild>
         <Button
           onClick={() => {
@@ -193,7 +192,6 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
               errors: {},
               message: "",
             });
-            setOpen(true);
           }}
           variant="ghost"
           size="icon"
@@ -430,10 +428,12 @@ export default function EditRubric({ rubricData, onUpdate = () => {} }: EditRubr
             </TooltipProvider>
           </div>
           <DialogFooter className="sm:justify-end">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button onClick={handleSave}>Save Changes</Button>
+            </DialogClose>
           </DialogFooter>
         </div>
       </DialogContent>
