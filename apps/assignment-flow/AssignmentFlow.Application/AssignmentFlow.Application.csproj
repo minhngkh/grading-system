@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -16,6 +16,7 @@
 	<PackageReference Include="EventFlow.PostgreSql" />
 	<PackageReference Include="FluentValidation" />
 	<PackageReference Include="FluentValidation.AspNetCore" />
+	<PackageReference Include="Grpc.AspNetCore" />
 	<PackageReference Include="JsonApiDotNetCore" />
 	<PackageReference Include="MassTransit" />
 	<PackageReference Include="MassTransit.RabbitMQ" />
@@ -35,11 +36,18 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\tools\service-defaults\AIAG.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\..\tools\shared-dotnet\Shared.ValueObjects\Shared.ValueObjects.csproj" />
+    <ProjectReference Include="..\AssignmentFlow.IntegrationEvents\AssignmentFlow.IntegrationEvents.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Assessments\Create\" />
+    <Folder Include="Gradings\UpdateScaleFactor\" />
     <Folder Include="Migrations\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="..\..\rubric-engine\application\Protos\rubric.proto" GrpcServices="Client">
+      <Link>Protos\rubric.proto</Link>
+    </Protobuf>
   </ItemGroup>
 
 </Project>

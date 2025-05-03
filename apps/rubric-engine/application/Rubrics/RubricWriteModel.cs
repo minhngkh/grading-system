@@ -1,4 +1,7 @@
 using EventFlow.Aggregates;
+using RubricEngine.Application.Rubrics.Complete;
+using RubricEngine.Application.Rubrics.Create;
+using RubricEngine.Application.Rubrics.Update;
 namespace RubricEngine.Application.Rubrics;
 
 public class RubricWriteModel
@@ -8,6 +11,8 @@ public class RubricWriteModel
     public RubricName Name { get; private set; } = RubricName.Empty;
     public List<PerformanceTag> PerformanceTags { get; private set; } = [];
     public List<Criterion> Criteria { get; private set; } = [];
+
+    public string GradingId = string.Empty;
 
     public string Status { get; private set; } = RubricStatus.Draft.ToString();
 
@@ -30,5 +35,11 @@ public class RubricWriteModel
     internal void Apply(PerformanceTagsUpdatedEvent @event)
     {
         PerformanceTags = [.. @event.PerformanceTags];
+    }
+
+    internal void Apply(RubricUsedEvent @event)
+    {
+        GradingId = @event.GradingId;
+        Status = RubricStatus.Used.ToString();
     }
 }

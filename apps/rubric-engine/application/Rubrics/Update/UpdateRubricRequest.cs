@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using RubricEngine.Application.Shared;
 
 namespace RubricEngine.Application.Rubrics.Update;
 

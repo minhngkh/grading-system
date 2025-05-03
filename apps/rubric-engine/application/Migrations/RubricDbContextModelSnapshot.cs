@@ -38,6 +38,10 @@ namespace RubricEngine.Application.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("TeacherId")
                         .IsRequired()
                         .HasMaxLength(50)

@@ -11,6 +11,7 @@ using JsonApiDotNetCore.Configuration;
 using EventFlow.EntityFramework;
 using EventFlow.EntityFramework.Extensions;
 using EventFlow.PostgreSql.EventStores;
+using RubricEngine.Application.Rubrics.Grpc;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddNpgsqlDbContext<RubricDbContext>(connectionName: "rubricdb");
@@ -44,6 +45,8 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.AddServiceDefaults();
+
 var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -67,7 +70,7 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseJsonApi();
-
+app.MapGrpcService<RubricService>();
 app.MapRubricEngineEndpoints();
 
 app.UseHealthChecks("/health");

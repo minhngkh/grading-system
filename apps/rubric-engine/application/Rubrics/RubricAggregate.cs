@@ -1,6 +1,8 @@
 using EventFlow.Aggregates;
 using EventFlow.Core;
 using EventFlow.Extensions;
+using RubricEngine.Application.Rubrics.Complete;
+using RubricEngine.Application.Rubrics.Update;
 
 namespace RubricEngine.Application.Rubrics;
 
@@ -25,7 +27,7 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
 
     public void Create(Rubrics.Create.Command command)
     {
-        Emit(new RubricCreatedEvent
+        Emit(new Create.RubricCreatedEvent
         {
             TeacherId = command.TeacherId,
             Name = command.Name
@@ -54,6 +56,15 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
             {
                 Criteria = command.Criteria!
             });
+    }
+
+    public void CompleteRubric(Rubrics.Complete.Command command)
+    {
+        RubricCanBeMarkedAsUsedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+        Emit(new Complete.RubricUsedEvent
+        {
+            GradingId = command.GradingId
+        });
     }
 
     private void ConditionalEmit(bool condition, Func<AggregateEvent<RubricAggregate, RubricId>> eventPredicate)

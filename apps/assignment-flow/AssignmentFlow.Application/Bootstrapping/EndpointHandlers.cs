@@ -1,4 +1,5 @@
-﻿using AssignmentFlow.Application.Submissions;
+﻿using AssignmentFlow.Application.Assessments;
+using AssignmentFlow.Application.Gradings;
 
 namespace AssignmentFlow.Application.Bootstrapping;
 
@@ -8,7 +9,8 @@ public static class EndpointHandlers
     {
         // Add your endpoint mappings here
         endpoints.MapControllers();
-        endpoints.MapSubmissionsEndpoints();
+        endpoints.MapGradingsEndpoints();
+        endpoints.MapAssessmentsEndpoints();
 
         return endpoints;
     }

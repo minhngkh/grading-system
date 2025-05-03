@@ -15,13 +15,14 @@ var blobs = builder.AddAzureStorage("storage")
                         .AddBlobs("submissions-store");
 
 // After adding all resources, run the app...
-builder.AddProject<Projects.RubricEngine_Application>("rubric-engine")
+var rubricEngine = builder.AddProject<Projects.RubricEngine_Application>("rubric-engine")
         .WithReference(rubricDb).WaitFor(rubricDb)
         .WithReference(rabbitmq).WaitFor(rabbitmq);
 
 builder.AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
         .WithReference(assignmentFlowDb).WaitFor(assignmentFlowDb)
         .WithReference(blobs).WaitFor(blobs)
-        .WithReference(rabbitmq).WaitFor(rabbitmq);
+        .WithReference(rabbitmq).WaitFor(rabbitmq)
+        .WithReference(rubricEngine).WaitFor(rubricEngine);
 
 builder.Build().Run();
