@@ -1,7 +1,6 @@
 using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Bootstrapping;
 using AssignmentFlow.Application.Gradings;
-using AssignmentFlow.Application.Shared;
 using EventFlow.EntityFramework;
 using EventFlow.EntityFramework.Extensions;
 using EventFlow.Extensions;
@@ -17,8 +16,10 @@ builder.AddNpgsqlDbContext<AssignmentFlowDbContext>(connectionName: "assignmentf
 builder.AddRabbitMQClient(connectionName: "messaging");
 builder.AddAzureBlobClient("submissions-store");
 
-builder.Services.AddBootstrapping(builder.Configuration, builder.Environment);
-builder.Services.AddShared(builder.Configuration, builder.Environment);
+builder.Services
+    .AddBootstrapping(builder.Configuration, builder.Environment)
+    .AddShared(builder.Configuration, builder.Environment)
+    .AddGradings();
 
 builder.Services.AddEventFlow(ef => ef
     .Configure(o =>
