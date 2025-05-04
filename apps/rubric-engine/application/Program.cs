@@ -11,6 +11,7 @@ using JsonApiDotNetCore.Configuration;
 using EventFlow.EntityFramework;
 using EventFlow.EntityFramework.Extensions;
 using EventFlow.PostgreSql.EventStores;
+using RubricEngine.Application.Rubrics.Grpc;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddNpgsqlDbContext<RubricDbContext>(connectionName: "rubricdb");
@@ -33,6 +34,8 @@ builder.Services.AddEventFlow(ef => ef
     .AddDbContextProvider<RubricDbContext, RubricDbContextProvider>()
     .UseEntityFrameworkReadModel<Rubric, RubricDbContext>()
 );
+
+builder.AddServiceDefaults();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.
@@ -57,7 +60,7 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseJsonApi();
-
+app.MapGrpcService<RubricService>();
 app.MapRubricEngineEndpoints();
 
 app.UseHealthChecks("/health");
