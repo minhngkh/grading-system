@@ -10,6 +10,7 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/{id}/adjustments", AdjustScore)
             .WithName("AdjustScore")
+            .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;
@@ -24,6 +25,6 @@ public static class EndpointHandler
     {
         var teacherId = TeacherId.New("teacher");
 
-        return TypedResults.Accepted(uri: "");
+        return TypedResults.NoContent();
     }
 }

@@ -11,12 +11,21 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
     
     public ScaleFactor ScaleFactor { get; private set; } = ScaleFactor.TenPoint;
 
+    public Pattern GlobalPattern
+    {
+        get
+        {
+            var patterns = string.Join(",",
+                Selectors.Select(s => s.Pattern.Value));
+            return Pattern.New(patterns);
+        }
+        private set{}
+    }
     public List<Selector> Selectors { get; private set; } = [];
 
     public List<Submission> Submissions { get; private set; } = [];
-
-    public bool IsGradingStarted { get; private set; } = false;
-    public bool HasGradingFinished { get; private set; } = false;
+    
+    public GradingStateMachine StateMachine { get; private set; } = new();
 
     internal void Apply(GradingCreatedEvent @event)
     {
@@ -31,7 +40,7 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
 
     internal void Apply(GradingStartedEvent @event)
     {
-        IsGradingStarted = true;
+        StateMachine.Fire(GradingTrigger.Start);
     }
 }
 

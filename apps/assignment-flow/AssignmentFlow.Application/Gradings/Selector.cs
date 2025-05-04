@@ -17,29 +17,6 @@ public sealed class Selector : ValueObject
     public static Selector New(CriterionName criterion, Pattern pattern) => new(criterion, pattern);
 }
 
-public sealed class Pattern : StringValueObject
-{
-    public static Pattern All => new("*");
-    public static Pattern Empty => new(string.Empty);
-    [JsonConstructor]
-    public Pattern(string value) : base(value) { }
-    protected override int? MaxLength => ModelConstants.MediumLongText;
-    public static Pattern New(string value) => new(value);
-    public bool Contains(string value)
-    {
-        if (string.IsNullOrEmpty(Value) || string.IsNullOrEmpty(value))
-        {
-            return false;
-        }
-        if (Value == "*")
-        {
-            return true;
-        }
-
-        return value.Contains(Value);
-    }
-}
-
 public class SelectorConverter : JsonConverter<Selector>
 {
     public override Selector? ReadJson(JsonReader reader, Type objectType, Selector? existingValue, bool hasExistingValue, JsonSerializer serializer)
