@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using AssignmentFlow.Application.Shared;
 using FluentValidation;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
