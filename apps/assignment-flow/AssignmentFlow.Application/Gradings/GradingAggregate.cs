@@ -1,7 +1,7 @@
 ﻿using AssignmentFlow.Application.Gradings.Start;
+using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
 using EventFlow.Core;
-using EventFlow.Exceptions;
 
 namespace AssignmentFlow.Application.Gradings;
 
@@ -36,18 +36,15 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
 
     public void AddSubmission(Submission submission)
     {
-        if(this.State.IsGradingStarted)
-            throw DomainError.With("Cannot add submission after grading has started");
+        SubmissionCanBeUploadedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
-        Emit(new UploadSubmission.SubmissionAddedEvent(submission));
+        Emit(new SubmissionAddedEvent(submission));
     }
 
     public void StartGrading()
     {
-        if (!this.State.HasGradingFinished)
-            throw DomainError.With("Grading has already started");
+        GradingCanBeStartedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
-        // TODO: Add Specification to check if we can start grading
         Emit(new GradingStartedEvent());
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -36,6 +37,9 @@ namespace AssignmentFlow.Application.Migrations
                     TeacherId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     RubricId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     ScaleFactor = table.Column<decimal>(type: "numeric", nullable: false),
+                    LastModified = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    Version = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Selectors = table.Column<string>(type: "jsonb", nullable: true),
                     Submissions = table.Column<string>(type: "jsonb", nullable: true)
                 },

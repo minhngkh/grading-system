@@ -9,7 +9,7 @@ public class GradingSagaLocator : ISagaLocator
       IDomainEvent domainEvent,
       CancellationToken cancellationToken)
     {
-        var gradingId = domainEvent.Metadata["grading-id"];
+        var gradingId = domainEvent.Metadata["aggregate_id"];
         var gradingSagaId = new GradingSagaId($"gradingsaga-{gradingId}");
 
         return Task.FromResult<ISagaId>(gradingSagaId);
