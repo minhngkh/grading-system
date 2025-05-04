@@ -11,6 +11,7 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/", CreateGrading)
             .WithName("CreateGrading")
+            .Produces(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;

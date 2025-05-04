@@ -9,6 +9,7 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/{id}/start", StartGrading)
             .WithName("StartGrading")
+            .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;
@@ -23,6 +24,6 @@ public static class EndpointHandler
         var gradingId = GradingId.With(id);
         await commandBus.PublishAsync(new Command(gradingId), cancellationToken);
 
-        return TypedResults.Created("/", gradingId.Value);
+        return TypedResults.NoContent();
     }
 }
