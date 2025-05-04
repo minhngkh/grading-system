@@ -1,17 +1,23 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 var postgres = builder.AddPostgres("postgres")
-                    //.WithLifetime(ContainerLifetime.Persistent)
+                    .WithLifetime(ContainerLifetime.Persistent)
                     .WithPgAdmin();
 
 var rubricDb = postgres.AddDatabase("rubricdb");
 var assignmentFlowDb = postgres.AddDatabase("assignmentflowdb");
 
-var rabbitmq = builder.AddRabbitMQ("messaging")
+var username = builder.AddParameter("rb-username", secret: true);
+var password = builder.AddParameter("rb-password", secret: true);
+var rabbitmq = builder.AddRabbitMQ("messaging", username, password, 5672)
                         .WithManagementPlugin();
-
+ 
 var blobs = builder.AddAzureStorage("storage")
-                        .RunAsEmulator()
+                        .RunAsEmulator(
+                            azurite =>{
+                                azurite.WithLifetime(ContainerLifetime.Persistent);
+                                azurite.WithBlobPort(27000);
+                            })
                         .AddBlobs("submissions-store");
 
 // After adding all resources, run the app...

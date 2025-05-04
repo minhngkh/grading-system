@@ -3,6 +3,7 @@ using FluentValidation;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
 using MassTransit;
+using Microsoft.AspNetCore.Http.Features;
 using RubricEngine.Application.Protos;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 namespace AssignmentFlow.Application.Bootstrapping;
@@ -19,7 +20,11 @@ public static class ServiceCollectionExtensions
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
             .AddGrpcClients(configuration)
-            .AddServiceBootstrapping(configuration);
+            .AddServiceBootstrapping(configuration)
+            .Configure<FormOptions>(options =>
+            {
+                options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB;
+            });
 
         return services;
     }
