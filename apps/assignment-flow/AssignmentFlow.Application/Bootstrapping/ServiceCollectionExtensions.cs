@@ -39,7 +39,7 @@ public static class ServiceCollectionExtensions
                 configurator.ConfigureEndpoints(context);
             });
         });
-        services.AddHostedService<Worker>();
+        //services.AddHostedService<Worker>();
 
         return services;
     }

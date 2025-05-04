@@ -21,7 +21,7 @@ public class GradingStartedSubscriber(
         {
             RubricId = gradingSummary.RubricId
         }, cancellationToken: cancellationToken);
-
+        
         //TODO: Introduce Serilog
         logger.LogInformation("Grading started for {GradingId} with rubric {RubricId}", gradingSummary.Id, gradingSummary.RubricId);
         foreach (var submission in gradingSummary.Submissions)
@@ -29,10 +29,29 @@ public class GradingStartedSubscriber(
             logger.LogInformation("Grading submission {SubmissionReference} for {GradingId}", submission.Reference, gradingSummary.Id);
             await publishEndpoint.Publish<ISubmissionGradingStarted>(new 
             {
-                //TODO: Construct the event
+                GradingId = gradingSummary.Id,
+                RubricId = gradingSummary.RubricId,
+                SubmissionReference = submission.Reference,
+                Criteria = MapCriteria(submission, rubric)
             },
             cancellationToken);
         }
         logger.LogInformation("Grading completed for {GradingId} with rubric {RubricId}", gradingSummary.Id, gradingSummary.RubricId);
     }
+    
+    private static Criterion[] MapCriteria(SubmissionApiContract submission, RubricModel rubric)
+        => [.. submission.CriteriaFiles.Join(rubric.Criteria,
+            outerKeySelector: c => c.Criterion,
+            innerKeySelector: c => c.Name,
+            (submissionCriterion, rubricCriterion) => new Criterion
+            {
+                CriterionName = rubricCriterion.Name,
+                FileRefs = [.. submissionCriterion.Files],
+                Levels = [.. rubricCriterion.Levels.Select(l => new Level
+                {
+                    Tag = l.Tag,
+                    Description = l.Description,
+                    Weight = (decimal)l.Weight,
+                })]
+            })];
 }
