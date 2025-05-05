@@ -13,31 +13,31 @@ public sealed class ScoreBreakdowns : ValueObject
     /// <summary>
     /// Represents an empty collection of score breakdowns.
     /// </summary>
-    public static ScoreBreakdowns Empty = new([]);
+    public static ScoreBreakdowns Empty => new([]);
 
     /// <summary>
     /// Gets the array of score breakdown items.
     /// </summary>
-    public ScoreBreakdownItem[] BreakdownItems { get; private set; }
+    public List<ScoreBreakdownItem> Value { get; private set; }
 
     /// <summary>
     /// Gets the total percentage score calculated from the breakdown items.
     /// </summary>
-    public Percentage TotalRawScore => Percentage.New(BreakdownItems.Sum(x => x.RawScore));
+    public Percentage TotalRawScore => Percentage.New(Value.Sum(x => x.RawScore));
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ScoreBreakdowns"/> class with the specified breakdown items.
     /// </summary>
-    /// <param name="scoreBreakdownItems">The array of score breakdown items.</param>
-    private ScoreBreakdowns(ScoreBreakdownItem[] scoreBreakdownItems) =>
-        BreakdownItems = scoreBreakdownItems;
+    /// <param name="scoreValue">The array of score breakdown items.</param>
+    private ScoreBreakdowns(List<ScoreBreakdownItem> scoreValue) =>
+        Value = scoreValue;
 
     /// <summary>
     /// Creates a new instance of <see cref="ScoreBreakdowns"/> with the specified breakdown items.
     /// </summary>
     /// <param name="scoreBreakdownItems">The array of score breakdown items.</param>
     /// <returns>A new <see cref="ScoreBreakdowns"/> instance.</returns>
-    public static ScoreBreakdowns New(ScoreBreakdownItem[] scoreBreakdownItems) =>
+    public static ScoreBreakdowns New(List<ScoreBreakdownItem> scoreBreakdownItems) =>
         new(scoreBreakdownItems);
 
     /// <summary>
@@ -46,7 +46,7 @@ public sealed class ScoreBreakdowns : ValueObject
     /// <returns>An enumerable list of equality components.</returns>
     protected override IEnumerable<object> GetEqualityComponents()
     {
-        foreach (var item in BreakdownItems)
+        foreach (var item in Value)
         {
             yield return item;
         }
@@ -55,13 +55,12 @@ public sealed class ScoreBreakdowns : ValueObject
 
 public sealed class ScoreBreakdownsConverter : JsonConverter<ScoreBreakdowns>
 {
-
     public override ScoreBreakdowns? ReadJson(JsonReader reader, Type objectType, ScoreBreakdowns? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         if (reader.TokenType == JsonToken.Null)
             return null;
         var jObject = JObject.Load(reader);
-        var breakdownItems = jObject.GetRequired<ScoreBreakdownItem[]>("BreakdownItems");
+        var breakdownItems = jObject.GetRequired<List<ScoreBreakdownItem>>("BreakdownItems");
         return ScoreBreakdowns.New(breakdownItems);
     }
     public override bool CanWrite => false;

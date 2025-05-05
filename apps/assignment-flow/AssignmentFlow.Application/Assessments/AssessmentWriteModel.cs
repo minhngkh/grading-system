@@ -1,5 +1,4 @@
-﻿using AssignmentFlow.Application.GradingSaga;
-using EventFlow.Aggregates;
+﻿using EventFlow.Aggregates;
 namespace AssignmentFlow.Application.Assessments;
 
 public class AssessmentWriteModel
@@ -16,4 +15,12 @@ public class AssessmentWriteModel
     public ScoreBreakdowns ScoreBreakdowns { get; private set; } = ScoreBreakdowns.Empty;
     
     public List<Feedback> Feedbacks { get; private set; } = [];
+
+    internal void Apply(Create.AssessmentCreatedEvent command)
+    {
+        TeacherId = command.TeacherId;
+        GradingId = command.GradingId;
+        Reference = command.SubmissionReference;
+        ScoreBreakdowns = command.ScoreBreakdowns;
+    }
 }

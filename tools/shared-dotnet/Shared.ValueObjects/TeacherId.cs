@@ -22,5 +22,5 @@ public sealed class TeacherId : StringValueObject
     /// </summary>
     /// <param name="value">The teacher identifier string</param>
     /// <returns>A new TeacherId instance</returns>
-    public static TeacherId New(string value) => new(value);
+    public static TeacherId With(string value) => new(value);
 }

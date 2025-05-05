@@ -23,7 +23,7 @@ public static class EndpointHandler
         IHttpContextAccessor contextAccessor,
         CancellationToken cancellationToken)
     {
-        var teacherId = TeacherId.New("teacher");
+        var teacherId = TeacherId.With("teacher");
 
         return TypedResults.Accepted(uri: "");
     }

@@ -12,7 +12,7 @@ public sealed class PerformanceTag : StringValueObject
     /// </summary>
     /// <param name="value">The tag value.</param>
     [JsonConstructor]
-    public PerformanceTag(string value) : base(value) { }
+    private PerformanceTag(string value) : base(value) { }
     
     /// <summary>
     /// Gets the maximum allowed length for a performance tag.

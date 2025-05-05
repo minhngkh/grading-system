@@ -8,8 +8,8 @@ namespace AssignmentFlow.Application.Assessments;
 /// <summary>
 /// Represents an attachment associated with feedback that can be used to highlight content in a document.
 /// </summary>
-[JsonConverter(typeof(FeedbackAttachmentConverter))]
-public sealed class FeedbackAttachment : ValueObject
+[JsonConverter(typeof(HighlightConverter))]
+public sealed class Highlight : ValueObject
 {
     public Attachment Attachment { get; private set; }
 
@@ -18,18 +18,18 @@ public sealed class FeedbackAttachment : ValueObject
     /// </summary>
     public DocumentLocation Location { get; private set; }
     
-    public FeedbackAttachment(Attachment attachment, DocumentLocation location)
+    public Highlight(Attachment attachment, DocumentLocation location)
     {
         Attachment = attachment;
         Location = location;
     }
     
     /// <summary>
-    /// Initializes a new instance of the <see cref="FeedbackAttachment"/> class.
+    /// Initializes a new instance of the <see cref="Highlight"/> class.
     /// </summary>
     /// <param name="attachment">The attachment to be associated with the feedback.</param>
     /// <param name="location">The location information for the attachment within a document.</param>
-    public static FeedbackAttachment New(Attachment attachment, DocumentLocation location) =>
+    public static Highlight New(Attachment attachment, DocumentLocation location) =>
         new(attachment, location);
     
     /// <summary>
@@ -43,17 +43,17 @@ public sealed class FeedbackAttachment : ValueObject
     }
 }
 
-public sealed class FeedbackAttachmentConverter : JsonConverter<FeedbackAttachment>
+public sealed class HighlightConverter : JsonConverter<Highlight>
 {
-    public override FeedbackAttachment? ReadJson(JsonReader reader, Type objectType, FeedbackAttachment? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override Highlight? ReadJson(JsonReader reader, Type objectType, Highlight? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         if (reader.TokenType == JsonToken.Null)
             return null;
         var jObject = JObject.Load(reader);
         var attachment = jObject.GetRequired<Attachment>("Attachment");
         var location = jObject.GetRequired<DocumentLocation>("Location");
-        return FeedbackAttachment.New(attachment, location);
+        return Highlight.New(attachment, location);
     }
     public override bool CanWrite => false;
-    public override void WriteJson(JsonWriter writer, FeedbackAttachment? value, JsonSerializer serializer) => throw new NotSupportedException();
+    public override void WriteJson(JsonWriter writer, Highlight? value, JsonSerializer serializer) => throw new NotSupportedException();
 }

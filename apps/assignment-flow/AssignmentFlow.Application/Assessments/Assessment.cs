@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using AssignmentFlow.Application.Assessments.Create;
+using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Controllers;
 using JsonApiDotNetCore.Resources;
@@ -12,7 +14,8 @@ namespace AssignmentFlow.Application.Assessments;
 [Resource(GenerateControllerEndpoints = JsonApiEndpoints.Query)]
 public class Assessment
     : Identifiable<string>,
-    IReadModel
+    IReadModel,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -25,7 +28,11 @@ public class Assessment
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
     public string GradingId { get; set; } = string.Empty;
-    
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    [MaxLength(ModelConstants.ShortText)]
+    public string SubmissionReference { get; set; } = string.Empty;
+
     /// <summary>
     /// The final score after applying the scale factor.
     /// </summary>
@@ -54,45 +61,38 @@ public class Assessment
 
     [Attr(Capabilities = AllowView)]
     public List<FeedbackItemApiContract> Feedbacks { get; set; } = [];
-}
 
-/// <summary>
-/// Represents a specific feedback item that may include file references and text positioning.
-/// </summary>
-[NoResource]
-public class FeedbackItemApiContract
-{
-    public required string Criterion { get; set; }
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
+        GradingId = domainEvent.AggregateEvent.GradingId;
+        ScoreBreakdowns = MapScoreBreakdowns(domainEvent.AggregateEvent.ScoreBreakdowns.Value);
+        Feedbacks = MapFeedbacks(domainEvent.AggregateEvent.Feedbacks);
+        return Task.CompletedTask;
+    }
 
-    /// <summary>
-    /// Gets or sets the file reference identifier.
-    /// </summary>
-    public required string FileRef { get; set; }
+    private static List<ScoreBreakdownApiContract> MapScoreBreakdowns(List<ScoreBreakdownItem> scoreBreakdowns)
+    {
+        return scoreBreakdowns.ConvertAll(sb => new ScoreBreakdownApiContract
+        {
+            CriterionName = sb.CriterionName,
+            PerformanceTag = sb.PerformanceTag,
+            RawScore = sb.RawScore
+        });
+    }
 
-    /// <summary>
-    /// Gets or sets the starting line number for this feedback.
-    /// </summary>
-    public required int FromLine { get; set; }
-
-    /// <summary>
-    /// Gets or sets the ending line number for this feedback.
-    /// </summary>
-    public required int ToLine { get; set; }
-
-    /// <summary>
-    /// Gets or sets the starting column number for this feedback.
-    /// </summary>
-    public required int FromCol { get; set; }
-
-    /// <summary>
-    /// Gets or sets the ending column number for this feedback.
-    /// </summary>
-    public required int ToCol { get; set; }
-
-    /// <summary>
-    /// Gets or sets the feedback comment text.
-    /// </summary>
-    public required string Comment { get; set; }
-
-    public required string Tag { get; set; }
+    private static List<FeedbackItemApiContract> MapFeedbacks(List<Feedback> feedbacks)
+    {
+        return feedbacks.ConvertAll(fb => new FeedbackItemApiContract
+        {
+            Criterion = fb.Criterion,
+            Comment = fb.Comment,
+            FileRef = fb.Highlight.Attachment,
+            FromCol = fb.Highlight.Location.FromColumn,
+            FromLine = fb.Highlight.Location.FromLine,
+            ToCol = fb.Highlight.Location.ToColumn,
+            ToLine = fb.Highlight.Location.ToLine,
+            Tag = fb.Tag,
+        });
+    }
 }
