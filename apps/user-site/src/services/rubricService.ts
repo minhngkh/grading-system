@@ -19,7 +19,7 @@ const rubricDeserializer = new Deserializer({
   },
 });
 
-const API_URL = "https://localhost:7101/api/v1/rubrics";
+const API_URL = import.meta.env.VITE_RUBRIC_ENGINE_URL;
 
 interface GetRubricsResult {
   data: Rubric[];

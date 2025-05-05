@@ -9,6 +9,7 @@ import UploadStep from "./upload-step";
 import { GradingAttempt, GradingSchema } from "@/types/grading";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { createGradingAttempt } from "@/services/gradingServices";
 
 type StepData = {
   title: string;
@@ -33,25 +34,41 @@ export default function UploadAssignmentPage() {
   const stepper = useStepper();
   const currentIndex = utils.getIndex(stepper.current.id);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [attemptId, setAttemptId] = useState<string>();
 
   const gradingAttempt = useForm<GradingAttempt>({
     resolver: zodResolver(GradingSchema),
   });
 
   const handleUpdateGradingAttempt = (updated?: GradingAttempt) => {
-    console.log(updated);
     gradingAttempt.reset(updated);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (stepper.current.id === "upload") {
+      setIsLoading(true);
+      try {
+        const id = await createGradingAttempt(gradingAttempt.getValues());
+        setAttemptId(id);
+      } catch (err) {
+        console.log(err);
+        return;
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
     stepper.next();
   };
 
   const isNextButtonDisabled = () => {
-    // if (stepper.isLast) return true;
-    // if (stepper.current.id === "Upload") {
-    //   return !selectedRubric || files.length === 0;
-    // }
+    if (stepper.isLast) return true;
+
+    if (stepper.current.id === "Upload") {
+      return isLoading || uploadedFiles.length === 0;
+    }
+
     return false;
   };
 
@@ -99,7 +116,9 @@ export default function UploadAssignmentPage() {
         </ol>
       </nav>
       <div className="mt-8 space-y-4 flex-1">
-        {
+        {isLoading ? (
+          <div>Loading...</div>
+        ) : (
           // TODO: lint error, solution is to change the id to lowercase, check if there
           // is any error
           stepper.switch({
@@ -110,10 +129,12 @@ export default function UploadAssignmentPage() {
                 onFilesChange={setUploadedFiles}
               />
             ),
-            grading: () => <GradingProgressStep />,
+            grading: () => (
+              <GradingProgressStep uploadedFiles={uploadedFiles} attemptId={attemptId} />
+            ),
             review: () => <ResultsStep />,
           })
-        }
+        )}
       </div>
       <div className="flex w-full justify-end gap-4">
         <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>

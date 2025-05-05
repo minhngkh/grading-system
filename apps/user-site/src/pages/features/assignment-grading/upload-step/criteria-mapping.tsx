@@ -123,7 +123,7 @@ export default function CriteriaMapper({
           <ManualLocationDialog
             open={dialogType === SelectLocationType.Manual}
             onClose={closeDialog}
-            criterionName={gradingAttempt.selectors[criteriaIndex].criterion}
+            gradingAttempt={gradingAttempt}
             criterionIndex={criteriaIndex}
             uploadedFiles={uploadedFiles}
             onSelect={selectLocation}

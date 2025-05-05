@@ -61,13 +61,6 @@ export default function HomePage() {
     <div className="container p-10 space-y-10">
       <section className="space-y-4">
         <div className="flex flex-col items-center gap-4">
-          <h2 className="text-2xl font-bold tracking-tight">Recently Used</h2>
-        </div>
-        <ToolsList tools={tools.filter((tool) => tool.isFavorite)} />
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex flex-col items-center gap-4">
           <h2 className="text-2xl font-bold tracking-tight">All Tools</h2>
           <ToolsFilter currentFilter={filter} filterFunction={handleFilter} />
         </div>

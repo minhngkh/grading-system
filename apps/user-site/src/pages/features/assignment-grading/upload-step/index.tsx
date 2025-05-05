@@ -6,6 +6,7 @@ import { FileList } from "./file-list";
 import { RubricSelect } from "@/components/scrollable-select";
 import { GradingAttempt } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
+import { Link } from "@tanstack/react-router";
 
 interface UploadStepProps {
   uploadedFiles: File[];
@@ -63,7 +64,11 @@ export default function UploadStep({
         <h2 className="text-lg font-semibold">Select Rubric</h2>
         <div className="flex w-full gap-4">
           <RubricSelect onChange={handleSelectRubric} />
-          <Button variant="outline">Create New Rubric</Button>
+          <Button variant="outline" asChild>
+            <Link preload={false} to="/rubric-generation">
+              Create New Rubric
+            </Link>
+          </Button>
         </div>
       </div>
 

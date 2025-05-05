@@ -112,7 +112,7 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
     form.setValue("criteria", newCriteria);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e: React.MouseEvent<HTMLButtonElement>) => {
     // Validate form data
     const result = RubricSchema.safeParse(form.getValues());
 
@@ -129,6 +129,7 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
         message: "Please fix the errors in the form",
       });
 
+      e.preventDefault();
       return;
     }
 

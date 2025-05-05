@@ -13,7 +13,7 @@ export function FileUploader({
   onFileUpload,
   accept = "*",
   multiple = false,
-  maxSize = 100, // Default 10MB
+  maxSize = 50, // Default 100MB
 }: FileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,35 +21,38 @@ export function FileUploader({
 
   const validateFiles = (files: File[]): boolean => {
     setError(null);
+    let errors: string[] = [];
 
     if (!files.length) return false;
 
     for (const file of files) {
       if (file.size > maxSize * 1024 * 1024) {
-        setError(`File ${file.name} is larger than ${maxSize}MB`);
-        return false;
+        errors.push(`File ${file.name} is larger than ${maxSize}MB`);
       }
 
-      if (accept === "*") return true;
+      if (accept !== "*") {
+        const acceptedTypes = accept
+          .split(",")
+          .map((type) => type.trim().toLowerCase().replace(".", ""));
 
-      const acceptedTypes = accept
-        .split(",")
-        .map((type) => type.trim().toLowerCase().replace(".", ""));
+        // Check both file extension and MIME type
+        const fileExt = file.name.split(".").pop()?.toLowerCase() || "";
+        const fileMimeType = file.type.toLowerCase();
 
-      // Check both file extension and MIME type
-      const fileExt = file.name.split(".").pop()?.toLowerCase() || "";
-      const fileMimeType = file.type.toLowerCase();
+        const isValidType = acceptedTypes.some(
+          (type) => fileExt === type || fileMimeType.includes(type),
+        );
 
-      const isValidType = acceptedTypes.some(
-        (type) => fileExt === type || fileMimeType.includes(type)
-      );
-
-      if (!isValidType) {
-        setError(`File ${file.name} is not an accepted file type`);
-        return false;
+        if (!isValidType) {
+          errors.push(`File ${file.name} is not an accepted file type`);
+        }
       }
     }
 
+    if (errors.length > 0) {
+      setError(errors.join("; "));
+      return false;
+    }
     return true;
   };
 
@@ -66,7 +69,7 @@ export function FileUploader({
         }
       }
     },
-    [onFileUpload, accept, maxSize]
+    [onFileUpload, accept, maxSize],
   );
 
   const handleDrag = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -86,7 +89,7 @@ export function FileUploader({
       setIsDragging(false);
       handleFiles(e.dataTransfer.files);
     },
-    [handleFiles]
+    [handleFiles],
   );
 
   return (
@@ -96,16 +99,15 @@ export function FileUploader({
           "border-2 border-dashed rounded-lg p-6",
           "flex flex-col items-center justify-center gap-4",
           "transition-colors duration-200",
-          isDragging
-            ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25",
-          "cursor-pointer"
+          isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25",
+          "cursor-pointer",
         )}
         onDragEnter={handleDrag}
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}>
+        onClick={() => fileInputRef.current?.click()}
+      >
         <input
           ref={fileInputRef}
           type="file"

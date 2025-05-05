@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export enum GradingStatus {
-  Extracting,
+  Uploading,
   Grading,
   Finished,
   Failed,

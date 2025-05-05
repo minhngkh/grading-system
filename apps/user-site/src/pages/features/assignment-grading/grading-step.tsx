@@ -2,44 +2,17 @@ import { useState, useEffect } from "react";
 import { GradingStatus, FileGradingStatus } from "@/types/grading";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-// Mock data: multiple files, each with grading progress steps
-const initialAttempts: FileGradingStatus[] = [
-  {
-    fileName: "assignment1.pdf",
-    status: GradingStatus.Extracting,
-  },
-  {
-    fileName: "assignment2.docx",
-    status: GradingStatus.Extracting,
-  },
-  {
-    fileName: "assignment3.zip",
-    status: GradingStatus.Extracting,
-  },
-  {
-    fileName: "assignment4.py",
-    status: GradingStatus.Extracting,
-  },
-  {
-    fileName: "assignment5.java",
-    status: GradingStatus.Extracting,
-  },
-  {
-    fileName: "assignment6.txt",
-    status: GradingStatus.Extracting,
-  },
-];
+import { uploadFile } from "@/services/gradingServices";
 
 const statusSteps = [
-  GradingStatus.Extracting,
+  GradingStatus.Uploading,
   GradingStatus.Grading,
   GradingStatus.Finished,
 ];
 
 function getProgress(status: GradingStatus) {
   switch (status) {
-    case GradingStatus.Extracting:
+    case GradingStatus.Uploading:
       return 33;
     case GradingStatus.Grading:
       return 66;
@@ -61,33 +34,44 @@ function Spinner() {
   );
 }
 
-export default function GradingProgressStep() {
-  const [attempts, setAttempts] = useState<FileGradingStatus[]>(initialAttempts);
+interface GradingProgressStepProps {
+  uploadedFiles: File[];
+  attemptId?: string;
+}
+
+export default function GradingProgressStep({
+  uploadedFiles,
+  attemptId,
+}: GradingProgressStepProps) {
+  const [attempts, setAttempts] = useState<FileGradingStatus[]>(
+    uploadedFiles.map((file) => {
+      return {
+        fileName: file.name,
+        status: GradingStatus.Uploading,
+      };
+    }),
+  );
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setAttempts((prevAttempts) =>
-        prevAttempts.map((attempt) => {
-          // Do not update if status is already Finished or Failed
-          if (
-            attempt.status === GradingStatus.Finished ||
-            attempt.status === GradingStatus.Failed
-          ) {
-            return attempt;
-          }
-          const currentIndex = statusSteps.indexOf(attempt.status);
-          if (currentIndex === -1 || currentIndex === statusSteps.length - 1) {
-            return { ...attempt, status: GradingStatus.Finished };
-          }
-          return { ...attempt, status: statusSteps[currentIndex + 1] };
-        }),
-      );
-    }, 2000);
+    if (!attemptId) return;
 
-    return () => clearInterval(interval);
-  }, []);
+    uploadedFiles.forEach(async (file, index) => {
+      let isUploaded = false;
 
-  // New helper function for step styles
+      try {
+        isUploaded = await uploadFile(attemptId, file);
+      } catch (error) {
+        console.log(error);
+      }
+
+      const updatedAttempts = [...attempts];
+      updatedAttempts[index].status = isUploaded
+        ? GradingStatus.Grading
+        : GradingStatus.Failed;
+      setAttempts(updatedAttempts);
+    });
+  }, [attemptId]);
+
   function getStepStyles(attemptStatus: GradingStatus, step: GradingStatus) {
     const attemptIndex = statusSteps.indexOf(attemptStatus);
     const stepIndex = statusSteps.indexOf(step);
@@ -159,7 +143,7 @@ export default function GradingProgressStep() {
                 {attempt.status === GradingStatus.Failed && (
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-                    <span className="text-red-600">{GradingStatus.Failed}</span>
+                    <span className="text-red-600">Failed</span>
                   </li>
                 )}
               </ul>

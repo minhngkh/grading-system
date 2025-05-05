@@ -72,8 +72,14 @@ export default function RubricGenerationPage({
 
   const onUpdateRubric = async (updatedRubric: Rubric) => {
     try {
-      const parsed = RubricSchema.parse(updatedRubric);
-      form.reset(parsed);
+      const result = RubricSchema.safeParse(updatedRubric);
+
+      if (!result.success) {
+        throw result.error;
+      }
+
+      const parsed = result.data;
+      form.reset(result.data);
       await updateRubric(initialRubric?.id!, parsed);
     } catch (err) {
       console.error(err);

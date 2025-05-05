@@ -13,7 +13,7 @@ const ToolsFilter: React.FC<ToolsFilterProps> = ({
         <Badge
           variant={currentFilter !== type ? "outline" : "default"}
           onClick={() => filterFunction(type)}
-          className="py-1 px-2 cursor-pointer hover:bg-accent"
+          className="py-1 px-2 cursor-pointer"
           key={index}
         >
           {type}

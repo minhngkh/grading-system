@@ -49,7 +49,7 @@ type SortConfig = {
 
 export default function ManageRubricsPage() {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: "updatedOn",
+    key: "rubricName",
     direction: "desc",
   });
   const [currentPage, setCurrentPage] = useState(1);
@@ -73,19 +73,31 @@ export default function ManageRubricsPage() {
   }, [currentPage, rowsPerPage, debouncedSearchTerm]);
 
   // Apply client filtering for status only
-  const displayedRubrics =
+  const filteredRubrics =
     statusFilter === "all"
       ? rubrics
       : rubrics.filter((rubric) => rubric.status === statusFilter);
+
+  const sortedRubrics = [...filteredRubrics].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    const aKey = a[sortConfig.key];
+    const bKey = b[sortConfig.key];
+    // Handle undefined or null values
+    if (aKey == null && bKey == null) return 0;
+    if (aKey == null) return sortConfig.direction === "asc" ? 1 : -1;
+    if (bKey == null) return sortConfig.direction === "asc" ? -1 : 1;
+    if (aKey < bKey) {
+      return sortConfig.direction === "asc" ? -1 : 1;
+    }
+    if (aKey > bKey) {
+      return sortConfig.direction === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
+
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData =
-    statusFilter === "all"
-      ? rubrics
-      : displayedRubrics.slice(startIndex, startIndex + rowsPerPage);
-  const totalPages =
-    statusFilter === "all"
-      ? Math.ceil(totalCount / rowsPerPage)
-      : Math.ceil(displayedRubrics.length / rowsPerPage);
+  const paginatedData = sortedRubrics.slice(startIndex, startIndex + rowsPerPage);
+  const totalPages = Math.ceil(sortedRubrics.length / rowsPerPage);
 
   const requestSort = (key: SortConfig["key"]) => {
     let direction: "asc" | "desc" = "asc";
@@ -270,7 +282,7 @@ export default function ManageRubricsPage() {
           <p className="text-sm text-muted-foreground">
             {statusFilter === "all"
               ? `Showing ${rubrics.length} of ${totalCount} rubrics`
-              : `Showing ${paginatedData.length} of ${displayedRubrics.length} rubrics`}
+              : `Showing ${paginatedData.length} of ${sortedRubrics.length} rubrics`}
           </p>
           <Select
             value={rowsPerPage.toString()}

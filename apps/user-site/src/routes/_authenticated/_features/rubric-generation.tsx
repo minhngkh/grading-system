@@ -6,6 +6,7 @@ const itemIdentifier = "rubric-gen";
 
 export const Route = createFileRoute("/_authenticated/_features/rubric-generation")({
   component: RoutePage,
+  preload: false,
   loader: async () => {
     try {
       let curRubricId = sessionStorage.getItem(itemIdentifier);
