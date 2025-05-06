@@ -9,7 +9,7 @@ import { z } from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 import { getClient } from "./providers";
 
-const DEFAULT_MODEL: Model = "gemini-2.0-flash";
+const DEFAULT_MODEL: Model = "gpt-4o-mini";
 
 const weightExactSchema = z
   .number()
@@ -35,11 +35,11 @@ type weightSchemaType =
   | typeof weightRangeSchema;
 
 function generateRubricSchema(schema: weightSchemaType) {
+  // need to remove min(2) at tags if using gpt model 
   return z.object({
     rubricName: z.string(),
     tags: z
       .array(z.string())
-      .min(2)
       .describe("tags for each level in each criterion"),
     criteria: z.array(
       z.object({
@@ -65,21 +65,42 @@ function generateRubricSchema(schema: weightSchemaType) {
   });
 }
 
-export const rubricSchema = generateRubricSchema(weightSchema);
+function generateRubricResponseSchema(schema: weightSchemaType) {
+  const rubricSchema = generateRubricSchema(schema);
+
+  return z.object({
+    message: z.string().describe("A natural language response message"),
+    rubric: rubricSchema.nullable().describe("The rubric object, or null if not applicable"),
+  });
+}
+ 
+
+export const rubricSchema = generateRubricResponseSchema(weightSchema);
 
 function generateCreateRubricPrompt(scoreInRange: boolean) {
-  const outputSchema = generateRubricSchema(
-    scoreInRange ? weightRangeSchema : weightExactSchema,
-  );
 
+  const rubricOnlySchema = generateRubricSchema(scoreInRange ? weightRangeSchema : weightExactSchema,);
+  const outputSchema = generateRubricResponseSchema(scoreInRange ? weightRangeSchema : weightExactSchema,);
   const systemPrompt = `
-You are a helpful AI assistant that can create a grading rubric based on the input
-The output should be in JSON format that matches the provided \`rubric\` schema
+You are a helpful AI assistant that can create or update a grading rubric based on the user's input.
+
+You must always return a JSON object with:
+- \`message\`: a natural-language response string
+- \`rubric\`: the rubric object if applicable, or \`null\` if the input is a general question
+
+---
+
+Determine the intent of the input:
+- If the input is a **general question** (e.g. about grading concepts, tags, or weights), answer helpfully and set \`rubric\` to \`null\`.
+- If the input is a **rubric request** (e.g. to create, revise, or clarify a rubric), return a valid rubric and set it in the \`rubric\` field.
+
+---
 
 ### JSON output schema
 \`\`\`json
-${JSON.stringify(zodToJsonSchema(rubricSchema, "rubric"), null, 2)}
+${JSON.stringify(zodToJsonSchema(outputSchema, "rubric"), null, 2)}
 \`\`\`
+
 
 ### Instructions
 Here are some more specific specifications of the output:
@@ -106,15 +127,17 @@ Here are some more specific specifications of the output:
   };
 }
 
-export type Rubric = z.infer<
+export type ResponseRubric = z.infer<
   ReturnType<typeof generateCreateRubricPrompt>["outputSchema"]
 >;
 
-function validateRubric(rubric: Rubric): Result<void, Error> {
-  for (const criterion of rubric.criteria) {
-    for (const level of criterion.levels) {
-      if (!rubric.tags.includes(level.tag)) {
-        return err(new Error(`\`tag\` must be one of the rubric's \`tags\``));
+function validateRubric(responseRubric: ResponseRubric): Result<void, Error> {
+  if(responseRubric.rubric) {
+    for (const criterion of responseRubric.rubric.criteria) {
+      for (const level of criterion.levels) {
+        if (!responseRubric.rubric!.tags.includes(level.tag)) {
+          return err(new Error(`\`tag\` must be one of the rubric's \`tags\``));
+        }
       }
     }
   }
@@ -131,7 +154,7 @@ function validateRubric(rubric: Rubric): Result<void, Error> {
 export async function createRubric(
   prompt: string,
   scoreInRange: boolean = false,
-): Promise<Result<Rubric, Error>> {
+): Promise<Result<ResponseRubric, Error>> {
   const { outputSchema, systemPrompt } =
     generateCreateRubricPrompt(scoreInRange);
 
@@ -203,79 +226,81 @@ export const gradingResultSchema = z.object({
 type GradingResult = z.infer<typeof gradingResultSchema>;
 
 function validateGradingResult(
-  rubric: Rubric,
+  responseRubric: ResponseRubric,
   gradingResult: GradingResult,
 ): Result<void, Error> {
-  for (const critRes of gradingResult.results) {
-    if (!rubric.tags.includes(critRes.tag)) {
-      return err(
-        new Error(
-          `\`performanceTag\` must be one of the rubric's \`performanceTags\``,
-        ),
-      );
-    }
+  if (responseRubric.rubric){
+    for (const critRes of gradingResult.results) {
+      if (!responseRubric.rubric.tags.includes(critRes.tag)) {
+        return err(
+          new Error(
+            `\`performanceTag\` must be one of the rubric's \`performanceTags\``,
+          ),
+        );
+      }
 
-    const criterion = rubric.criteria.find(
-      (criterion) => criterion.name === critRes.criterion,
-    );
-    if (!criterion) {
-      return err(
-        new Error(`\`criterion\` must be one of the rubric's \`criteria\``),
+      const criterion = responseRubric.rubric.criteria.find(
+        (criterion) => criterion.name === critRes.criterion,
       );
-    }
+      if (!criterion) {
+        return err(
+          new Error(`\`criterion\` must be one of the rubric's \`criteria\``),
+        );
+      }
 
-    // low to high
-    const sortedLevels = [
-      ...criterion.levels.map((level) => {
-        if (typeof level.weight === "number") {
-          // Have to do this since ts can't infer
+      // low to high
+      const sortedLevels = [
+        ...criterion.levels.map((level) => {
+          if (typeof level.weight === "number") {
+            // Have to do this since ts can't infer
+            return {
+              ...level,
+              weight: level.weight,
+            };
+          }
           return {
             ...level,
-            weight: level.weight,
+            weight: level.weight.max,
           };
-        }
-        return {
-          ...level,
-          weight: level.weight.max,
-        };
-      }),
-    ].sort((a, b) => {
-      return a.weight - b.weight;
-    });
+        }),
+      ].sort((a, b) => {
+        return a.weight - b.weight;
+      });
 
-    const levelIdx = sortedLevels.findIndex(
-      (level) => level.tag === critRes.tag,
-    );
-    if (levelIdx === -1) {
-      return err(
-        new Error(
-          `\`tag\` must be one of the criterion's \`levels\`'s \`tag\``,
-        ),
+      const levelIdx = sortedLevels.findIndex(
+        (level) => level.tag === critRes.tag,
       );
-    }
+      if (levelIdx === -1) {
+        return err(
+          new Error(
+            `\`tag\` must be one of the criterion's \`levels\`'s \`tag\``,
+          ),
+        );
+      }
 
-    if (critRes.score > sortedLevels[levelIdx].weight) {
-      return err(
-        new Error(
-          `\`score\`(${critRes.score}) must be less than or equal to the criterion's \`weight\`(${sortedLevels[levelIdx].weight})`,
-        ),
-      );
-    } else if (
-      levelIdx !== 0 &&
-      critRes.score <= sortedLevels[levelIdx - 1].weight
-    ) {
-      return err(
-        new Error(
-          `\`score\`(${critRes.score}) must be greater than the next lower level's \`weight\`(${sortedLevels[levelIdx - 1].weight})`,
-        ),
-      );
+      if (critRes.score > sortedLevels[levelIdx].weight) {
+        return err(
+          new Error(
+            `\`score\`(${critRes.score}) must be less than or equal to the criterion's \`weight\`(${sortedLevels[levelIdx].weight})`,
+          ),
+        );
+      } else if (
+        levelIdx !== 0 &&
+        critRes.score <= sortedLevels[levelIdx - 1].weight
+      ) {
+        return err(
+          new Error(
+            `\`score\`(${critRes.score}) must be greater than the next lower level's \`weight\`(${sortedLevels[levelIdx - 1].weight})`,
+          ),
+        );
+      }
     }
   }
 
   return ok();
 }
 
-function generateGradingPrompt(rubric: Rubric) {
+function generateGradingPrompt(responseRubric: ResponseRubric) {
   const prompt = `
 - You are a helpful AI assistant that grades the input using the provided rubric bellow
 
@@ -288,7 +313,7 @@ ${JSON.stringify(zodToJsonSchema(gradingResultSchema, "gradingResult"), null, 2)
 ### Rubric used for grading
 - The exact rubric that you should use for grading:
 \`\`\`json
-${JSON.stringify(rubric)}
+${JSON.stringify(responseRubric)}
 \`\`\`
 
 
@@ -304,10 +329,10 @@ ${JSON.stringify(rubric)}
 }
 
 export async function gradeUsingRubric(
-  rubric: Rubric,
+  responseRubric: ResponseRubric,
   prompt: string,
 ): Promise<Result<GradingResult, Error>> {
-  const gradingPrompt = generateGradingPrompt(rubric);
+  const gradingPrompt = generateGradingPrompt(responseRubric);
   const client = getClient(DEFAULT_MODEL, gradingPrompt);
 
   const responseResult = await fromPromise(
@@ -321,7 +346,7 @@ export async function gradeUsingRubric(
   const gradingRes = responseResult.value;
   logger.debug("Grading result", gradingRes);
 
-  const validationResult = validateGradingResult(rubric, gradingRes);
+  const validationResult = validateGradingResult(responseRubric, gradingRes);
   if (validationResult.isErr()) {
     return err(
       wrapError(

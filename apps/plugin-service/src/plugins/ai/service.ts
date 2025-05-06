@@ -30,6 +30,9 @@ export const aiService = defineTypedService2("ai", {
       handler(ctx: Context<typeof gradeParams.context>) {
         const { rubric, prompt } = ctx.params;
 
+        if (!rubric.rubric) {
+          throw new Error("Rubric is null or undefined");
+        }
         return gradeUsingRubric(rubric, prompt);
       },
     },
