@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { GradingStatus, FileGradingStatus } from "@/types/grading";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { uploadFile } from "@/services/gradingServices";
+import { startGrading, uploadFile } from "@/services/gradingServices";
 
 const statusSteps = [
   GradingStatus.Uploading,
@@ -55,21 +55,36 @@ export default function GradingProgressStep({
   useEffect(() => {
     if (!attemptId) return;
 
-    uploadedFiles.forEach(async (file, index) => {
-      let isUploaded = false;
+    const uploadAllFiles = async () => {
+      const results = await Promise.all(
+        uploadedFiles.map(async (file, index) => {
+          let isUploaded = false;
 
-      try {
-        isUploaded = await uploadFile(attemptId, file);
-      } catch (error) {
-        console.log(error);
-      }
+          try {
+            isUploaded = await uploadFile(attemptId, file);
+          } catch (error) {
+            console.log(error);
+          }
+
+          return {
+            index,
+            status: isUploaded ? GradingStatus.Grading : GradingStatus.Failed,
+          };
+        }),
+      );
 
       const updatedAttempts = [...attempts];
-      updatedAttempts[index].status = isUploaded
-        ? GradingStatus.Grading
-        : GradingStatus.Failed;
+      results.forEach(({ index, status }) => {
+        updatedAttempts[index].status = status;
+      });
       setAttempts(updatedAttempts);
-    });
+
+      // Now call your next function
+      // Replace with your actual function
+      // await startGrading(attemptId);
+    };
+
+    uploadAllFiles();
   }, [attemptId]);
 
   function getStepStyles(attemptStatus: GradingStatus, step: GradingStatus) {

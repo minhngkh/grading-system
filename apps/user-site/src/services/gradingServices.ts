@@ -31,3 +31,8 @@ export async function uploadFile(gradingAttemptId: string, file: File): Promise<
 
   return true;
 }
+
+export async function startGrading(gradingAttemptId: string): Promise<boolean> {
+  await axios.post(`${API_URL}/${gradingAttemptId}/start`, null, fileConfigHeaders);
+  return true;
+}
