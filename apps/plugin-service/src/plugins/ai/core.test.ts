@@ -3,7 +3,7 @@ import "dotenv/config";
 import type { AIService } from "./service";
 import { actionCaller } from "@/utils/actions";
 import { createZodValidatedServiceBroker } from "@/utils/typed-moleculer";
-import { describe, it } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createRubric, gradeUsingRubric } from "./core";
 import { aiService } from "./service";
 
@@ -14,7 +14,9 @@ describe.concurrent("test ai plugin", () => {
     - Code Style: How readable and well-formatted the code is
     - Error Handling: How well the code handles potential errors
     `;
-
+  const sampleGeneralQuestion = `
+    What is the difference between formative and summative assessment?
+  `
   const sampleCode = `
     function calculateSum(numbers) {
       let sum = 0;
@@ -159,7 +161,7 @@ describe.concurrent("test ai plugin", () => {
   };
 
   it("grade using sample rubric directly", async () => {
-    const result = await gradeUsingRubric(sampleRubric, sampleCode);
+    const result = await gradeUsingRubric({ message: "Sample rubric", rubric: sampleRubric }, sampleCode);
     if (result.isErr()) {
       throw result.error;
     }
@@ -177,6 +179,18 @@ describe.concurrent("test ai plugin", () => {
     if (result.isErr()) {
       throw result.error;
     }
+  });
+
+  it("Generate rubric in general question and rubric request", async () => {
+    const rubricResult = await createRubric(sampleGeneralQuestion, true);
+    if (rubricResult.isErr()) {
+      throw rubricResult.error;
+    }
+
+    const { message, rubric } = rubricResult.value;
+
+    expect(typeof message).toBe("string");
+    expect(rubric).toBeNull();
   });
 
   it("generate rubric then grade it via broker", async () => {
@@ -197,7 +211,7 @@ describe.concurrent("test ai plugin", () => {
     }
 
     const rubric = rubricResult.value;
-
+ 
     const result = await actionCaller<AIService>()(
       broker,
       "ai.grade",
