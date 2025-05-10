@@ -124,11 +124,15 @@ Here are some more specific specifications of the output:
   return {
     systemPrompt,
     outputSchema,
+    rubricOnlySchema,
   };
 }
 
 export type ResponseRubric = z.infer<
   ReturnType<typeof generateCreateRubricPrompt>["outputSchema"]
+>;
+export type Rubric = z.infer<
+  ReturnType<typeof generateCreateRubricPrompt>["rubricOnlySchema"]
 >;
 
 function validateRubric(responseRubric: ResponseRubric): Result<void, Error> {
@@ -154,32 +158,100 @@ function validateRubric(responseRubric: ResponseRubric): Result<void, Error> {
 export async function createRubric(
   prompt: string,
   scoreInRange: boolean = false,
+  rubric ?: Rubric,
 ): Promise<Result<ResponseRubric, Error>> {
   const { outputSchema, systemPrompt } =
     generateCreateRubricPrompt(scoreInRange);
 
   const client = getClient(DEFAULT_MODEL, systemPrompt);
+  if (rubric){
+    // Update: use the existing rubric and the prompt to generate an updated rubric
+    logger.info("Updating existing rubric using LLM");
+    const updatedPrompt = `
+    You are a helpful AI assistant that updates an existing grading rubric based on the user's input.
+You must always return a JSON object with:
+- \`message\`: a natural-language response string
+- \`rubric\`: the rubric object if applicable, or \`null\` if the input is a general question
 
-  const responseResult = await fromPromise(
-    client.generate(prompt, outputSchema, "rubric"),
-    asError,
-  );
-  if (responseResult.isErr()) {
-    return err(wrapError(responseResult.error, "Failed to generate rubric"));
+---
+
+Determine the intent of the input:
+- If the input is a **general question** (e.g. about grading concepts, tags, or weights), answer helpfully and set \`rubric\` to \`null\`.
+- If the input is a **rubric request** (e.g. to create, revise, or clarify a rubric), return a valid rubric and set it in the \`rubric\` field.
+
+### Existing Rubric
+\`\`\`json
+${JSON.stringify(rubric, null, 2)}
+\`\`\`
+
+### User's Input
+${prompt}
+
+---
+
+### JSON output schema
+\`\`\`json
+${JSON.stringify(zodToJsonSchema(outputSchema, "rubric"), null, 2)}
+\`\`\`
+
+### Instructions
+Here are some more specific specifications of the output:
+  - The \`tag\` of each criterion's level must be one of the rubric's \`tags\`
+  - criteria's levels do not have to include all the performance tags
+  - Total weight of all criteria must add up to 100% and no criteria's weight is 0
+  - tags for each level in each criterion are used as an id to differentiate each levels and must be numbers like ['0', '1', '2', '3']. Level with the lower tag value is the higher weight level
+  ${
+    scoreInRange ?
+      `
+  - The \`weight\` of each criterion's level must have the max value equal to the higher level's weight (if exists) and the min value equal to the lower level's weight (if exists)
+  - The max weight of the highest level must be 100
+  - The min weight of the lowest level must be 0
+  `
+    : `
+  - The \`weight\` of the highest \`weight\` must be 100
+  `
   }
-
-  const rubric = responseResult.value;
-  // console.log("Generated rubric:", JSON.stringify(rubric, null, 2));
-  logger.debug("Generated rubric", rubric);
-
-  const validationResult = validateRubric(rubric);
-  if (validationResult.isErr()) {
-    return err(
-      wrapError(validationResult.error, "Invalid rubric getting from LLM"),
+`;
+    const responseResult = await fromPromise(
+      client.generate(updatedPrompt, outputSchema, "rubric"),
+      asError,
     );
-  }
+    if (responseResult.isErr()) {
+      return err(wrapError(responseResult.error, "Failed to update rubric"));
+    }
 
-  return ok(rubric);
+    const updatedRubric = responseResult.value;
+    logger.debug("Updated rubric", updatedRubric);
+
+    const validationResult = validateRubric(updatedRubric);
+    if (validationResult.isErr()) {
+      return err(
+        wrapError(validationResult.error, "Invalid updated rubric from LLM"),
+      );
+    }
+
+    return ok(updatedRubric);
+  } else{
+    const responseResult = await fromPromise(
+      client.generate(prompt, outputSchema, "rubric"),
+      asError,
+    );
+    if (responseResult.isErr()) {
+      return err(wrapError(responseResult.error, "Failed to generate rubric"));
+    }
+
+    const _rubric = responseResult.value;
+    // console.log("Generated rubric:", JSON.stringify(rubric, null, 2));
+    logger.debug("Generated rubric", rubric);
+
+    const validationResult = validateRubric(_rubric);
+    if (validationResult.isErr()) {
+      return err(
+        wrapError(validationResult.error, "Invalid rubric getting from LLM"),
+      );
+    }
+    return ok(_rubric);
+  }
 }
 
 export const feedbackSchema = z.object({
