@@ -6,8 +6,6 @@ namespace AssignmentFlow.Application.Gradings.UploadSubmission;
 
 public static class EndpointHandler
 {
-    private static readonly string[] SupportedZipMimeTypes = ["application/zip", "application/x-zip-compressed"];
-
     public static IEndpointRouteBuilder MapUploadSubmission(this IEndpointRouteBuilder endpoint)
     {
         endpoint.MapPost("/{id:required}/submissions", UploadSubmission)
@@ -26,12 +24,6 @@ public static class EndpointHandler
         IHttpContextAccessor contextAccessor,
         CancellationToken cancellationToken)
     {
-        // Validate ContentType
-        if (!SupportedZipMimeTypes.Contains(file.ContentType))
-        {
-            return TypedResults.BadRequest("Only ZIP files are allowed.");
-        }
-
         var gradingId = GradingId.With(id);
         await commandBus.PublishAsync(
             new Command(gradingId)

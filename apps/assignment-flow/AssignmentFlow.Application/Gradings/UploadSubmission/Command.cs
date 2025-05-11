@@ -1,4 +1,5 @@
 ﻿using System.IO.Compression;
+using System.Runtime.CompilerServices;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using EventFlow.Commands;
@@ -12,51 +13,79 @@ public class Command(GradingId aggregateId) : Command<GradingAggregate, GradingI
 
 public class CommandHandler(BlobServiceClient client) : CommandHandler<GradingAggregate, GradingId, Command>
 {
+    private static readonly string[] SupportedZipMimeTypes = ["application/zip", "application/x-zip-compressed"];
+
     public override async Task ExecuteAsync(GradingAggregate aggregate, Command command,
         CancellationToken cancellationToken)
     {
         if (aggregate.IsNew)
             return;
-        
+
         var container = client.GetBlobContainerClient("submissions-store");
 
-        await using var stream = command.File.OpenReadStream();
-        using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
-        var rootDir = archive.Entries[0].FullName;
+        var blobEntries = await ProcessAttachments(aggregate, command, container, cancellationToken)
+            .ToListAsync(cancellationToken: cancellationToken);
 
-        var blobEntries = new List<string>();
-        var globalPattern = aggregate.GetGlobalPattern();
-        var relevantEntries = archive.Entries
-            .Where(e => globalPattern.Match(rootDir, e.FullName));
-        foreach (var entry in relevantEntries)
-        {
-            var blobName = $"{aggregate.Id}/{entry.FullName}";
-            var blob = container.GetBlobClient(blobName);
-            
-            await blob.UploadAsync(entry.Open(), new BlobUploadOptions(), cancellationToken);
+        var studentId = ExtractStudentId(command.File.FileName);
 
-            blobEntries.Add(entry.FullName);
-        }
-        
         var submission = Submission.New(
-            SubmissionReference.New(command.File.FileName),
-            CriterionFilesSet(aggregate, rootDir, blobEntries));
+            SubmissionReference.New($"{aggregate.Id}_{studentId}"),
+            blobEntries);
         aggregate.AddSubmission(submission);
     }
 
-    private static HashSet<CriterionFiles> CriterionFilesSet(GradingAggregate aggregate, string rootDir, List<string> blobEntries)
+    /// <summary>
+    /// Extracts the student ID from a filename.
+    /// </summary>
+    /// <param name="fileName">The filename in format "student_id.*" where everything before the first period is the student ID.</param>
+    /// <returns>The extracted student ID, or the entire filename if no extension is present.</returns>
+    private static string ExtractStudentId(string fileName)
     {
-        var criteriaFiles = new HashSet<CriterionFiles>();
-        foreach (var selector in aggregate.GetCriterionAttachmentsSelectors())
+        // If filename contains a period, extract everything before it
+        // This handles cases like "student_id.zip" or "student_id.pdf"
+        var dotIndex = fileName.IndexOf('.');
+        if (dotIndex > 0)
         {
-            criteriaFiles.Add(
-                CriterionFiles.New(
-                    CriterionName.New(selector.Criterion), 
-                    [.. blobEntries
-                        .Where(blob => selector.Pattern.Match(rootDir, blob))
-                        .Select(Attachment.New)]));
+            return fileName[..dotIndex];
         }
 
-        return criteriaFiles;
+        // If no extension, use the whole filename
+        return fileName;
+    }
+
+    private static async IAsyncEnumerable<Attachment> ProcessAttachments(
+        GradingAggregate aggregate,
+        Command command,
+        BlobContainerClient container,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        if (!SupportedZipMimeTypes.Contains(command.File.ContentType))
+        {
+            // Handle single file upload
+            await using var stream = command.File.OpenReadStream();
+            var blobName = $"{aggregate.Id}/{command.File.FileName}";
+            var blob = container.GetBlobClient(blobName);
+            await blob.UploadAsync(stream, new BlobUploadOptions(), cancellationToken);
+
+            yield return Attachment.New(blob.Uri.AbsoluteUri);
+        }
+        else
+        {
+            // Handle zip file upload
+            await using var stream = command.File.OpenReadStream();
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+            var rootDir = archive.Entries.Count > 0 ? archive.Entries[0].FullName : string.Empty;
+
+            foreach (var entry in archive.Entries)
+            {
+                var blobName = $"{aggregate.Id}/{entry.FullName}";
+                var blob = container.GetBlobClient(blobName);
+
+                await using var entryStream = entry.Open();
+                await blob.UploadAsync(entryStream, new BlobUploadOptions(), cancellationToken);
+
+                yield return Attachment.New(blob.Uri.AbsoluteUri);
+            }
+        }
     }
 }

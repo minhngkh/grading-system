@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AssignmentFlow.Application.Migrations
 {
     [DbContext(typeof(AssignmentFlowDbContext))]
-    [Migration("20250504072804_Initial")]
+    [Migration("20250511091147_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -45,6 +45,11 @@ namespace AssignmentFlow.Application.Migrations
 
                     b.Property<decimal>("ScaleFactor")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("SubmissionReference")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("TeacherId")
                         .IsRequired()
@@ -206,7 +211,7 @@ namespace AssignmentFlow.Application.Migrations
                                 .HasForeignKey("GradingId");
                         });
 
-                    b.OwnsMany("AssignmentFlow.Application.Gradings.SubmissionApiContract", "Submissions", b1 =>
+                    b.OwnsMany("AssignmentFlow.Application.Gradings.SubmissionPersistence", "SubmissionPersistences", b1 =>
                         {
                             b1.Property<string>("GradingId")
                                 .HasColumnType("character varying(50)");
@@ -214,6 +219,10 @@ namespace AssignmentFlow.Application.Migrations
                             b1.Property<int>("__synthesizedOrdinal")
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("integer");
+
+                            b1.PrimitiveCollection<List<string>>("Attachments")
+                                .IsRequired()
+                                .HasColumnType("text[]");
 
                             b1.Property<string>("Reference")
                                 .IsRequired()
@@ -223,45 +232,15 @@ namespace AssignmentFlow.Application.Migrations
 
                             b1.ToTable("Gradings");
 
-                            b1.ToJson("Submissions");
+                            b1.ToJson("SubmissionPersistences");
 
                             b1.WithOwner()
                                 .HasForeignKey("GradingId");
-
-                            b1.OwnsMany("AssignmentFlow.Application.Gradings.CriterionFilesApiContract", "CriteriaFiles", b2 =>
-                                {
-                                    b2.Property<string>("SubmissionApiContractGradingId")
-                                        .HasColumnType("character varying(50)");
-
-                                    b2.Property<int>("SubmissionApiContract__synthesizedOrdinal")
-                                        .HasColumnType("integer");
-
-                                    b2.Property<int>("__synthesizedOrdinal")
-                                        .ValueGeneratedOnAdd()
-                                        .HasColumnType("integer");
-
-                                    b2.Property<string>("Criterion")
-                                        .IsRequired()
-                                        .HasColumnType("text");
-
-                                    b2.PrimitiveCollection<List<string>>("Files")
-                                        .IsRequired()
-                                        .HasColumnType("text[]");
-
-                                    b2.HasKey("SubmissionApiContractGradingId", "SubmissionApiContract__synthesizedOrdinal", "__synthesizedOrdinal");
-
-                                    b2.ToTable("Gradings");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("SubmissionApiContractGradingId", "SubmissionApiContract__synthesizedOrdinal");
-                                });
-
-                            b1.Navigation("CriteriaFiles");
                         });
 
                     b.Navigation("Selectors");
 
-                    b.Navigation("Submissions");
+                    b.Navigation("SubmissionPersistences");
                 });
 #pragma warning restore 612, 618
         }

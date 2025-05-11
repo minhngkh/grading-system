@@ -2,6 +2,14 @@
 
 namespace AssignmentFlow.Application.Gradings;
 
+[NoResource]
+public class SubmissionPersistence
+{
+    public string Reference { get; init; } = string.Empty;
+
+    public List<string> Attachments { get; init; } = [];
+}
+
 /// <summary>
 /// API contract representing a submission with its reference and criteria files.
 /// Used for data transfer between API and client.

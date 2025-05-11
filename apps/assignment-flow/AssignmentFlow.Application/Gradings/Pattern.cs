@@ -30,7 +30,7 @@ public sealed class Pattern : StringValueObject
     /// </summary>
     /// <param name="value">The pattern string using glob syntax.</param>
     [JsonConstructor]
-    private Pattern(string value) : base(value)
+    public Pattern(string value) : base(value)
     {
         _isWildcard = value is "*" or "**/*";
         _matcher = new Matcher();
