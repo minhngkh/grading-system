@@ -12,10 +12,16 @@ const configHeaders: AxiosRequestConfig = {
 const rubricDeserializer = new Deserializer({
   keyForAttribute: "camelCase",
   transform: (record: Rubric) => {
-    if (record.updatedOn) {
-      record.updatedOn = new Date(record.updatedOn);
-    }
-    return record;
+    const rubric: Rubric = {
+      id: record.id,
+      rubricName: record.rubricName,
+      tags: record.tags,
+      criteria: record.criteria,
+      updatedOn: record.updatedOn ? new Date(record.updatedOn) : undefined,
+      status: record.status,
+    };
+
+    return rubric;
   },
 });
 
