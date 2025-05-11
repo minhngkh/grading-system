@@ -1,6 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.Start;
+using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
+using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
@@ -16,6 +19,8 @@ public class Grading
     : Identifiable<string>,
     IReadModel,
     IAmReadModelFor<GradingAggregate, GradingId, GradingCreatedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, SelectorsUpdatedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, ScaleFactorUpdatedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionAddedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, GradingStartedEvent>
 {
@@ -32,14 +37,30 @@ public class Grading
     public string RubricId { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    public decimal ScaleFactor { get; set; } = 10M;
+    public decimal ScaleFactor { get; set; }
 
     [Attr(Capabilities = AllowView)]
     public List<SelectorApiContract> Selectors { get; set; } = [];
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    public List<SubmissionApiContract> Submissions { get; set; } = [];
+    [NotMapped]
+    public List<SubmissionApiContract> Submissions 
+        => SubmissionPersistences.ConvertAll(s => new SubmissionApiContract
+        {
+            Reference = s.Reference,
+            CriteriaFiles = Selectors.ConvertAll(selector => new CriterionFilesApiContract
+            {
+                Criterion = selector.Criterion,
+                Files = [.. s.Attachments.Where(attachment => {
+                    //"http://127.0.0.1:27000/devstoreaccount1/submissions-store/grading-3a2508d0-906d-08dd-2ca9-aa917e2110cc/psd.pdf"
+                    var path = attachment[attachment.IndexOf(Id)..];
+                    return Pattern.New(selector.Pattern).Match(Id, path);
+                })]
+            })
+        });
     
+    public List<SubmissionPersistence> SubmissionPersistences { get; set; } = [];
+
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public DateTimeOffset LastModified { get; set; }
 
@@ -81,18 +102,35 @@ public class Grading
         return Task.CompletedTask;
     }
 
+    public Task ApplyAsync(
+        IReadModelContext context,
+        IDomainEvent<GradingAggregate, GradingId, SelectorsUpdatedEvent> domainEvent,
+        CancellationToken cancellationToken)
+    {
+        Selectors = domainEvent.AggregateEvent.Selectors
+            .ConvertAll(s => new SelectorApiContract
+            {
+                Criterion = s.Criterion,
+                Pattern = s.Pattern
+            });
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, ScaleFactorUpdatedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        ScaleFactor = domainEvent.AggregateEvent.ScaleFactor;
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, SubmissionAddedEvent> domainEvent, CancellationToken cancellationToken)
     {
         var submission = domainEvent.AggregateEvent.Submission;
-        Submissions.Add(new()
+        SubmissionPersistences.Add(new()
         {
             Reference = submission.Reference.Value,
-            CriteriaFiles = [.. submission.CriteriaFiles
-                .Select(c => new CriterionFilesApiContract
-                {
-                    Criterion = c.Criterion.Value,
-                    Files = c.Files.ConvertAll(x => x.Value)
-                })]
+            Attachments = submission.Attachments.ConvertAll(a => a.Value)
         });
         
         UpdateLastModifiedData(domainEvent);
@@ -103,14 +141,4 @@ public class Grading
     {
         await StateMachine.FireAsync(GradingTrigger.Start);
     }
-}
-
-[NoResource]
-public class SelectorApiContract
-{
-    [MaxLength(ModelConstants.ShortText)]
-    public string Criterion { get; set; } = string.Empty;
-    
-    [MaxLength(ModelConstants.MediumText)]
-    public string Pattern { get; set; } = string.Empty;
 }

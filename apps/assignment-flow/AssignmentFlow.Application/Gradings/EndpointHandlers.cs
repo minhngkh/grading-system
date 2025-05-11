@@ -1,5 +1,7 @@
 ﻿using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.Start;
+using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
+using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
@@ -14,6 +16,8 @@ internal static class EndpointHandlers
             .AddFluentValidationAutoValidation()
             .WithTags("Gradings")
             .MapCreateGrading()
+            .MapUpdateCriterionSelectors()
+            .MapUpdateScaleFactor()
             .MapUploadSubmission()
             .MapStartGrading();
             

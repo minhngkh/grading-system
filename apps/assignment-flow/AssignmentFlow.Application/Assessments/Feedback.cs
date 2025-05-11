@@ -24,18 +24,18 @@ public sealed class Feedback : ValueObject
     /// <summary>
     /// Gets the attachments related to the feedback, used for highlighting or annotating content in documents.
     /// </summary>
-    public FeedbackAttachment Attachment { get; private set; }
+    public Highlight Highlight { get; private set; }
 
-    private Feedback(CriterionName criterion, Comment comment, FeedbackAttachment attachment, Tag tag)
+    private Feedback(CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
     {
         Criterion = criterion;
         Comment = comment;
-        Attachment = attachment;
+        Highlight = highlight;
         Tag = tag;
     }
 
-    public static Feedback New(CriterionName criterion, Comment comment, FeedbackAttachment attachment, Tag tag)
-        => new(criterion, comment, attachment, tag);
+    public static Feedback New(CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
+        => new(criterion, comment, highlight, tag);
 
     /// <summary>
     /// Provides the components used for equality comparison.
@@ -45,7 +45,7 @@ public sealed class Feedback : ValueObject
     {
         yield return Criterion;
         yield return Comment;
-        yield return Attachment;
+        yield return Highlight;
         yield return Tag;
     }
 }
@@ -59,7 +59,7 @@ public sealed class FeedbackConverter : JsonConverter<Feedback>
         var jObject = JObject.Load(reader);
         var criterion = jObject.GetRequired<CriterionName>("Criterion");
         var comment = jObject.GetRequired<Comment>("Comment");
-        var attachment = jObject.GetRequired<FeedbackAttachment>("Attachment");
+        var attachment = jObject.GetRequired<Highlight>("Attachment");
         var tag = jObject.GetRequired<Tag>("Tag");
         return Feedback.New(criterion, comment, attachment, tag);
     }
@@ -80,6 +80,7 @@ public sealed class Comment : StringValueObject
 
 public sealed class Tag : StringValueObject
 {
+    public static Tag Empty => new();
     private static Tag Info => new("info");
     private static Tag Success => new("success");
     private static Tag Notice => new("notice");
@@ -100,6 +101,7 @@ public sealed class Tag : StringValueObject
             "notice" => Notice,
             "tip" => Tip,
             "caution" => Caution,
+            _ when string.IsNullOrEmpty(value) => Empty,
             _ => throw new ArgumentException("Invalid tag value", nameof(value)),
         };
     

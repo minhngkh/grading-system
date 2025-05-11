@@ -11,7 +11,7 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/", CreateGrading)
             .WithName("CreateGrading")
-            .Produces(StatusCodes.Status201Created)
+            .Produces(StatusCodes.Status201Created, typeof(string))
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;
@@ -25,7 +25,7 @@ public static class EndpointHandler
         RubricProtoService.RubricProtoServiceClient rubricProto,
         CancellationToken cancellationToken)
     {
-        var teacherId = TeacherId.New("teacher");
+        var teacherId = TeacherId.With("teacher");
         var rubric = await rubricProto.GetRubricAsync(new GetRubricRequest
         {
             RubricId = request.RubricId
@@ -35,7 +35,7 @@ public static class EndpointHandler
         await commandBus.PublishAsync(new Command(gradingId)
         {
             TeacherId = teacherId,
-            RubricId = RubricId.New(rubric.Id),
+            RubricId = RubricId.With(rubric.Id),
             Selectors = request.Selectors.ConvertAll(s => s.ToValueObject())
         }, cancellationToken);
 
