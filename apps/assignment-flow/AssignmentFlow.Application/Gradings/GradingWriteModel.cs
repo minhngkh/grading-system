@@ -1,5 +1,6 @@
 ﻿using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.Start;
+using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
 
@@ -30,6 +31,11 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
     internal void Apply(GradingCreatedEvent @event)
     {
         TeacherId = @event.TeacherId;
+        Selectors = @event.Selectors;
+    }
+
+    internal void Apply(SelectorsUpdatedEvent @event)
+    {
         Selectors = @event.Selectors;
     }
 

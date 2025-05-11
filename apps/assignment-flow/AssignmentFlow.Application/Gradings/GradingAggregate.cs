@@ -1,4 +1,5 @@
 ﻿using AssignmentFlow.Application.Gradings.Start;
+using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
 using EventFlow.Core;
@@ -27,6 +28,14 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
             TeacherId = command.TeacherId,
             RubricId = command.RubricId,
             ScaleFactor = command.ScaleFactor,
+            Selectors = command.Selectors
+        });
+    }
+
+    public void UpdateSelectors(UpdateCriterionSelectors.Command command)
+    {
+        Emit(new SelectorsUpdatedEvent
+        {
             Selectors = command.Selectors
         });
     }

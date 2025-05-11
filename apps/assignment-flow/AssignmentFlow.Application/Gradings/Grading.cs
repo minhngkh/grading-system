@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.Start;
+using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
@@ -17,6 +18,7 @@ public class Grading
     : Identifiable<string>,
     IReadModel,
     IAmReadModelFor<GradingAggregate, GradingId, GradingCreatedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, SelectorsUpdatedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionAddedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, GradingStartedEvent>
 {
@@ -95,6 +97,21 @@ public class Grading
             });
 
         UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(
+        IReadModelContext context,
+        IDomainEvent<GradingAggregate, GradingId, SelectorsUpdatedEvent> domainEvent,
+        CancellationToken cancellationToken)
+    {
+        Selectors = domainEvent.AggregateEvent.Selectors
+            .ConvertAll(s => new SelectorApiContract
+            {
+                Criterion = s.Criterion,
+                Pattern = s.Pattern
+            });
+
         return Task.CompletedTask;
     }
 
