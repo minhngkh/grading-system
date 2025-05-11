@@ -26,6 +26,8 @@ message CriterionModel {
   string name = 1;
   double weight = 2; // Percentage as decimal
   repeated PerformanceLevelModel levels = 3;
+  string plugin = 4;
+  string configuration = 5;
 }
 
 message PerformanceLevelModel {

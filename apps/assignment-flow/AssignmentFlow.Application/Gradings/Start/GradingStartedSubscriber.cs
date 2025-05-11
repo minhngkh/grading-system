@@ -52,6 +52,8 @@ public class GradingStartedSubscriber(
                     Tag = l.Tag,
                     Description = l.Description,
                     Weight = (decimal)l.Weight,
-                })]
+                })],
+                Plugin = rubricCriterion.Plugin,
+                Configuration = rubricCriterion.Configuration
             })];
 }
