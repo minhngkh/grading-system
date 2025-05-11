@@ -7,6 +7,8 @@ public class CriterionApiContract
 {
     public string Name { get; set; } = string.Empty;
     public decimal Weight { get; set; }
+    public string Plugin { get; set; } = string.Empty;
+    public string Configuration { get; set; } = string.Empty;
 
     public List<PerformanceLevelApiContract> Levels { get; set; } = [];
 }
