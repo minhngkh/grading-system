@@ -161,7 +161,7 @@ describe.concurrent("test ai plugin", () => {
   };
 
   it("grade using sample rubric directly", async () => {
-    const result = await gradeUsingRubric({ message: "Sample rubric", rubric: sampleRubric }, sampleCode);
+    const result = await gradeUsingRubric( sampleRubric , sampleCode);
     if (result.isErr()) {
       throw result.error;
     }
@@ -174,8 +174,11 @@ describe.concurrent("test ai plugin", () => {
     }
 
     const rubric = rubricResult.value;
-
-    const result = await gradeUsingRubric(rubric, sampleCode);
+    
+    if (!rubric.rubric) {
+      throw new Error("Rubric is null or undefined");
+    }
+    const result = await gradeUsingRubric(rubric.rubric, sampleCode);
     if (result.isErr()) {
       throw result.error;
     }
@@ -204,6 +207,8 @@ describe.concurrent("test ai plugin", () => {
       "ai.createRubric",
       {
         prompt: sampleRubricPrompt,
+        scoreInRange: true,
+        rubric: sampleRubric
       },
     );
     if (rubricResult.isErr()) {
@@ -216,7 +221,7 @@ describe.concurrent("test ai plugin", () => {
       broker,
       "ai.grade",
       {
-        rubric,
+        rubric: rubric.rubric ?? (() => { throw new Error("Rubric is null or undefined"); })(),
         prompt: sampleCode,
       },
     );
