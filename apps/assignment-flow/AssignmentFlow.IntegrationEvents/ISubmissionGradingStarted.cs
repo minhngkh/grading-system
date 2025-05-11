@@ -12,6 +12,8 @@ public class Criterion
     public required string CriterionName { get; set; }
     public required string[]  FileRefs { get; set; }
     public required Level[] Levels { get; set; }
+    public required string Plugin { get; set; }
+    public required string Configuration { get; set; }
 }
 
 public class Level
