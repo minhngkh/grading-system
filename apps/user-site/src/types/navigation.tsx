@@ -5,5 +5,4 @@ export type NavigationData = {
   title: string;
   icon: ReactElement;
   to: LinkProps["to"];
-  isActive?: boolean;
 };

@@ -7,23 +7,31 @@ interface RubricTableProps {
   rubricData: Rubric;
   canEdit?: boolean;
   onUpdate?: (updatedRubric: Rubric) => void;
+  showPlugins?: boolean;
+  editPlugin?: boolean;
 }
 
 export default function RubricTable({
   rubricData,
   onUpdate,
-  canEdit = true,
+  canEdit = false,
+  showPlugins = false,
+  editPlugin = false,
 }: RubricTableProps) {
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">{rubricData.rubricName} Rubric</CardTitle>
+          <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
           {canEdit && <EditRubric rubricData={rubricData} onUpdate={onUpdate} />}
         </div>
       </CardHeader>
       <CardContent className={canEdit ? "h-[85%]" : "flex-1"}>
-        <RubricView rubricData={rubricData} />
+        <RubricView
+          rubricData={rubricData}
+          showPlugins={showPlugins}
+          editPlugin={editPlugin}
+        />
       </CardContent>
     </Card>
   );

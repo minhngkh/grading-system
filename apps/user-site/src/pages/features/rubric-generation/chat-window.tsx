@@ -252,7 +252,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="h-[600px]"
             >
-              <RubricTable rubricData={rubric} onUpdate={onUpdate} />
+              <RubricTable rubricData={rubric} onUpdate={onUpdate} canEdit />
             </motion.div>
           )}
         </AnimatePresence>

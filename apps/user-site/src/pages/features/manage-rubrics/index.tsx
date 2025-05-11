@@ -199,7 +199,7 @@ export default function ManageRubricsPage() {
           </DialogHeader>
           {selectedRubric && (
             <div className="w-full h-full flex flex-col">
-              <RubricView rubricData={selectedRubric} />
+              <RubricView rubricData={selectedRubric} showPlugins />
             </div>
           )}
         </DialogContent>
