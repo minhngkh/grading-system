@@ -7,9 +7,9 @@ public static class EndpointHandler
 {
     public static IEndpointRouteBuilder MapUpdateCriterionSelectors(this IEndpointRouteBuilder endpoint)
     {
-        endpoint.MapPost("/{id}", UpdateCriterionSelectors)
-            .WithName("CreateGrading")
-            .Produces(StatusCodes.Status201Created, typeof(string))
+        endpoint.MapPut("/{id}/criterionSelectors", UpdateCriterionSelectors)
+            .WithName("UpdateCriterionSelectors")
+            .Produces(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;
@@ -28,6 +28,6 @@ public static class EndpointHandler
             Selectors = request.Selectors.ConvertAll(s => s.ToValueObject())
         }, cancellationToken);
 
-        return TypedResults.NoContent();
+        return TypedResults.Ok();
     }
 }
