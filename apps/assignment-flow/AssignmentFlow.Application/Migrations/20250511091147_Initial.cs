@@ -18,6 +18,7 @@ namespace AssignmentFlow.Application.Migrations
                     Id = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     TeacherId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     GradingId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    SubmissionReference = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     ScaleFactor = table.Column<decimal>(type: "numeric", nullable: false),
                     RawScore = table.Column<decimal>(type: "numeric", nullable: false),
                     AdjustedCount = table.Column<int>(type: "integer", nullable: false),
@@ -41,7 +42,7 @@ namespace AssignmentFlow.Application.Migrations
                     Version = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Selectors = table.Column<string>(type: "jsonb", nullable: true),
-                    Submissions = table.Column<string>(type: "jsonb", nullable: true)
+                    SubmissionPersistences = table.Column<string>(type: "jsonb", nullable: true)
                 },
                 constraints: table =>
                 {

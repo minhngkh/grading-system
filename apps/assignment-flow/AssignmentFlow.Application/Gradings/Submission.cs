@@ -8,48 +8,23 @@ namespace AssignmentFlow.Application.Gradings;
 public sealed class Submission : ValueObject
 {
     public SubmissionReference Reference { get; }
-    public HashSet<CriterionFiles> CriteriaFiles { get; }
+    public List<Attachment> Attachments { get; }
 
-    private Submission(SubmissionReference reference, HashSet<CriterionFiles> criterionFiles)
+    private Submission(SubmissionReference reference, List<Attachment> attachments)
     {
         Reference = reference;
-        CriteriaFiles = criterionFiles;
+        Attachments = attachments;
     }
 
-    public static Submission New(SubmissionReference reference, HashSet<CriterionFiles> criterionFiles)
-        => new (reference, criterionFiles);
+    public static Submission New(SubmissionReference reference, List<Attachment> attachments)
+        => new (reference, attachments);
 
     protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return Reference;
-        foreach (var criterionFiles in CriteriaFiles)
+        foreach (var attachment in Attachments)
         {
-            yield return criterionFiles;
-        }
-    }
-}
-
-[JsonConverter(typeof(CriterionFilesConverter))]
-public sealed class CriterionFiles : ValueObject
-{
-    public CriterionName Criterion { get; }
-    public List<Attachment> Files { get; }
-    
-    private CriterionFiles(CriterionName criterion, List<Attachment> files)
-    {
-        Criterion = criterion;
-        Files = files;
-    }
-    
-    public static CriterionFiles New(CriterionName criterion, List<Attachment> files) 
-        => new (criterion, files);
-    
-    protected override IEnumerable<object?> GetEqualityComponents()
-    {
-        yield return Criterion;
-        foreach (var file in Files)
-        {
-            yield return file;       
+            yield return attachment;
         }
     }
 }
@@ -63,34 +38,12 @@ public sealed class SubmissionConverter : JsonConverter<Submission>
         
         var jObject = JObject.Load(reader);
         var reference = jObject.GetRequired<SubmissionReference>("Reference");
-        var criteriaFiles = jObject.GetRequired<HashSet<CriterionFiles>>("CriteriaFiles");
+        var attachments = jObject.GetRequired<List<Attachment>>("Attachments");
 
-        return Submission.New(reference, criteriaFiles);
+        return Submission.New(reference, attachments);
     }
 
     public override bool CanWrite => false;
 
     public override void WriteJson(JsonWriter writer, Submission? value, JsonSerializer serializer) => throw new NotSupportedException();
-}
-
-public sealed class CriterionFilesConverter : JsonConverter<CriterionFiles>
-{
-
-    public override CriterionFiles? ReadJson(JsonReader reader, Type objectType, CriterionFiles? existingValue,
-        bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        if (reader.TokenType == JsonToken.Null)
-            return null;
-        
-        var jObject = JObject.Load(reader);
-        var criterion = jObject.GetRequired<CriterionName>("Criterion");
-        var files = jObject.GetRequired<List<Attachment>>("Files");
-        return CriterionFiles.New(criterion, files);
-    }
-    
-    public override bool CanWrite => false;
-    
-    public override void WriteJson(JsonWriter writer, CriterionFiles? value, JsonSerializer serializer)
-        => throw new NotSupportedException();
 }

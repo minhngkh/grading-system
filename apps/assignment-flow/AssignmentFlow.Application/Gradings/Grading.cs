@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
@@ -38,8 +39,34 @@ public class Grading
     public List<SelectorApiContract> Selectors { get; set; } = [];
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    public List<SubmissionApiContract> Submissions { get; set; } = [];
-    
+    [NotMapped]
+    public List<SubmissionApiContract> Submissions
+    {
+        get
+        {
+            var submissionsByReference = SubmissionPersistences
+                .GroupBy(s => s.Reference)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            return Selectors.ConvertAll(selector => new SubmissionApiContract
+            {
+                Reference = selector.Criterion,
+                CriteriaFiles = submissionsByReference
+                    .TryGetValue(selector.Criterion, out var matchingSubmissions)
+                    ? matchingSubmissions.ConvertAll
+                        (sub => new CriterionFilesApiContract
+                        {
+                            Criterion = selector.Criterion,
+                            Files = [.. sub.Attachments.Where(attachment =>
+                                    Pattern.New(selector.Pattern).Match(string.Empty, attachment))]
+                        })
+                    : []
+            }); 
+        }
+    }
+
+    public List<SubmissionPersistence> SubmissionPersistences { get; set; } = [];
+
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public DateTimeOffset LastModified { get; set; }
 
@@ -84,15 +111,10 @@ public class Grading
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, SubmissionAddedEvent> domainEvent, CancellationToken cancellationToken)
     {
         var submission = domainEvent.AggregateEvent.Submission;
-        Submissions.Add(new()
+        SubmissionPersistences.Add(new()
         {
             Reference = submission.Reference.Value,
-            CriteriaFiles = [.. submission.CriteriaFiles
-                .Select(c => new CriterionFilesApiContract
-                {
-                    Criterion = c.Criterion.Value,
-                    Files = c.Files.ConvertAll(x => x.Value)
-                })]
+            Attachments = submission.Attachments.ConvertAll(a => a.Value)
         });
         
         UpdateLastModifiedData(domainEvent);
@@ -103,14 +125,4 @@ public class Grading
     {
         await StateMachine.FireAsync(GradingTrigger.Start);
     }
-}
-
-[NoResource]
-public class SelectorApiContract
-{
-    [MaxLength(ModelConstants.ShortText)]
-    public string Criterion { get; set; } = string.Empty;
-    
-    [MaxLength(ModelConstants.MediumText)]
-    public string Pattern { get; set; } = string.Empty;
 }
