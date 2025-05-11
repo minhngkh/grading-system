@@ -40,31 +40,21 @@ public class Grading
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [NotMapped]
-    public List<SubmissionApiContract> Submissions
-    {
-        get
+    public List<SubmissionApiContract> Submissions 
+        => SubmissionPersistences.ConvertAll(s => new SubmissionApiContract
         {
-            var submissionsByReference = SubmissionPersistences
-                .GroupBy(s => s.Reference)
-                .ToDictionary(g => g.Key, g => g.ToList());
-
-            return Selectors.ConvertAll(selector => new SubmissionApiContract
+            Reference = s.Reference,
+            CriteriaFiles = Selectors.ConvertAll(selector => new CriterionFilesApiContract
             {
-                Reference = selector.Criterion,
-                CriteriaFiles = submissionsByReference
-                    .TryGetValue(selector.Criterion, out var matchingSubmissions)
-                    ? matchingSubmissions.ConvertAll
-                        (sub => new CriterionFilesApiContract
-                        {
-                            Criterion = selector.Criterion,
-                            Files = [.. sub.Attachments.Where(attachment =>
-                                    Pattern.New(selector.Pattern).Match(string.Empty, attachment))]
-                        })
-                    : []
-            }); 
-        }
-    }
-
+                Criterion = selector.Criterion,
+                Files = [.. s.Attachments.Where(attachment => {
+                    //"http://127.0.0.1:27000/devstoreaccount1/submissions-store/grading-3a2508d0-906d-08dd-2ca9-aa917e2110cc/psd.pdf"
+                    var path = attachment[attachment.IndexOf(Id)..];
+                    return Pattern.New(selector.Pattern).Match(Id, path);
+                })]
+            })
+        });
+    
     public List<SubmissionPersistence> SubmissionPersistences { get; set; } = [];
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]

@@ -26,10 +26,31 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<GradingAg
         var blobEntries = await ProcessAttachments(aggregate, command, container, cancellationToken)
             .ToListAsync(cancellationToken: cancellationToken);
 
+        var studentId = ExtractStudentId(command.File.FileName);
+
         var submission = Submission.New(
-            SubmissionReference.New($"{aggregate.Id}_{command.File}"),
+            SubmissionReference.New($"{aggregate.Id}_{studentId}"),
             blobEntries);
         aggregate.AddSubmission(submission);
+    }
+
+    /// <summary>
+    /// Extracts the student ID from a filename.
+    /// </summary>
+    /// <param name="fileName">The filename in format "student_id.*" where everything before the first period is the student ID.</param>
+    /// <returns>The extracted student ID, or the entire filename if no extension is present.</returns>
+    private static string ExtractStudentId(string fileName)
+    {
+        // If filename contains a period, extract everything before it
+        // This handles cases like "student_id.zip" or "student_id.pdf"
+        var dotIndex = fileName.IndexOf('.');
+        if (dotIndex > 0)
+        {
+            return fileName[..dotIndex];
+        }
+
+        // If no extension, use the whole filename
+        return fileName;
     }
 
     private static async IAsyncEnumerable<Attachment> ProcessAttachments(

@@ -2,6 +2,7 @@
 
 namespace AssignmentFlow.Application.Gradings;
 
+[NoResource]
 public class SubmissionPersistence
 {
     public string Reference { get; init; } = string.Empty;
