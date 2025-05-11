@@ -1,7 +1,4 @@
-﻿using AssignmentFlow.Application.Gradings.Start;
-using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
-using AssignmentFlow.Application.Gradings.UploadSubmission;
-using EventFlow.Aggregates;
+﻿using EventFlow.Aggregates;
 using EventFlow.Core;
 
 namespace AssignmentFlow.Application.Gradings;
@@ -34,9 +31,17 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
 
     public void UpdateSelectors(UpdateCriterionSelectors.Command command)
     {
-        Emit(new SelectorsUpdatedEvent
+        Emit(new UpdateCriterionSelectors.SelectorsUpdatedEvent
         {
             Selectors = command.Selectors
+        });
+    }
+
+    public void UpdateScaleFactor(UpdateScaleFactor.Command command)
+    {
+        Emit(new UpdateScaleFactor.ScaleFactorUpdatedEvent
+        {
+            ScaleFactor = command.ScaleFactor
         });
     }
 
@@ -45,16 +50,16 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
 
     public void AddSubmission(Submission submission)
     {
-        SubmissionCanBeUploadedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+        UploadSubmission.SubmissionCanBeUploadedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
-        Emit(new SubmissionAddedEvent(submission));
+        Emit(new UploadSubmission.SubmissionAddedEvent(submission));
     }
 
     public void StartGrading()
     {
-        GradingCanBeStartedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+        Start.GradingCanBeStartedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
-        Emit(new GradingStartedEvent());
+        Emit(new Start.GradingStartedEvent());
     }
 }
 

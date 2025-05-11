@@ -40,7 +40,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Gradings\UpdateScaleFactor\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 

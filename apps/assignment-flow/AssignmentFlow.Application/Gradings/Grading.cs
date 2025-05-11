@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
+using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
@@ -19,6 +20,7 @@ public class Grading
     IReadModel,
     IAmReadModelFor<GradingAggregate, GradingId, GradingCreatedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SelectorsUpdatedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, ScaleFactorUpdatedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionAddedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, GradingStartedEvent>
 {
@@ -35,7 +37,7 @@ public class Grading
     public string RubricId { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    public decimal ScaleFactor { get; set; } = 10M;
+    public decimal ScaleFactor { get; set; }
 
     [Attr(Capabilities = AllowView)]
     public List<SelectorApiContract> Selectors { get; set; } = [];
@@ -111,7 +113,14 @@ public class Grading
                 Criterion = s.Criterion,
                 Pattern = s.Pattern
             });
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
 
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, ScaleFactorUpdatedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        ScaleFactor = domainEvent.AggregateEvent.ScaleFactor;
+        UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
 
