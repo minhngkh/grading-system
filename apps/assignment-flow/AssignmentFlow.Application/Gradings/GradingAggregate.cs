@@ -1,0 +1,66 @@
+﻿using EventFlow.Aggregates;
+using EventFlow.Core;
+
+namespace AssignmentFlow.Application.Gradings;
+
+public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
+{
+    private readonly ILogger<GradingAggregate> logger;
+    public TeacherId TeacherId => State.TeacherId;
+    public readonly GradingWriteModel State;
+    public GradingAggregate(
+        GradingId id,
+        ILogger<GradingAggregate> logger)
+        : base(id)
+    {
+        State = new GradingWriteModel();
+        this.logger = logger;
+        Register(State);
+    }
+
+    public void CreateGrading(Create.Command command)
+    {
+        Emit(new Create.GradingCreatedEvent
+        {
+            TeacherId = command.TeacherId,
+            RubricId = command.RubricId,
+            ScaleFactor = command.ScaleFactor,
+            Selectors = command.Selectors
+        });
+    }
+
+    public void UpdateSelectors(UpdateCriterionSelectors.Command command)
+    {
+        Emit(new UpdateCriterionSelectors.SelectorsUpdatedEvent
+        {
+            Selectors = command.Selectors
+        });
+    }
+
+    public void UpdateScaleFactor(UpdateScaleFactor.Command command)
+    {
+        Emit(new UpdateScaleFactor.ScaleFactorUpdatedEvent
+        {
+            ScaleFactor = command.ScaleFactor
+        });
+    }
+
+    public Pattern GetGlobalPattern() => this.State.GlobalPattern;
+    public List<Selector> GetCriterionAttachmentsSelectors() => this.State.Selectors;
+
+    public void AddSubmission(Submission submission)
+    {
+        UploadSubmission.SubmissionCanBeUploadedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+
+        Emit(new UploadSubmission.SubmissionAddedEvent(submission));
+    }
+
+    public void StartGrading()
+    {
+        Start.GradingCanBeStartedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+
+        Emit(new Start.GradingStartedEvent());
+    }
+}
+
+public class GradingId(string id) : Identity<GradingId>(id) { }

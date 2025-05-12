@@ -1,18 +1,19 @@
 ﻿using EventFlow.ValueObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RubricEngine.Application.Shared;
-
+        
 namespace RubricEngine.Application.Rubrics;
 
 [JsonConverter(typeof(CriterionConverter))]
 public sealed class Criterion : ValueObject
 {
-    private Criterion(CriterionName name, Percentage weight, List<PerformanceLevel> levels)
+    private Criterion(CriterionName name, Percentage weight, List<PerformanceLevel> levels, Plugin plugin, Configuration configuration)
     {
         Name = name;
         Weight = weight;
         Levels = levels;
+        Plugin = plugin;
+        Configuration = configuration;
     }
 
     public CriterionName Name { get; }
@@ -21,13 +22,19 @@ public sealed class Criterion : ValueObject
 
     public List<PerformanceLevel> Levels { get; } = [];
 
-    public static Criterion New(CriterionName name, Percentage weight, List<PerformanceLevel> levels)
-        => new(name, weight, levels);
+    public Plugin Plugin { get; } = Plugin.None;
+
+    public Configuration Configuration { get; } = Configuration.None;
+
+    public static Criterion New(CriterionName name, Percentage weight, List<PerformanceLevel> levels, Plugin plugin, Configuration configuration)
+        => new(name, weight, levels, plugin, configuration);
 
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return Name;
-
+        yield return Weight;
+        yield return Plugin;
+        yield return Configuration;
         foreach (var level in Levels)
         {
             yield return level;
@@ -47,8 +54,10 @@ public sealed class CriterionConverter : JsonConverter<Criterion>
         var name = jObject.GetRequired<CriterionName>("Name");
         var weight = jObject.GetRequired<Percentage>("Weight");
         var levels = jObject.GetRequired<List<PerformanceLevel>>("Levels");
+        var plugin = jObject.GetRequired<Plugin>("Plugin");
+        var configuration = jObject.GetRequired<Configuration>("Configuration");
 
-        return Criterion.New(name, weight, levels);
+        return Criterion.New(name, weight, levels, plugin, configuration);
     }
 
     public override bool CanWrite => false;
@@ -69,7 +78,9 @@ public static class CriterionExtensions
         {
             Name = criterion.Name.Value,
             Weight = criterion.Weight.Value,
-            Levels = criterion.Levels.ToApiContract()
+            Levels = criterion.Levels.ToApiContract(),
+            Plugin = criterion.Plugin.Value,
+            Configuration = criterion.Configuration.Value
         };
     }
 }

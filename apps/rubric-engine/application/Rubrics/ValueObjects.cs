@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using RubricEngine.Application.Shared;
 
 namespace RubricEngine.Application.Rubrics;
 
@@ -30,6 +29,24 @@ public sealed class CriterionName : StringValueObject
     public CriterionName(string value) : base(value) { }
     protected override int? MaxLength => ModelConstants.ShortMediumText;
     public static CriterionName New(string value) => new(value);
+}
+
+public sealed class Plugin : StringValueObject
+{
+    public static Plugin None => new(string.Empty);
+    [JsonConstructor]
+    public Plugin(string value) : base(value) { }
+    protected override int? MaxLength => ModelConstants.ShortMediumText;
+    public static Plugin New(string value) => new(value);
+}
+
+public sealed class Configuration : StringValueObject
+{
+    public static Configuration None => new(string.Empty);
+    [JsonConstructor]
+    public Configuration(string value) : base(value) { }
+    protected override int? MaxLength => ModelConstants.ShortMediumText;
+    public static Configuration New(string value) => new(value);
 }
 
 /// <summary>

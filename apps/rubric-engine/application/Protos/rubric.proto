@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+option csharp_namespace = "RubricEngine.Application.Protos";
+
+package rubric;
+
+service RubricProtoService {
+	rpc GetRubric (GetRubricRequest) returns (RubricModel);
+}
+
+// Request and response messages for GetRubric
+message GetRubricRequest {
+  string rubric_id = 1;
+}
+
+message RubricModel {
+  string id = 1;
+  string teacher_id = 2;
+  string name = 3;
+  repeated string performance_tags = 4;
+  repeated CriterionModel criteria = 5;
+  string status = 6; // "Draft" or "Used"
+}
+
+message CriterionModel {
+  string name = 1;
+  double weight = 2; // Percentage as decimal
+  repeated PerformanceLevelModel levels = 3;
+  string plugin = 4;
+  string configuration = 5;
+}
+
+message PerformanceLevelModel {
+  string tag = 1;
+  string description = 2;
+  double weight = 3;
+}

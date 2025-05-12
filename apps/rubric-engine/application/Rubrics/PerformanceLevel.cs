@@ -1,7 +1,6 @@
 ﻿using EventFlow.ValueObjects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RubricEngine.Application.Shared;
 
 namespace RubricEngine.Application.Rubrics;
 
@@ -64,7 +63,7 @@ public static class PerformanceLevelExtensions
     {
         return new PerformanceLevelApiContract
         {
-            PerformanceTag = performanceLevel.Tag.Value,
+            Tag = performanceLevel.Tag.Value,
             Description = performanceLevel.Description,
             Weight = performanceLevel.Weight.Value
         };

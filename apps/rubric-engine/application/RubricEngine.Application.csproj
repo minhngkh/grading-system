@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Protos\rubric.proto" />
+  </ItemGroup>
 	
   <ItemGroup>
 	<PackageReference Include="Aspire.Npgsql" />
@@ -15,6 +19,7 @@
 	<PackageReference Include="EventFlow.PostgreSql" />
 	<PackageReference Include="FluentValidation" />
 	<PackageReference Include="FluentValidation.AspNetCore" />
+	<PackageReference Include="Grpc.AspNetCore" />
 	<PackageReference Include="JsonApiDotNetCore" />
 	<PackageReference Include="MassTransit" />
 	<PackageReference Include="MassTransit.RabbitMQ" />
@@ -33,6 +38,16 @@
 	
   <ItemGroup>
     <Folder Include="Migrations\" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\tools\service-defaults\AIAG.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\tools\shared-dotnet\Shared.ValueObjects\Shared.ValueObjects.csproj" />
+    <ProjectReference Include="..\..\assignment-flow\AssignmentFlow.IntegrationEvents\AssignmentFlow.IntegrationEvents.csproj" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <Protobuf Include="Protos\rubric.proto" GrpcServices="Server" />
   </ItemGroup>
 
 </Project>

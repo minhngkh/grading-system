@@ -1,0 +1,18 @@
+{
+  "name": "plugin-service",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.44",
+    "@langchain/google-genai": "^0.2.3",
+    "@langchain/langgraph": "^0.2.64",
+    "@langchain/openai": "^0.5.5",
+    "langchain": "^0.3.21",
+    "neverthrow": "^8.2.0",
+    "zod-to-json-schema": "^3.24.5"
+  }
+}
