@@ -75,7 +75,8 @@ function generateRubricResponseSchema(schema: weightSchemaType) {
 }
  
 
-export const rubricSchema = generateRubricResponseSchema(weightSchema);
+export const rubricSchemaChat = generateRubricResponseSchema(weightSchema);
+export const rubricSchema = generateRubricSchema(weightSchema);
 
 function generateCreateRubricPrompt(scoreInRange: boolean) {
 
@@ -90,9 +91,14 @@ You must always return a JSON object with:
 
 ---
 
-Determine the intent of the input:
-- If the input is a **general question** (e.g. about grading concepts, tags, or weights), answer helpfully and set \`rubric\` to \`null\`.
-- If the input is a **rubric request** (e.g. to create, revise, or clarify a rubric), return a valid rubric and set it in the \`rubric\` field.
+### Decision Logic
+- If the user's input is a **general question** (e.g. about grading, rubrics, tags, or weights), you must:
+  - Answer the question naturally in the \`message\`
+  - Return \`rubric: null\`
+  - Ignore any provided rubric
+- If the input is a **rubric request**:
+  - If an **existing rubric is provided**, update it based on the user's input.
+  - If **no rubric is provided**, create a new rubric from scratch based on the input.
 
 ---
 
@@ -162,55 +168,19 @@ export async function createRubric(
 ): Promise<Result<ResponseRubric, Error>> {
   const { outputSchema, systemPrompt } =
     generateCreateRubricPrompt(scoreInRange);
-
+  console.log("rubric", rubric);
   const client = getClient(DEFAULT_MODEL, systemPrompt);
   if (rubric){
     // Update: use the existing rubric and the prompt to generate an updated rubric
     logger.info("Updating existing rubric using LLM");
     const updatedPrompt = `
-    You are a helpful AI assistant that updates an existing grading rubric based on the user's input.
-You must always return a JSON object with:
-- \`message\`: a natural-language response string
-- \`rubric\`: the rubric object if applicable, or \`null\` if the input is a general question
-
----
-
-Determine the intent of the input:
-- If the input is a **general question** (e.g. about grading concepts, tags, or weights), answer helpfully and set \`rubric\` to \`null\`.
-- If the input is a **rubric request** (e.g. to create, revise, or clarify a rubric), return a valid rubric and set it in the \`rubric\` field.
-
-### Existing Rubric
+### This is existing Rubric
 \`\`\`json
 ${JSON.stringify(rubric, null, 2)}
 \`\`\`
 
 ### User's Input
 ${prompt}
-
----
-
-### JSON output schema
-\`\`\`json
-${JSON.stringify(zodToJsonSchema(outputSchema, "rubric"), null, 2)}
-\`\`\`
-
-### Instructions
-Here are some more specific specifications of the output:
-  - The \`tag\` of each criterion's level must be one of the rubric's \`tags\`
-  - criteria's levels do not have to include all the performance tags
-  - Total weight of all criteria must add up to 100% and no criteria's weight is 0
-  - tags for each level in each criterion are used as an id to differentiate each levels and must be numbers like ['0', '1', '2', '3']. Level with the lower tag value is the higher weight level
-  ${
-    scoreInRange ?
-      `
-  - The \`weight\` of each criterion's level must have the max value equal to the higher level's weight (if exists) and the min value equal to the lower level's weight (if exists)
-  - The max weight of the highest level must be 100
-  - The min weight of the lowest level must be 0
-  `
-    : `
-  - The \`weight\` of the highest \`weight\` must be 100
-  `
-  }
 `;
     const responseResult = await fromPromise(
       client.generate(updatedPrompt, outputSchema, "rubric"),
@@ -298,12 +268,12 @@ export const gradingResultSchema = z.object({
 type GradingResult = z.infer<typeof gradingResultSchema>;
 
 function validateGradingResult(
-  responseRubric: ResponseRubric,
+  responseRubric: Rubric,
   gradingResult: GradingResult,
 ): Result<void, Error> {
-  if (responseRubric.rubric){
+  if (responseRubric){
     for (const critRes of gradingResult.results) {
-      if (!responseRubric.rubric.tags.includes(critRes.tag)) {
+      if (!responseRubric.tags.includes(critRes.tag)) {
         return err(
           new Error(
             `\`performanceTag\` must be one of the rubric's \`performanceTags\``,
@@ -311,7 +281,7 @@ function validateGradingResult(
         );
       }
 
-      const criterion = responseRubric.rubric.criteria.find(
+      const criterion = responseRubric.criteria.find(
         (criterion) => criterion.name === critRes.criterion,
       );
       if (!criterion) {
@@ -372,7 +342,7 @@ function validateGradingResult(
   return ok();
 }
 
-function generateGradingPrompt(responseRubric: ResponseRubric) {
+function generateGradingPrompt(responseRubric: Rubric) {
   const prompt = `
 - You are a helpful AI assistant that grades the input using the provided rubric bellow
 
@@ -401,7 +371,7 @@ ${JSON.stringify(responseRubric)}
 }
 
 export async function gradeUsingRubric(
-  responseRubric: ResponseRubric,
+  responseRubric: Rubric,
   prompt: string,
 ): Promise<Result<GradingResult, Error>> {
   const gradingPrompt = generateGradingPrompt(responseRubric);
