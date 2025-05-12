@@ -41,21 +41,29 @@ import {
 } from "lucide-react";
 import RubricView from "@/components/rubric-view";
 import { useDebounce } from "@/hooks/use-debounce";
+import { SearchParams } from "@/types/searchParams";
 
 type SortConfig = {
   key: "rubricName" | "updatedOn" | "status" | null;
   direction: "asc" | "desc";
 };
 
-export default function ManageRubricsPage() {
+type ManageRubricsPageProps = {
+  searchParams: SearchParams;
+  setSearchParam: (partial: Partial<SearchParams>) => void;
+};
+
+export default function ManageRubricsPage({
+  searchParams,
+  setSearchParam,
+}: ManageRubricsPageProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "rubricName",
     direction: "desc",
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
+  const { currentPage, rowsPerPage } = searchParams;
+  const [searchTerm, setSearchTerm] = useState<string>(searchParams.searchTerm || "");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedRubric, setSelectedRubric] = useState<Rubric | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [rubrics, setRubrics] = useState<Rubric[]>([]);
@@ -133,7 +141,7 @@ export default function ManageRubricsPage() {
   };
 
   const clearFilters = () => {
-    setSearchTerm("");
+    setSearchParam({ searchTerm: "" });
     setStatusFilter("all");
   };
 
@@ -153,27 +161,25 @@ export default function ManageRubricsPage() {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1);
+              setSearchParam({ searchTerm: e.target.value, currentPage: 1 });
             }}
             className="pl-8"
           />
-          {searchTerm && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-0 h-9 w-9 p-0"
-              onClick={() => setSearchTerm("")}
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Clear search</span>
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0 h-9 w-9 p-0"
+            onClick={() => setSearchParam({ searchTerm: "" })}
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Clear search</span>
+          </Button>
         </div>
         <Select
           value={statusFilter}
           onValueChange={(value) => {
             setStatusFilter(value);
-            setCurrentPage(1);
+            setSearchParam({ currentPage: 1 });
           }}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
@@ -185,7 +191,7 @@ export default function ManageRubricsPage() {
             <SelectItem value="used">Used</SelectItem>
           </SelectContent>
         </Select>
-        {(searchTerm || statusFilter !== "all") && (
+        {statusFilter !== "all" && (
           <Button variant="ghost" onClick={clearFilters} className="w-full sm:w-auto">
             Clear Filters
           </Button>
@@ -287,8 +293,7 @@ export default function ManageRubricsPage() {
           <Select
             value={rowsPerPage.toString()}
             onValueChange={(value) => {
-              setRowsPerPage(Number.parseInt(value));
-              setCurrentPage(1);
+              setSearchParam({ rowsPerPage: Number.parseInt(value), currentPage: 1 });
             }}
           >
             <SelectTrigger className="w-[70px]">
@@ -307,7 +312,9 @@ export default function ManageRubricsPage() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            onClick={() => {
+              setSearchParam({ currentPage: Math.max(currentPage - 1, 1) });
+            }}
             disabled={currentPage === 1}
           >
             <ChevronLeft className="h-4 w-4" />
@@ -329,7 +336,7 @@ export default function ManageRubricsPage() {
                   variant={currentPage === pageNum ? "default" : "outline"}
                   size="icon"
                   className="w-8 h-8"
-                  onClick={() => setCurrentPage(pageNum)}
+                  onClick={() => setSearchParam({ currentPage: pageNum })}
                 >
                   {pageNum}
                 </Button>
@@ -345,7 +352,7 @@ export default function ManageRubricsPage() {
                 variant={currentPage === totalPages ? "default" : "outline"}
                 size="icon"
                 className="w-8 h-8"
-                onClick={() => setCurrentPage(totalPages)}
+                onClick={() => setSearchParam({ currentPage: totalPages })}
               >
                 {totalPages}
               </Button>
@@ -354,7 +361,9 @@ export default function ManageRubricsPage() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setSearchParam({ currentPage: Math.min(currentPage + 1, totalPages) })
+            }
             disabled={currentPage === totalPages || totalPages === 0}
           >
             <ChevronRight className="h-4 w-4" />

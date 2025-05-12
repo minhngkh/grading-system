@@ -234,16 +234,21 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
             <div className="overflow-auto flex-1 max-h-[60vh] rounded-md border">
               <table className="w-full table-fixed text-sm">
                 <thead>
-                  <tr className="bg-muted/50">
-                    <th className="text-left p-2 border-r font-medium w-[250px]">
+                  <tr className="bg-muted/50 border-b">
+                    <th
+                      className={cn(
+                        "text-center p-2 font-medium w-[250px]",
+                        formData.tags.length > 0 && "border-r",
+                      )}
+                    >
                       Criterion
                     </th>
-                    {formData.tags?.map((header: string, index: number) => (
+                    {formData.tags.map((header: string, index: number) => (
                       <th
                         key={index}
                         className={cn(
                           "p-2 w-[150px]",
-                          index !== formData.tags.length - 1 ? "border-r" : "",
+                          index !== formData.tags.length - 1 && "border-r",
                         )}
                       >
                         <div className="flex items-center gap-2">
@@ -271,14 +276,19 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {formData.criteria.map((criterion, index) => (
-                    <tr key={index} className="border-t">
-                      <td className="p-2 border-r">
-                        <div className="space-y-2">
-                          {/* Move labels to the left of inputs using shadcn/ui Label */}
-                          <div className="flex items-center gap-2">
+                  {formData.criteria.length === 0 ? (
+                    <tr>
+                      <td colSpan={formData.tags.length + 1} className="text-center p-4">
+                        No criteria available. Please add a criterion.
+                      </td>
+                    </tr>
+                  ) : (
+                    formData.criteria.map((criterion, index) => (
+                      <tr key={index} className="border-t">
+                        <td className={cn("p-2", formData.tags.length > 0 && "border-r")}>
+                          <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
                             <Label
-                              className="text-xs font-medium text-muted-foreground w-12"
+                              className="text-xs font-medium text-muted-foreground"
                               htmlFor={`criterion-name-${index}`}
                             >
                               Name
@@ -291,142 +301,120 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
                               }
                               className="font-medium break-words whitespace-normal h-auto min-h-[2.5rem] py-2"
                             />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:bg-destructive hover:text-white"
-                              onClick={() => handleDeleteCriterion(index)}
-                            >
-                              <Trash2 />
-                            </Button>
-                          </div>
-                          <div className="flex items-center gap-2">
                             <Label
-                              className="text-xs font-medium text-muted-foreground w-12"
+                              className="text-xs font-medium text-muted-foreground"
                               htmlFor={`criterion-weight-${index}`}
                             >
                               Weight
                             </Label>
-                            <Input
-                              id={`criterion-weight-${index}`}
-                              type="number"
-                              min={0}
-                              value={criterion.weight}
-                              onChange={(e) =>
-                                handleCriterionChange(
-                                  index,
-                                  "weight",
-                                  Number.parseInt(e.target.value) || 0,
-                                )
-                              }
-                              className="w-16"
-                              placeholder="Weight"
-                            />
-                            <span className="text-sm text-muted-foreground whitespace-nowrap">
-                              %
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      {formData.tags.map((tag, tagIndex) => {
-                        const criterionLevel = criterion.levels.find(
-                          (level) => level.tag === tag,
-                        );
-
-                        return (
-                          <td
-                            key={tagIndex}
-                            className={cn(
-                              "p-2 h-full",
-                              tagIndex !== formData.tags.length - 1 ? "border-r" : "",
-                            )}
-                          >
-                            <div className="space-y-2">
-                              {/* Add description label above textarea */}
-                              <Label
-                                className="text-xs font-medium text-muted-foreground"
-                                htmlFor={`description-${index}-${tagIndex}`}
-                              >
-                                Description
-                              </Label>
-                              <Textarea
-                                id={`description-${index}-${tagIndex}`}
-                                value={criterionLevel ? criterionLevel.description : ""}
+                            <div className="flex items-center gap-2">
+                              <Input
+                                id={`criterion-weight-${index}`}
+                                type="number"
+                                min={0}
+                                value={criterion.weight}
                                 onChange={(e) =>
-                                  handleLevelDescriptionChange(
+                                  handleCriterionChange(
                                     index,
-                                    tagIndex,
-                                    e.target.value,
+                                    "weight",
+                                    Number.parseInt(e.target.value) || 0,
                                   )
                                 }
-                                className="h-full resize-none text-sm"
+                                className="max-w-20"
+                                placeholder="Weight"
                               />
-                              {criterionLevel && (
-                                <div className="flex items-center gap-2">
-                                  {/* Add weight label to the left of weight input */}
-                                  <Label
-                                    className="text-xs font-medium text-muted-foreground w-12"
-                                    htmlFor={`level-weight-${index}-${tagIndex}`}
-                                  >
-                                    Weight
-                                  </Label>
-                                  <Input
-                                    id={`level-weight-${index}-${tagIndex}`}
-                                    type="number"
-                                    min={0}
-                                    value={criterionLevel.weight}
-                                    onChange={(e) =>
-                                      handleLevelWeightChange(
-                                        index,
-                                        tagIndex,
-                                        Number.parseInt(e.target.value) || 0,
-                                      )
-                                    }
-                                    className="w-full"
-                                    placeholder="Weight"
-                                  />
-                                  <span className="text-sm text-muted-foreground whitespace-nowrap">
-                                    %
-                                  </span>
-                                </div>
-                              )}
+                              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                %
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 ml-auto text-destructive hover:bg-destructive hover:text-white"
+                                onClick={() => handleDeleteCriterion(index)}
+                              >
+                                <Trash2 />
+                              </Button>
                             </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
+                          </div>
+                        </td>
+                        {formData.tags.map((tag, tagIndex) => {
+                          const criterionLevel = criterion.levels.find(
+                            (level) => level.tag === tag,
+                          );
+
+                          return (
+                            <td
+                              key={tagIndex}
+                              className={cn(
+                                "p-2 h-full",
+                                tagIndex !== formData.tags.length - 1 && "border-r",
+                              )}
+                            >
+                              <div className="space-y-2">
+                                {/* Add description label above textarea */}
+                                <Label
+                                  className="text-xs font-medium text-muted-foreground"
+                                  htmlFor={`description-${index}-${tagIndex}`}
+                                >
+                                  Description
+                                </Label>
+                                <Textarea
+                                  id={`description-${index}-${tagIndex}`}
+                                  value={criterionLevel ? criterionLevel.description : ""}
+                                  onChange={(e) =>
+                                    handleLevelDescriptionChange(
+                                      index,
+                                      tagIndex,
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="h-full resize-none text-sm"
+                                />
+                                {criterionLevel && (
+                                  <div className="flex items-center gap-2">
+                                    {/* Add weight label to the left of weight input */}
+                                    <Label
+                                      className="text-xs font-medium text-muted-foreground w-12"
+                                      htmlFor={`level-weight-${index}-${tagIndex}`}
+                                    >
+                                      Weight
+                                    </Label>
+                                    <Input
+                                      id={`level-weight-${index}-${tagIndex}`}
+                                      type="number"
+                                      min={0}
+                                      value={criterionLevel.weight}
+                                      onChange={(e) =>
+                                        handleLevelWeightChange(
+                                          index,
+                                          tagIndex,
+                                          Number.parseInt(e.target.value) || 0,
+                                        )
+                                      }
+                                      className="w-full"
+                                      placeholder="Weight"
+                                    />
+                                    <span className="text-sm text-muted-foreground whitespace-nowrap">
+                                      %
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
             <div className="h-full flex justify-center items-center">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={handleAddLevel}>
-                      <PlusCircle />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Add New Level</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <AddButton onClick={handleAddLevel} title="Add New Level" />
             </div>
           </div>
           <div className="h-full flex justify-center items-center">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" onClick={handleAddCriterion}>
-                    <PlusCircle />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Add New Criterion</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <AddButton onClick={handleAddCriterion} title="Add New Criterion" />
           </div>
           <DialogFooter className="sm:justify-end">
             <DialogClose asChild>
@@ -441,3 +429,20 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
     </Dialog>
   );
 }
+
+const AddButton = ({ onClick, title }: { onClick: () => void; title: string }) => {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon" onClick={onClick}>
+            <PlusCircle />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{title}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};

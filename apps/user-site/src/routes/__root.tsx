@@ -3,25 +3,26 @@ import { ThemeProvider } from "@/context/theme-provider";
 import { AppNavbar } from "@/components/layout/navbar";
 import { AppSidebar } from "@/components/layout/sidebar";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { useAuth } from "@clerk/clerk-react";
+import { ErrorBoundary } from "@/components/layout/error-boundary";
 
-interface MyRouterContext {
+interface AppRouterContext {
   auth: ReturnType<typeof useAuth>;
 }
 
-export const Route = createRootRouteWithContext<MyRouterContext>()({
+export const Route = createRootRouteWithContext<AppRouterContext>()({
   component: () => <Root />,
+  errorComponent: ErrorBoundary,
 });
 
 function Root() {
-  const auth = useAuth();
+  const { isSignedIn } = useAuth();
 
   return (
     <>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <SidebarProvider>
-          {auth.isSignedIn && <AppSidebar />}
+          {isSignedIn && <AppSidebar />}
           <SidebarInset>
             <main className="flex-1 flex flex-col items-center">
               <AppNavbar />
@@ -32,7 +33,6 @@ function Root() {
           </SidebarInset>
         </SidebarProvider>
       </ThemeProvider>
-      <TanStackRouterDevtools />
     </>
   );
 }

@@ -49,13 +49,20 @@ export default function RubricGenerationPage({
     defaultValues: initialRubric,
   });
 
-  const handleNext = async () => {
-    if (stepper.isLast) {
-      const isValid = await form.trigger();
-      if (!isValid) {
-        return;
-      }
+  const isNextDisabled = () => {
+    if (stepper.isFirst) {
+      return !form.formState.isValid;
+    }
 
+    return false;
+  };
+
+  const handleNext = async () => {
+    if (!form.formState.isValid) {
+      return;
+    }
+
+    if (stepper.isLast) {
       try {
         await updateRubric(initialRubric?.id!, form.getValues());
         sessionStorage.removeItem(itemIdentifier);
@@ -67,7 +74,7 @@ export default function RubricGenerationPage({
       return;
     }
 
-    if (form.getValues()) stepper.next();
+    stepper.next();
   };
 
   const onUpdateRubric = async (updatedRubric: Rubric) => {
@@ -132,7 +139,9 @@ export default function RubricGenerationPage({
           <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
             Back
           </Button>
-          <Button onClick={handleNext}>{stepper.isLast ? "Save" : "Next"}</Button>
+          <Button disabled={isNextDisabled()} onClick={handleNext}>
+            {stepper.isLast ? "Save" : "Next"}
+          </Button>
         </div>
       </div>
     </div>
