@@ -1,4 +1,15 @@
-packages: 
-  - "apps/*"
-  - "libs/*"
-  - "examples/*"
+packages:
+  - apps/*
+  - libs/*
+  - examples/*
+
+ignoredBuiltDependencies:
+  - '@clerk/shared'
+  - '@nx-dotnet/core'
+  - '@parcel/watcher'
+  - '@swc/core'
+  - esbuild
+  - nx
+  - protobufjs
+  - sharp
+  - unrs-resolver

@@ -18,9 +18,10 @@ import { Route as AuthenticatedHomeImport } from './routes/_authenticated/home'
 import { Route as AuthSignupImport } from './routes/_auth/signup'
 import { Route as AuthSigninImport } from './routes/_auth/signin'
 import { Route as AuthenticatedFeaturesRubricGenerationImport } from './routes/_authenticated/_features/rubric-generation'
-import { Route as AuthenticatedFeaturesManualGradeImport } from './routes/_authenticated/_features/manual-grade'
 import { Route as AuthenticatedFeaturesManageRubricsImport } from './routes/_authenticated/_features/manage-rubrics'
 import { Route as AuthenticatedFeaturesAssignmentGradingImport } from './routes/_authenticated/_features/assignment-grading'
+import { Route as AuthenticatedFeaturesManualGradeIndexImport } from './routes/_authenticated/_features/manual-grade/index'
+import { Route as AuthenticatedFeaturesManualGradeIdImport } from './routes/_authenticated/_features/manual-grade/$id'
 
 // Create/Update Routes
 
@@ -65,13 +66,6 @@ const AuthenticatedFeaturesRubricGenerationRoute =
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
-const AuthenticatedFeaturesManualGradeRoute =
-  AuthenticatedFeaturesManualGradeImport.update({
-    id: '/_features/manual-grade',
-    path: '/manual-grade',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-
 const AuthenticatedFeaturesManageRubricsRoute =
   AuthenticatedFeaturesManageRubricsImport.update({
     id: '/_features/manage-rubrics',
@@ -83,6 +77,20 @@ const AuthenticatedFeaturesAssignmentGradingRoute =
   AuthenticatedFeaturesAssignmentGradingImport.update({
     id: '/_features/assignment-grading',
     path: '/assignment-grading',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+
+const AuthenticatedFeaturesManualGradeIndexRoute =
+  AuthenticatedFeaturesManualGradeIndexImport.update({
+    id: '/_features/manual-grade/',
+    path: '/manual-grade/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+
+const AuthenticatedFeaturesManualGradeIdRoute =
+  AuthenticatedFeaturesManualGradeIdImport.update({
+    id: '/_features/manual-grade/$id',
+    path: '/manual-grade/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -146,18 +154,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFeaturesManageRubricsImport
       parentRoute: typeof AuthenticatedRouteImport
     }
-    '/_authenticated/_features/manual-grade': {
-      id: '/_authenticated/_features/manual-grade'
-      path: '/manual-grade'
-      fullPath: '/manual-grade'
-      preLoaderRoute: typeof AuthenticatedFeaturesManualGradeImport
-      parentRoute: typeof AuthenticatedRouteImport
-    }
     '/_authenticated/_features/rubric-generation': {
       id: '/_authenticated/_features/rubric-generation'
       path: '/rubric-generation'
       fullPath: '/rubric-generation'
       preLoaderRoute: typeof AuthenticatedFeaturesRubricGenerationImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/_features/manual-grade/$id': {
+      id: '/_authenticated/_features/manual-grade/$id'
+      path: '/manual-grade/$id'
+      fullPath: '/manual-grade/$id'
+      preLoaderRoute: typeof AuthenticatedFeaturesManualGradeIdImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/_features/manual-grade/': {
+      id: '/_authenticated/_features/manual-grade/'
+      path: '/manual-grade'
+      fullPath: '/manual-grade'
+      preLoaderRoute: typeof AuthenticatedFeaturesManualGradeIndexImport
       parentRoute: typeof AuthenticatedRouteImport
     }
   }
@@ -183,8 +198,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedFeaturesAssignmentGradingRoute: typeof AuthenticatedFeaturesAssignmentGradingRoute
   AuthenticatedFeaturesManageRubricsRoute: typeof AuthenticatedFeaturesManageRubricsRoute
-  AuthenticatedFeaturesManualGradeRoute: typeof AuthenticatedFeaturesManualGradeRoute
   AuthenticatedFeaturesRubricGenerationRoute: typeof AuthenticatedFeaturesRubricGenerationRoute
+  AuthenticatedFeaturesManualGradeIdRoute: typeof AuthenticatedFeaturesManualGradeIdRoute
+  AuthenticatedFeaturesManualGradeIndexRoute: typeof AuthenticatedFeaturesManualGradeIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -193,9 +209,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedFeaturesAssignmentGradingRoute,
   AuthenticatedFeaturesManageRubricsRoute:
     AuthenticatedFeaturesManageRubricsRoute,
-  AuthenticatedFeaturesManualGradeRoute: AuthenticatedFeaturesManualGradeRoute,
   AuthenticatedFeaturesRubricGenerationRoute:
     AuthenticatedFeaturesRubricGenerationRoute,
+  AuthenticatedFeaturesManualGradeIdRoute:
+    AuthenticatedFeaturesManualGradeIdRoute,
+  AuthenticatedFeaturesManualGradeIndexRoute:
+    AuthenticatedFeaturesManualGradeIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -209,8 +228,9 @@ export interface FileRoutesByFullPath {
   '/home': typeof AuthenticatedHomeRoute
   '/assignment-grading': typeof AuthenticatedFeaturesAssignmentGradingRoute
   '/manage-rubrics': typeof AuthenticatedFeaturesManageRubricsRoute
-  '/manual-grade': typeof AuthenticatedFeaturesManualGradeRoute
   '/rubric-generation': typeof AuthenticatedFeaturesRubricGenerationRoute
+  '/manual-grade/$id': typeof AuthenticatedFeaturesManualGradeIdRoute
+  '/manual-grade': typeof AuthenticatedFeaturesManualGradeIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -221,8 +241,9 @@ export interface FileRoutesByTo {
   '/home': typeof AuthenticatedHomeRoute
   '/assignment-grading': typeof AuthenticatedFeaturesAssignmentGradingRoute
   '/manage-rubrics': typeof AuthenticatedFeaturesManageRubricsRoute
-  '/manual-grade': typeof AuthenticatedFeaturesManualGradeRoute
   '/rubric-generation': typeof AuthenticatedFeaturesRubricGenerationRoute
+  '/manual-grade/$id': typeof AuthenticatedFeaturesManualGradeIdRoute
+  '/manual-grade': typeof AuthenticatedFeaturesManualGradeIndexRoute
 }
 
 export interface FileRoutesById {
@@ -235,8 +256,9 @@ export interface FileRoutesById {
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/_features/assignment-grading': typeof AuthenticatedFeaturesAssignmentGradingRoute
   '/_authenticated/_features/manage-rubrics': typeof AuthenticatedFeaturesManageRubricsRoute
-  '/_authenticated/_features/manual-grade': typeof AuthenticatedFeaturesManualGradeRoute
   '/_authenticated/_features/rubric-generation': typeof AuthenticatedFeaturesRubricGenerationRoute
+  '/_authenticated/_features/manual-grade/$id': typeof AuthenticatedFeaturesManualGradeIdRoute
+  '/_authenticated/_features/manual-grade/': typeof AuthenticatedFeaturesManualGradeIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -249,8 +271,9 @@ export interface FileRouteTypes {
     | '/home'
     | '/assignment-grading'
     | '/manage-rubrics'
-    | '/manual-grade'
     | '/rubric-generation'
+    | '/manual-grade/$id'
+    | '/manual-grade'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -260,8 +283,9 @@ export interface FileRouteTypes {
     | '/home'
     | '/assignment-grading'
     | '/manage-rubrics'
-    | '/manual-grade'
     | '/rubric-generation'
+    | '/manual-grade/$id'
+    | '/manual-grade'
   id:
     | '__root__'
     | '/'
@@ -272,8 +296,9 @@ export interface FileRouteTypes {
     | '/_authenticated/home'
     | '/_authenticated/_features/assignment-grading'
     | '/_authenticated/_features/manage-rubrics'
-    | '/_authenticated/_features/manual-grade'
     | '/_authenticated/_features/rubric-generation'
+    | '/_authenticated/_features/manual-grade/$id'
+    | '/_authenticated/_features/manual-grade/'
   fileRoutesById: FileRoutesById
 }
 
@@ -320,8 +345,9 @@ export const routeTree = rootRoute
         "/_authenticated/home",
         "/_authenticated/_features/assignment-grading",
         "/_authenticated/_features/manage-rubrics",
-        "/_authenticated/_features/manual-grade",
-        "/_authenticated/_features/rubric-generation"
+        "/_authenticated/_features/rubric-generation",
+        "/_authenticated/_features/manual-grade/$id",
+        "/_authenticated/_features/manual-grade/"
       ]
     },
     "/_auth/signin": {
@@ -344,12 +370,16 @@ export const routeTree = rootRoute
       "filePath": "_authenticated/_features/manage-rubrics.tsx",
       "parent": "/_authenticated"
     },
-    "/_authenticated/_features/manual-grade": {
-      "filePath": "_authenticated/_features/manual-grade.tsx",
-      "parent": "/_authenticated"
-    },
     "/_authenticated/_features/rubric-generation": {
       "filePath": "_authenticated/_features/rubric-generation.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/_features/manual-grade/$id": {
+      "filePath": "_authenticated/_features/manual-grade/$id.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/_features/manual-grade/": {
+      "filePath": "_authenticated/_features/manual-grade/index.tsx",
       "parent": "/_authenticated"
     }
   }

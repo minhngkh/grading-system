@@ -7,6 +7,7 @@ export const LevelSchema = z.object({
 });
 
 export const CriteriaSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(1, "Criterion name is required"),
   totalCriterionPoints: z.number().min(0, "Total points must be non-negative").optional(),
   levels: z.array(LevelSchema).min(1, "At least one level is required for criterion"),
