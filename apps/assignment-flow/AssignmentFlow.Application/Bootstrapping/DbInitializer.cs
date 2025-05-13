@@ -1,5 +1,4 @@
-﻿using AssignmentFlow.Application.Shared;
-using Azure.Storage.Blobs;
+﻿using Azure.Storage.Blobs;
 using EventFlow.PostgreSql;
 using EventFlow.PostgreSql.EventStores;
 using Microsoft.EntityFrameworkCore;
@@ -31,9 +30,19 @@ public class DbInitializer(
             await EventFlowEventStoresPostgreSql.MigrateDatabaseAsync(databaseMigrator, CancellationToken.None);
             logger.LogDebug("Database initialization completed successfully.");
 
-            logger.LogDebug("Creating blob container for submissions store...");
-            await blobServiceClient.CreateBlobContainerAsync("submissions-store");
-            logger.LogDebug("Blob container created successfully.");
+            logger.LogDebug("Ensuring blob container for submissions store exists...");
+            var containerClient = blobServiceClient.GetBlobContainerClient("submissions-store");
+            var containerExists = await containerClient.ExistsAsync();
+            if (!containerExists.Value)
+            {
+                logger.LogDebug("Creating blob container for submissions store...");
+                await containerClient.CreateAsync();
+                logger.LogDebug("Blob container created successfully.");
+            }
+            else
+            {
+                logger.LogDebug("Blob container 'submissions-store' already exists.");
+            }
         }
         catch (Exception ex)
         {
