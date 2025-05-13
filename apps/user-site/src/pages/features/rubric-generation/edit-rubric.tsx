@@ -29,6 +29,7 @@ import { useForm } from "react-hook-form";
 interface EditRubricProps {
   rubricData: Rubric;
   onUpdate?: (rubric: Rubric) => void;
+  disableEdit?: boolean;
 }
 
 type FormState = {
@@ -36,7 +37,11 @@ type FormState = {
   message?: string;
 };
 
-export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
+export default function EditRubric({
+  rubricData,
+  onUpdate,
+  disableEdit = false,
+}: EditRubricProps) {
   const [errorsState, setErrorState] = useState<FormState>({
     errors: {},
     message: "",
@@ -187,6 +192,7 @@ export default function EditRubric({ rubricData, onUpdate }: EditRubricProps) {
     <Dialog>
       <DialogTrigger asChild>
         <Button
+          disabled={disableEdit}
           onClick={() => {
             form.reset(rubricData);
             setErrorState({

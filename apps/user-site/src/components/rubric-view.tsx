@@ -48,7 +48,7 @@ export default function RubricView({
                   key={index}
                   className={cn(
                     "text-center p-2 font-medium w-[150px]",
-                    index !== rubricData.tags.length - 1 || (showPlugins && "border-r"),
+                    (index !== rubricData.tags.length - 1 || showPlugins) && "border-r",
                   )}
                 >
                   {header}
@@ -78,8 +78,8 @@ export default function RubricView({
                         key={index}
                         className={cn(
                           "p-2 text-sm",
-                          index !== rubricData.tags.length - 1 ||
-                            (showPlugins && "border-r"),
+                          (index !== rubricData.tags.length - 1 || showPlugins) &&
+                            "border-r",
                         )}
                       >
                         {criterionLevel && (
@@ -87,9 +87,7 @@ export default function RubricView({
                             <div className="font-semibold text-blue-400 mb-1">
                               {criterionLevel.weight} %
                             </div>
-                            <div className="text-center">
-                              {criterionLevel.description}
-                            </div>
+                            <div>{criterionLevel.description}</div>
                           </div>
                         )}
                       </td>
@@ -106,7 +104,7 @@ export default function RubricView({
                     >
                       <div
                         className={cn(
-                          "text-center font-semibold",
+                          "text-center font-semibold text-blue-400",
                           editPlugin && "underline cursor-pointer",
                         )}
                       >

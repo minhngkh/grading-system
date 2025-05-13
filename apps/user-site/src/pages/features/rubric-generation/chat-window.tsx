@@ -1,4 +1,3 @@
-import type { Message } from "@/types/chat";
 import type { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,13 +15,20 @@ interface ChatWindowProps {
   onUpdate: (rubric: Rubric) => void;
 }
 
+type ChatMessage = {
+  message: string;
+  who: "user" | "agent";
+};
+
 const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
   const [hasStarted, setHasStarted] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isApplyingEdit, setIsApplyingEdit] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,95 +38,72 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
     scrollToBottom();
   }, [messages]);
 
-  const streamResponse = async (messageContent: string) => {
-    setIsLoading(false);
-    setIsStreaming(true);
-    const newMessage: Message = {
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-      isStreaming: true,
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
-
-    try {
-      const response = await ChatService.sendMessage(messageContent);
-      switch (response.type) {
-        case "chat": {
-          const reader = response.data.getReader();
-          let fullResponse = "";
-
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-
-            fullResponse += value.content;
-            setMessages((prev) =>
-              prev.map((msg, idx) =>
-                idx === prev.length - 1 ? { ...msg, content: fullResponse } : msg,
-              ),
-            );
-          }
-
-          setMessages((prev) =>
-            prev.map((msg, idx) =>
-              idx === prev.length - 1 ? { ...msg, isStreaming: false } : msg,
-            ),
-          );
-
-          break;
-        }
-
-        case "rubric": {
-          const MOCK_RESPONSE = "Your rubric has been updated";
-          const rubric = response.data;
-          onUpdate(rubric);
-          setMessages((prev) =>
-            prev.map((msg, idx) =>
-              idx === prev.length - 1
-                ? { ...msg, isStreaming: false, content: MOCK_RESPONSE }
-                : msg,
-            ),
-          );
-
-          break;
-        }
-      }
-    } catch (error) {
-      console.error("Error streaming response:", error);
-    } finally {
-      setIsStreaming(false);
-    }
-  };
-
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isStreaming) return;
+    if (!inputMessage.trim()) return;
 
     if (!hasStarted) {
       setHasStarted(true);
     }
 
-    const userMessage: Message = {
-      role: "user",
-      content: inputMessage,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInputMessage("");
     setIsLoading(true);
+    setInputMessage("");
 
-    await streamResponse(inputMessage);
+    setMessages((prev) => [...prev, { message: inputMessage, who: "user" }]);
+
+    try {
+      const response = await ChatService.sendMessage({
+        prompt: inputMessage,
+        rubric,
+      });
+      if (response.rubric) {
+        setIsApplyingEdit(true);
+        setTimeout(() => {
+          setIsApplyingEdit(false);
+        }, 2000);
+        onUpdate(response.rubric);
+      }
+
+      setMessages((prev) => [...prev, { message: response.message, who: "agent" }]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          message: "An error occurred while processing your request.",
+          who: "agent",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setIsUploading(true);
+      setUploadError(null);
       try {
         await ChatService.uploadFile(file);
+        setMessages((prev) => [
+          ...prev,
+          {
+            message: `File "${file.name}" uploaded successfully`,
+            who: "agent",
+          },
+        ]);
       } catch (error) {
-        console.error("Error uploading file:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Error uploading file";
+        setUploadError(errorMessage);
+        setMessages((prev) => [
+          ...prev,
+          {
+            message: `Failed to upload file: ${errorMessage}`,
+            who: "agent",
+          },
+        ]);
+      } finally {
+        setIsUploading(false);
       }
     }
   };
@@ -156,24 +139,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
                     transition={{ duration: 0.5 }}
                     className={cn(
                       "flex mb-4",
-                      message.role === "user" ? "justify-end" : "justify-start",
+                      message.who === "user" ? "justify-end" : "justify-start",
                     )}
                   >
-                    <div
-                      className={cn(
-                        "max-w-[80%]",
-                        message.role === "user" ? "text-right" : "text-left",
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "inline-block rounded-2xl px-4 py-2 text-sm transition-all",
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted/60",
-                        )}
-                      >
-                        {message.content}
+                    <div className="max-w-[80%]">
+                      <div className="inline-block rounded-2xl px-4 py-2 text-sm transition-all bg-muted">
+                        {message.message}
                       </div>
                     </div>
                   </motion.div>
@@ -194,24 +165,25 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
             </ScrollArea>
           </motion.div>
 
-          <div className="border dark:bg-input/30 rounded-lg mx-auto mt-2 w-full ">
+          <div className="border dark:bg-input/30 rounded-lg mx-auto mt-2 w-full">
             <Textarea
-              id="chat"
+              id="chat-input"
               placeholder="Ask me to create a rubric for your assignment..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={(e) => {
+              onKeyUp={(e) => {
                 if (
                   e.key === "Enter" &&
                   !e.shiftKey &&
-                  !isStreaming &&
                   !isLoading &&
+                  !isUploading &&
                   inputMessage.trim()
                 ) {
                   e.preventDefault();
                   handleSendMessage();
                 }
               }}
+              aria-label="Chat input"
               className="resize-none transition-all shadow-none focus-visible:ring-0 border-0 focus-visible:ring-offset-0 p-4"
             />
             <div className="flex gap-2 px-2 pb-2 justify-end">
@@ -219,16 +191,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
                 variant="ghost"
                 size="icon"
                 asChild
-                disabled={isLoading || isStreaming}
+                disabled={isLoading || isUploading}
+                aria-label="Upload file"
               >
                 <label htmlFor="file-upload" className="cursor-pointer">
-                  <Upload className="h-4 w-4" />
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
                 </label>
               </Button>
               <Button
                 onClick={handleSendMessage}
                 size="icon"
-                disabled={isLoading || isStreaming || !inputMessage.trim()}
+                disabled={isLoading || isUploading || !inputMessage.trim()}
+                aria-label="Send message"
               >
                 <Send className="h-4 w-4" />
               </Button>
@@ -237,9 +215,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
                 className="hidden"
                 id="file-upload"
                 onChange={handleFileUpload}
-                disabled={isLoading || isStreaming}
+                disabled={isLoading || isUploading}
+                accept=".txt,.pdf,.doc,.docx"
+                aria-label="File upload"
               />
             </div>
+            {uploadError && (
+              <p className="text-destructive text-sm px-4 pb-2">{uploadError}</p>
+            )}
           </div>
         </motion.div>
 
@@ -252,7 +235,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
               transition={{ duration: 0.5, ease: "easeInOut" }}
               className="h-[600px]"
             >
-              <RubricTable rubricData={rubric} onUpdate={onUpdate} canEdit />
+              <RubricTable
+                isApplyingEdit={isApplyingEdit}
+                rubricData={rubric}
+                onUpdate={onUpdate}
+                disableEdit={isLoading}
+                canEdit
+              />
             </motion.div>
           )}
         </AnimatePresence>

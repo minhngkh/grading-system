@@ -9,6 +9,8 @@ interface RubricTableProps {
   onUpdate?: (updatedRubric: Rubric) => void;
   showPlugins?: boolean;
   editPlugin?: boolean;
+  disableEdit?: boolean;
+  isApplyingEdit?: boolean;
 }
 
 export default function RubricTable({
@@ -17,21 +19,35 @@ export default function RubricTable({
   canEdit = false,
   showPlugins = false,
   editPlugin = false,
+  disableEdit = false,
+  isApplyingEdit = false,
 }: RubricTableProps) {
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
-          {canEdit && <EditRubric rubricData={rubricData} onUpdate={onUpdate} />}
+          {canEdit && (
+            <EditRubric
+              rubricData={rubricData}
+              onUpdate={onUpdate}
+              disableEdit={disableEdit || isApplyingEdit}
+            />
+          )}
         </div>
       </CardHeader>
       <CardContent className={canEdit ? "h-[85%]" : "flex-1"}>
-        <RubricView
-          rubricData={rubricData}
-          showPlugins={showPlugins}
-          editPlugin={editPlugin}
-        />
+        {isApplyingEdit ? (
+          <div className="flex items-center justify-center h-full">
+            Agent is applying edits to the rubric. Please wait...
+          </div>
+        ) : (
+          <RubricView
+            rubricData={rubricData}
+            showPlugins={showPlugins}
+            editPlugin={editPlugin}
+          />
+        )}
       </CardContent>
     </Card>
   );
