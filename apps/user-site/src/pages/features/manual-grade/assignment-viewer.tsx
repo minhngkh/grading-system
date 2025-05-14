@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TestResult from "./test-result";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Code,
   FileIcon,
@@ -16,6 +16,7 @@ import {
   GradingResult,
 } from "@/types/submission";
 
+import EssayHighlighter from "./viewer/essay-viewer";
 import CodeHighlighter from "./viewer/code-viewer";
 import React from "react";
 import {
@@ -25,7 +26,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { EssayHighlighter } from "./viewer/essay-viewer";
 import { Badge } from "@/components/ui/badge";
 
 export interface AssignmentViewerProps {
@@ -43,6 +43,16 @@ const AssignmentViewer = ({
   testCases,
   updateFeedback,
 }: AssignmentViewerProps) => {
+  // Add validation for required props
+  useEffect(() => {
+    if (!breakdowns.length) {
+      console.warn("No breakdowns provided");
+    }
+    if (!gradingResult?.criterionResults) {
+      console.warn("Invalid grading result structure");
+    }
+  }, [breakdowns, gradingResult]);
+
   const getFileName = (fileReference: string | undefined) => {
     if (fileReference) {
       try {
@@ -69,8 +79,10 @@ const AssignmentViewer = ({
     ).values(),
   );
 
-  const selectedFileData = uniqueFiles.find(
-    (file) => getFileName(file.fileReference) === selectedFile,
+  // Memoize frequently used values
+  const selectedFileData = useMemo(
+    () => uniqueFiles.find((file) => getFileName(file.fileReference) === selectedFile),
+    [uniqueFiles, selectedFile],
   );
 
   const renderTabsTrigger = (tabs: { value: string; label: string }[]) =>
@@ -80,24 +92,33 @@ const AssignmentViewer = ({
       </TabsTrigger>
     ));
 
-  const selectedFileFeedbacks =
-    gradingResult?.criterionResults
-      ?.filter(
-        (criterionResult) =>
-          criterionResult.criterionId === selectedFileData?.criterionId,
-      )
-      .flatMap((criterionResult) => criterionResult.feedback) || [];
+  const selectedFileFeedbacks = useMemo(
+    () =>
+      gradingResult?.criterionResults
+        ?.filter((cr) => cr.criterionId === selectedFileData?.criterionId)
+        .flatMap((cr) => cr.feedback) || [],
+    [gradingResult, selectedFileData],
+  );
 
+  // Improved feedback update handler with validation
   const handleFeedbackUpdate = (newFeedbacks: Feedback[]) => {
+    if (!selectedFileData?.criterionId) {
+      console.error("No criterion ID available for feedback update");
+      return;
+    }
+
     setGradingResult((prev) => ({
       ...prev,
-      criterionResults: prev.criterionResults.map((criterionResult) =>
-        criterionResult.criterionId === selectedFileData?.criterionId
+      criterionResults: prev.criterionResults.map((cr) =>
+        cr.criterionId === selectedFileData.criterionId
           ? {
-              ...criterionResult,
-              feedback: [...criterionResult.feedback, ...newFeedbacks], // Append new feedbacks
+              ...cr,
+              feedback: [...cr.feedback, ...newFeedbacks].filter(
+                // Remove duplicates
+                (fb, index, self) => index === self.findIndex((f) => f.id === fb.id),
+              ),
             }
-          : criterionResult,
+          : cr,
       ),
     }));
   };

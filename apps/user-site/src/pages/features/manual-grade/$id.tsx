@@ -25,6 +25,15 @@ export default function ManualAdjustScorePage({
   const [activeScoreTab, setActiveScoreTab] = useState(criteria[0]?.id || "");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initSubmission || !initGradingResult || !initRubric) {
+      setError("Missing required data");
+      return;
+    }
+    setError(null);
+  }, [initSubmission, initGradingResult, initRubric]);
 
   const currentScore = gradingResult.criterionResults.reduce(
     (total, criterionResult) => total + criterionResult.score,
@@ -36,7 +45,6 @@ export default function ManualAdjustScorePage({
       0,
     ) || 0;
 
-  // Centralized feedback update logic
   const handleUpdateFeedback = (criterionId: string, feedbacks: Feedback[]) => {
     setGradingResult((prev) => ({
       ...prev,
@@ -48,34 +56,19 @@ export default function ManualAdjustScorePage({
     }));
   };
 
-  const handleFeedbackChange = (
-    criterionId: string,
-    breakdownId: string,
-    comment: string,
-  ) => {
-    const criterionResult = gradingResult.criterionResults.find(
-      (result) => result.criterionId === criterionId,
-    );
-
-    if (!criterionResult) return;
-
-    const updatedFeedbacks = criterionResult.feedback.map((fb) =>
-      fb.id === breakdownId ? { ...fb, comment } : fb,
-    );
-
-    handleUpdateFeedback(criterionId, updatedFeedbacks);
-  };
-
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    setError(null);
+
     try {
-      // await Promise.all([
-      //   submission && updateSubmission(submission.id, submission),
-      //   gradingResult && updateGradingResult(gradingResult.id, gradingResult),
-      // ]);
+      if (!gradingResult.criterionResults.every((cr) => cr.score >= 0)) {
+        throw new Error("Invalid scores detected");
+      }
+
       console.log("Submission and GradingResult updated successfully.");
-    } catch (error) {
-      console.error("Failed to update Submission and GradingResult:", error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit grading");
+      console.error("Failed to update Submission and GradingResult:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -83,6 +76,10 @@ export default function ManualAdjustScorePage({
 
   if (isLoading || !submission || !gradingResult || !initRubric) {
     return <LoadingScreen />;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
   }
 
   return (
@@ -97,7 +94,7 @@ export default function ManualAdjustScorePage({
         <AssignmentViewer
           breakdowns={submission?.breakdowns || []}
           gradingResult={gradingResult}
-          setGradingResult={setGradingResult} // Pass setGradingResult as a prop
+          setGradingResult={setGradingResult}
           testCases={[]}
           updateFeedback={(criterionId, breakdownId, comment) => {
             const criterionResult = gradingResult.criterionResults.find(
@@ -114,7 +111,6 @@ export default function ManualAdjustScorePage({
           }}
         />
 
-        {/* Score Adjust Section */}
         <div className="flex flex-col">
           <Tabs value={activeScoreTab} onValueChange={setActiveScoreTab} className="mt-2">
             <TabsList className="flex border-b w-full dark:border-gray-700">
@@ -139,7 +135,7 @@ export default function ManualAdjustScorePage({
                         value={criteriaResult.score}
                         min={0}
                         max={maxPoints}
-                        step={0.5} // Allow increments of 0.5
+                        step={0.5}
                         onChange={(e) => {
                           let newScore = parseFloat(e.target.value) || 0;
                           if (newScore < 0) newScore = 0;

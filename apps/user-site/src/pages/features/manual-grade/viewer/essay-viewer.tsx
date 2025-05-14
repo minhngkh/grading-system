@@ -12,7 +12,7 @@ interface EssayHighlighterProps {
   criterionId: string; // Add criterionId prop
 }
 
-export function EssayHighlighter({
+export default function EssayHighlighter({
   essay,
   feedbacks,
   updateFeedback,
@@ -52,26 +52,6 @@ export function EssayHighlighter({
     setNewFeedbackTag("info");
     setSelectionRange(null);
     setIsDialogOpen(false);
-    onHighlightComplete();
-  };
-
-  const addFeedback = (
-    from: { line: number; col: number },
-    to: { line: number; col: number },
-    comment: string,
-  ) => {
-    const newFeedback = {
-      id: uuidv4(),
-      comment,
-      DocumentLocation: {
-        id: uuidv4(),
-        fromLine: from.line,
-        toLine: to.line,
-        fromCol: from.col,
-        toCol: to.col,
-      },
-    };
-    updateFeedback(criterionId, [newFeedback]); // Pass criterionId with feedback
     onHighlightComplete();
   };
 
