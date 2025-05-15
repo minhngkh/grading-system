@@ -1,10 +1,11 @@
 import { z } from "zod";
 
 export enum GradingStatus {
-  Uploading,
-  Grading,
-  Finished,
+  Created,
+  Started,
+  Graded,
   Failed,
+  Completed,
 }
 
 export const SelectorSchema = z.object({
@@ -15,6 +16,7 @@ export const SelectorSchema = z.object({
 });
 
 export const GradingSchema = z.object({
+  id: z.string({ required_error: "Grading ID is required" }),
   rubricId: z.string({ required_error: "Rubric ID is required" }),
   scaleFactor: z.number().min(1).optional(),
   selectors: z
@@ -22,11 +24,8 @@ export const GradingSchema = z.object({
       invalid_type_error: "Selectors must be an array",
     })
     .min(1, { message: "Selectors cannot be empty" }),
+  status: z.nativeEnum(GradingStatus).optional(),
 });
 
 export type CriteriaSelector = z.infer<typeof SelectorSchema>;
 export type GradingAttempt = z.infer<typeof GradingSchema>;
-export type FileGradingStatus = {
-  fileName: string;
-  status: GradingStatus;
-};

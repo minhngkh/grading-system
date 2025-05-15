@@ -1,21 +1,17 @@
 import RubricGenerationPage from "@/pages/features/rubric-generation";
-import { createRubric, getRubric } from "@/services/rubricService";
+import { getRubric } from "@/services/rubricService";
 import { createFileRoute } from "@tanstack/react-router";
 
-const itemIdentifier = "rubric-gen";
-
-export const Route = createFileRoute("/_authenticated/_features/rubric-generation")({
+export const Route = createFileRoute(
+  "/_authenticated/_features/rubric-generation/$rubricId",
+)({
   component: RoutePage,
   preload: false,
-  loader: async () => {
-    try {
-      let curRubricId = sessionStorage.getItem(itemIdentifier);
-      if (!curRubricId) {
-        curRubricId = await createRubric();
-        sessionStorage.setItem(itemIdentifier, curRubricId);
-      }
+  loader: async ({ params }) => {
+    const { rubricId } = params;
 
-      return await getRubric(curRubricId);
+    try {
+      return await getRubric(rubricId);
     } catch (err) {
       console.log(err);
     }
@@ -27,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/_features/rubric-generatio
 function PendingComponent() {
   return (
     <div className="container flex size-full justify-center items-center">
-      Setting up...
+      Loading rubric...
     </div>
   );
 }

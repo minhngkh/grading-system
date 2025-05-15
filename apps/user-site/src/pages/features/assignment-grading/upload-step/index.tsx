@@ -1,44 +1,65 @@
 import type { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/ui/file-uploader";
-import { useState } from "react";
 import { FileList } from "./file-list";
 import { RubricSelect } from "@/components/scrollable-select";
 import { GradingAttempt } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { updateGradingAttempt, uploadFile } from "@/services/gradingServices";
 
 interface UploadStepProps {
-  uploadedFiles: File[];
-  onFilesChange: (files: File[]) => void;
-  onGradingAttemptChange: (gradingAttempt?: GradingAttempt) => void;
+  setHandleNextCallback?: (
+    cb: (setIsUploading: (value: boolean) => void) => Promise<void>,
+  ) => void;
+  onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
+  gradingAttempt: GradingAttempt;
 }
 
 export default function UploadStep({
-  uploadedFiles,
-  onFilesChange,
   onGradingAttemptChange,
+  gradingAttempt,
+  setHandleNextCallback,
 }: UploadStepProps) {
-  const [gradingAttempt, setGradingAttempt] = useState<GradingAttempt>();
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+  useEffect(() => {
+    setHandleNextCallback?.(async (setIsUploading: (value: boolean) => void) => {
+      try {
+        setIsUploading(true);
+        await updateGradingAttempt(gradingAttempt.id, { ...gradingAttempt });
+        await Promise.all(
+          uploadedFiles.map(async (file) => {
+            try {
+              await uploadFile(gradingAttempt.id, file);
+            } catch (error) {
+              console.log(error);
+            }
+          }),
+        );
+      } catch (error) {
+        throw error;
+      } finally {
+        setIsUploading(false);
+      }
+    });
+  }, [setHandleNextCallback]);
 
   const handleSelectRubric = (rubric: Rubric | undefined) => {
     if (rubric) {
       const newGradingAttempt: GradingAttempt = {
-        rubricId: rubric.id ?? "",
+        id: gradingAttempt.id,
+        rubricId: rubric.id!,
         selectors: rubric.criteria.map((criterion) => {
           return { criterion: criterion.name, pattern: "*" };
         }),
       };
 
-      handleGradingAttemptChange(newGradingAttempt);
+      onGradingAttemptChange(newGradingAttempt);
     } else {
-      handleGradingAttemptChange(undefined);
+      onGradingAttemptChange(undefined);
     }
-  };
-
-  const handleGradingAttemptChange = (attempt?: GradingAttempt) => {
-    setGradingAttempt(attempt);
-    onGradingAttemptChange(attempt);
   };
 
   const handleFileUpload = (files: File[]) => {
@@ -46,16 +67,16 @@ export default function UploadStep({
       (file) => !uploadedFiles.some((existing) => existing.name === file.name),
     );
 
-    onFilesChange([...uploadedFiles, ...newFiles]);
+    setUploadedFiles([...uploadedFiles, ...newFiles]);
   };
 
   const handleRemoveFile = (i: number) => {
     const updatedFiles = uploadedFiles.filter((_, index) => index !== i);
-    onFilesChange(updatedFiles);
+    setUploadedFiles(updatedFiles);
   };
 
   const handleRemoveAllFiles = () => {
-    onFilesChange([]);
+    setUploadedFiles([]);
   };
 
   return (
@@ -95,7 +116,7 @@ export default function UploadStep({
         {gradingAttempt && uploadedFiles.length > 0 && (
           <CriteriaMapper
             gradingAttempt={gradingAttempt}
-            onGradingAttemptChange={handleGradingAttemptChange}
+            onGradingAttemptChange={onGradingAttemptChange}
             uploadedFiles={uploadedFiles}
           />
         )}

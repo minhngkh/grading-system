@@ -6,10 +6,10 @@ import React, { useState } from "react";
 import GradingProgressStep from "./grading-step";
 import ResultsStep from "./result-step";
 import UploadStep from "./upload-step";
-import { GradingAttempt, GradingSchema } from "@/types/grading";
+import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createGradingAttempt } from "@/services/gradingServices";
+import { useNavigate } from "@tanstack/react-router";
 
 type StepData = {
   title: string;
@@ -19,67 +19,67 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
   {
     id: "upload",
     title: "Upload Files",
+    nextButtonTitle: "Start Grading",
   },
   {
     id: "grading",
     title: "Grade Files",
+    nextButtonTitle: "View Results",
   },
   {
     id: "review",
     title: "Review Results",
+    nextButtonTitle: "Finish",
   },
 );
 
-export default function UploadAssignmentPage() {
-  const stepper = useStepper();
+interface UploadAssignmentPageProps {
+  initialGradingAttempt: GradingAttempt;
+  initalStep?: string;
+}
+
+export default function UploadAssignmentPage({
+  initialGradingAttempt,
+  initalStep,
+}: UploadAssignmentPageProps) {
+  const stepper = useStepper({
+    initialStep: initalStep,
+  });
   const currentIndex = utils.getIndex(stepper.current.id);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [attemptId, setAttemptId] = useState<string>();
+  const navigate = useNavigate();
+  const [nextCallback, setNextCallback] = useState<(values?: any) => Promise<void>>();
+  const [isUploading, setIsUploading] = useState(false);
 
   const gradingAttempt = useForm<GradingAttempt>({
     resolver: zodResolver(GradingSchema),
+    defaultValues: initialGradingAttempt,
   });
 
-  const handleUpdateGradingAttempt = (updated?: GradingAttempt) => {
+  const gradingAttemptValues = gradingAttempt.watch();
+
+  const handleUpdateGradingAttempt = (updated?: Partial<GradingAttempt>) => {
     gradingAttempt.reset(updated);
   };
 
   const handleNext = async () => {
-    if (stepper.current.id === "upload") {
-      setIsLoading(true);
-      try {
-        const id = await createGradingAttempt(gradingAttempt.getValues());
-        setAttemptId(id);
-      } catch (err) {
-        console.log(err);
-        return;
-      } finally {
-        setIsLoading(false);
-      }
+    try {
+      await nextCallback?.(currentIndex === 0 ? setIsUploading : undefined);
+    } catch {
+      return;
     }
 
+    if (currentIndex === 1 && gradingAttemptValues.status === GradingStatus.Started)
+      return;
+
+    if (currentIndex === 2) return navigate({ to: "/home" });
+
     stepper.next();
+    sessionStorage.setItem("gradingStep", stepper.current.id);
   };
 
   const isNextButtonDisabled = () => {
-    if (stepper.isLast) return true;
-
-    if (stepper.current.id === "Upload") {
-      return isLoading || uploadedFiles.length === 0;
-    }
-
+    if (currentIndex === 1) return gradingAttemptValues.status === GradingStatus.Started;
     return false;
-  };
-
-  const nextButtonTitle = () => {
-    if (stepper.isFirst) {
-      return "Start Grading";
-    }
-
-    if (stepper.isLast) return "Finish";
-
-    return "View Results";
   };
 
   return (
@@ -116,32 +116,42 @@ export default function UploadAssignmentPage() {
         </ol>
       </nav>
       <div className="mt-8 space-y-4 flex-1">
-        {isLoading ? (
-          <div>Loading...</div>
-        ) : (
-          // TODO: lint error, solution is to change the id to lowercase, check if there
-          // is any error
-          stepper.switch({
-            upload: () => (
+        {stepper.switch({
+          upload: () => {
+            if (isUploading) {
+              return (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-lg font-semibold">
+                    Uploading assignment and starting...
+                  </p>
+                </div>
+              );
+            }
+
+            return (
               <UploadStep
+                setHandleNextCallback={setNextCallback}
+                gradingAttempt={gradingAttemptValues}
                 onGradingAttemptChange={handleUpdateGradingAttempt}
-                uploadedFiles={uploadedFiles}
-                onFilesChange={setUploadedFiles}
               />
-            ),
-            grading: () => (
-              <GradingProgressStep uploadedFiles={uploadedFiles} attemptId={attemptId} />
-            ),
-            review: () => <ResultsStep />,
-          })
-        )}
+            );
+          },
+          grading: () => (
+            <GradingProgressStep
+              gradingAttempt={gradingAttemptValues}
+              setHandleNextCallback={setNextCallback}
+              onGradingAttemptChange={handleUpdateGradingAttempt}
+            />
+          ),
+          review: () => <ResultsStep />,
+        })}
       </div>
       <div className="flex w-full justify-end gap-4">
         <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
           Back
         </Button>
         <Button disabled={isNextButtonDisabled()} onClick={handleNext}>
-          {nextButtonTitle()}
+          {stepper.current.nextButtonTitle}
         </Button>
       </div>
     </div>

@@ -10,7 +10,7 @@ interface AppRouterContext {
   auth: ReturnType<typeof useAuth>;
 }
 
-export const Route = createRootRouteWithContext<AppRouterContext>()({
+export const RootRoute = createRootRouteWithContext<AppRouterContext>()({
   component: () => <Root />,
   errorComponent: ErrorBoundary,
 });
