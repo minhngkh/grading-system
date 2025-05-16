@@ -23,6 +23,9 @@ export function usePolling<T>(
         onSuccess(result);
       } catch (error) {
         onError?.(error as Error);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
       } finally {
         timeoutRef.current = setTimeout(poll, interval);
       }

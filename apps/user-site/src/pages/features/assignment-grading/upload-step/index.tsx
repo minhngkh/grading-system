@@ -10,24 +10,26 @@ import { useEffect, useState } from "react";
 import { updateGradingAttempt, uploadFile } from "@/services/gradingServices";
 
 interface UploadStepProps {
-  setHandleNextCallback?: (
-    cb: (setIsUploading: (value: boolean) => void) => Promise<void>,
-  ) => void;
+  setNextCallback?: React.Dispatch<
+    React.SetStateAction<(() => Promise<any>) | undefined>
+  >;
   onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
   gradingAttempt: GradingAttempt;
+  setIsUploading?: (isUploading: boolean) => void;
 }
 
 export default function UploadStep({
   onGradingAttemptChange,
   gradingAttempt,
-  setHandleNextCallback,
+  setNextCallback,
+  setIsUploading,
 }: UploadStepProps) {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   useEffect(() => {
-    setHandleNextCallback?.(async (setIsUploading: (value: boolean) => void) => {
+    setNextCallback?.(() => async () => {
       try {
-        setIsUploading(true);
+        setIsUploading?.(true);
         await updateGradingAttempt(gradingAttempt.id, { ...gradingAttempt });
         await Promise.all(
           uploadedFiles.map(async (file) => {
@@ -41,10 +43,10 @@ export default function UploadStep({
       } catch (error) {
         throw error;
       } finally {
-        setIsUploading(false);
+        setIsUploading?.(false);
       }
     });
-  }, [setHandleNextCallback]);
+  }, [setNextCallback]);
 
   const handleSelectRubric = (rubric: Rubric | undefined) => {
     if (rubric) {
@@ -84,7 +86,7 @@ export default function UploadStep({
       <div className="space-y-2">
         <h2 className="text-lg font-semibold">Select Rubric</h2>
         <div className="flex w-full gap-4">
-          <RubricSelect onChange={handleSelectRubric} />
+          <RubricSelect onRubricChange={handleSelectRubric} />
           <Button variant="outline" asChild>
             <Link preload={false} to="/rubric-generation">
               Create New Rubric

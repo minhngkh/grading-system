@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Rubric } from "@/types/rubric";
-import { getRubrics } from "@/services/rubricService";
+import { GetRubricsResult } from "@/services/rubricService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -50,35 +50,36 @@ type SortConfig = {
 
 type ManageRubricsPageProps = {
   searchParams: SearchParams;
+  results: GetRubricsResult;
   setSearchParam: (partial: Partial<SearchParams>) => void;
 };
 
 export default function ManageRubricsPage({
   searchParams,
   setSearchParam,
+  results,
 }: ManageRubricsPageProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "rubricName",
     direction: "desc",
   });
   const { currentPage, rowsPerPage } = searchParams;
+  const {
+    data: rubrics,
+    meta: { total: totalCount },
+  } = results;
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.searchTerm || "");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedRubric, setSelectedRubric] = useState<Rubric | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [rubrics, setRubrics] = useState<Rubric[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
 
-  // added debounce hook for searchTerm
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
-
-  // Load rubrics from API (search and pagination)
   useEffect(() => {
-    getRubrics(currentPage, rowsPerPage, debouncedSearchTerm).then(({ data, meta }) => {
-      setRubrics(data);
-      setTotalCount(meta.total || data.length);
+    setSearchParam({
+      searchTerm: debouncedSearchTerm,
+      currentPage: 1,
     });
-  }, [currentPage, rowsPerPage, debouncedSearchTerm]);
+  }, [debouncedSearchTerm]);
 
   // Apply client filtering for status only
   const filteredRubrics =
@@ -141,7 +142,7 @@ export default function ManageRubricsPage({
   };
 
   const clearFilters = () => {
-    setSearchParam({ searchTerm: "" });
+    setSearchTerm("");
     setStatusFilter("all");
   };
 
@@ -161,7 +162,6 @@ export default function ManageRubricsPage({
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setSearchParam({ searchTerm: e.target.value, currentPage: 1 });
             }}
             className="pl-8"
           />
@@ -169,7 +169,7 @@ export default function ManageRubricsPage({
             variant="ghost"
             size="sm"
             className="absolute right-0 top-0 h-9 w-9 p-0"
-            onClick={() => setSearchParam({ searchTerm: "" })}
+            onClick={() => setSearchTerm("")}
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Clear search</span>

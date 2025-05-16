@@ -19,14 +19,14 @@ interface ScrollableSelectProps {
   placeholder?: string;
   emptyMessage?: string;
   className?: string;
-  onChange?: (value: Rubric | undefined) => void;
+  onRubricChange?: (value: Rubric | undefined) => void;
 }
 
 export function RubricSelect({
   placeholder = "Select an item",
   emptyMessage = "No items found.",
   className,
-  onChange,
+  onRubricChange,
 }: ScrollableSelectProps) {
   const [open, setOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState<Rubric | undefined>();
@@ -39,13 +39,10 @@ export function RubricSelect({
   const listRef = useRef<HTMLDivElement>(null);
   const pageSize = 20;
 
-  // Use the debounce hook for search term
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  // Load data based on current search and page
-  const loadData = useCallback(
+  const search = useCallback(
     async (currentPage: number, search: string, resetItems = false) => {
-      setLoading(true);
       try {
         const result = await getRubrics(currentPage, pageSize, search);
 
@@ -55,41 +52,38 @@ export function RubricSelect({
           setItems((prev) => [...prev, ...result.data]);
         }
 
-        setHasMore(result.meta.total === items.length);
+        setHasMore(
+          result.meta.total >
+            (resetItems ? result.data.length : items.length + result.data.length),
+        );
       } catch (error) {
         console.error("Error loading data:", error);
-      } finally {
-        setLoading(false);
-        setIsSearching(false);
       }
     },
-    [pageSize],
+    [],
   );
 
-  // Load initial data
+  // Load data when popover opens
   useEffect(() => {
-    loadData(1, "", true);
-  }, [loadData]);
+    async function LoadData() {
+      if (!open) return;
 
-  // React to changes in the debounced search term
-  useEffect(() => {
-    // Skip the initial render
-    if (debouncedSearchTerm !== searchTerm) {
-      return;
+      setIsSearching(true);
+      setPage(1);
+      await search(1, debouncedSearchTerm, true);
+      setIsSearching(false);
     }
 
-    setPage(1);
-    loadData(1, debouncedSearchTerm, true);
-  }, [debouncedSearchTerm, loadData, searchTerm]);
+    LoadData();
+  }, [open, debouncedSearchTerm, search]);
 
   // Handle search input change
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = async (value: string) => {
     setSearchTerm(value);
-    setIsSearching(true);
   };
 
   // Handle scroll event to detect when user has scrolled to the bottom
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+  const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
     if (!hasMore || loading || isSearching) return;
 
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -97,7 +91,9 @@ export function RubricSelect({
     if (scrollHeight - scrollTop - clientHeight < 50) {
       const nextPage = page + 1;
       setPage(nextPage);
-      loadData(nextPage, debouncedSearchTerm);
+      setLoading(true);
+      await search(nextPage, searchTerm);
+      setLoading(false);
     }
   };
 
@@ -119,6 +115,7 @@ export function RubricSelect({
           <CommandInput
             placeholder="Search items..."
             value={searchTerm}
+            disabled={isSearching}
             onValueChange={handleSearchChange}
           />
           <CommandEmpty>
@@ -146,7 +143,7 @@ export function RubricSelect({
                     setSelectedValue(
                       currentValue === selectedValue?.rubricName ? undefined : item,
                     );
-                    onChange?.(
+                    onRubricChange?.(
                       currentValue === selectedValue?.rubricName ? undefined : item,
                     );
                     setOpen(false);

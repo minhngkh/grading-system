@@ -47,7 +47,7 @@ export default function UploadAssignmentPage({
   });
   const currentIndex = utils.getIndex(stepper.current.id);
   const navigate = useNavigate();
-  const [nextCallback, setNextCallback] = useState<(values?: any) => Promise<void>>();
+  const [nextCallback, setNextCallback] = useState<() => Promise<any>>();
   const [isUploading, setIsUploading] = useState(false);
 
   const gradingAttempt = useForm<GradingAttempt>({
@@ -63,7 +63,7 @@ export default function UploadAssignmentPage({
 
   const handleNext = async () => {
     try {
-      await nextCallback?.(currentIndex === 0 ? setIsUploading : undefined);
+      await nextCallback?.();
     } catch {
       return;
     }
@@ -78,6 +78,7 @@ export default function UploadAssignmentPage({
   };
 
   const isNextButtonDisabled = () => {
+    if (isUploading) return true;
     if (currentIndex === 1) return gradingAttemptValues.status === GradingStatus.Started;
     return false;
   };
@@ -130,7 +131,8 @@ export default function UploadAssignmentPage({
 
             return (
               <UploadStep
-                setHandleNextCallback={setNextCallback}
+                setIsUploading={setIsUploading}
+                setNextCallback={setNextCallback}
                 gradingAttempt={gradingAttemptValues}
                 onGradingAttemptChange={handleUpdateGradingAttempt}
               />

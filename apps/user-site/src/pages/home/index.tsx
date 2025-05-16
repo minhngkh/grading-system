@@ -11,6 +11,7 @@ const tools: Tool[] = [
     type: ToolType.Rubric,
     isFavorite: true,
     navigation: "/rubric-generation",
+    preload: false,
   },
   {
     name: "Manage Rubric",
@@ -26,6 +27,7 @@ const tools: Tool[] = [
     type: ToolType.Grading,
     isFavorite: false,
     navigation: "/assignment-grading",
+    preload: false,
   },
   {
     name: "Manual Grading",

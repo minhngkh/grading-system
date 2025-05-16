@@ -27,12 +27,12 @@ const rubricDeserializer = new Deserializer({
 
 const API_URL = import.meta.env.VITE_RUBRIC_ENGINE_URL;
 
-interface GetRubricsResult {
+export type GetRubricsResult = {
   data: Rubric[];
   meta: {
     total: number;
   };
-}
+};
 
 export async function getRubrics(
   page?: number,
