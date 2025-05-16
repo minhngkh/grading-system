@@ -25,6 +25,20 @@
         "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:19095",
         "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20221"
       }
+    },
+    "dev": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:15292",
+      "environmentVariables": {
+      	"ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true",
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development",
+        "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:19095",
+        "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20221",
+        "DASHBOARD__FRONTEND__AUTHMODE": "Unsecured",
+      }
     }
   }
 }
