@@ -40,7 +40,7 @@
     <PackageVersion Include="Scalar.AspNetCore" Version="2.1.9" />
     <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Endpoints" Version="1.5.0" />
     <PackageVersion Include="Stateless" Version="5.17.0" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.4" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.5" />
     <!-- Add the EventFlow package reference to the Domain project -->
     <PackageVersion Include="EventFlow" Version="1.2.0" />
     <PackageVersion Include="EventFlow.PostgreSql" Version="1.1.0" />
