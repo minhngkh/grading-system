@@ -18,7 +18,6 @@ public static class EndpointHandler
     }
 
     private static async Task<IResult> CreateGrading(
-        [FromBody] CreateGradingRequest request,
         ICommandBus commandBus,
         IQueryProcessor queryProcessor,
         IHttpContextAccessor contextAccessor,
@@ -26,17 +25,11 @@ public static class EndpointHandler
         CancellationToken cancellationToken)
     {
         var teacherId = TeacherId.With("teacher");
-        var rubric = await rubricProto.GetRubricAsync(new GetRubricRequest
-        {
-            RubricId = request.RubricId
-        }, cancellationToken: cancellationToken);
-        
+
         var gradingId = GradingId.NewComb();
         await commandBus.PublishAsync(new Command(gradingId)
         {
-            TeacherId = teacherId,
-            RubricId = RubricId.With(rubric.Id),
-            Selectors = request.Selectors.ConvertAll(s => s.ToValueObject())
+            TeacherId = teacherId
         }, cancellationToken);
 
         return TypedResults.Created("/", gradingId.Value);

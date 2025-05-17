@@ -22,10 +22,7 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
     {
         Emit(new Create.GradingCreatedEvent
         {
-            TeacherId = command.TeacherId,
-            RubricId = command.RubricId,
-            ScaleFactor = command.ScaleFactor,
-            Selectors = command.Selectors
+            TeacherId = command.TeacherId
         });
     }
 
@@ -45,8 +42,13 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         });
     }
 
-    public Pattern GetGlobalPattern() => this.State.GlobalPattern;
-    public List<Selector> GetCriterionAttachmentsSelectors() => this.State.Selectors;
+    public void ChangeRubric(ChangeRubric.Command command)
+    {
+        Emit(new ChangeRubric.RubricChangedEvent
+        {
+            RubricId = command.Rubric
+        });
+    }
 
     public void AddSubmission(Submission submission)
     {

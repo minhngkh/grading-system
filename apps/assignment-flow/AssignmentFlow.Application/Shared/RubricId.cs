@@ -10,5 +10,6 @@ public sealed class RubricId : StringValueObject
     [JsonConstructor]
     public RubricId(string value) : base(value) { }
 
+    protected override bool AllowEmpty => true;
     public static RubricId With(string value) => new(value);
 }
