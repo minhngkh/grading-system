@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { Rubric } from "@/types/rubric";
+import { Rubric, RubricStatus } from "@/types/rubric";
 import { GetRubricsResult } from "@/services/rubricService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -130,11 +130,11 @@ export default function ManageRubricsPage({
     );
   };
 
-  const getStatusBadge = (status: Rubric["status"]) => {
+  const getStatusBadge = (status?: RubricStatus) => {
     switch (status) {
-      case "drafted":
-        return <Badge variant="outline">Drafted</Badge>;
-      case "used":
+      case RubricStatus.Draft:
+        return <Badge variant="default">Drafted</Badge>;
+      case RubricStatus.Used:
         return <Badge variant="secondary">Used</Badge>;
       default:
         return <Badge variant="destructive">None</Badge>;
@@ -165,15 +165,17 @@ export default function ManageRubricsPage({
             }}
             className="pl-8"
           />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-0 top-0 h-9 w-9 p-0"
-            onClick={() => setSearchTerm("")}
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Clear search</span>
-          </Button>
+          {searchTerm.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-9 w-9 p-0 hover:bg-transparent hover:text-red-600"
+              onClick={() => setSearchTerm("")}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Clear search</span>
+            </Button>
+          )}
         </div>
         <Select
           value={statusFilter}

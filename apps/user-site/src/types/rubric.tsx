@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export enum RubricStatus {
+  Draft = "Draft",
+  Used = "Used",
+}
+
 export const LevelSchema = z.object({
   description: z.string(),
   weight: z.number().min(0, "Weight must be non-negative"),
@@ -20,7 +25,7 @@ export const RubricSchema = z.object({
     .min(1, "At least one performance tag is required"),
   criteria: z.array(CriteriaSchema).min(1, "At least one criterion is required"),
   updatedOn: z.date().optional(),
-  status: z.string().optional(),
+  status: z.nativeEnum(RubricStatus).optional(),
 });
 
 export type Level = z.infer<typeof LevelSchema>;

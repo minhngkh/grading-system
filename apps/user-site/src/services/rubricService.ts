@@ -26,6 +26,7 @@ const rubricDeserializer = new Deserializer({
 });
 
 const API_URL = import.meta.env.VITE_RUBRIC_ENGINE_URL;
+const RUBRIC_API_URL = `${API_URL}/rubrics`;
 
 export type GetRubricsResult = {
   data: Rubric[];
@@ -46,7 +47,7 @@ export async function getRubrics(
   if (search && search.length > 0)
     params.append("filter", `contains(rubricName,'${search}')`);
 
-  const url = `${API_URL}?${params.toString()}`;
+  const url = `${RUBRIC_API_URL}?${params.toString()}`;
   const response = await axios.get(url, configHeaders);
   const data = await rubricDeserializer.deserialize(response.data);
   const meta = response.data.meta;
@@ -55,18 +56,22 @@ export async function getRubrics(
 }
 
 export async function getRubric(id: string): Promise<Rubric> {
-  const response = await axios.get(`${API_URL}/${id}`, configHeaders);
+  const response = await axios.get(`${RUBRIC_API_URL}/${id}`, configHeaders);
   return rubricDeserializer.deserialize(response.data);
 }
 
 export async function createRubric(): Promise<string> {
-  const response = await axios.post(API_URL, { name: "New Rubric" }, configHeaders);
+  const response = await axios.post(
+    RUBRIC_API_URL,
+    { name: "New Rubric" },
+    configHeaders,
+  );
   return response.data;
 }
 
 export async function updateRubric(id: string, rubric: Partial<Rubric>): Promise<Rubric> {
   const response = await axios.patch(
-    `${API_URL}/${id}`,
+    `${RUBRIC_API_URL}/${id}`,
     { ...rubric, name: rubric.rubricName },
     configHeaders,
   );
@@ -74,5 +79,5 @@ export async function updateRubric(id: string, rubric: Partial<Rubric>): Promise
 }
 
 export async function deleteRubric(id: string): Promise<void> {
-  await axios.delete(`${API_URL}/${id}`, configHeaders);
+  await axios.delete(`${RUBRIC_API_URL}/${id}`, configHeaders);
 }

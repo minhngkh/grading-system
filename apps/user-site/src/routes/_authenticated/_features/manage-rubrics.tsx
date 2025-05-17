@@ -1,3 +1,4 @@
+import ErrorComponent from "@/components/routeError";
 import ManageRubricsPage from "@/pages/features/manage-rubrics";
 import { getRubrics } from "@/services/rubricService";
 import { SearchParams, searchParams } from "@/types/searchParams";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/_features/manage-rubrics")
   search: {
     middlewares: [retainSearchParams(["rowsPerPage", "currentPage", "searchTerm"])],
   },
+  errorComponent: () => ErrorComponent,
 });
 
 function RouteComponent() {

@@ -74,7 +74,7 @@ export default function ReviewResults({ isLoading, assessments }: ReviewResultsP
                       {item.submissionReference}
                     </h3>
                     <span className="text-2xl font-bold">
-                      {item.rawScore * item.scaleFactor}
+                      {item.rawScore * item.scaleFactor} ({item.rawScore}%)
                     </span>
                   </div>
 
@@ -84,16 +84,26 @@ export default function ReviewResults({ isLoading, assessments }: ReviewResultsP
                         score.criterionName,
                         criteriaColorMap,
                       );
+
+                      const percentage = Math.round(score.rawScore * 100);
+                      const finalScore = (
+                        score.rawScore *
+                        item.rawScore *
+                        item.scaleFactor
+                      ).toFixed(2);
+
                       return (
                         <div key={index} className="space-y-1">
                           <div className="flex justify-between text-sm">
                             <span className={colorStyle.text}>{score.criterionName}</span>
-                            <span className={colorStyle.text}>{score.rawScore}%</span>
+                            <span className={colorStyle.text}>
+                              {finalScore} ({percentage}%)
+                            </span>
                           </div>
                           <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                             <div
                               className={`h-full ${colorStyle.bg}`}
-                              style={{ width: `${score.rawScore}%` }}
+                              style={{ width: `${percentage}%` }}
                             ></div>
                           </div>
                         </div>

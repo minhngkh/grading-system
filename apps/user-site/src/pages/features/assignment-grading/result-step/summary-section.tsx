@@ -30,15 +30,11 @@ type SummarySectionProps = {
 };
 
 export default function SummarySection({ isLoading, assessments }: SummarySectionProps) {
-  const totalScore = assessments.length
-    ? assessments.reduce((sum, item) => sum + item.scaleFactor, 0)
-    : 1;
+  const totalScore = assessments.length ? assessments[0].scaleFactor : 1;
 
   const averageScore = assessments.length
-    ? Math.round(
-        assessments.reduce((sum, item) => sum + item.rawScore * item.scaleFactor, 0) /
-          assessments.length,
-      )
+    ? assessments.reduce((sum, item) => sum + item.rawScore * item.scaleFactor, 0) /
+      assessments.length
     : 0;
 
   const highestScore = assessments.length
@@ -70,7 +66,9 @@ export default function SummarySection({ isLoading, assessments }: SummarySectio
                   <div className="w-full mt-2 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                     <div
                       className="bg-blue-600 h-2.5 rounded-full"
-                      style={{ width: `${Math.round(averageScore / totalScore)}%` }}
+                      style={{
+                        width: `${Math.round((averageScore * 100) / totalScore)}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -84,7 +82,9 @@ export default function SummarySection({ isLoading, assessments }: SummarySectio
                   <div className="w-full mt-2 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                     <div
                       className="bg-green-600 h-2.5 rounded-full"
-                      style={{ width: `${Math.round(highestScore / totalScore)}%` }}
+                      style={{
+                        width: `${Math.round((highestScore * 100) / totalScore)}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -94,7 +94,9 @@ export default function SummarySection({ isLoading, assessments }: SummarySectio
                   <div className="w-full mt-2 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                     <div
                       className="bg-red-600 h-2.5 rounded-full"
-                      style={{ width: `${Math.round(lowestScore / totalScore)}}%` }}
+                      style={{
+                        width: `${Math.round((lowestScore * 100) / totalScore)}%`,
+                      }}
                     />
                   </div>
                 </div>
