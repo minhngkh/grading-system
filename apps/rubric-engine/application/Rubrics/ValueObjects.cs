@@ -37,6 +37,7 @@ public sealed class Plugin : StringValueObject
     [JsonConstructor]
     public Plugin(string value) : base(value) { }
     protected override int? MaxLength => ModelConstants.ShortMediumText;
+    protected override bool AllowEmpty => true;
     public static Plugin New(string value) => new(value);
 }
 
@@ -46,6 +47,7 @@ public sealed class Configuration : StringValueObject
     [JsonConstructor]
     public Configuration(string value) : base(value) { }
     protected override int? MaxLength => ModelConstants.ShortMediumText;
+    protected override bool AllowEmpty => true;
     public static Configuration New(string value) => new(value);
 }
 
