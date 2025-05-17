@@ -91,14 +91,6 @@ public class Grading
         CancellationToken cancellationToken)
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
-        RubricId = domainEvent.AggregateEvent.RubricId.Value;
-        ScaleFactor = domainEvent.AggregateEvent.ScaleFactor;
-        Selectors = domainEvent.AggregateEvent.Selectors
-            .ConvertAll(s => new SelectorApiContract
-            {
-                Criterion = s.Criterion,
-                Pattern = s.Pattern
-            });
 
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
