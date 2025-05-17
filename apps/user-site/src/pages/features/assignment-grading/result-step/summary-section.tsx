@@ -27,35 +27,26 @@ const SummaryCardSkeleton = () => (
 type SummarySectionProps = {
   isLoading: boolean;
   assessments: Assessment[];
-  mappedAssessments: {
-    id: string;
-    fileName: string;
-    totalPercentage: number;
-    criteria: {
-      name: string;
-      percentage: number;
-    }[];
-  }[];
 };
 
-export default function SummarySection({
-  isLoading,
-  assessments,
-  mappedAssessments,
-}: SummarySectionProps) {
-  // Calculate summary statistics using mapped assessments
+export default function SummarySection({ isLoading, assessments }: SummarySectionProps) {
+  const totalScore = assessments.length
+    ? assessments.reduce((sum, item) => sum + item.scaleFactor, 0)
+    : 1;
+
   const averageScore = assessments.length
     ? Math.round(
-        mappedAssessments.reduce((sum, item) => sum + item.totalPercentage, 0) /
-          mappedAssessments.length,
+        assessments.reduce((sum, item) => sum + item.rawScore * item.scaleFactor, 0) /
+          assessments.length,
       )
     : 0;
 
-  const highestScore = mappedAssessments.length
-    ? Math.max(...mappedAssessments.map((item) => item.totalPercentage))
+  const highestScore = assessments.length
+    ? Math.max(...assessments.map((item) => item.rawScore * item.scaleFactor))
     : 0;
-  const lowestScore = mappedAssessments.length
-    ? Math.min(...mappedAssessments.map((item) => item.totalPercentage))
+
+  const lowestScore = assessments.length
+    ? Math.min(...assessments.map((item) => item.rawScore * item.scaleFactor))
     : 0;
 
   return (
@@ -75,13 +66,11 @@ export default function SummarySection({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex flex-col items-center p-4 bg-muted rounded-lg">
                   <span className="text-sm font-medium text-blue-600">Average Score</span>
-                  <span className="text-3xl font-bold text-blue-600">
-                    {averageScore}%
-                  </span>
+                  <span className="text-3xl font-bold text-blue-600">{averageScore}</span>
                   <div className="w-full mt-2 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                     <div
                       className="bg-blue-600 h-2.5 rounded-full"
-                      style={{ width: `${averageScore}%` }}
+                      style={{ width: `${Math.round(averageScore / totalScore)}%` }}
                     />
                   </div>
                 </div>
@@ -90,28 +79,28 @@ export default function SummarySection({
                     Highest Score
                   </span>
                   <span className="text-3xl font-bold text-green-600">
-                    {highestScore}%
+                    {highestScore}
                   </span>
                   <div className="w-full mt-2 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                     <div
                       className="bg-green-600 h-2.5 rounded-full"
-                      style={{ width: `${highestScore}%` }}
+                      style={{ width: `${Math.round(highestScore / totalScore)}%` }}
                     />
                   </div>
                 </div>
                 <div className="flex flex-col items-center p-4 bg-muted rounded-lg">
                   <span className="text-sm font-medium text-red-600">Lowest Score</span>
-                  <span className="text-3xl font-bold text-red-600">{lowestScore}%</span>
+                  <span className="text-3xl font-bold text-red-600">{lowestScore}</span>
                   <div className="w-full mt-2 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                     <div
                       className="bg-red-600 h-2.5 rounded-full"
-                      style={{ width: `${lowestScore}%` }}
+                      style={{ width: `${Math.round(lowestScore / totalScore)}}%` }}
                     />
                   </div>
                 </div>
               </div>
               <div className="mt-4 text-sm text-muted-foreground">
-                Total items graded: {mappedAssessments.length}
+                Total items graded: {assessments.length}
               </div>
               <div className="mt-6 p-4 bg-muted rounded-lg">
                 <h3 className="font-medium mb-2">Summary Report</h3>
@@ -119,18 +108,6 @@ export default function SummarySection({
                   The summary report provides an overview of the grading results for the
                   selected assessments. It includes the average, highest, and lowest
                   scores achieved by students.
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {mappedAssessments.filter((item) => item.totalPercentage >= 90).length >
-                  0
-                    ? `${mappedAssessments.filter((item) => item.totalPercentage >= 90).length} submissions achieved outstanding scores of 90% or above. `
-                    : ""}
-                  {mappedAssessments.filter((item) => item.totalPercentage < 70).length >
-                  0
-                    ? `${mappedAssessments.filter((item) => item.totalPercentage < 70).length} submissions scored below 70% and may require additional review. `
-                    : ""}
-                  Consider reviewing the detailed breakdown of each submission to identify
-                  specific areas for improvement.
                 </p>
               </div>
             </>

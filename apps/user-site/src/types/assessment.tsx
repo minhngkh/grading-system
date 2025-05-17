@@ -22,7 +22,7 @@ export const AssessmentSchema = z.object({
   gradingId: z.string(),
   scaleFactor: z.number(),
   submissionReference: z.string(),
-  rawScore: z.number().optional(),
+  rawScore: z.number(),
   adjustedCount: z.number().optional(),
   scoreBreakdowns: z.array(ScoreBreakdownSchema),
   feedbacks: z.array(FeedbackItemSchema),

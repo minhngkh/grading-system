@@ -19,18 +19,7 @@ const mockAssessments: Assessment[] = [
       { criterionName: "Analysis", tag: "analysis", rawScore: 0.82 },
       { criterionName: "References", tag: "references", rawScore: 0.88 },
     ],
-    feedbacks: [
-      {
-        criterion: "Content",
-        fileRef: "assignment1.pdf",
-        fromLine: 1,
-        toLine: 5,
-        fromCol: 0,
-        toCol: 80,
-        comment: "Well-structured introduction",
-        tag: "positive",
-      },
-    ],
+    feedbacks: [],
   },
   {
     id: "2",
@@ -74,16 +63,6 @@ export default function ResultsStep({ gradingAttempt }: ResultsStepProps) {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const mappedAssessments = assessments.map((assessment) => ({
-    id: assessment.id,
-    fileName: assessment.submissionReference,
-    totalPercentage: Math.round((assessment.rawScore || 0) * assessment.scaleFactor),
-    criteria: assessment.scoreBreakdowns.map((breakdown) => ({
-      name: breakdown.criterionName,
-      percentage: Math.round(breakdown.rawScore * assessment.scaleFactor),
-    })),
-  }));
-
   const fetchAssessments = async () => {
     setIsLoading(true);
     try {
@@ -105,15 +84,8 @@ export default function ResultsStep({ gradingAttempt }: ResultsStepProps) {
 
   return (
     <div className="space-y-8">
-      {/* Summary Section */}
-      <SummarySection
-        isLoading={isLoading}
-        assessments={assessments}
-        mappedAssessments={mappedAssessments}
-      />
-
-      {/* List Section */}
-      <ReviewResults isLoading={isLoading} mappedAssessments={mappedAssessments} />
+      <SummarySection isLoading={isLoading} assessments={assessments} />
+      <ReviewResults isLoading={isLoading} assessments={assessments} />
     </div>
   );
 }
