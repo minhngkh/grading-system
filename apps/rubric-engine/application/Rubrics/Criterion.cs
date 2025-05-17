@@ -22,9 +22,9 @@ public sealed class Criterion : ValueObject
 
     public List<PerformanceLevel> Levels { get; } = [];
 
-    public Plugin Plugin { get; } = Plugin.None;
+    public Plugin? Plugin { get; } = Plugin.None;
 
-    public Configuration Configuration { get; } = Configuration.None;
+    public Configuration? Configuration { get; }
 
     public static Criterion New(CriterionName name, Percentage weight, List<PerformanceLevel> levels, Plugin plugin, Configuration configuration)
         => new(name, weight, levels, plugin, configuration);
