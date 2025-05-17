@@ -29,6 +29,8 @@ public abstract class StringValueObject : SingleValueObject<string>
 
     private void Validate(string value)
     {
+        if (AllowEmpty && string.IsNullOrEmpty(value)) return;
+
         if (!AllowEmpty && string.IsNullOrEmpty(value))
         {
             throw new ArgumentException("Value cannot be empty!", nameof(value));
