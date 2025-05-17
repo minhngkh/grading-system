@@ -47,7 +47,7 @@ export default function UploadAssignmentPage({
   });
   const currentIndex = utils.getIndex(stepper.current.id);
   const navigate = useNavigate();
-  const [nextCallback, setNextCallback] = useState<() => Promise<any>>();
+  const [nextCallback, setNextCallback] = useState<(value?: any) => Promise<any>>();
   const [isUploading, setIsUploading] = useState(false);
 
   const gradingAttempt = useForm<GradingAttempt>({
@@ -55,23 +55,28 @@ export default function UploadAssignmentPage({
     defaultValues: initialGradingAttempt,
   });
 
-  const gradingAttemptValues = gradingAttempt.watch();
+  const gradingAttemptValues = gradingAttempt.getValues();
 
   const handleUpdateGradingAttempt = (updated?: Partial<GradingAttempt>) => {
     gradingAttempt.reset(updated);
   };
 
   const handleNext = async () => {
-    try {
-      await nextCallback?.();
-    } catch {
-      return;
+    switch (currentIndex) {
+      case 0:
+        try {
+          await nextCallback?.(setIsUploading);
+          break;
+        } catch (err) {
+          console.error("Error in next callback:", err);
+          return;
+        }
+      case 1:
+        if (gradingAttemptValues.status === GradingStatus.Started) return;
+        break;
+      case 2:
+        return navigate({ to: "/home" });
     }
-
-    if (currentIndex === 1 && gradingAttemptValues.status === GradingStatus.Started)
-      return;
-
-    if (currentIndex === 2) return navigate({ to: "/home" });
 
     stepper.next();
     sessionStorage.setItem("gradingStep", stepper.current.id);
@@ -96,6 +101,9 @@ export default function UploadAssignmentPage({
                 <Button
                   type="button"
                   role="tab"
+                  onClick={() => {
+                    stepper.goTo(step.id);
+                  }}
                   variant={index <= currentIndex ? "default" : "secondary"}
                   aria-current={stepper.current.id === step.id ? "step" : undefined}
                   aria-posinset={index + 1}
@@ -118,34 +126,20 @@ export default function UploadAssignmentPage({
       </nav>
       <div className="mt-8 space-y-4 flex-1">
         {stepper.switch({
-          upload: () => {
-            if (isUploading) {
-              return (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-lg font-semibold">
-                    Uploading assignment and starting...
-                  </p>
-                </div>
-              );
-            }
-
-            return (
-              <UploadStep
-                setIsUploading={setIsUploading}
-                setNextCallback={setNextCallback}
-                gradingAttempt={gradingAttemptValues}
-                onGradingAttemptChange={handleUpdateGradingAttempt}
-              />
-            );
-          },
-          grading: () => (
-            <GradingProgressStep
+          upload: () => (
+            <UploadStep
+              setNextCallback={setNextCallback}
               gradingAttempt={gradingAttemptValues}
-              setHandleNextCallback={setNextCallback}
               onGradingAttemptChange={handleUpdateGradingAttempt}
             />
           ),
-          review: () => <ResultsStep />,
+          grading: () => (
+            <GradingProgressStep
+              gradingAttempt={gradingAttemptValues}
+              onGradingAttemptChange={handleUpdateGradingAttempt}
+            />
+          ),
+          review: () => <ResultsStep gradingAttempt={gradingAttemptValues} />,
         })}
       </div>
       <div className="flex w-full justify-end gap-4">

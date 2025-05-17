@@ -8,44 +8,56 @@ import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { updateGradingAttempt, uploadFile } from "@/services/gradingServices";
+import Spinner from "@/components/spinner";
 
 interface UploadStepProps {
   setNextCallback?: React.Dispatch<
-    React.SetStateAction<(() => Promise<any>) | undefined>
+    React.SetStateAction<
+      ((handleSetIsUploading: (uploading: boolean) => void) => Promise<any>) | undefined
+    >
   >;
   onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
   gradingAttempt: GradingAttempt;
-  setIsUploading?: (isUploading: boolean) => void;
 }
 
 export default function UploadStep({
   onGradingAttemptChange,
   gradingAttempt,
   setNextCallback,
-  setIsUploading,
 }: UploadStepProps) {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    setNextCallback?.(() => async () => {
-      try {
-        setIsUploading?.(true);
-        await updateGradingAttempt(gradingAttempt.id, { ...gradingAttempt });
-        await Promise.all(
-          uploadedFiles.map(async (file) => {
-            try {
-              await uploadFile(gradingAttempt.id, file);
-            } catch (error) {
-              console.log(error);
-            }
-          }),
-        );
-      } catch (error) {
-        throw error;
-      } finally {
-        setIsUploading?.(false);
-      }
-    });
+    setNextCallback?.(
+      () => async (handleSetIsUploading: (uploading: boolean) => void) => {
+        try {
+          setIsUploading(true);
+          handleSetIsUploading?.(true);
+          await updateGradingAttempt(gradingAttempt.id, { ...gradingAttempt });
+          await Promise.all(
+            uploadedFiles.map(async (file, index) => {
+              try {
+                await uploadFile(gradingAttempt.id, file);
+
+                const updatedProgress = Math.round(
+                  ((index + 1) * 100) / uploadedFiles.length,
+                );
+                setProgress(updatedProgress);
+              } catch (error) {
+                console.log(error);
+              }
+            }),
+          );
+        } catch (error) {
+          console.error("Error uploading files:", error);
+        } finally {
+          handleSetIsUploading?.(false);
+          setIsUploading(false);
+        }
+      },
+    );
   }, [setNextCallback]);
 
   const handleSelectRubric = (rubric: Rubric | undefined) => {
@@ -80,6 +92,16 @@ export default function UploadStep({
   const handleRemoveAllFiles = () => {
     setUploadedFiles([]);
   };
+
+  if (isUploading) {
+    return (
+      <div className="flex flex-col items-center justify-center">
+        <span className="text-lg font-semibold">Uploading...</span>
+        <Spinner />
+        <span>Progress: {progress}%</span>
+      </div>
+    );
+  }
 
   return (
     <div className="size-full space-y-6">

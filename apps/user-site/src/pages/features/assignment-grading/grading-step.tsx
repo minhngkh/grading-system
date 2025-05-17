@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { GradingStatus, GradingAttempt } from "@/types/grading";
 import { usePolling } from "@/hooks/use-polling";
 import { getGradingStatus } from "@/services/gradingServices";
@@ -6,13 +5,11 @@ import Spinner from "@/components/spinner";
 
 interface GradingProgressStepProps {
   gradingAttempt: GradingAttempt;
-  setHandleNextCallback?: (cb: () => Promise<void>) => void;
   onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
 }
 
 export default function GradingProgressStep({
   gradingAttempt,
-  setHandleNextCallback,
   onGradingAttemptChange,
 }: GradingProgressStepProps) {
   const { stop } = usePolling(
@@ -30,10 +27,6 @@ export default function GradingProgressStep({
       },
     },
   );
-
-  useEffect(() => {
-    setHandleNextCallback?.(async () => {});
-  }, [setHandleNextCallback]);
 
   return (
     <div className="w-full">

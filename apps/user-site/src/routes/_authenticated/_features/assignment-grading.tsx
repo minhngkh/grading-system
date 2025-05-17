@@ -12,7 +12,8 @@ export const Route = createFileRoute("/_authenticated/_features/assignment-gradi
 
     let gradingId = sessionStorage.getItem("gradingId") ?? undefined;
     if (!gradingId) {
-      gradingId = await createGradingAttempt();
+      gradingId = "123"; // Placeholder for the grading attempt ID
+      // gradingId = await createGradingAttempt();
       sessionStorage.setItem("gradingId", gradingId);
     }
 
@@ -20,14 +21,11 @@ export const Route = createFileRoute("/_authenticated/_features/assignment-gradi
   },
   loader: async ({ context: { gradingId, gradingStep } }) => {
     // Fetch the grading attempt details using the attemptId
-    //const attempt = await getGradingAttempt(gradingId);
+    // const attempt = await getGradingAttempt(gradingId);
     const attempt: GradingAttempt = {
       id: gradingId,
-      rubricId: "",
       selectors: [],
-      scaleFactor: 10,
     };
-
     return { gradingStep, attempt };
   },
   onLeave: () => {
@@ -40,7 +38,6 @@ export const Route = createFileRoute("/_authenticated/_features/assignment-gradi
 
 function RouteComponent() {
   const { gradingStep, attempt } = Route.useLoaderData();
-
   return (
     <UploadAssignmentPage initalStep={gradingStep} initialGradingAttempt={attempt} />
   );

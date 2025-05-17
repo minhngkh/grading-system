@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Home, LifeBuoy, Package, Settings } from "lucide-react";
 
 const navigationItems: NavigationData[] = [
@@ -35,8 +35,6 @@ const settingsItems: NavigationData[] = [
 ];
 
 export function AppSidebar() {
-  const location = useLocation();
-
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -62,8 +60,8 @@ export function AppSidebar() {
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={item.to === location.pathname}>
-                    <Link to={item.to}>
+                  <SidebarMenuButton asChild>
+                    <Link to={item.to} activeProps={{ className: "bg-secondary" }}>
                       {item.icon}
                       <span>{item.title}</span>
                     </Link>

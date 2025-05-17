@@ -17,7 +17,7 @@ export const SelectorSchema = z.object({
 
 export const GradingSchema = z.object({
   id: z.string({ required_error: "Grading ID is required" }),
-  rubricId: z.string({ required_error: "Rubric ID is required" }),
+  rubricId: z.string().optional(),
   scaleFactor: z.number().min(1).optional(),
   selectors: z
     .array(SelectorSchema, {

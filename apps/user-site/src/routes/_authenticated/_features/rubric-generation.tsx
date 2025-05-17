@@ -26,8 +26,5 @@ export const Route = createFileRoute("/_authenticated/_features/rubric-generatio
 
 function RoutePage() {
   const rubric = Route.useLoaderData();
-
-  if (rubric) return <RubricGenerationPage initialRubric={rubric} />;
-
-  return <div>Service not available!</div>;
+  return <RubricGenerationPage initialRubric={rubric} />;
 }
