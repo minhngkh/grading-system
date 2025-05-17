@@ -17,7 +17,12 @@ public static class EndpointHandler
         return endpoint;
     }
 
+    public class CreateRubricRequest
+    {
+    }
+
     private static async Task<IResult> CreateGrading(
+        CreateRubricRequest _,
         ICommandBus commandBus,
         IQueryProcessor queryProcessor,
         IHttpContextAccessor contextAccessor,
