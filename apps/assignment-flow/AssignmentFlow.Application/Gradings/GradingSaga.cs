@@ -8,7 +8,7 @@ namespace AssignmentFlow.Application.Gradings;
 
 public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSagaLocator>,
     ISagaIsStartedBy<GradingAggregate, GradingId, GradingStartedEvent>,
-    ISagaHandles<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent>
+    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessmentCreatedEvent>
 {
     private readonly ILogger<GradingSaga> logger;
     private readonly GradingRepository repository;
@@ -38,7 +38,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         Emit(new GradingSagaStartedEvent
         {
             RubricId = RubricId.With(gradingSummary.RubricId),
-            GradingId = GradingId.With(gradingSummary.Id),
+            GradingId = Shared.GradingId.With(gradingSummary.Id),
             TeacherId = TeacherId.With(gradingSummary.TeacherId),
         });
 
@@ -46,23 +46,23 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         logger.LogTrace("Creating assessments for grading {GradingId}", gradingSummary.Id);
         foreach (var submission in gradingSummary.Submissions)
         {
-            var assessmentId = AssessmentId.NewComb();
+            var assessmentId = Assessments.AssessmentId.NewComb();
             // Create an assessment for each submission
             Publish(new Assessments.Create.Command(assessmentId)
             {
                 SubmissionReference = SubmissionReference.New(submission.Reference),
-                GradingId = gradingSummary.Id,
+                GradingId = Shared.GradingId.With(gradingSummary.Id),
                 TeacherId = TeacherId.With(gradingSummary.TeacherId)
             });
         }
     }
 
-    public Task HandleAsync(IDomainEvent<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    public Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessmentCreatedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
     {
         // Start tracking the assessment
         Emit(new AssessmentTrackedEvent
         {
-            AssessmentId = domainEvent.AggregateIdentity
+            AssessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value)
         });
 
         return Task.CompletedTask;

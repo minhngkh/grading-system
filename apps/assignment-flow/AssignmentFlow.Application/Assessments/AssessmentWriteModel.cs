@@ -6,7 +6,7 @@ public class AssessmentWriteModel
 {
     public TeacherId TeacherId { get; private set; } = TeacherId.Empty;
 
-    public string GradingId { get; private set; } = string.Empty;
+    public GradingId GradingId { get; private set; } = GradingId.Empty;
 
     public SubmissionReference Reference { get; private set; } = SubmissionReference.Empty;
 

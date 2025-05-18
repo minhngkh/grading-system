@@ -4,7 +4,7 @@ namespace AssignmentFlow.Application.Assessments.Create;
 public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentId>(id)
 {
     public required SubmissionReference SubmissionReference { get; init; }
-    public required string GradingId { get; init; }
+    public required GradingId GradingId { get; init; }
     public required TeacherId TeacherId { get; init; }
 }
 
