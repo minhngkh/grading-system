@@ -6,6 +6,7 @@ public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentI
 {
     public required ScoreBreakdowns ScoreBreakdowns { get; init; }
     public required List<Feedback> Feedbacks { get; init; }
+    public required Grader Grader { get; init; }
 }
 
 public class CommandHandler : CommandHandler<AssessmentAggregate, AssessmentId, Command>

@@ -41,6 +41,7 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
     {
         Emit(new Assess.AssessedEvent
         {
+            Grader = command.Grader,
             ScoreBreakdowns = command.ScoreBreakdowns,
             Feedbacks = command.Feedbacks
         });

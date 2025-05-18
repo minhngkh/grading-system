@@ -16,6 +16,7 @@ public class AIGraderAssessedConsumer(
         {
             ScoreBreakdowns = scoreBreakdowns,
             Feedbacks = feedbacks,
+            Grader = Grader.AIGrader
         },
         context.CancellationToken);
     }
