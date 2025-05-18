@@ -14,12 +14,19 @@ public class AssessmentWriteModel
 
     public ScoreBreakdowns ScoreBreakdowns { get; private set; } = ScoreBreakdowns.Empty;
 
-    public List<Feedback> Feedbacks { get; private set; } = [];                                                                                                                                                                                                                                              
+    public List<Feedback> Feedbacks { get; private set; } = [];
 
-    internal void Apply(Create.AssessmentCreatedEvent command)
+    public AssessmentStateMachine StateMachine { get; private set; } = new();
+
+    internal void Apply(Create.AssessmentCreatedEvent @event)
     {
-        TeacherId = command.TeacherId;
-        GradingId = command.GradingId;
-        Reference = command.SubmissionReference;
+        TeacherId = @event.TeacherId;
+        GradingId = @event.GradingId;
+        Reference = @event.SubmissionReference;
+    }
+
+    internal void Apply(StartAutoGrading.AutoGradingStartedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
     }
 }
