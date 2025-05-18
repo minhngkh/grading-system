@@ -66,8 +66,7 @@ public class Assessment
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
         GradingId = domainEvent.AggregateEvent.GradingId;
-        ScoreBreakdowns = MapScoreBreakdowns(domainEvent.AggregateEvent.ScoreBreakdowns.Value);
-        Feedbacks = MapFeedbacks(domainEvent.AggregateEvent.Feedbacks);
+        SubmissionReference = domainEvent.AggregateEvent.SubmissionReference;
         return Task.CompletedTask;
     }
 

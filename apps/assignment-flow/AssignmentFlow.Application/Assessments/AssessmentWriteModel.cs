@@ -13,14 +13,13 @@ public class AssessmentWriteModel
     public ScaleFactor ScaleFactor { get; private set; } = ScaleFactor.TenPoint;
 
     public ScoreBreakdowns ScoreBreakdowns { get; private set; } = ScoreBreakdowns.Empty;
-    
-    public List<Feedback> Feedbacks { get; private set; } = [];
+
+    public List<Feedback> Feedbacks { get; private set; } = [];                                                                                                                                                                                                                                              
 
     internal void Apply(Create.AssessmentCreatedEvent command)
     {
         TeacherId = command.TeacherId;
         GradingId = command.GradingId;
         Reference = command.SubmissionReference;
-        ScoreBreakdowns = command.ScoreBreakdowns;
     }
 }

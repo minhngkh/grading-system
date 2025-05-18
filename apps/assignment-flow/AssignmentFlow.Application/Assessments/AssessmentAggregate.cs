@@ -26,7 +26,6 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
     {
         Emit(new Create.AssessmentCreatedEvent
         {
-            ScoreBreakdowns = command.ScoreBreakdowns,
             SubmissionReference = command.SubmissionReference,
             GradingId = command.GradingId,
             TeacherId = command.TeacherId
