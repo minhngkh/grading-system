@@ -46,7 +46,7 @@ public class Grading
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [NotMapped]
-    public List<SubmissionApiContract> Submissions 
+    public List<SubmissionApiContract> Submissions
         => SubmissionPersistences.ConvertAll(s => new SubmissionApiContract
         {
             Reference = s.Reference,
