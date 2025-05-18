@@ -1,4 +1,5 @@
-﻿using EventFlow.Aggregates;
+﻿using AssignmentFlow.Application.Assessments.StartAutoGrading;
+using EventFlow.Aggregates;
 namespace AssignmentFlow.Application.Assessments;
 
 public class AssessmentWriteModel
@@ -25,8 +26,14 @@ public class AssessmentWriteModel
         Reference = @event.SubmissionReference;
     }
 
-    internal void Apply(StartAutoGrading.AutoGradingStartedEvent _)
+    internal void Apply(AutoGradingStartedEvent _)
     {
         StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
+    }
+
+    internal void Apply(Assess.AssessedEvent @event)
+    {
+        ScoreBreakdowns = @event.ScoreBreakdowns;
+        Feedbacks = @event.Feedbacks;
     }
 }

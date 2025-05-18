@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using AssignmentFlow.Application.Assessments.Assess;
 using AssignmentFlow.Application.Assessments.Create;
 using AssignmentFlow.Application.Assessments.StartAutoGrading;
 using EventFlow.Aggregates;
@@ -17,7 +18,8 @@ public class Assessment
     : Identifiable<string>,
     IReadModel,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent>,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGradingStartedEvent>
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGradingStartedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -95,10 +97,13 @@ public class Assessment
         return Task.CompletedTask;
     }
 
-    private void UpdateLastModifiedData(IDomainEvent domainEvent)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
-        LastModified = domainEvent.Timestamp.ToUniversalTime();
-        Version = domainEvent.AggregateSequenceNumber;
+        ScoreBreakdowns = MapScoreBreakdowns(domainEvent.AggregateEvent.ScoreBreakdowns.Value);
+        Feedbacks = MapFeedbacks(domainEvent.AggregateEvent.Feedbacks);
+
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
     }
 
     private static List<ScoreBreakdownApiContract> MapScoreBreakdowns(List<ScoreBreakdownItem> scoreBreakdowns)
@@ -124,5 +129,11 @@ public class Assessment
             ToLine = fb.Highlight.Location.ToLine,
             Tag = fb.Tag,
         });
+    }
+    
+    private void UpdateLastModifiedData(IDomainEvent domainEvent)
+    {
+        LastModified = domainEvent.Timestamp.ToUniversalTime();
+        Version = domainEvent.AggregateSequenceNumber;
     }
 }

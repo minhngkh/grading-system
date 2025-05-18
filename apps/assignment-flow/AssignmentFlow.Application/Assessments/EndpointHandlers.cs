@@ -1,5 +1,4 @@
-﻿using AssignmentFlow.Application.Assessments.AdjustScore;
-using AssignmentFlow.Application.Assessments.UpdateFeedBack;
+﻿using AssignmentFlow.Application.Assessments.UpdateFeedBack;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
 namespace AssignmentFlow.Application.Assessments;
@@ -12,7 +11,6 @@ internal static class EndpointHandlers
         routeBuilder.MapGroup("/api/v1/assessments")
             .AddFluentValidationAutoValidation()
             .WithTags("Assessments")
-            .MapAdjustScore()
             .MapUpdateFeedbacks();
 
         return routeBuilder;
