@@ -99,38 +99,13 @@ public class Assessment
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
-        ScoreBreakdowns = MapScoreBreakdowns(domainEvent.AggregateEvent.ScoreBreakdowns.Value);
-        Feedbacks = MapFeedbacks(domainEvent.AggregateEvent.Feedbacks);
+        ScoreBreakdowns = domainEvent.AggregateEvent.ScoreBreakdowns.ToApiContracts();
+        Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
 
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
 
-    private static List<ScoreBreakdownApiContract> MapScoreBreakdowns(List<ScoreBreakdownItem> scoreBreakdowns)
-    {
-        return scoreBreakdowns.ConvertAll(sb => new ScoreBreakdownApiContract
-        {
-            CriterionName = sb.CriterionName,
-            PerformanceTag = sb.PerformanceTag,
-            RawScore = sb.RawScore
-        });
-    }
-
-    private static List<FeedbackItemApiContract> MapFeedbacks(List<Feedback> feedbacks)
-    {
-        return feedbacks.ConvertAll(fb => new FeedbackItemApiContract
-        {
-            Criterion = fb.Criterion,
-            Comment = fb.Comment,
-            FileRef = fb.Highlight.Attachment,
-            FromCol = fb.Highlight.Location.FromColumn,
-            FromLine = fb.Highlight.Location.FromLine,
-            ToCol = fb.Highlight.Location.ToColumn,
-            ToLine = fb.Highlight.Location.ToLine,
-            Tag = fb.Tag,
-        });
-    }
-    
     private void UpdateLastModifiedData(IDomainEvent domainEvent)
     {
         LastModified = domainEvent.Timestamp.ToUniversalTime();

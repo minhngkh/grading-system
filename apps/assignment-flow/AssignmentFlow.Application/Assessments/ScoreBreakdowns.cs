@@ -39,7 +39,7 @@ public sealed class ScoreBreakdowns : ValueObject
     /// <returns>A new <see cref="ScoreBreakdowns"/> instance.</returns>
     public static ScoreBreakdowns New(List<ScoreBreakdownItem> scoreBreakdownItems) =>
         new(scoreBreakdownItems);
-
+    
     /// <summary>
     /// Provides the components used for equality comparison.
     /// </summary>
@@ -50,6 +50,40 @@ public sealed class ScoreBreakdowns : ValueObject
         {
             yield return item;
         }
+    }
+    
+    // Plus operator: Combines two lists (summing scores with the same criteria/tags)
+    public static ScoreBreakdowns operator +(ScoreBreakdowns a, ScoreBreakdowns b)
+    {
+        var dictionary = a.Value.ToDictionary(
+            item => item.CriterionName,
+            item => item);
+
+        foreach (var item in b.Value)
+        {
+            var key = item.CriterionName;
+            if (!dictionary.TryAdd(key, item))
+                dictionary[key] += item;
+        }
+
+        return new ScoreBreakdowns(dictionary.Values.ToList());
+    }
+
+    // Minus operator: Subtracts matching ScoreBreakdownItems by CriterionName/PerformanceTag
+    public static ScoreBreakdowns operator -(ScoreBreakdowns a, ScoreBreakdowns b)
+    {
+        var dictionary = a.Value.ToDictionary(
+            item => item.CriterionName,
+            item => item);
+
+        foreach (var item in b.Value)
+        {
+            var key = item.CriterionName;
+            if (!dictionary.TryAdd(key, item))
+                dictionary[key] -= item;
+        }
+
+        return new ScoreBreakdowns(dictionary.Values.ToList());
     }
 }
 
@@ -66,4 +100,32 @@ public sealed class ScoreBreakdownsConverter : JsonConverter<ScoreBreakdowns>
     public override bool CanWrite => false;
 
     public override void WriteJson(JsonWriter writer, ScoreBreakdowns? value, JsonSerializer serializer) => throw new NotSupportedException();
+}
+
+public static class ScoreBreakdownsExtension
+{
+    public static List<ScoreBreakdownApiContract> ToApiContracts(this ScoreBreakdowns scoreBreakdowns)
+    {
+        return scoreBreakdowns.Value.ConvertAll(sb => new ScoreBreakdownApiContract
+        {
+            CriterionName = sb.CriterionName,
+            PerformanceTag = sb.PerformanceTag,
+            RawScore = sb.RawScore
+        });
+    }
+
+    public static List<FeedbackItemApiContract> ToApiContracts(this List<Feedback> feedbacks)
+    {
+        return feedbacks.ConvertAll(fb => new FeedbackItemApiContract
+        {
+            Criterion = fb.Criterion,
+            Comment = fb.Comment,
+            FileRef = fb.Highlight.Attachment,
+            FromCol = fb.Highlight.Location.FromColumn,
+            FromLine = fb.Highlight.Location.FromLine,
+            ToCol = fb.Highlight.Location.ToColumn,
+            ToLine = fb.Highlight.Location.ToLine,
+            Tag = fb.Tag,
+        });
+    }
 }
