@@ -31,7 +31,14 @@ export const apiGateway = defineTypedService2("api-gateway", {
 
     routes: [
       {
-        path: "/api/v1/ai",
+        path: "/api/v1",
+        aliases: {
+          "GET /plugins": "api-gateway.listPlugins",
+          "GET /categories": "api-gateway.listCategories",
+        }
+      },
+      {
+        path: "/api/v1/plugins/ai",
         aliases: {
           "POST /rubric": "v1.ai.createRubric",
           "POST /grade": "v1.ai.grade",
@@ -64,4 +71,38 @@ export const apiGateway = defineTypedService2("api-gateway", {
       },
     ],
   } satisfies ApiSettingsSchema,
+  actions: {
+    listPlugins() {
+      const mockResponse = [
+        {
+          id: "d3219888-75d8-4a75-9045-83c1b4929bde",
+          category: null,
+          name: "AI",
+          description: "Generate rubric and grade using it",
+          url: "/api/v1/plugins/ai",
+        },
+        {
+          id: "a8fd5cb1-4ce3-473b-80ad-6f303c9def72",
+          category: null,
+          name: "Code Runner",
+          description: "Generate and run tests for your code",
+          url: "/api/v1/plugins/code-runner",
+        }
+      ]
+
+      return mockResponse;
+    },
+    listCategories() {
+      const mockResponse = [
+        {
+          id: "1437b679-55fb-4bcc-b7fd-b85e9cf4adf4",
+          slug: "general",
+          name: "General Purpose",
+          description: "General purpose plugins",
+        }
+      ]
+
+      return mockResponse;
+    }
+  }
 });
