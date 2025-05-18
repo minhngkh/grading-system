@@ -100,7 +100,11 @@ public class Assessment
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
         ScoreBreakdowns = domainEvent.AggregateEvent.ScoreBreakdowns.ToApiContracts();
-        Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
+
+        if (domainEvent.AggregateEvent.Feedbacks != null)
+        {
+            Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
+        }
 
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;

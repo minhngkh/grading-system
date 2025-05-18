@@ -34,7 +34,12 @@ public class AssessmentWriteModel
     internal void Apply(Assess.AssessedEvent @event)
     {
         ScoreBreakdowns = @event.ScoreBreakdowns;
-        Feedbacks = @event.Feedbacks;
+        
+        if (@event.Feedbacks != null)
+        {
+            Feedbacks = @event.Feedbacks;
+        }
+        
         if (@event.Grader == Grader.AIGrader)
         {
             StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
