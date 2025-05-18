@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
@@ -21,6 +22,7 @@ public class Grading
     IAmReadModelFor<GradingAggregate, GradingId, GradingCreatedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SelectorsUpdatedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, ScaleFactorUpdatedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, RubricChangedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionAddedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, GradingStartedEvent>
 {
@@ -89,14 +91,6 @@ public class Grading
         CancellationToken cancellationToken)
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
-        RubricId = domainEvent.AggregateEvent.RubricId.Value;
-        ScaleFactor = domainEvent.AggregateEvent.ScaleFactor;
-        Selectors = domainEvent.AggregateEvent.Selectors
-            .ConvertAll(s => new SelectorApiContract
-            {
-                Criterion = s.Criterion,
-                Pattern = s.Pattern
-            });
 
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
@@ -120,6 +114,14 @@ public class Grading
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, ScaleFactorUpdatedEvent> domainEvent, CancellationToken cancellationToken)
     {
         ScaleFactor = domainEvent.AggregateEvent.ScaleFactor;
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, RubricChangedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        RubricId = domainEvent.AggregateEvent.RubricId.Value;
+        Selectors = [];
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
