@@ -35,5 +35,9 @@ public class AssessmentWriteModel
     {
         ScoreBreakdowns = @event.ScoreBreakdowns;
         Feedbacks = @event.Feedbacks;
+        if (@event.Grader == Grader.AIGrader)
+        {
+            StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
+        }
     }
 }
