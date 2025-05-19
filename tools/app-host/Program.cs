@@ -87,6 +87,19 @@ var nx = builder
     .AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm)
     .WithPackageInstallation();
 
+IResourceBuilder<NxMonorepoProjectResource>? pluginService = null;
+if (builder.Configuration.GetValue<bool?>("PluginService:Enabled") ?? true)
+{
+    pluginService = nx.AddProject("user-site", "dev")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("PluginService:Port"),
+            isProxied: toProxy,
+            env: "PORT"
+        )
+        .WithReference(rubricEngine)
+        .WaitFor(rubricEngine);
+}
+
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
 if (builder.Configuration.GetValue<bool?>("UserSite:Enabled") ?? true)
 {
