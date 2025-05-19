@@ -6,6 +6,9 @@
     "dev": "tsx src/index.ts",
     "test": "vitest"
   },
+  "nx": {
+    "projectType": "application"
+  },
   "dependencies": {
     "@langchain/core": "^0.3.44",
     "@langchain/google-genai": "^0.2.3",

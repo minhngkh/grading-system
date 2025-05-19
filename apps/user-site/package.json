@@ -1,5 +1,5 @@
 {
-  "name": "@grading-system/user-site",
+  "name": "user-site",
   "type": "module",
   "version": "0.0.0",
   "private": true,
@@ -8,6 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
+  },
+  "nx": {
+    "projectType": "application"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.27.0",

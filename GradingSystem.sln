@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIAG.AppHost", "tools\app-host\AIAG.AppHost.csproj", "{7D11144A-2057-4E82-BB3E-90F6E231C926}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GradingSystem.AppHost", "tools\app-host\GradingSystem.AppHost.csproj", "{7D11144A-2057-4E82-BB3E-90F6E231C926}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIAG.ServiceDefaults", "tools\service-defaults\AIAG.ServiceDefaults.csproj", "{35005C9B-2C08-DFDE-5CB0-8EFA148BFF6B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GradingSystem.ServiceDefaults", "tools\service-defaults\GradingSystem.ServiceDefaults.csproj", "{35005C9B-2C08-DFDE-5CB0-8EFA148BFF6B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RubricEngine", "RubricEngine", "{B3C4D51A-C51D-B81D-13CA-FB50A433AEB1}"
 EndProject
@@ -15,13 +15,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AssignmentFlow", "Assignmen
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{95014506-39BA-4665-9E30-E55F9F54C91C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.ValueObjects", "tools\shared-dotnet\Shared.ValueObjects\Shared.ValueObjects.csproj", "{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared.ValueObjects", "libs\shared-dotnet\Shared.ValueObjects\Shared.ValueObjects.csproj", "{B43C664F-697F-4DB9-AD55-4F6E7E128B8D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssignmentFlow.Application", "apps\assignment-flow\AssignmentFlow.Application\AssignmentFlow.Application.csproj", "{97ECFED2-40F5-3165-B2D4-3F11BE6F6105}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssignmentFlow.IntegrationEvents", "apps\assignment-flow\AssignmentFlow.IntegrationEvents\AssignmentFlow.IntegrationEvents.csproj", "{68D81394-DDF2-445E-82F7-4DB43B54FB06}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{C76EC105-1010-4A75-B41A-BA838BB90D4B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GradingSystem.Hosting", "tools\hosting\GradingSystem.Hosting.csproj", "{962144E2-DA8C-4316-9B2B-8C353B9206D7}"
 EndProject
@@ -128,7 +126,6 @@ Global
 		{B43C664F-697F-4DB9-AD55-4F6E7E128B8D} = {95014506-39BA-4665-9E30-E55F9F54C91C}
 		{97ECFED2-40F5-3165-B2D4-3F11BE6F6105} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{68D81394-DDF2-445E-82F7-4DB43B54FB06} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{962144E2-DA8C-4316-9B2B-8C353B9206D7} = {C76EC105-1010-4A75-B41A-BA838BB90D4B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {11EEC79A-F410-4748-BA91-DD0D9CBE9CE9}

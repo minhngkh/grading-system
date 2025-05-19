@@ -5,8 +5,10 @@
   "license": "MIT",
   "scripts": {
     "prepare": "nx g @nx-dotnet/core:restore",
-    "docs": "nx g @nx-dotnet/core:restore"
+    "restore": "nx g @nx-dotnet/core:restore",
+    "launch": "nx run app-host:dev"
   },
+  "nx": {},
   "dependencies": {
     "cross-env": "^7.0.3",
     "dotenv": "^16.5.0",

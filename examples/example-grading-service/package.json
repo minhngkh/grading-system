@@ -1,5 +1,5 @@
 {
-  "name": "@grading-system/example-grading-service",
+  "name": "example-grading-service",
   "type": "module",
   "private": true,
   "module": "index.ts",
@@ -8,6 +8,9 @@
     "dev": "moleculer-runner --repl",
     "test": "vitest",
     "demo": "tsx examples/demo-grader-test.ts"
+  },
+  "nx": {
+    "projectType": "application"
   },
   "dependencies": {
     "@langchain/core": "^0.3.44",
