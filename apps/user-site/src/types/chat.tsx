@@ -1,11 +1,11 @@
-export interface Message {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  isStreaming?: boolean;
+import type { Rubric } from "./rubric";
+
+export interface UserPrompt {
+  prompt: string;
+  rubric?: Rubric;
 }
 
-export interface ChatResponse {
-  content: string;
-  done: boolean;
+export interface AgentResponse {
+  message: string;
+  rubric?: Rubric;
 }

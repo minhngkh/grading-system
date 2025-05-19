@@ -1,29 +1,47 @@
+import ErrorComponent from "@/components/routeError";
 import ManageRubricsPage from "@/pages/features/manage-rubrics";
 import { getRubrics } from "@/services/rubricService";
-import { createFileRoute } from "@tanstack/react-router";
+import { SearchParams, searchParams } from "@/types/searchParams";
+import { createFileRoute, retainSearchParams, useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/_features/manage-rubrics")({
   component: RouteComponent,
-  loader: async () => {
-    try {
-      return await getRubrics();
-    } catch (err) {
-      console.log(err);
-      return [];
-    }
+  validateSearch: searchParams,
+  loaderDeps: ({ search }) => search,
+  loader: async ({ deps }) => {
+    const { rowsPerPage, currentPage, searchTerm } = deps;
+    return getRubrics(currentPage, rowsPerPage, searchTerm);
   },
-  pendingComponent: () => PendingComponent(),
+  search: {
+    middlewares: [retainSearchParams(["rowsPerPage", "currentPage", "searchTerm"])],
+  },
+  errorComponent: () => ErrorComponent,
 });
 
-function PendingComponent() {
-  return (
-    <div className="container flex size-full justify-center items-center">
-      Retrieving Rubrics...
-    </div>
-  );
-}
-
 function RouteComponent() {
-  const rubrics = Route.useLoaderData();
-  return <ManageRubricsPage rubrics={rubrics} />;
+  const navigate = useNavigate({ from: Route.fullPath });
+  const search = Route.useSearch();
+  const rubricsData = Route.useLoaderData();
+
+  const setSearchParam = (partial: Partial<SearchParams>) => {
+    navigate({
+      search: (prev) => {
+        return {
+          ...prev,
+          searchTerm: partial.searchTerm?.trim() || undefined,
+          currentPage: partial.currentPage || prev.currentPage,
+          rowsPerPage: partial.rowsPerPage || prev.rowsPerPage,
+        };
+      },
+      replace: true,
+    });
+  };
+
+  return (
+    <ManageRubricsPage
+      results={rubricsData}
+      searchParams={search}
+      setSearchParam={setSearchParam}
+    />
+  );
 }

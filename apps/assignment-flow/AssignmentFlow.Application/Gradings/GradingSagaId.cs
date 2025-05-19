@@ -1,6 +1,6 @@
 ﻿using EventFlow.Sagas;
 
-namespace AssignmentFlow.Application.GradingSaga;
+namespace AssignmentFlow.Application.Gradings;
 
 public class GradingSagaId(string id) : ISagaId
 {

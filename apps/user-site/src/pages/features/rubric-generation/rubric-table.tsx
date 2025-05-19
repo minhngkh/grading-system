@@ -1,104 +1,52 @@
-import type { Criteria, Rubric } from "@/types/rubric";
+import type { Rubric } from "@/types/rubric";
+import RubricView from "@/components/rubric-view";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import EditRubric from "./edit-rubric";
 
 interface RubricTableProps {
   rubricData: Rubric;
   canEdit?: boolean;
   onUpdate?: (updatedRubric: Rubric) => void;
+  showPlugins?: boolean;
+  editPlugin?: boolean;
+  disableEdit?: boolean;
+  isApplyingEdit?: boolean;
 }
 
 export default function RubricTable({
   rubricData,
   onUpdate,
-  canEdit = true,
+  canEdit = false,
+  showPlugins = false,
+  editPlugin = false,
+  disableEdit = false,
+  isApplyingEdit = false,
 }: RubricTableProps) {
-  const getMaxPoint = (criteria: Criteria) => {
-    if (!criteria.levels.length) return 0;
-
-    const highestLevel = criteria.levels.reduce((max, level) => {
-      return level.points > max.points ? level : max;
-    }, criteria.levels[0]);
-
-    return highestLevel.points;
-  };
-
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">{rubricData.rubricName} Rubric</CardTitle>
-          {canEdit && onUpdate && (
-            <EditRubric rubricData={rubricData} onUpdate={onUpdate} />
+          <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
+          {canEdit && (
+            <EditRubric
+              rubricData={rubricData}
+              onUpdate={onUpdate}
+              disableEdit={disableEdit || isApplyingEdit}
+            />
           )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1">
-        {rubricData.performanceTags.length > 0 && (
-          <div className="border rounded-md overflow-auto h-full">
-            <table className="w-full h-full table-fixed text-sm">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="text-left p-2 border-r font-medium w-[150px]">
-                    Criterion
-                  </th>
-                  {rubricData.performanceTags.map((header: string, index: number) => (
-                    <th
-                      key={index}
-                      className={cn(
-                        "text-center p-2 font-medium w-[150px]",
-                        index !== rubricData.performanceTags.length - 1 ? "border-r" : "",
-                      )}
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {rubricData.criteria.map((criterion, index) => {
-                  return (
-                    <tr key={index} className="border-t">
-                      <td className="p-2 border-r">
-                        <div className="font-medium">
-                          {criterion.name} ({getMaxPoint(criterion)} pts)
-                        </div>
-                      </td>
-                      {rubricData.performanceTags.map((tag, index) => {
-                        const criterionLevel = criterion.levels.find(
-                          (level) => level.performanceTag === tag,
-                        );
-
-                        return (
-                          <td
-                            key={index}
-                            className={cn(
-                              "p-2 text-sm",
-                              index !== rubricData.performanceTags.length - 1
-                                ? "border-r"
-                                : "",
-                            )}
-                          >
-                            {criterionLevel ? (
-                              <div>
-                                <div className="font-semibold text-blue-400 mb-1">
-                                  {criterionLevel.points} points
-                                </div>
-                                {criterionLevel.description}
-                              </div>
-                            ) : (
-                              ""
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      <CardContent className={canEdit ? "h-[85%]" : "flex-1"}>
+        {isApplyingEdit ? (
+          <div className="flex items-center justify-center h-full">
+            Agent is applying edits to the rubric. Please wait...
           </div>
+        ) : (
+          <RubricView
+            rubricData={rubricData}
+            showPlugins={showPlugins}
+            editPlugin={editPlugin}
+          />
         )}
       </CardContent>
     </Card>

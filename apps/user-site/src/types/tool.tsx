@@ -16,6 +16,8 @@ export type Tool = {
   type: ToolType;
   isFavorite: boolean;
   navigation: LinkProps["to"];
+  params?: LinkProps["params"];
+  preload?: boolean;
 };
 
 export interface ToolsFilterProps {

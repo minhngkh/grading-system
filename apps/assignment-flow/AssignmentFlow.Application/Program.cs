@@ -34,7 +34,18 @@ builder.Services.AddEventFlow(ef => ef
     .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
     .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
     .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
+    .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
 );
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
 
 builder.AddServiceDefaults();
 
@@ -47,7 +58,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
 }
 
-//app.UseCors("AllowAll");
+app.UseCors("AllowAll");
 
 //TODO: Add authentication and authorization middleware
 

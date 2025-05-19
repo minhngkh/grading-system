@@ -15,7 +15,7 @@ import {
 
 interface FileListProps {
   files: File[];
-  onDelete?: (fileId: string) => void;
+  onDelete?: (i: number) => void;
 }
 
 export function FileList({ files, onDelete }: FileListProps) {
@@ -106,7 +106,7 @@ export function FileList({ files, onDelete }: FileListProps) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => onDelete(file.name)}
+                        onClick={() => onDelete(index)}
                         className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full h-8 w-8"
                       >
                         <Trash2 className="h-4 w-4" />

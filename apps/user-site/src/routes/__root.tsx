@@ -1,37 +1,38 @@
-import type { AuthContextProps } from "@/context/auth-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { useAuth } from "@/context/auth-provider";
 import { ThemeProvider } from "@/context/theme-provider";
-import { AppNavbar } from "@/pages/navbar";
-import { AppSidebar } from "@/pages/sidebar";
+import { AppNavbar } from "@/components/layout/navbar";
+import { AppSidebar } from "@/components/layout/sidebar";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { useAuth } from "@clerk/clerk-react";
+import { ErrorBoundary } from "@/components/layout/error-boundary";
 
-interface MyRouterContext {
-  auth: AuthContextProps;
+interface AppRouterContext {
+  auth: ReturnType<typeof useAuth>;
 }
 
-const Root = () => {
-  const auth = useAuth();
+export const Route = createRootRouteWithContext<AppRouterContext>()({
+  component: () => <Root />,
+  errorComponent: ErrorBoundary,
+});
+
+function Root() {
+  const { isSignedIn } = useAuth();
 
   return (
     <>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <SidebarProvider>
-          {auth.isAuthenticated && <AppSidebar />}
+          {isSignedIn && <AppSidebar />}
           <SidebarInset>
             <main className="flex-1 flex flex-col items-center">
               <AppNavbar />
-              <Outlet />
+              <div className="container space-y-10 flex-1 size-full">
+                <Outlet />
+              </div>
             </main>
           </SidebarInset>
         </SidebarProvider>
       </ThemeProvider>
-      <TanStackRouterDevtools />
     </>
   );
-};
-
-export const Route = createRootRouteWithContext<MyRouterContext>()({
-  component: () => <Root />,
-});
+}

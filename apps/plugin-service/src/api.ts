@@ -25,7 +25,7 @@ export const apiGateway = defineTypedService2("api-gateway", {
     port:
       process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000,
     cors: {
-      origin: ["localhost:5173"],
+      origin: ["http://localhost:5173"],
       methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
     },
 

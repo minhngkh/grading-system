@@ -372,7 +372,7 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t py-6 md:py-0 px-4 md:px-6">
+      <footer className="w-full border-t py-6 md:py-0 px-4 md:px-6 mb-0">
         <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
           <div className="flex items-center gap-2">
             <Layers className="h-6 w-6 text-primary" />
@@ -381,7 +381,6 @@ export default function LandingPage() {
           <p className="text-center text-sm text-muted-foreground md:text-left">
             &copy; {new Date().getFullYear()} StreamLine. All rights reserved.
           </p>
-          <div></div>
         </div>
       </footer>
     </>

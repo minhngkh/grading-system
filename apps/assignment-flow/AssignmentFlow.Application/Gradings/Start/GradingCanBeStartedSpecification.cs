@@ -11,5 +11,15 @@ public class GradingCanBeStartedSpecification : Specification<GradingWriteModel>
         {
             yield return $"grading is in state {Enum.GetName(obj.StateMachine.State)}";
         }
+
+        if (obj.RubricId == RubricId.Empty)
+        {
+            yield return $"rubric is not selected";
+        }
+
+        if (obj.Submissions.Count == 0)
+        {
+            yield return $"no submissions are uploaded";
+        }
     }
 }

@@ -10,56 +10,44 @@ import {
 import { useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
 import { ManualLocationDialog } from "./manual-location-dialog";
+import { GradingAttempt } from "@/types/grading";
 
 enum SelectLocationType {
   Manual,
   Exact,
 }
 
-interface Criterion {
-  name: string;
-  method: SelectLocationType;
-  value: string;
-}
-
 interface CriteriaSelectorProps {
+  gradingAttempt: GradingAttempt;
   uploadedFiles: File[];
+  onGradingAttemptChange?: (attempt: GradingAttempt) => void;
 }
 
-export default function CriteriaSelector({ uploadedFiles }: CriteriaSelectorProps) {
-  const [criteria, setCriteria] = useState<Criterion[]>([
-    {
-      name: "Docker file convention",
-      method: SelectLocationType.Manual,
-      value: "",
-    },
-    {
-      name: "Code format",
-      method: SelectLocationType.Exact,
-      value: "",
-    },
-  ]);
-
+export default function CriteriaMapper({
+  uploadedFiles,
+  gradingAttempt,
+  onGradingAttemptChange,
+}: CriteriaSelectorProps) {
   const [dialogType, setDialogType] = useState<SelectLocationType | null>(null);
-
-  const updateCriterionMethod = (index: number, method: SelectLocationType) => {
-    setCriteria((prev) =>
-      prev.map((criterion, i) => (i === index ? { ...criterion, method } : criterion)),
-    );
-  };
+  const [criterionPathType, setCriterionPathType] = useState<Record<number, string>>({});
+  const [criteriaIndex, setCriteriaIndex] = useState<number>();
 
   const updateCriterionValue = (index: number, value: string) => {
-    setCriteria((prev) =>
-      prev.map((criterion, i) => (i === index ? { ...criterion, value } : criterion)),
-    );
+    const updatedGradingAttempt = { ...gradingAttempt };
+    updatedGradingAttempt.selectors[index].pattern = value;
+    onGradingAttemptChange?.(updatedGradingAttempt);
   };
 
-  const openDialog = (type: SelectLocationType) => {
-    setDialogType(type);
+  const openDialog = (index: number, type: SelectLocationType | undefined) => {
+    if (type !== undefined) {
+      setCriteriaIndex(index);
+      setDialogType(type);
+    }
   };
 
   const closeDialog = () => {
     setDialogType(null);
+    setCriteriaIndex(undefined);
   };
 
   const selectLocation = (index: number, path: string) => {
@@ -82,20 +70,20 @@ export default function CriteriaSelector({ uploadedFiles }: CriteriaSelectorProp
             <div></div>
           </div>
 
-          {criteria.map((criterion, index) => (
+          {gradingAttempt.selectors.map((criterion, index) => (
             <div key={index} className="grid grid-cols-3 gap-4 items-center">
               <div className="border rounded-md px-2 h-full flex items-center">
-                {criterion.name}
+                {criterion.criterion}
               </div>
 
               <Select
-                value={SelectLocationType[criterion.method]}
-                onValueChange={(value) =>
-                  updateCriterionMethod(
-                    index,
-                    SelectLocationType[value as keyof typeof SelectLocationType],
-                  )
-                }
+                onValueChange={(value) => {
+                  setCriterionPathType((prev) => ({
+                    ...prev,
+                    [index]: value,
+                  }));
+                }}
+                value={criterionPathType[index] ?? ""}
               >
                 <SelectTrigger className="w-full h-[100%]">
                   <SelectValue placeholder="Select method" />
@@ -107,48 +95,52 @@ export default function CriteriaSelector({ uploadedFiles }: CriteriaSelectorProp
               </Select>
 
               <Button
+                disabled={
+                  SelectLocationType[
+                    criterionPathType[index] as keyof typeof SelectLocationType
+                  ] === undefined
+                }
                 variant="ghost"
-                className={`w-full h-full justify-start border rounded-md px-3 py-2 text-left ${
-                  SelectLocationType[criterion.method]
-                    ? "cursor-pointer hover:bg-muted/50"
-                    : ""
-                }`}
+                className="w-full h-full justify-start border rounded-md px-3 py-2 text-left cursor-pointer hover:bg-muted/50"
                 onClick={() => {
-                  openDialog(criterion.method);
+                  openDialog(
+                    index,
+                    SelectLocationType[
+                      criterionPathType[index] as keyof typeof SelectLocationType
+                    ],
+                  );
                 }}
-                disabled={!SelectLocationType[criterion.method]}
               >
-                {criterion.value.length === 0 ? "Choose File or Folder" : criterion.value}
+                <div className="truncate">
+                  {criterion.pattern === "*" ? "All files" : criterion.pattern}
+                </div>
               </Button>
-
-              {/* Manual File Location Dialog */}
-              {uploadedFiles.length && criterion.method === SelectLocationType.Manual && (
-                <ManualLocationDialog
-                  open={dialogType === SelectLocationType.Manual}
-                  onClose={closeDialog}
-                  criterionName={criterion.name}
-                  criterionIndex={index}
-                  uploadedFiles={uploadedFiles}
-                  onSelect={selectLocation}
-                />
-              )}
-
-              {/* Exact Path Dialog */}
-              {criterion.method === SelectLocationType.Exact && (
-                <ExactLocationDialog
-                  open={dialogType === SelectLocationType.Exact}
-                  onClose={closeDialog}
-                  criterionName={criterion.name}
-                  criterionIndex={index}
-                  onConfirm={(path) => {
-                    updateCriterionValue(index, path);
-                    closeDialog();
-                  }}
-                />
-              )}
             </div>
           ))}
         </div>
+
+        {criteriaIndex !== undefined && (
+          <ManualLocationDialog
+            open={dialogType === SelectLocationType.Manual}
+            onClose={closeDialog}
+            gradingAttempt={gradingAttempt}
+            criterionIndex={criteriaIndex}
+            uploadedFiles={uploadedFiles}
+            onSelect={selectLocation}
+          />
+        )}
+
+        {criteriaIndex !== undefined && (
+          <ExactLocationDialog
+            open={dialogType === SelectLocationType.Exact}
+            onClose={closeDialog}
+            criterionMapping={gradingAttempt.selectors[criteriaIndex]}
+            onConfirm={(path) => {
+              updateCriterionValue(criteriaIndex, path);
+              closeDialog();
+            }}
+          />
+        )}
       </CardContent>
     </Card>
   );
