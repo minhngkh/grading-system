@@ -1,7 +1,8 @@
 import { GradingStatus, GradingAttempt } from "@/types/grading";
 import { usePolling } from "@/hooks/use-polling";
-import { getGradingStatus } from "@/services/gradingServices";
+import { getGradingStatus, startGrading } from "@/services/gradingServices";
 import Spinner from "@/components/spinner";
+import { useCallback, useEffect, useRef } from "react";
 
 interface GradingProgressStepProps {
   gradingAttempt: GradingAttempt;
@@ -12,33 +13,65 @@ export default function GradingProgressStep({
   gradingAttempt,
   onGradingAttemptChange,
 }: GradingProgressStepProps) {
-  const { stop } = usePolling(
-    () => getGradingStatus(gradingAttempt.id),
-    (status) => {
-      onGradingAttemptChange({ status });
-      if (status === GradingStatus.Graded || status === GradingStatus.Failed) {
-        stop();
+  const stopRef = useRef<() => void>(() => {});
+
+  const pollingFn = useCallback(() => {
+    return getGradingStatus(gradingAttempt.id);
+  }, [gradingAttempt.id]);
+
+  useEffect(() => {
+    const start = async () => {
+      try {
+        await startGrading(gradingAttempt.id);
+        onGradingAttemptChange({
+          status: GradingStatus.Started,
+        });
+      } catch (err) {
+        console.error(err);
       }
+    };
+
+    start();
+  }, []);
+
+  const onSuccess = useCallback((status: GradingStatus) => {
+    onGradingAttemptChange({ status });
+    console.log(status);
+
+    if (
+      (status === GradingStatus.Graded || status === GradingStatus.Failed) &&
+      stopRef.current
+    ) {
+      stopRef.current();
+      stopRef.current = () => {};
+    }
+  }, []);
+
+  const { stop } = usePolling(pollingFn, onSuccess, {
+    interval: 5000,
+    enabled: gradingAttempt.status === GradingStatus.Started,
+    onError: (error) => {
+      console.error("Failed to fetch grading status:", error);
     },
-    {
-      interval: 5000,
-      onError: (error) => {
-        console.error("Failed to fetch grading status:", error);
-      },
-    },
-  );
+  });
+
+  // update ref after polling setup
+  if (!stopRef.current) stopRef.current = stop;
 
   return (
     <div className="w-full">
       {gradingAttempt.status === GradingStatus.Started ? (
-        <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center">
           <Spinner />
           <span>Grading in progress...</span>
         </div>
-      ) : (
-        <div className="flex items-center justify-center">
-          <Spinner color="green-400" />
+      ) : gradingAttempt.status === GradingStatus.Graded ? (
+        <div className="flex items-center justify-center text-green-600">
           <span>Grading completed!</span>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center text-red-600">
+          <span>Grading failed.</span>
         </div>
       )}
     </div>

@@ -14,12 +14,14 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { getRubrics } from "@/services/rubricService";
 import { Rubric } from "@/types/rubric";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { GradingAttempt } from "@/types/grading";
 
 interface ScrollableSelectProps {
   placeholder?: string;
   emptyMessage?: string;
   className?: string;
   onRubricChange?: (value: Rubric | undefined) => void;
+  gradingAttempt: GradingAttempt;
 }
 
 export function RubricSelect({
@@ -27,6 +29,7 @@ export function RubricSelect({
   emptyMessage = "No items found.",
   className,
   onRubricChange,
+  gradingAttempt,
 }: ScrollableSelectProps) {
   const [open, setOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState<Rubric | undefined>();
@@ -66,8 +69,6 @@ export function RubricSelect({
   // Load data when popover opens
   useEffect(() => {
     async function LoadData() {
-      if (!open) return;
-
       setIsSearching(true);
       setPage(1);
       await search(1, debouncedSearchTerm, true);
@@ -75,7 +76,16 @@ export function RubricSelect({
     }
 
     LoadData();
-  }, [open, debouncedSearchTerm, search]);
+  }, [debouncedSearchTerm, search]);
+
+  useEffect(() => {
+    if (!gradingAttempt.rubricId || items.length === 0) return;
+
+    const matchedRubric = items.find((item) => item.id === gradingAttempt.rubricId);
+    if (matchedRubric) {
+      setSelectedValue(matchedRubric);
+    }
+  }, [gradingAttempt.rubricId, items]);
 
   // Handle search input change
   const handleSearchChange = async (value: string) => {
@@ -130,6 +140,7 @@ export function RubricSelect({
           </CommandEmpty>
           <CommandGroup>
             <CommandList
+              defaultValue={gradingAttempt.rubricId}
               ref={listRef}
               className="max-h-[300px] overflow-y-auto"
               onScroll={handleScroll}
@@ -138,14 +149,10 @@ export function RubricSelect({
                 <CommandItem
                   className="flex justify-between"
                   key={item.id}
-                  value={item.rubricName}
-                  onSelect={(currentValue) => {
-                    setSelectedValue(
-                      currentValue === selectedValue?.rubricName ? undefined : item,
-                    );
-                    onRubricChange?.(
-                      currentValue === selectedValue?.rubricName ? undefined : item,
-                    );
+                  value={item.id}
+                  onSelect={() => {
+                    setSelectedValue(item);
+                    onRubricChange?.(item);
                     setOpen(false);
                   }}
                 >
@@ -153,9 +160,7 @@ export function RubricSelect({
                   <Check
                     className={cn(
                       "ml-2 h-4 w-4",
-                      selectedValue?.rubricName === item.rubricName
-                        ? "opacity-100"
-                        : "opacity-0",
+                      selectedValue?.id === item.id ? "opacity-100" : "opacity-0",
                     )}
                   />
                 </CommandItem>

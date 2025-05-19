@@ -10,6 +10,7 @@ import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
+import { updateGradingRubric, updateGradingSelectors } from "@/services/gradingServices";
 
 type StepData = {
   title: string;
@@ -58,7 +59,16 @@ export default function UploadAssignmentPage({
   const gradingAttemptValues = gradingAttempt.getValues();
 
   const handleUpdateGradingAttempt = (updated?: Partial<GradingAttempt>) => {
-    gradingAttempt.reset(updated);
+    gradingAttempt.reset({
+      ...gradingAttemptValues,
+      ...updated,
+    });
+
+    if (updated?.rubricId)
+      updateGradingRubric(initialGradingAttempt.id, updated.rubricId);
+
+    if (updated?.selectors)
+      updateGradingSelectors(initialGradingAttempt.id, updated.selectors);
   };
 
   const handleNext = async () => {

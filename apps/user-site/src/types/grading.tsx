@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export enum GradingStatus {
-  Created,
-  Started,
-  Graded,
-  Failed,
-  Completed,
+  Created = "Created",
+  Started = "Started",
+  Graded = "Graded",
+  Completed = "Completed",
+  Failed = "Failed",
 }
 
 export const SelectorSchema = z.object({

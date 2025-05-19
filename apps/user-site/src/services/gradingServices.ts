@@ -1,5 +1,5 @@
 import { Assessment } from "@/types/assessment";
-import { GradingAttempt, GradingStatus } from "@/types/grading";
+import { CriteriaSelector, GradingAttempt, GradingStatus } from "@/types/grading";
 import axios, { AxiosRequestConfig } from "axios";
 import { Deserializer } from "jsonapi-serializer";
 
@@ -32,7 +32,7 @@ export async function getGradingAssessments(id: string): Promise<Assessment[]> {
 }
 
 export async function createGradingAttempt(): Promise<string> {
-  const response = await axios.post(GRADING_API_URL, null, configHeaders);
+  const response = await axios.post(GRADING_API_URL, {}, configHeaders);
   return response.data;
 }
 
@@ -44,16 +44,16 @@ export async function getGradingStatus(id: string): Promise<GradingStatus> {
   return gradingDeserializer.deserialize(response.data);
 }
 
-export async function updateGradingAttempt(
-  id: string,
-  gradingAttempt: Partial<GradingAttempt>,
-): Promise<GradingAttempt> {
-  const response = await axios.patch(
-    `${GRADING_API_URL}/${id}`,
-    gradingAttempt,
+export async function updateGradingRubric(id: string, rubricId: string) {
+  return axios.put(`${GRADING_API_URL}/${id}/rubric`, { rubricId }, configHeaders);
+}
+
+export async function updateGradingSelectors(id: string, selectors: CriteriaSelector[]) {
+  return await axios.put(
+    `${GRADING_API_URL}/${id}/criterionSelectors`,
+    { selectors },
     configHeaders,
   );
-  return gradingDeserializer.deserialize(response.data);
 }
 
 export async function getGradingAttempt(id: string): Promise<GradingAttempt> {
@@ -61,19 +61,16 @@ export async function getGradingAttempt(id: string): Promise<GradingAttempt> {
   return gradingDeserializer.deserialize(response.data);
 }
 
-export async function uploadFile(id: string, file: File): Promise<boolean> {
-  await axios.post(
+export async function uploadSubmission(id: string, file: File) {
+  return await axios.post(
     `${GRADING_API_URL}/${id}/submissions`,
     {
       file: file,
     },
     fileConfigHeaders,
   );
-
-  return true;
 }
 
-export async function startGrading(id: string): Promise<boolean> {
-  await axios.post(`${GRADING_API_URL}/${id}/start`, null, fileConfigHeaders);
-  return true;
+export async function startGrading(id: string) {
+  return await axios.post(`${GRADING_API_URL}/${id}/start`, null, fileConfigHeaders);
 }

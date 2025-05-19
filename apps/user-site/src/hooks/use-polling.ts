@@ -11,11 +11,13 @@ export function usePolling<T>(
   onSuccess: (data: T) => void,
   options: UsePollingOptions,
 ) {
-  const { interval, enabled = true, onError } = options;
-  const timeoutRef = useRef<NodeJS.Timeout>(undefined);
+  const { interval, onError, enabled } = options;
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stoppedRef = useRef(false);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (enabled === false) return;
+    stoppedRef.current = false;
 
     const poll = async () => {
       try {
@@ -23,27 +25,28 @@ export function usePolling<T>(
         onSuccess(result);
       } catch (error) {
         onError?.(error as Error);
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-      } finally {
+        return;
+      }
+
+      if (!stoppedRef.current) {
         timeoutRef.current = setTimeout(poll, interval);
       }
     };
 
-    // Start polling immediately
+    // Start polling *after* interval delay instead of immediately:
     poll();
 
-    // Cleanup function
     return () => {
+      stoppedRef.current = true;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [pollingFn, onSuccess, interval, enabled, onError]);
+  }, [enabled]);
 
   return {
     stop: () => {
+      stoppedRef.current = true;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }

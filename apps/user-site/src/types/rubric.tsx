@@ -18,7 +18,7 @@ export const CriteriaSchema = z.object({
 });
 
 export const RubricSchema = z.object({
-  id: z.string().optional(),
+  id: z.string(),
   rubricName: z.string().min(1, "Rubric name is required"),
   tags: z
     .array(z.string().min(1, "Level name is required"))

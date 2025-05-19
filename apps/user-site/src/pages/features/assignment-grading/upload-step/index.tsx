@@ -7,7 +7,7 @@ import { GradingAttempt } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { updateGradingAttempt, uploadFile } from "@/services/gradingServices";
+import { updateGradingSelectors, uploadSubmission } from "@/services/gradingServices";
 import Spinner from "@/components/spinner";
 
 interface UploadStepProps {
@@ -33,13 +33,17 @@ export default function UploadStep({
     setNextCallback?.(
       () => async (handleSetIsUploading: (uploading: boolean) => void) => {
         try {
+          setProgress(0);
           setIsUploading(true);
           handleSetIsUploading?.(true);
-          await updateGradingAttempt(gradingAttempt.id, { ...gradingAttempt });
+
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+
+          await updateGradingSelectors(gradingAttempt.id, gradingAttempt.selectors);
           await Promise.all(
             uploadedFiles.map(async (file, index) => {
               try {
-                await uploadFile(gradingAttempt.id, file);
+                await uploadSubmission(gradingAttempt.id, file);
 
                 const updatedProgress = Math.round(
                   ((index + 1) * 100) / uploadedFiles.length,
@@ -50,6 +54,7 @@ export default function UploadStep({
               }
             }),
           );
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (error) {
           console.error("Error uploading files:", error);
         } finally {
@@ -58,19 +63,16 @@ export default function UploadStep({
         }
       },
     );
-  }, [setNextCallback]);
+  }, [setNextCallback, uploadedFiles]);
 
   const handleSelectRubric = (rubric: Rubric | undefined) => {
     if (rubric) {
-      const newGradingAttempt: GradingAttempt = {
-        id: gradingAttempt.id,
-        rubricId: rubric.id!,
+      onGradingAttemptChange({
+        rubricId: rubric.id,
         selectors: rubric.criteria.map((criterion) => {
           return { criterion: criterion.name, pattern: "*" };
         }),
-      };
-
-      onGradingAttemptChange(newGradingAttempt);
+      });
     } else {
       onGradingAttemptChange(undefined);
     }
@@ -95,7 +97,7 @@ export default function UploadStep({
 
   if (isUploading) {
     return (
-      <div className="flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center justify-center gap-4">
         <span className="text-lg font-semibold">Uploading...</span>
         <Spinner />
         <span>Progress: {progress}%</span>
@@ -108,7 +110,10 @@ export default function UploadStep({
       <div className="space-y-2">
         <h2 className="text-lg font-semibold">Select Rubric</h2>
         <div className="flex w-full gap-4">
-          <RubricSelect onRubricChange={handleSelectRubric} />
+          <RubricSelect
+            gradingAttempt={gradingAttempt}
+            onRubricChange={handleSelectRubric}
+          />
           <Button variant="outline" asChild>
             <Link preload={false} to="/rubric-generation">
               Create New Rubric
