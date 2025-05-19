@@ -4,8 +4,11 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "prepare": "nx g @nx-dotnet/core:restore"
+    "prepare": "nx g @nx-dotnet/core:restore",
+    "restore": "nx g @nx-dotnet/core:restore",
+    "launch": "nx run app-host:dev"
   },
+  "nx": {},
   "dependencies": {
     "cross-env": "^7.0.3",
     "dotenv": "^16.5.0",
@@ -19,14 +22,14 @@
   "devDependencies": {
     "@antfu/eslint-config": "^4.12.0",
     "@nx-dotnet/core": "^2.5.0",
-    "@nx/eslint": "20.8.0",
-    "@nx/js": "20.8.0",
+    "@nx/eslint": "21.0.3",
+    "@nx/js": "21.0.3",
     "@swc-node/register": "~1.9.1",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
     "@types/supertest": "^6.0.3",
     "eslint": "^9.24.0",
-    "nx": "20.8.0",
+    "nx": "21.0.3",
     "prettier": "^3.5.3",
     "supertest": "^7.1.0",
     "tslib": "^2.3.0",

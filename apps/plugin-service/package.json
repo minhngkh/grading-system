@@ -1,10 +1,14 @@
 {
-  "name": "plugin-service",
+  "name": "@grading-system/plugin-service",
   "type": "module",
   "private": true,
   "scripts": {
     "dev": "tsx src/index.ts",
     "test": "vitest"
+  },
+  "nx": {
+    "name": "plugin-service",
+    "projectType": "application"
   },
   "dependencies": {
     "@langchain/core": "^0.3.44",

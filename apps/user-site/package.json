@@ -9,6 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "nx": {
+    "name": "user-site",
+    "projectType": "application"
+  },
   "dependencies": {
     "@clerk/clerk-react": "^5.27.0",
     "@hookform/resolvers": "^4.1.3",
