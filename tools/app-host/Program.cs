@@ -1,8 +1,12 @@
+using Microsoft.Extensions.Configuration;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
+var rootPath = "../..";
 var configPath = Path.Combine(builder.AppHostDirectory, "config");
 var username = builder.AddParameter("dev-username", secret: true);
 var password = builder.AddParameter("dev-password", secret: true);
+var toProxy = builder.Configuration.GetValue<bool?>("ProxyEnabled") ?? true;
 
 var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
 
@@ -43,22 +47,53 @@ var blobs = builder
     })
     .AddBlobs("submissions-store");
 
-var rubricEngine = builder
-    .AddProject<Projects.RubricEngine_Application>("rubric-engine")
-    .WithReference(rubricDb)
-    .WaitFor(rubricDb)
-    .WithReference(rabbitmq)
-    .WaitFor(rabbitmq);
+IResourceBuilder<ProjectResource>? rubricEngine = null;
+if (builder.Configuration.GetValue<bool?>("RubricEngine:Enable") ?? true)
+{
+    rubricEngine = builder
+        .AddProject<Projects.RubricEngine_Application>("rubric-engine")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("RubricEngine:Port"),
+            isProxied: toProxy
+        )
+        .WithReference(rubricDb)
+        .WaitFor(rubricDb)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq);
+}
 
-builder
-    .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
-    .WithReference(assignmentFlowDb)
-    .WaitFor(assignmentFlowDb)
-    .WithReference(blobs)
-    .WaitFor(blobs)
-    .WithReference(rabbitmq)
-    .WaitFor(rabbitmq)
-    .WithReference(rubricEngine)
-    .WaitFor(rubricEngine);
+IResourceBuilder<ProjectResource>? assignmentFlow = null;
+if (builder.Configuration.GetValue<bool?>("AssignmentFlow:Enable") ?? true)
+{
+    assignmentFlow = builder
+        .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("AssignmentFlow:Port"),
+            isProxied: toProxy
+        )
+        .WithReference(assignmentFlowDb)
+        .WaitFor(assignmentFlowDb)
+        .WithReference(blobs)
+        .WaitFor(blobs)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq)
+        .WithReference(rubricEngine)
+        .WaitFor(rubricEngine);
+}
+
+var nx = builder.AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm);
+
+IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
+if (builder.Configuration.GetValue<bool?>("UserSite:Enable") ?? true)
+{
+    userSite = nx.AddProject("user-site", "dev")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("UserSite:Port"),
+            isProxied: toProxy,
+            env: "PORT"
+        )
+        .WithReference(rubricEngine)
+        .WaitFor(rubricEngine);
+}
 
 builder.Build().Run();
