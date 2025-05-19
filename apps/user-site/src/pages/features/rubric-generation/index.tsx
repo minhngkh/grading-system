@@ -49,13 +49,20 @@ export default function RubricGenerationPage({
     defaultValues: initialRubric,
   });
 
-  const handleNext = async () => {
-    if (stepper.isLast) {
-      const isValid = await form.trigger();
-      if (!isValid) {
-        return;
-      }
+  const isNextDisabled = () => {
+    if (stepper.isFirst) {
+      return !form.formState.isValid;
+    }
 
+    return false;
+  };
+
+  const handleNext = async () => {
+    if (!form.formState.isValid) {
+      return;
+    }
+
+    if (stepper.isLast) {
       try {
         await updateRubric(initialRubric?.id!, form.getValues());
         sessionStorage.removeItem(itemIdentifier);
@@ -63,6 +70,7 @@ export default function RubricGenerationPage({
       } catch (err) {
         console.error(err);
       }
+
       return;
     }
 
@@ -71,8 +79,14 @@ export default function RubricGenerationPage({
 
   const onUpdateRubric = async (updatedRubric: Rubric) => {
     try {
-      const parsed = RubricSchema.parse(updatedRubric);
-      form.reset(parsed);
+      const result = RubricSchema.safeParse(updatedRubric);
+
+      if (!result.success) {
+        throw result.error;
+      }
+
+      const parsed = result.data;
+      form.reset(result.data);
       await updateRubric(initialRubric?.id!, parsed);
     } catch (err) {
       console.error(err);
@@ -80,7 +94,7 @@ export default function RubricGenerationPage({
   };
 
   return (
-    <div className="container flex flex-col h-full p-10 space-y-10">
+    <div className="flex flex-col h-full">
       <nav aria-label="Checkout Steps" className="group my-4">
         <ol
           className="flex items-center justify-between gap-2"
@@ -115,21 +129,19 @@ export default function RubricGenerationPage({
       <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
         {stepper.switch({
           input: () => <ChatWindow rubric={form.getValues()} onUpdate={onUpdateRubric} />,
-          edit: () =>
-            form.getValues() ? (
-              <RubricTable rubricData={form.getValues()} canEdit={false} />
-            ) : null,
-          complete: () =>
-            form.getValues() ? (
-              <RubricTable rubricData={form.getValues()} canEdit={false} />
-            ) : null,
+          edit: () => (
+            <RubricTable rubricData={form.getValues()} showPlugins editPlugin />
+          ),
+          complete: () => <RubricTable rubricData={form.getValues()} showPlugins />,
         })}
 
         <div className="flex w-full justify-end gap-4">
           <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
             Back
           </Button>
-          <Button onClick={handleNext}>{stepper.isLast ? "Save" : "Next"}</Button>
+          <Button disabled={isNextDisabled()} onClick={handleNext}>
+            {stepper.isLast ? "Save" : "Next"}
+          </Button>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   beforeLoad: ({ context, location }) => {
-    if (context.auth.isAuthenticated) {
+    if (context.auth.isSignedIn) {
       throw redirect({
         to: "/home",
         search: {

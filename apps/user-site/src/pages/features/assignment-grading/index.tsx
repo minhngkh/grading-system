@@ -2,10 +2,14 @@ import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { defineStepper } from "@stepperize/react";
-import React from "react";
+import React, { useState } from "react";
 import GradingProgressStep from "./grading-step";
 import ResultsStep from "./result-step";
 import UploadStep from "./upload-step";
+import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "@tanstack/react-router";
 
 type StepData = {
   title: string;
@@ -15,35 +19,77 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
   {
     id: "upload",
     title: "Upload Files",
+    nextButtonTitle: "Start Grading",
   },
   {
     id: "grading",
     title: "Grade Files",
+    nextButtonTitle: "View Results",
   },
   {
     id: "review",
     title: "Review Results",
+    nextButtonTitle: "Finish",
   },
 );
 
-export default function UploadAssignmentPage() {
-  const stepper = useStepper();
-  const currentIndex = utils.getIndex(stepper.current.id);
+interface UploadAssignmentPageProps {
+  initialGradingAttempt: GradingAttempt;
+  initalStep?: string;
+}
 
-  const handleNext = () => {
+export default function UploadAssignmentPage({
+  initialGradingAttempt,
+  initalStep,
+}: UploadAssignmentPageProps) {
+  const stepper = useStepper({
+    initialStep: initalStep,
+  });
+  const currentIndex = utils.getIndex(stepper.current.id);
+  const navigate = useNavigate();
+  const [nextCallback, setNextCallback] = useState<(value?: any) => Promise<any>>();
+  const [isUploading, setIsUploading] = useState(false);
+
+  const gradingAttempt = useForm<GradingAttempt>({
+    resolver: zodResolver(GradingSchema),
+    defaultValues: initialGradingAttempt,
+  });
+
+  const gradingAttemptValues = gradingAttempt.getValues();
+
+  const handleUpdateGradingAttempt = (updated?: Partial<GradingAttempt>) => {
+    gradingAttempt.reset(updated);
+  };
+
+  const handleNext = async () => {
+    switch (currentIndex) {
+      case 0:
+        try {
+          await nextCallback?.(setIsUploading);
+          break;
+        } catch (err) {
+          console.error("Error in next callback:", err);
+          return;
+        }
+      case 1:
+        if (gradingAttemptValues.status === GradingStatus.Started) return;
+        break;
+      case 2:
+        return navigate({ to: "/home" });
+    }
+
     stepper.next();
+    sessionStorage.setItem("gradingStep", stepper.current.id);
   };
 
   const isNextButtonDisabled = () => {
-    // if (stepper.isLast) return true;
-    // if (stepper.current.id === "Upload") {
-    //   return !selectedRubric || files.length === 0;
-    // }
+    if (isUploading) return true;
+    if (currentIndex === 1) return gradingAttemptValues.status === GradingStatus.Started;
     return false;
   };
 
   return (
-    <div className="container flex flex-col h-full p-10 space-y-10">
+    <div className="flex flex-col h-full">
       <nav aria-label="Checkout Steps" className="group my-4">
         <ol
           className="flex items-center justify-between gap-2"
@@ -55,6 +101,9 @@ export default function UploadAssignmentPage() {
                 <Button
                   type="button"
                   role="tab"
+                  onClick={() => {
+                    stepper.goTo(step.id);
+                  }}
                   variant={index <= currentIndex ? "default" : "secondary"}
                   aria-current={stepper.current.id === step.id ? "step" : undefined}
                   aria-posinset={index + 1}
@@ -75,25 +124,31 @@ export default function UploadAssignmentPage() {
           ))}
         </ol>
       </nav>
-      <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
-        {
-          // TODO: lint error, solution is to change the id to lowercase, check if there
-          // is any error
-          stepper.switch({
-            upload: () => <UploadStep />,
-            grading: () => <GradingProgressStep />,
-            review: () => <ResultsStep />,
-          })
-        }
-
-        <div className="flex w-full justify-end gap-4">
-          <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
-            Back
-          </Button>
-          <Button disabled={isNextButtonDisabled()} onClick={handleNext}>
-            {stepper.isLast ? "Save" : "Start Grading"}
-          </Button>
-        </div>
+      <div className="mt-8 space-y-4 flex-1">
+        {stepper.switch({
+          upload: () => (
+            <UploadStep
+              setNextCallback={setNextCallback}
+              gradingAttempt={gradingAttemptValues}
+              onGradingAttemptChange={handleUpdateGradingAttempt}
+            />
+          ),
+          grading: () => (
+            <GradingProgressStep
+              gradingAttempt={gradingAttemptValues}
+              onGradingAttemptChange={handleUpdateGradingAttempt}
+            />
+          ),
+          review: () => <ResultsStep gradingAttempt={gradingAttemptValues} />,
+        })}
+      </div>
+      <div className="flex w-full justify-end gap-4">
+        <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
+          Back
+        </Button>
+        <Button disabled={isNextButtonDisabled()} onClick={handleNext}>
+          {stepper.current.nextButtonTitle}
+        </Button>
       </div>
     </div>
   );

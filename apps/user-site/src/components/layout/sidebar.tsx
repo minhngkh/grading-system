@@ -18,7 +18,6 @@ const navigationItems: NavigationData[] = [
     title: "Home",
     icon: <Home className="size-4" />,
     to: "/home",
-    isActive: true,
   },
 ];
 
@@ -37,14 +36,22 @@ const settingsItems: NavigationData[] = [
 
 export function AppSidebar() {
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 p-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Package className="h-4 w-4" />
-          </div>
-          <h6 className="font-semibold">Assessly</h6>
-        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link to="/home">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <Package className="size-4" />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-semibold">Assessly</span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -53,8 +60,8 @@ export function AppSidebar() {
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={item.isActive}>
-                    <Link to={item.to}>
+                  <SidebarMenuButton asChild>
+                    <Link to={item.to} activeProps={{ className: "bg-secondary" }}>
                       {item.icon}
                       <span>{item.title}</span>
                     </Link>

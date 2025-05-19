@@ -1,34 +1,122 @@
+using Microsoft.Extensions.Configuration;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
-var postgres = builder.AddPostgres("postgres")
-                    .WithLifetime(ContainerLifetime.Persistent)
-                    .WithPgAdmin();
+var rootPath = "../..";
+var configPath = Path.Combine(builder.AppHostDirectory, "config");
+var username = builder.AddParameter("dev-username", secret: true);
+var password = builder.AddParameter("dev-password", secret: true);
+var toProxy = builder.Configuration.GetValue<bool?>("ProxyEnabled") ?? true;
+
+var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
 
 var rubricDb = postgres.AddDatabase("rubricdb");
 var assignmentFlowDb = postgres.AddDatabase("assignmentflowdb");
 
-var username = builder.AddParameter("rb-username", secret: true);
-var password = builder.AddParameter("rb-password", secret: true);
-var rabbitmq = builder.AddRabbitMQ("messaging", username, password, 5672)
-                        .WithManagementPlugin();
- 
-var blobs = builder.AddAzureStorage("storage")
-                        .RunAsEmulator(
-                            azurite =>{
-                                azurite.WithLifetime(ContainerLifetime.Persistent);
-                                azurite.WithBlobPort(27000);
-                            })
-                        .AddBlobs("submissions-store");
+var dbgateContainer = builder.AddContainer("dbgate", "dbgate/dbgate", "alpine");
+var dbgate = dbgateContainer
+    .WaitFor(postgres)
+    .WithVolume(VolumeNameGenerator.Generate(dbgateContainer, "data"), "/root/.dbgate")
+    .WithHttpEndpoint(targetPort: 3000, name: "dbgate-ui")
+    .WithEnvironment(ctx =>
+    {
+        ctx.EnvironmentVariables["CONNECTIONS"] = "con1";
+        ctx.EnvironmentVariables["LABEL_con1"] = "postgres";
+        ctx.EnvironmentVariables["SERVER_con1"] = postgres.Resource.Name;
+        ctx.EnvironmentVariables["PORT_con1"] =
+            postgres.Resource.PrimaryEndpoint.TargetPort?.ToString() ?? "";
+        ctx.EnvironmentVariables["USER_con1"] =
+            postgres.Resource.UserNameParameter?.Value ?? "postgres";
+        ctx.EnvironmentVariables["PASSWORD_con1"] = postgres
+            .Resource
+            .PasswordParameter
+            .Value;
+        ctx.EnvironmentVariables["ENGINE_con1"] = "postgres@dbgate-plugin-postgres";
+    });
 
-// After adding all resources, run the app...
-var rubricEngine = builder.AddProject<Projects.RubricEngine_Application>("rubric-engine")
-        .WithReference(rubricDb).WaitFor(rubricDb)
-        .WithReference(rabbitmq).WaitFor(rabbitmq);
+var rabbitmq = builder
+    .AddRabbitMQ("messaging", username, password)
+    .WithManagementPlugin();
 
-builder.AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
-        .WithReference(assignmentFlowDb).WaitFor(assignmentFlowDb)
-        .WithReference(blobs).WaitFor(blobs)
-        .WithReference(rabbitmq).WaitFor(rabbitmq)
-        .WithReference(rubricEngine).WaitFor(rubricEngine);
+var blobs = builder
+    .AddAzureStorage("storage")
+    .RunAsEmulator(azurite =>
+    {
+        azurite.WithDataVolume();
+    })
+    .AddBlobs("submissions-store");
+
+IResourceBuilder<ProjectResource>? rubricEngine = null;
+if (builder.Configuration.GetValue<bool?>("RubricEngine:Enabled") ?? true)
+{
+    rubricEngine = builder
+        .AddProject<Projects.RubricEngine_Application>("rubric-engine")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("RubricEngine:Port"),
+            isProxied: toProxy
+        )
+        .WithReference(rubricDb)
+        .WaitFor(rubricDb)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq);
+}
+
+IResourceBuilder<ProjectResource>? assignmentFlow = null;
+if (builder.Configuration.GetValue<bool?>("AssignmentFlow:Enabled") ?? true)
+{
+    assignmentFlow = builder
+        .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("AssignmentFlow:Port"),
+            isProxied: toProxy
+        )
+        .WithReference(assignmentFlowDb)
+        .WaitFor(assignmentFlowDb)
+        .WithReference(blobs)
+        .WaitFor(blobs)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq)
+        .WithReference(rubricEngine)
+        .WaitFor(rubricEngine);
+}
+
+var nx = builder.AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm);
+// .WithPackageInstallation();
+
+IResourceBuilder<NxMonorepoProjectResource>? pluginService = null;
+if (builder.Configuration.GetValue<bool?>("PluginService:Enabled") ?? true)
+{
+    pluginService = nx.AddProject("plugin-service", "dev")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("PluginService:Port"),
+            isProxied: toProxy,
+            env: "PORT"
+        );
+}
+
+IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
+if (builder.Configuration.GetValue<bool?>("UserSite:Enabled") ?? true)
+{
+    userSite = nx.AddProject("user-site", "dev")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("UserSite:Port"),
+            isProxied: toProxy,
+            env: "PORT"
+        )
+        .WithEnvironment(ctx =>
+        {
+            var pluginServiceEndpoint = pluginService?.GetEndpoint("http");
+            ctx.EnvironmentVariables["VITE_PLUGIN_SERVICE_URL"] =
+                pluginServiceEndpoint?.Url ?? "";
+
+            var rubricEngineEndpoint = rubricEngine?.GetEndpoint("http");
+            ctx.EnvironmentVariables["VITE_RUBRIC_ENGINE_URL"] =
+                rubricEngineEndpoint?.Url ?? "";
+
+            var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("http");
+            ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
+                assignmentFlowEndpoint?.Url ?? "";
+        });
+}
 
 builder.Build().Run();

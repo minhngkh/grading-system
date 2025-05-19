@@ -1,7 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <Sdk Name="Aspire.AppHost.Sdk" Version="9.0.0" />
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
@@ -10,17 +8,19 @@
     <IsAspireHost>true</IsAspireHost>
     <UserSecretsId>f131e5b4-5528-478a-bcb3-d045a6656846</UserSecretsId>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="Aspire.Hosting.Azure.Storage" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" />
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.NodeJS.Extensions" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\apps\assignment-flow\AssignmentFlow.Application\AssignmentFlow.Application.csproj" />
     <ProjectReference Include="..\..\apps\rubric-engine\application\RubricEngine.Application.csproj" />
+    <ProjectReference
+      Include="..\hosting\GradingSystem.Hosting.csproj"
+      IsAspireProjectResource="false"
+    />
   </ItemGroup>
-
 </Project>

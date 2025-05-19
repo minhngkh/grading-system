@@ -31,7 +31,8 @@ export function ToolsList({ tools }: ToolsListProps) {
         <Link
           key={index}
           to={tool.navigation}
-          preload={tool.navigation === "/rubric-generation" ? false : "intent"}
+          params={tool.params}
+          preload={tool.preload === false ? false : "intent"}
         >
           <Card className="h-full">
             <CardHeader>

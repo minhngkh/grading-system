@@ -109,7 +109,7 @@ export default function ManualAdjustScore() {
   };
 
   return (
-    <div className="w-full flex flex-col px-4">
+    <div className="size-full flex flex-col">
       <Header studentName="Student's Name" />
       <TabsSection tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
       <ScoreAdjust
