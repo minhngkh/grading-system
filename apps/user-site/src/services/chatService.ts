@@ -2,7 +2,7 @@ import type { AgentResponse, UserPrompt } from "@/types/chat";
 import { RubricSchema } from "@/types/rubric";
 import axios from "axios";
 
-const AI_PLUGIN_URL = import.meta.env.VITE_AI_PLUGIN_URL;
+const AI_PLUGIN_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/ai`;
 
 export const sendMessage = async (prompt: UserPrompt): Promise<AgentResponse> => {
   const res = await axios.post(`${AI_PLUGIN_URL}/rubric`, prompt, {
