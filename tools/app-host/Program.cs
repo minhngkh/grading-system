@@ -14,7 +14,6 @@ var rubricDb = postgres.AddDatabase("rubricdb");
 var assignmentFlowDb = postgres.AddDatabase("assignmentflowdb");
 
 var dbgateContainer = builder.AddContainer("dbgate", "dbgate/dbgate", "alpine");
-
 var dbgate = dbgateContainer
     .WaitFor(postgres)
     .WithVolume(VolumeNameGenerator.Generate(dbgateContainer, "data"), "/root/.dbgate")
