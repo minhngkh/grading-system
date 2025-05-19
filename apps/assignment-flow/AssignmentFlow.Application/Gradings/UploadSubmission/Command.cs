@@ -43,7 +43,7 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<GradingAg
     {
         // If filename contains a period, extract everything before it
         // This handles cases like "student_id.zip" or "student_id.pdf"
-        var dotIndex = fileName.IndexOf('.');
+        var dotIndex = fileName.LastIndexOf('.');
         if (dotIndex > 0)
         {
             return fileName[..dotIndex];

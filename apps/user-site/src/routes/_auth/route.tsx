@@ -3,7 +3,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 export const Route = createFileRoute("/_auth")({
   component: RouteComponent,
   beforeLoad: ({ context, location }) => {
-    if (context.auth.isAuthenticated) {
+    if (context.auth.isSignedIn) {
       throw redirect({
         to: "/home",
         search: {
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_auth")({
 
 function RouteComponent() {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+    <div className="size-full flex items-center justify-center">
       <Outlet />
     </div>
   );
