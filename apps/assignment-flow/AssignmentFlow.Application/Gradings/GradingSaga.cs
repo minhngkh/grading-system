@@ -57,14 +57,30 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         }
     }
 
-    public Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessmentCreatedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessmentCreatedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
     {
         // Start tracking the assessment
         Emit(new AssessmentTrackedEvent
         {
             AssessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value)
         });
+        try
+        {
+            var submission = await repository.GetSubmissionAsync(
+                aggregateState.GradingId,
+                domainEvent.AggregateEvent.SubmissionReference,
+                cancellationToken);
 
-        return Task.CompletedTask;
+            Publish(new Assessments.StartAutoGrading.Command(domainEvent.AggregateIdentity)
+            {
+                RubricId = aggregateState.RubricId,
+                Submission = submission
+            });
+        }
+        catch (Exception ex)
+        {
+            // Handle the case where the submission is not found
+            logger.LogError(ex, "Error starting auto grading for assessment {AssessmentId}", domainEvent.AggregateIdentity.Value);
+        }
     }
 }

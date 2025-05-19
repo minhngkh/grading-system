@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AssignmentFlow.Application.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AssignmentFlow.Application.Migrations
 {
     [DbContext(typeof(AssignmentFlowDbContext))]
-    partial class AssignmentFlowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250518114129_AddStateAndStatusToAssessment")]
+    partial class AddStateAndStatusToAssessment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -69,45 +72,6 @@ namespace AssignmentFlow.Application.Migrations
                     b.ToTable("Assessments");
                 });
 
-            modelBuilder.Entity("AssignmentFlow.Application.Assessments.ScoreAdjustment", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("AdjustmentSource")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("AssessmentId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("DeltaScore")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("GradingId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<decimal>("Score")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("TeacherId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ScoreAdjustments");
-                });
-
             modelBuilder.Entity("AssignmentFlow.Application.Gradings.Grading", b =>
                 {
                     b.Property<string>("Id")
@@ -145,36 +109,6 @@ namespace AssignmentFlow.Application.Migrations
 
             modelBuilder.Entity("AssignmentFlow.Application.Assessments.Assessment", b =>
                 {
-                    b.OwnsMany("AssignmentFlow.Application.Assessments.ScoreBreakdownApiContract", "ScoreBreakdowns", b1 =>
-                        {
-                            b1.Property<string>("AssessmentId")
-                                .HasColumnType("character varying(50)");
-
-                            b1.Property<int>("__synthesizedOrdinal")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("integer");
-
-                            b1.Property<string>("CriterionName")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("PerformanceTag")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<decimal>("RawScore")
-                                .HasColumnType("numeric");
-
-                            b1.HasKey("AssessmentId", "__synthesizedOrdinal");
-
-                            b1.ToTable("Assessments");
-
-                            b1.ToJson("ScoreBreakdowns");
-
-                            b1.WithOwner()
-                                .HasForeignKey("AssessmentId");
-                        });
-
                     b.OwnsMany("AssignmentFlow.Application.Assessments.FeedbackItemApiContract", "Feedbacks", b1 =>
                         {
                             b1.Property<string>("AssessmentId")
@@ -222,46 +156,9 @@ namespace AssignmentFlow.Application.Migrations
                                 .HasForeignKey("AssessmentId");
                         });
 
-                    b.Navigation("Feedbacks");
-
-                    b.Navigation("ScoreBreakdowns");
-                });
-
-            modelBuilder.Entity("AssignmentFlow.Application.Assessments.ScoreAdjustment", b =>
-                {
-                    b.OwnsMany("AssignmentFlow.Application.Assessments.ScoreBreakdownApiContract", "DeltaScoreBreakdowns", b1 =>
-                        {
-                            b1.Property<string>("ScoreAdjustmentId")
-                                .HasColumnType("character varying(50)");
-
-                            b1.Property<int>("__synthesizedOrdinal")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("integer");
-
-                            b1.Property<string>("CriterionName")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("PerformanceTag")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<decimal>("RawScore")
-                                .HasColumnType("numeric");
-
-                            b1.HasKey("ScoreAdjustmentId", "__synthesizedOrdinal");
-
-                            b1.ToTable("ScoreAdjustments");
-
-                            b1.ToJson("DeltaScoreBreakdowns");
-
-                            b1.WithOwner()
-                                .HasForeignKey("ScoreAdjustmentId");
-                        });
-
                     b.OwnsMany("AssignmentFlow.Application.Assessments.ScoreBreakdownApiContract", "ScoreBreakdowns", b1 =>
                         {
-                            b1.Property<string>("ScoreAdjustmentId")
+                            b1.Property<string>("AssessmentId")
                                 .HasColumnType("character varying(50)");
 
                             b1.Property<int>("__synthesizedOrdinal")
@@ -279,17 +176,17 @@ namespace AssignmentFlow.Application.Migrations
                             b1.Property<decimal>("RawScore")
                                 .HasColumnType("numeric");
 
-                            b1.HasKey("ScoreAdjustmentId", "__synthesizedOrdinal");
+                            b1.HasKey("AssessmentId", "__synthesizedOrdinal");
 
-                            b1.ToTable("ScoreAdjustments");
+                            b1.ToTable("Assessments");
 
                             b1.ToJson("ScoreBreakdowns");
 
                             b1.WithOwner()
-                                .HasForeignKey("ScoreAdjustmentId");
+                                .HasForeignKey("AssessmentId");
                         });
 
-                    b.Navigation("DeltaScoreBreakdowns");
+                    b.Navigation("Feedbacks");
 
                     b.Navigation("ScoreBreakdowns");
                 });

@@ -1,8 +1,8 @@
 ﻿namespace AssignmentFlow.IntegrationEvents;
 
-public interface ISubmissionGradingResult : IGradingEvent
+public interface ISubmissionGradingResult
 {
-    public string SubmissionReference { get; set; }
+    public string AssessmentId { get; set; }
     public List<ScoreBreakdown> ScoreBreakdowns { get; set; }
+    public List<string> Errors { get; set; }
 }
-

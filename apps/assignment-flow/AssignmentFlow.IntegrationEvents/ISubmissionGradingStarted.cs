@@ -1,10 +1,9 @@
 ﻿namespace AssignmentFlow.IntegrationEvents;
 
-public interface ISubmissionGradingStarted : IGradingEvent
+public interface ISubmissionGradingStarted
 {
+    public string AssessmentId { get; set; }
     public Criterion[] Criteria { get; set; }
-    public string SubmissionReference { get; set; }
-    public string RubricId { get; set; }
 }
 
 public class Criterion

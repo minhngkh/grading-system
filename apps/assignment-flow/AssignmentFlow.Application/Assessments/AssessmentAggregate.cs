@@ -32,6 +32,21 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         });
     }
 
+    public void StartAutoGrading()
+    {
+        Emit(new StartAutoGrading.AutoGradingStartedEvent());
+    }
+
+    public void Assess(Assess.Command command)
+    {
+        Emit(new Assess.AssessedEvent
+        {
+            Grader = command.Grader,
+            ScoreBreakdowns = command.ScoreBreakdowns,
+            Feedbacks = command.Feedbacks
+        });
+    }
+
     public void AdjustScore()
     {
 

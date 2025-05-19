@@ -21,5 +21,10 @@ public class GradingCanBeStartedSpecification : Specification<GradingWriteModel>
         {
             yield return $"no submissions are uploaded";
         }
+
+        if (obj.Selectors.Count == 0)
+        {
+            yield return $"no selectors are defined";
+        }
     }
 }
