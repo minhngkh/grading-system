@@ -1,8 +1,4 @@
-using Aspire.Hosting.ApplicationModel;
-using k8s.Authentication;
-using Microsoft.AspNetCore.SignalR;
-
-namespace Aspire.Hosting;
+namespace Aspire.Hosting.ApplicationModel;
 
 public class NxMonorepoProjectResource
     : ExecutableResource,

@@ -80,7 +80,9 @@ if (builder.Configuration.GetValue<bool?>("AssignmentFlow:Enable") ?? true)
         .WaitFor(rubricEngine);
 }
 
-var nx = builder.AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm);
+var nx = builder
+    .AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm)
+    .WithPackageInstallation();
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
 if (builder.Configuration.GetValue<bool?>("UserSite:Enable") ?? true)

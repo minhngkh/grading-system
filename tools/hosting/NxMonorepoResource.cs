@@ -1,27 +1,29 @@
 using System.Diagnostics;
-using Aspire.Hosting.ApplicationModel;
-using Microsoft.AspNetCore.SignalR;
 
-namespace Aspire.Hosting;
+namespace Aspire.Hosting.ApplicationModel;
 
 public abstract record JsPackageManager
 {
     private string? _execBinary;
     private string? _execCommand;
     private string? _installBinary;
-    private string? _installCommand = "install";
+    private string? _installCommand;
 
     private JsPackageManager(
         string name,
         string binary,
         string? execBinary = null,
-        string? execCommand = null
+        string? execCommand = null,
+        string? installBinary = null,
+        string? installCommand = "install"
     )
     {
         Name = name;
         Binary = binary;
         _execBinary = execBinary;
         _execCommand = execCommand;
+        _installBinary = installBinary;
+        _installCommand = installCommand;
     }
 
     public string Name { get; init; }

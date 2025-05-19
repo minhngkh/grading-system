@@ -1,7 +1,6 @@
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Lifecycle;
-using Aspire.Hosting.Utils;
-using Microsoft.Extensions.DependencyInjection; // Added for TryAddSingleton
+using GradingSystem.Hosting;
 using Microsoft.Extensions.Hosting;
 
 namespace Aspire.Hosting;
@@ -26,7 +25,22 @@ public static class NxMonorepoResourceBuilderExtensions
 
         var resource = new NxMonorepoResource(name, rootPath, packageManager);
 
-        return builder.AddResource(resource);
+        var resourceBuilder = builder
+            .AddResource(resource)
+            .WithInitialState(
+                new CustomResourceSnapshot
+                {
+                    ResourceType = "nxMonorepo",
+                    Properties = [],
+                    State = new ResourceStateSnapshot(
+                        KnownResourceStates.Hidden,
+                        KnownResourceStateStyles.Info
+                    ),
+                    StartTimeStamp = DateTime.UtcNow,
+                }
+            );
+
+        return resourceBuilder;
     }
 
     public static IResourceBuilder<NxMonorepoProjectResource> AddProject(
@@ -55,20 +69,15 @@ public static class NxMonorepoResourceBuilderExtensions
         return builder
             .ApplicationBuilder.AddResource(project)
             .WithNodeDefaults()
-            .WithArgs(project.GetRunArgs(args));
+            .WithArgs(project.GetRunArgs(args))
+            .WithParentRelationship(builder.Resource);
     }
 
-    public static IResourceBuilder<NxMonorepoResource> WithPackagesInstallation(
+    public static IResourceBuilder<NxMonorepoResource> WithPackageInstallation(
         this IResourceBuilder<NxMonorepoResource> builder
     )
     {
-        // Ensure the hook is registered only once
-        builder.ApplicationBuilder.Services.TryAddLifecycleHook<NxMonorepoPackageInstallerHook>();
-
-        // Add an annotation to this specific resource instance to opt-in to package installation
-        builder.Resource.Annotations.Add(
-            new NxMonorepoResourceAnnotations.AutoInstallPackagesAnnotation()
-        );
+        builder.ApplicationBuilder.Services.TryAddLifecycleHook<NxMonorepoPackageInstallerLifecycleHook>();
 
         return builder;
     }
