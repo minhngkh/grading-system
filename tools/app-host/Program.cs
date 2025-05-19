@@ -1,6 +1,3 @@
-// Silent the null reference warning since null resource refs are okay
-#pragma warning disable CS8604 // Possible null reference argument.
-
 using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -83,21 +80,18 @@ if (builder.Configuration.GetValue<bool?>("AssignmentFlow:Enabled") ?? true)
         .WaitFor(rubricEngine);
 }
 
-var nx = builder
-    .AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm)
-    .WithPackageInstallation();
+var nx = builder.AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm);
+// .WithPackageInstallation();
 
 IResourceBuilder<NxMonorepoProjectResource>? pluginService = null;
 if (builder.Configuration.GetValue<bool?>("PluginService:Enabled") ?? true)
 {
-    pluginService = nx.AddProject("user-site", "dev")
+    pluginService = nx.AddProject("plugin-service", "dev")
         .WithHttpEndpoint(
             port: builder.Configuration.GetValue<int?>("PluginService:Port"),
             isProxied: toProxy,
             env: "PORT"
-        )
-        .WithReference(rubricEngine)
-        .WaitFor(rubricEngine);
+        );
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
@@ -109,10 +103,20 @@ if (builder.Configuration.GetValue<bool?>("UserSite:Enabled") ?? true)
             isProxied: toProxy,
             env: "PORT"
         )
-        .WithReference(rubricEngine)
-        .WaitFor(rubricEngine);
+        .WithEnvironment(ctx =>
+        {
+            var pluginServiceEndpoint = pluginService?.GetEndpoint("http");
+            ctx.EnvironmentVariables["VITE_PLUGIN_SERVICE_URL"] =
+                pluginServiceEndpoint?.Url ?? "";
+
+            var rubricEngineEndpoint = rubricEngine?.GetEndpoint("http");
+            ctx.EnvironmentVariables["VITE_RUBRIC_ENGINE_URL"] =
+                rubricEngineEndpoint?.Url ?? "";
+
+            var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("http");
+            ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
+                assignmentFlowEndpoint?.Url ?? "";
+        });
 }
 
 builder.Build().Run();
-
-#pragma warning restore CS8604 // Possible null reference argument.

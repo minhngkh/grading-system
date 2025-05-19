@@ -23,7 +23,7 @@ export const apiGateway = defineTypedService2("api-gateway", {
   mixins: [ApiGatewayService],
   settings: {
     port:
-      process.env.API_PORT ? Number.parseInt(process.env.API_PORT, 10) : 3000,
+      process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3000,
     cors: {
       origin: ["localhost:5173"],
       methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
