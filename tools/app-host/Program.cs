@@ -1,3 +1,6 @@
+// Silent the null reference warning since null resource refs are okay
+#pragma warning disable CS8604 // Possible null reference argument.
+
 using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -47,7 +50,7 @@ var blobs = builder
     .AddBlobs("submissions-store");
 
 IResourceBuilder<ProjectResource>? rubricEngine = null;
-if (builder.Configuration.GetValue<bool?>("RubricEngine:Enable") ?? true)
+if (builder.Configuration.GetValue<bool?>("RubricEngine:Enabled") ?? true)
 {
     rubricEngine = builder
         .AddProject<Projects.RubricEngine_Application>("rubric-engine")
@@ -62,7 +65,7 @@ if (builder.Configuration.GetValue<bool?>("RubricEngine:Enable") ?? true)
 }
 
 IResourceBuilder<ProjectResource>? assignmentFlow = null;
-if (builder.Configuration.GetValue<bool?>("AssignmentFlow:Enable") ?? true)
+if (builder.Configuration.GetValue<bool?>("AssignmentFlow:Enabled") ?? true)
 {
     assignmentFlow = builder
         .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
@@ -85,7 +88,7 @@ var nx = builder
     .WithPackageInstallation();
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
-if (builder.Configuration.GetValue<bool?>("UserSite:Enable") ?? true)
+if (builder.Configuration.GetValue<bool?>("UserSite:Enabled") ?? true)
 {
     userSite = nx.AddProject("user-site", "dev")
         .WithHttpEndpoint(
@@ -98,3 +101,5 @@ if (builder.Configuration.GetValue<bool?>("UserSite:Enable") ?? true)
 }
 
 builder.Build().Run();
+
+#pragma warning restore CS8604 // Possible null reference argument.
