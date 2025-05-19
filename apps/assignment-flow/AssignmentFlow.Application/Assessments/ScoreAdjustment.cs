@@ -41,6 +41,9 @@ public class ScoreAdjustment : Identifiable<string>
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public List<ScoreBreakdownApiContract> DeltaScoreBreakdowns { get; set; } = [];
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
 public sealed class ScoreAdjustmentId(string id) : Identity<ScoreAdjustmentId>(id) { }
