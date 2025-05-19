@@ -1,5 +1,5 @@
 {
-  "name": "example-grading-service",
+  "name": "@grading-system/example-grading-service",
   "type": "module",
   "private": true,
   "module": "index.ts",
@@ -10,6 +10,7 @@
     "demo": "tsx examples/demo-grader-test.ts"
   },
   "nx": {
+    "name": "example-grading-service",
     "projectType": "application"
   },
   "dependencies": {

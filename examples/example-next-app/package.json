@@ -1,5 +1,5 @@
 {
-  "name": "example-next-app",
+  "name": "@grading-system/example-next-app",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "nx": {
+    "name": "example-next-app",
     "projectType": "application"
   },
   "dependencies": {
