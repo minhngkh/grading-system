@@ -6,7 +6,7 @@ var rootPath = "../..";
 var configPath = Path.Combine(builder.AppHostDirectory, "config");
 var username = builder.AddParameter("dev-username", secret: true);
 var password = builder.AddParameter("dev-password", secret: true);
-var toProxy = builder.Configuration.GetValue<bool?>("ProxyEnabled") ?? true;
+var toProxy = builder.Configuration.GetValue<bool>("ProxyEnabled", true);
 
 var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
 
@@ -47,7 +47,7 @@ var blobs = builder
     .AddBlobs("submissions-store");
 
 IResourceBuilder<ProjectResource>? rubricEngine = null;
-if (builder.Configuration.GetValue<bool?>("RubricEngine:Enabled") ?? true)
+if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
 {
     rubricEngine = builder
         .AddProject<Projects.RubricEngine_Application>("rubric-engine")
@@ -62,7 +62,7 @@ if (builder.Configuration.GetValue<bool?>("RubricEngine:Enabled") ?? true)
 }
 
 IResourceBuilder<ProjectResource>? assignmentFlow = null;
-if (builder.Configuration.GetValue<bool?>("AssignmentFlow:Enabled") ?? true)
+if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
 {
     assignmentFlow = builder
         .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
@@ -84,7 +84,7 @@ var nx = builder.AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm);
 // .WithPackageInstallation();
 
 IResourceBuilder<NxMonorepoProjectResource>? pluginService = null;
-if (builder.Configuration.GetValue<bool?>("PluginService:Enabled") ?? true)
+if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
 {
     pluginService = nx.AddProject("plugin-service", "dev")
         .WithHttpEndpoint(
@@ -95,7 +95,7 @@ if (builder.Configuration.GetValue<bool?>("PluginService:Enabled") ?? true)
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
-if (builder.Configuration.GetValue<bool?>("UserSite:Enabled") ?? true)
+if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
 {
     userSite = nx.AddProject("user-site", "dev")
         .WithHttpEndpoint(
