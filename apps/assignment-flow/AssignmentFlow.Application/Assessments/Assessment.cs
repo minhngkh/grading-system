@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using AssignmentFlow.Application.Assessments.Assess;
 using AssignmentFlow.Application.Assessments.Create;
+using AssignmentFlow.Application.Assessments.StartAutoGrading;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Controllers;
@@ -15,7 +17,9 @@ namespace AssignmentFlow.Application.Assessments;
 public class Assessment
     : Identifiable<string>,
     IReadModel,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent>
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGradingStartedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -62,36 +66,53 @@ public class Assessment
     [Attr(Capabilities = AllowView)]
     public List<FeedbackItemApiContract> Feedbacks { get; set; } = [];
 
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public DateTimeOffset LastModified { get; set; }
+
+    [Attr(Capabilities = AllowView)]
+    public int Version { get; private set; }
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    [MaxLength(ModelConstants.ShortText)]
+    public string Status { get; set; } = nameof(AssessmentState.Created);
+    public AssessmentStateMachine StateMachine => new(() => Enum.Parse<AssessmentState>(Status), AfterStateUpdated);
+    private void AfterStateUpdated(AssessmentState newState) => Status = Enum.GetName(newState) ?? throw new InvalidOperationException();
+
+    public bool IsActionAllowed(string action) => StateMachine.PermittedTriggers.Any(a => Enum.GetName(a) == action);
+
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent> domainEvent, CancellationToken cancellationToken)
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
         GradingId = domainEvent.AggregateEvent.GradingId;
         SubmissionReference = domainEvent.AggregateEvent.SubmissionReference;
+
+        UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
 
-    private static List<ScoreBreakdownApiContract> MapScoreBreakdowns(List<ScoreBreakdownItem> scoreBreakdowns)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGradingStartedEvent> domainEvent, CancellationToken cancellationToken)
     {
-        return scoreBreakdowns.ConvertAll(sb => new ScoreBreakdownApiContract
-        {
-            CriterionName = sb.CriterionName,
-            PerformanceTag = sb.PerformanceTag,
-            RawScore = sb.RawScore
-        });
+        StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
     }
 
-    private static List<FeedbackItemApiContract> MapFeedbacks(List<Feedback> feedbacks)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
-        return feedbacks.ConvertAll(fb => new FeedbackItemApiContract
+        ScoreBreakdowns = domainEvent.AggregateEvent.ScoreBreakdowns.ToApiContracts();
+
+        if (domainEvent.AggregateEvent.Feedbacks != null)
         {
-            Criterion = fb.Criterion,
-            Comment = fb.Comment,
-            FileRef = fb.Highlight.Attachment,
-            FromCol = fb.Highlight.Location.FromColumn,
-            FromLine = fb.Highlight.Location.FromLine,
-            ToCol = fb.Highlight.Location.ToColumn,
-            ToLine = fb.Highlight.Location.ToLine,
-            Tag = fb.Tag,
-        });
+            Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
+        }
+
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
+    private void UpdateLastModifiedData(IDomainEvent domainEvent)
+    {
+        LastModified = domainEvent.Timestamp.ToUniversalTime();
+        Version = domainEvent.AggregateSequenceNumber;
     }
 }
