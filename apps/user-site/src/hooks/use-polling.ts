@@ -16,7 +16,7 @@ export function usePolling<T>(
   const stoppedRef = useRef(false);
 
   useEffect(() => {
-    if (enabled === false) return;
+    if (!enabled) return;
     stoppedRef.current = false;
 
     const poll = async () => {

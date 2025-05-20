@@ -2,7 +2,7 @@ import { GradingStatus, GradingAttempt } from "@/types/grading";
 import { usePolling } from "@/hooks/use-polling";
 import { getGradingStatus, startGrading } from "@/services/gradingServices";
 import Spinner from "@/components/spinner";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 
 interface GradingProgressStepProps {
   gradingAttempt: GradingAttempt;
@@ -13,50 +13,37 @@ export default function GradingProgressStep({
   gradingAttempt,
   onGradingAttemptChange,
 }: GradingProgressStepProps) {
-  const stopRef = useRef<() => void>(() => {});
-
-  const pollingFn = useCallback(() => {
-    return getGradingStatus(gradingAttempt.id);
-  }, [gradingAttempt.id]);
+  const pollingFn = useCallback(
+    () => getGradingStatus(gradingAttempt.id),
+    [gradingAttempt.id],
+  );
 
   useEffect(() => {
     const start = async () => {
       try {
         await startGrading(gradingAttempt.id);
-        onGradingAttemptChange({
-          status: GradingStatus.Started,
-        });
+        onGradingAttemptChange({ status: GradingStatus.Started });
       } catch (err) {
         console.error(err);
       }
     };
-
     start();
-  }, []);
+  }, [gradingAttempt.id, onGradingAttemptChange]);
 
-  const onSuccess = useCallback((status: GradingStatus) => {
-    onGradingAttemptChange({ status });
-    console.log(status);
+  const onSuccess = useCallback(
+    (status: GradingStatus) => {
+      onGradingAttemptChange({ status });
+    },
+    [onGradingAttemptChange],
+  );
 
-    if (
-      (status === GradingStatus.Graded || status === GradingStatus.Failed) &&
-      stopRef.current
-    ) {
-      stopRef.current();
-      stopRef.current = () => {};
-    }
-  }, []);
-
-  const { stop } = usePolling(pollingFn, onSuccess, {
+  usePolling(pollingFn, onSuccess, {
     interval: 5000,
     enabled: gradingAttempt.status === GradingStatus.Started,
     onError: (error) => {
       console.error("Failed to fetch grading status:", error);
     },
   });
-
-  // update ref after polling setup
-  if (!stopRef.current) stopRef.current = stop;
 
   return (
     <div className="w-full">
