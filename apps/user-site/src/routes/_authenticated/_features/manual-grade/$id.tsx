@@ -202,35 +202,35 @@ One of the most impactful actions individuals can take is reducing waste. Single
           {
             id: "mock-criterion-id-1",
             name: "Organization",
-            totalCriterionPoints: 10,
+            weight: 10,
             levels: [
               {
                 description: "Excellent organization",
-                points: 10,
+                weight: 10,
                 performanceTag: "Excellent",
               },
-              { description: "Good organization", points: 8, performanceTag: "Good" },
-              { description: "Fair organization", points: 6, performanceTag: "Average" },
+              { description: "Good organization", weight: 8, performanceTag: "Good" },
+              { description: "Fair organization", weight: 6, performanceTag: "Average" },
             ],
           },
           {
             id: "mock-criterion-id-2",
             name: "Content",
-            totalCriterionPoints: 10,
+            weight: 10,
             levels: [
               {
                 description: "Highly relevant and detailed content",
-                points: 10,
+                weight: 10,
                 performanceTag: "Excellent",
               },
               {
                 description: "Relevant content with some details",
-                points: 7,
+                weight: 7,
                 performanceTag: "Good",
               },
               {
                 description: "Basic content with limited detail",
-                points: 5,
+                weight: 5,
                 performanceTag: "Average",
               },
             ],
@@ -238,21 +238,21 @@ One of the most impactful actions individuals can take is reducing waste. Single
           {
             id: "mock-criterion-id-3",
             name: "Vocabulary",
-            totalCriterionPoints: 10,
+            weight: 10,
             levels: [
               {
                 description: "Wide range of vocabulary",
-                points: 10,
+                weight: 10,
                 performanceTag: "Excellent",
               },
               {
                 description: "Adequate range of vocabulary",
-                points: 7,
+                weight: 7,
                 performanceTag: "Good",
               },
               {
                 description: "Limited range of vocabulary",
-                points: 5,
+                weight: 5,
                 performanceTag: "Average",
               },
             ],
@@ -260,15 +260,15 @@ One of the most impactful actions individuals can take is reducing waste. Single
           {
             id: "mock-criterion-id-4",
             name: "Grammar",
-            totalCriterionPoints: 10,
+            weight: 10,
             levels: [
               {
                 description: "Virtually no errors",
-                points: 10,
+                weight: 10,
                 performanceTag: "Excellent",
               },
-              { description: "Few minor errors", points: 7, performanceTag: "Good" },
-              { description: "Several errors", points: 5, performanceTag: "Average" },
+              { description: "Few minor errors", weight: 7, performanceTag: "Good" },
+              { description: "Several errors", weight: 5, performanceTag: "Average" },
             ],
           },
         ],
