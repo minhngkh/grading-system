@@ -22,6 +22,14 @@ const tools: Tool[] = [
     navigation: "/manage-rubrics",
   },
   {
+    name: "Manage Grading",
+    details:
+      "Includes components, patterns, and guidelines for creating cohesive user interfaces.",
+    type: ToolType.Management,
+    isFavorite: true,
+    navigation: "/manage-grading",
+  },
+  {
     name: "Grade Assignments",
     details: "Create task lists, set deadlines, and monitor progress on your projects.",
     type: ToolType.Grading,
