@@ -1,6 +1,4 @@
-// TODO: Move all moleculer stuff to libs/
-
-import type { Event } from "@/utils/events";
+import type { CustomOmit } from "@grading-system/utils/typescript";
 import type {
   ActionSchema,
   BrokerOptions,
@@ -13,7 +11,7 @@ import type {
   ServiceSchema,
   ServiceSettingSchema,
 } from "moleculer";
-import type { CustomOmit } from "./typescript";
+import type { Event } from "./event";
 import { ServiceBroker } from "moleculer";
 import { ZodValidator } from "moleculer-zod-validator";
 
@@ -61,15 +59,11 @@ interface ServiceInterface {
   actions?: ServiceActionsSchema;
 }
 
-export type TypedServiceInterface<T extends ServiceInterface> =
-  _TypedServiceSchemaOld<
-    T["methods"] extends ServiceMethods ? T["methods"] : ServiceMethods
-  >;
+export type TypedServiceInterface<T extends ServiceInterface> = _TypedServiceSchemaOld<
+  T["methods"] extends ServiceMethods ? T["methods"] : ServiceMethods
+>;
 
-export function defineTypedService<
-  TName extends string,
-  TMethods extends ServiceMethods,
->(
+export function defineTypedService<TName extends string, TMethods extends ServiceMethods>(
   name: TName,
   schema: CustomOmit<_TypedServiceSchemaOld<TMethods>, "name">,
 ): _TypedServiceSchemaOld<TMethods> & { name: TName } {
@@ -83,23 +77,27 @@ export function defineTypedService2<
   TName extends string,
   TMethods extends ServiceMethods,
   TActions extends TypedServiceActionsSchema<TMethods>,
+  TVersion extends string | number | undefined,
 >(
-  name: TName,
-  schema: CustomOmit<TypedServiceSchema<TMethods, TActions>, "name">,
-): TypedServiceSchema<TMethods, TActions> & { name: TName } {
+  options: {
+    name: TName;
+    version?: Exclude<TVersion, undefined>;
+  } & CustomOmit<TypedServiceSchema<TMethods, TActions>, "name">,
+): TypedServiceSchema<TMethods, TActions> & {
+  name: TName;
+  version: TVersion;
+} {
+  const { version, ...rest } = options;
   return {
-    ...schema,
-    name,
+    ...rest,
+    version: version as TVersion,
   };
 }
 
 export type InferTypedService<T> =
-  T extends _TypedServiceSchemaOld<infer M, infer S> ? TypedService<M, S>
-  : never;
+  T extends _TypedServiceSchemaOld<infer M, infer S> ? TypedService<M, S> : never;
 
-export function subscribeToEvent<
-  T extends _TypedServiceSchemaOld | null = null,
->(
+export function subscribeToEvent<T extends _TypedServiceSchemaOld | null = null>(
   event: Event<any, any>,
   handlerFunc: (
     this: T extends null ? Service : T,
@@ -117,10 +115,7 @@ type EventHandler<E extends Event<any, any>, T extends Service> = (
   ctx: Context<E["validate"]["context"]>,
 ) => void | Promise<void>;
 
-export function defineEventHandler<
-  E extends Event<any, any>,
-  T extends Service,
->(
+export function defineEventHandler<E extends Event<any, any>, T extends Service>(
   event: E,
   handlerFunc: EventHandler<E, T>,
 ): ServiceEventHandler | ServiceEvent {

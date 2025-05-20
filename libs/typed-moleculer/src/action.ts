@@ -1,6 +1,6 @@
-import type { TypedServiceSchema } from "@/utils/typed-moleculer";
+import type { IfAny } from "@grading-system/utils/typescript";
 import type { Context, ServiceBroker } from "moleculer";
-import type { IfAny } from "./typescript";
+import type { TypedServiceSchema } from "./service";
 
 // Helper type to extract specific action types from any service
 export type GetServiceActionTypes<T extends TypedServiceSchema> =
@@ -34,38 +34,40 @@ export type ServiceActionParams<TService extends TypedServiceSchema> = {
   : never;
 };
 
-// Type for action paths in format "serviceName.actionName"
+
+// TODO: Handle the case where version is string -> no v in front
 export type ServiceActionPath<TService extends TypedServiceSchema> =
-  `${TService["name"]}.${keyof GetServiceActionTypes<TService> & string}`;
+  TService["version"] extends undefined ?
+    `${TService["name"]}.${keyof GetServiceActionTypes<TService> & string}`
+  : `v${TService["version"]}.${TService["name"]}.${keyof GetServiceActionTypes<TService> &
+      string}`;
 
 type ExtractActionName<
   TService extends TypedServiceSchema<any, any>,
   TPath extends string, // Use string here, constraint is on TPath in emitEvent
 > =
-  TPath extends `${TService["name"]}.${infer ActionName}` ?
+  TPath extends (
+    | `${TService["name"]}.${infer ActionName}`
+    | `v${TService["version"]}.${TService["name"]}.${infer ActionName}`
+  ) ?
     ActionName extends keyof GetServiceActionTypes<TService> ?
       ActionName
     : never
   : never;
 
+
+// TODO: Rewrite all this shenanigans
 export function actionCaller<TService extends TypedServiceSchema>() {
   // This inner function now only needs to infer K
   return <
     TPath extends ServiceActionPath<TService>,
-    TName extends ExtractActionName<TService, TPath> = ExtractActionName<
-      TService,
-      TPath
-    >,
+    TName extends ExtractActionName<TService, TPath> = ExtractActionName<TService, TPath>,
     TSignature extends
       ServiceActionParams<TService>[TName] = ServiceActionParams<TService>[TName],
   >(
     broker: ServiceBroker | Context,
     action: TPath, // Use K directly here for better inference link
-    ...args: IfAny<
-      TSignature["paramsType"],
-      [],
-      [params: TSignature["paramsType"]]
-    >
+    ...args: IfAny<TSignature["paramsType"], [], [params: TSignature["paramsType"]]>
   ): TSignature["returnType"] => {
     // Extract params from args tuple
     const params = args[0];

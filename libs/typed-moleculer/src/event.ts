@@ -1,8 +1,7 @@
 import type { Context, ServiceBroker } from "moleculer";
 import type { ZodParamsOptionsType } from "moleculer-zod-validator";
-import type {ZodRawShape} from "zod";
+import type { ZodRawShape } from "zod";
 import { ZodParams } from "moleculer-zod-validator";
-import { z  } from "zod";
 
 export interface Event<
   TName extends string, // to display exact event name instead of "string" when hover
@@ -32,8 +31,3 @@ export function emitEvent<E extends Event<any, any, any>>(
 ) {
   broker.emit(event.name, data);
 }
-
-const testEvent = defineEvent("test", {
-  str: z.string(),
-  num: z.number().optional(),
-});

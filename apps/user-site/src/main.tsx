@@ -1,11 +1,10 @@
-import { useAuth } from "@clerk/clerk-react";
-import { ClerkProvider } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth  } from "@clerk/clerk-react";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
+import { LoadingScreen } from "./components/loading-screen";
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
-import { LoadingScreen } from "./components/loading-screen";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 

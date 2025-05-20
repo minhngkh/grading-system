@@ -3,13 +3,13 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    watch: false,
     globals: true,
     environment: "node",
-    testTimeout: 0,
-    env: {
-      // LOG_LEVEL: "info",
-    }
+    env: {},
+    coverage: {
+      reporter: "v8" as const,
+      reportsDirectory: "./test-output/vitest/coverage",
+    },
   },
   plugins: [tsconfigPaths()],
 });
