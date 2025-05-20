@@ -37,8 +37,8 @@ export default function UploadStep({
           setIsUploading(true);
           handleSetIsUploading?.(true);
 
+          // Simulate a delay for the upload process
           await new Promise((resolve) => setTimeout(resolve, 2000));
-
           await updateGradingSelectors(gradingAttempt.id, gradingAttempt.selectors);
           await Promise.all(
             uploadedFiles.map(async (file, index) => {
@@ -54,6 +54,7 @@ export default function UploadStep({
               }
             }),
           );
+          // Simulate for the user to see the progress
           await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (error) {
           console.error("Error uploading files:", error);

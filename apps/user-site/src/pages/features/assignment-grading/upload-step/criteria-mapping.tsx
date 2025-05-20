@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
 import { ManualLocationDialog } from "./manual-location-dialog";
 import { GradingAttempt } from "@/types/grading";
@@ -31,6 +31,14 @@ export default function CriteriaMapper({
   const [dialogType, setDialogType] = useState<SelectLocationType | null>(null);
   const [criterionPathType, setCriterionPathType] = useState<Record<number, string>>({});
   const [criteriaIndex, setCriteriaIndex] = useState<number>();
+  const [chosenFileIndex, setChosenFileIndex] = useState<number>(0);
+
+  useEffect(() => {
+    if (chosenFileIndex >= uploadedFiles.length) {
+      setChosenFileIndex(0);
+      setCriterionPathType({});
+    }
+  }, [uploadedFiles]);
 
   const updateCriterionValue = (index: number, value: string) => {
     const updatedGradingAttempt = { ...gradingAttempt };
@@ -59,7 +67,31 @@ export default function CriteriaMapper({
     <Card className="w-full gap-0 mt-4">
       <CardHeader>
         <CardTitle>
-          File format detected: zip. Select content path for each criteria
+          <p>File format detected: zip. Select content path for each criteria</p>
+          <div className="mt-4 gap-2 flex items-center">
+            <span>Using file: </span>
+            <Select
+              value={uploadedFiles[chosenFileIndex]?.name}
+              onValueChange={(value) => {
+                const index = uploadedFiles.findIndex((file) => file?.name === value);
+                if (index !== -1) {
+                  setChosenFileIndex(index);
+                  setCriterionPathType({});
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose file" />
+              </SelectTrigger>
+              <SelectContent>
+                {uploadedFiles.map((file, index) => (
+                  <SelectItem key={index} value={file?.name}>
+                    {file?.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
@@ -125,7 +157,7 @@ export default function CriteriaMapper({
             onClose={closeDialog}
             gradingAttempt={gradingAttempt}
             criterionIndex={criteriaIndex}
-            uploadedFiles={uploadedFiles}
+            uploadedFile={uploadedFiles[chosenFileIndex]}
             onSelect={selectLocation}
           />
         )}

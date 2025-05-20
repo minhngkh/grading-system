@@ -171,7 +171,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
               placeholder="Ask me to create a rubric for your assignment..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyUp={(e) => {
+              onKeyDown={(e) => {
                 if (
                   e.key === "Enter" &&
                   !e.shiftKey &&
@@ -184,7 +184,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
                 }
               }}
               aria-label="Chat input"
-              className="resize-none transition-all shadow-none focus-visible:ring-0 border-0 focus-visible:ring-offset-0 p-4"
+              className="dark:bg-transparent resize-none transition-all shadow-none focus-visible:ring-0 border-0 focus-visible:ring-offset-0 p-4"
             />
             <div className="flex gap-2 px-2 pb-2 justify-end">
               <Button

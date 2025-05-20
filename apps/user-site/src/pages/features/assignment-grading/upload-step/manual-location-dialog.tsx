@@ -15,7 +15,7 @@ interface ManualDialogProps {
   onClose: () => void;
   gradingAttempt: GradingAttempt;
   criterionIndex: number;
-  uploadedFiles: File[];
+  uploadedFile: File;
   onSelect: (index: number, path: string) => void;
 }
 
@@ -106,7 +106,7 @@ export function ManualLocationDialog({
   onClose,
   gradingAttempt,
   criterionIndex,
-  uploadedFiles,
+  uploadedFile,
   onSelect,
 }: ManualDialogProps) {
   const criterionName = gradingAttempt.selectors[criterionIndex]?.criterion;
@@ -129,11 +129,11 @@ export function ManualLocationDialog({
 
   // Memoized file parsing function
   const parseFile = useCallback(async () => {
-    if (uploadedFiles && uploadedFiles.length > 0) {
+    if (uploadedFile) {
       try {
         setError(null);
         setIsLoading(true);
-        const tree = await parseZipToTree(uploadedFiles[0]);
+        const tree = await parseZipToTree(uploadedFile);
         setFileSystem(tree);
       } catch (err) {
         console.error(err);
@@ -143,7 +143,7 @@ export function ManualLocationDialog({
         setIsLoading(false);
       }
     }
-  }, [uploadedFiles]);
+  }, [uploadedFile]);
 
   useEffect(() => {
     parseFile();

@@ -1,5 +1,5 @@
-import ErrorComponent from "@/components/routeError";
-import PendingComponent from "@/components/routePending";
+import ErrorComponent from "@/components/route-error";
+import PendingComponent from "@/components/route-pending";
 import RubricGenerationPage from "@/pages/features/rubric-generation";
 import { createRubric, getRubric } from "@/services/rubricService";
 import { createFileRoute } from "@tanstack/react-router";

@@ -1,4 +1,4 @@
-import ErrorComponent from "@/components/routeError";
+import ErrorComponent from "@/components/route-error";
 import ManageRubricsPage from "@/pages/features/manage-rubrics";
 import { getRubrics } from "@/services/rubricService";
 import { SearchParams, searchParams } from "@/types/searchParams";

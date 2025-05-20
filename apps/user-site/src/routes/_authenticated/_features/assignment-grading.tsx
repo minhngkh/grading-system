@@ -1,5 +1,5 @@
-import ErrorComponent from "@/components/routeError";
-import PendingComponent from "@/components/routePending";
+import ErrorComponent from "@/components/route-error";
+import PendingComponent from "@/components/route-pending";
 import UploadAssignmentPage from "@/pages/features/assignment-grading";
 import { createGradingAttempt, getGradingAttempt } from "@/services/gradingServices";
 import { createFileRoute } from "@tanstack/react-router";

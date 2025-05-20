@@ -139,7 +139,7 @@ export function ExactLocationDialog({
                       }
                       setPathSegments(newSegments);
                     }}
-                    onKeyUp={handleKeyUp}
+                    onKeyDown={handleKeyUp}
                     className="max-w-24"
                   />
                   <div className="h-full flex items-center">/</div>
@@ -148,7 +148,7 @@ export function ExactLocationDialog({
               <Input
                 value={currentInput}
                 onChange={(e) => setCurrentInput(e.target.value)}
-                onKeyUp={handleKeyUp}
+                onKeyDown={handleKeyUp}
                 className="max-w-24"
               />
             </div>
