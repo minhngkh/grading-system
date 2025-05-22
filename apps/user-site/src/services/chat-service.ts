@@ -1,9 +1,17 @@
-import { ChatRubricSchema, type AgentResponse, type UserPrompt } from "@/types/chat";
+import {
+  AgentChatResponse,
+  ChatRubricSchema,
+  UserChatPrompt,
+  type RubricAgentResponse,
+  type RubricUserPrompt,
+} from "@/types/chat";
 import axios from "axios";
 
 const AI_PLUGIN_URL = import.meta.env.VITE_AI_PLUGIN_URL;
 
-export const sendMessage = async (prompt: UserPrompt): Promise<AgentResponse> => {
+export const sendRubricMessage = async (
+  prompt: RubricUserPrompt,
+): Promise<RubricAgentResponse> => {
   const res = await axios.post(`${AI_PLUGIN_URL}/rubric`, prompt, {
     headers: {
       "Content-Type": "application/json",
@@ -14,6 +22,21 @@ export const sendMessage = async (prompt: UserPrompt): Promise<AgentResponse> =>
   return {
     message: res.data.message,
     rubric: res.data.rubric ? ChatRubricSchema.parse(res.data.rubric) : undefined,
+  };
+};
+
+export const sendChatMessage = async (
+  prompt: UserChatPrompt,
+): Promise<AgentChatResponse> => {
+  const res = await axios.post(`${AI_PLUGIN_URL}/chat`, prompt, {
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  });
+
+  return {
+    message: res.data.message,
   };
 };
 

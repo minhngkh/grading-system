@@ -88,7 +88,7 @@ export default function RubricGenerationPage({
       }
 
       const parsed = result.data;
-      await updateRubric(initialRubric?.id!, parsed);
+      await updateRubric(initialRubric.id, parsed);
       form.reset(result.data);
     } catch (err) {
       toast.error("Failed to update rubric");

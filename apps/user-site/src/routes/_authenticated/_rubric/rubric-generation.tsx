@@ -1,6 +1,6 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import RubricGenerationPage from "@/pages/features/rubric-generation";
+import RubricGenerationPage from "@/pages/rubric/rubric-generation";
 import { createRubric, getRubric } from "@/services/rubric-service";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -10,13 +10,21 @@ export const Route = createFileRoute("/_authenticated/_rubric/rubric-generation"
   beforeLoad: async () => {
     let rubricId = sessionStorage.getItem("rubricId") ?? undefined;
     if (!rubricId) {
-      rubricId = await createRubric();
+      rubricId = "123";
+      // rubricId = await createRubric();
       sessionStorage.setItem("rubricId", rubricId);
     }
 
     return { rubricId };
   },
-  loader: async ({ context: { rubricId } }) => getRubric(rubricId),
+  loader: async ({ context: { rubricId } }) => {
+    return {
+      id: rubricId,
+      tags: [],
+      criteria: [],
+      rubricName: "New Rubric",
+    };
+  },
   onLeave: () => {
     sessionStorage.removeItem("rubricId");
   },

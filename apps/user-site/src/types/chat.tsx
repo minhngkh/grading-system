@@ -7,12 +7,22 @@ export const ChatRubricSchema = z.object({
   criteria: z.array(CriteriaSchema),
 });
 
-export interface UserPrompt {
+export interface RubricUserPrompt {
   prompt: string;
+  rubric?: z.infer<typeof ChatRubricSchema>;
+  files?: File[];
+}
+
+export interface RubricAgentResponse {
+  message: string;
   rubric?: z.infer<typeof ChatRubricSchema>;
 }
 
-export interface AgentResponse {
+export interface UserChatPrompt {
+  prompt: string;
+  files?: File[];
+}
+
+export interface AgentChatResponse {
   message: string;
-  rubric?: z.infer<typeof ChatRubricSchema>;
 }
