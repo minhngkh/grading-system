@@ -1,10 +1,10 @@
-import ErrorComponent from "@/components/route-error";
-import PendingComponent from "@/components/route-pending";
-import UploadAssignmentPage from "@/pages/features/assignment-grading";
-import { createGradingAttempt, getGradingAttempt } from "@/services/gradingServices";
+import ErrorComponent from "@/components/app/route-error";
+import PendingComponent from "@/components/app/route-pending";
+import UploadAssignmentPage from "@/pages/grading/grading-session.tsx";
+import { createGradingAttempt, getGradingAttempt } from "@/services/grading-service";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/_features/assignment-grading")({
+export const Route = createFileRoute("/_authenticated/_grading/assignment-grading")({
   component: RouteComponent,
   beforeLoad: async () => {
     const gradingStep = sessionStorage.getItem("gradingStep") ?? undefined;

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/use-debounce";
-import { getRubrics } from "@/services/rubricService";
+import { getRubrics } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GradingAttempt } from "@/types/grading";

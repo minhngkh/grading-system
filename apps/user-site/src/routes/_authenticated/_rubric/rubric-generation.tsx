@@ -1,10 +1,10 @@
-import ErrorComponent from "@/components/route-error";
-import PendingComponent from "@/components/route-pending";
+import ErrorComponent from "@/components/app/route-error";
+import PendingComponent from "@/components/app/route-pending";
 import RubricGenerationPage from "@/pages/features/rubric-generation";
-import { createRubric, getRubric } from "@/services/rubricService";
+import { createRubric, getRubric } from "@/services/rubric-service";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/_features/rubric-generation")({
+export const Route = createFileRoute("/_authenticated/_rubric/rubric-generation")({
   preload: false,
   component: RoutePage,
   beforeLoad: async () => {

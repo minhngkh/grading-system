@@ -48,12 +48,23 @@ Building a modern web application using:
 
 ### Code Structure
 
-- Follow feature-based folder structure
-- Separate business logic from UI components
-- Use a `services/` folder for API calls and external integrations
-- Document folder structure in `README.md`
-- Implement proper state management
-- Write clean, modular code
+- `assets/` - Static assets like images, icons, and other media
+- `components/` - Reusable UI components
+  - `components/ui/` - shadcn/ui components customized for the project
+  - `components/layout/` - Structural layout components (Header, Footer, Sidebar)
+  - `components/*.tsx` - Reusable UI components across features
+- `hooks/` - Custom React hooks
+- `lib/` - Utility functions and helpers
+- `context/` - React context providers
+- `pages/` - Top-level page components
+  - `pages/features/` - Feature-specific page components
+- `routes/` - TanStack Router route definitions and configuration
+- `services/` - API service modules and external integrations
+- `types/` - TypeScript type definitions and interfaces
+- `app.tsx` - Main application component
+- `main.tsx` - Application entry point
+- `index.css` - Global styles
+- `env.d.ts` - Environment variable type declarations
 
 ### Best Practices
 

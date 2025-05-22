@@ -1,7 +1,7 @@
-import AnalyticsPage from "@/pages/features/analytics";
+import AnalyticsPage from "@/pages/review";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/analytics")({
+export const Route = createFileRoute("/_authenticated/_review/analytics")({
   component: PageComponent,
 });
 

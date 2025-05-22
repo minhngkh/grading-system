@@ -1,10 +1,10 @@
-import ErrorComponent from "@/components/route-error";
-import ManageRubricsPage from "@/pages/features/manage-rubrics";
-import { getRubrics } from "@/services/rubricService";
+import ErrorComponent from "@/components/app/route-error";
+import ManageRubricsPage from "@/pages/rubric/manage-rubrics";
+import { getRubrics } from "@/services/rubric-service";
 import { SearchParams, searchParams } from "@/types/searchParams";
 import { createFileRoute, retainSearchParams, useNavigate } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/_features/manage-rubrics")({
+export const Route = createFileRoute("/_authenticated/_rubric/manage-rubrics")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,

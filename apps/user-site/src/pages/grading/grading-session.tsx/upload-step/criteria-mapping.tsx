@@ -11,6 +11,8 @@ import { useEffect, useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
 import { ManualLocationDialog } from "./manual-location-dialog";
 import { GradingAttempt } from "@/types/grading";
+import { updateGradingSelectors } from "@/services/grading-service";
+import { toast } from "sonner";
 
 enum SelectLocationType {
   Manual,
@@ -39,11 +41,19 @@ export default function CriteriaMapper({
       setCriterionPathType({});
     }
   }, [uploadedFiles]);
-
-  const updateCriterionValue = (index: number, value: string) => {
+  const updateCriterionValue = async (index: number, value: string) => {
     const updatedGradingAttempt = { ...gradingAttempt };
     updatedGradingAttempt.selectors[index].pattern = value;
-    onGradingAttemptChange?.(updatedGradingAttempt);
+
+    try {
+      // Call the service to update the selectors
+      await updateGradingSelectors(gradingAttempt.id, updatedGradingAttempt.selectors);
+      // Update the local state
+      onGradingAttemptChange?.(updatedGradingAttempt);
+    } catch (error) {
+      toast.error("Failed to update selectors");
+      console.error("Error updating selectors:", error);
+    }
   };
 
   const openDialog = (index: number, type: SelectLocationType | undefined) => {
@@ -91,6 +101,7 @@ export default function CriteriaMapper({
                 ))}
               </SelectContent>
             </Select>
+            <span> to specify selectors</span>
           </div>
         </CardTitle>
       </CardHeader>

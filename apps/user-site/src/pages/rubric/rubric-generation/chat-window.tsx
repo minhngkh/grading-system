@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import * as ChatService from "@/services/chatService";
+import * as ChatService from "@/services/chat-service";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Send, Upload } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
@@ -55,12 +55,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
         prompt: inputMessage,
         rubric,
       });
+      console.log("Response from AI plugin:", response);
       if (response.rubric) {
         setIsApplyingEdit(true);
+
         setTimeout(() => {
           setIsApplyingEdit(false);
         }, 2000);
-        onUpdate(response.rubric);
+
+        onUpdate({
+          ...rubric,
+          ...response.rubric,
+        });
       }
 
       setMessages((prev) => [...prev, { message: response.message, who: "agent" }]);

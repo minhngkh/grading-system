@@ -1,7 +1,7 @@
-import AIChat from "@/pages/features/chat";
+import AIChat from "@/pages/chat";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/_features/chat")({
+export const Route = createFileRoute("/_authenticated/chat")({
   component: RouteComponent,
 });
 

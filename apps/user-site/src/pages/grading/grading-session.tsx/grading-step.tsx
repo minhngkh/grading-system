@@ -1,8 +1,9 @@
 import { GradingStatus, GradingAttempt } from "@/types/grading";
 import { usePolling } from "@/hooks/use-polling";
-import { getGradingStatus, startGrading } from "@/services/gradingServices";
-import Spinner from "@/components/spinner";
-import { useCallback, useEffect } from "react";
+import { getGradingStatus } from "@/services/grading-service";
+import Spinner from "@/components/app/spinner";
+import { useCallback } from "react";
+import { toast } from "sonner";
 
 interface GradingProgressStepProps {
   gradingAttempt: GradingAttempt;
@@ -18,18 +19,6 @@ export default function GradingProgressStep({
     [gradingAttempt.id],
   );
 
-  useEffect(() => {
-    const start = async () => {
-      try {
-        await startGrading(gradingAttempt.id);
-        onGradingAttemptChange({ status: GradingStatus.Started });
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    start();
-  }, [gradingAttempt.id, onGradingAttemptChange]);
-
   const onSuccess = useCallback(
     (status: GradingStatus) => {
       onGradingAttemptChange({ status });
@@ -41,6 +30,7 @@ export default function GradingProgressStep({
     interval: 5000,
     enabled: gradingAttempt.status === GradingStatus.Started,
     onError: (error) => {
+      toast.error("Failed to fetch grading status");
       console.error("Failed to fetch grading status:", error);
     },
   });

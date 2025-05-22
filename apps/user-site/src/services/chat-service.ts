@@ -1,5 +1,4 @@
-import type { AgentResponse, UserPrompt } from "@/types/chat";
-import { RubricSchema } from "@/types/rubric";
+import { ChatRubricSchema, type AgentResponse, type UserPrompt } from "@/types/chat";
 import axios from "axios";
 
 const AI_PLUGIN_URL = import.meta.env.VITE_AI_PLUGIN_URL;
@@ -14,11 +13,17 @@ export const sendMessage = async (prompt: UserPrompt): Promise<AgentResponse> =>
 
   return {
     message: res.data.message,
-    rubric: res.data.rubric ? RubricSchema.parse(res.data.rubric) : undefined,
+    rubric: res.data.rubric ? ChatRubricSchema.parse(res.data.rubric) : undefined,
   };
 };
 
 export const uploadFile = async (file: File): Promise<void> => {
-  // TODO: Implement file upload logic
-  console.log("Uploading file:", file);
+  const formData = new FormData();
+  formData.append("file", file);
+
+  // await axios.post(`${AI_PLUGIN_URL}/upload`, formData, {
+  //   headers: {
+  //     "Content-Type": "multipart/form-data",
+  //   },
+  // });
 };

@@ -10,7 +10,8 @@ import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
-import { updateGradingRubric, updateGradingSelectors } from "@/services/gradingServices";
+import { startGrading } from "@/services/grading-service";
+import { toast } from "sonner";
 
 type StepData = {
   title: string;
@@ -48,7 +49,6 @@ export default function UploadAssignmentPage({
   });
   const currentIndex = utils.getIndex(stepper.current.id);
   const navigate = useNavigate();
-  const [nextCallback, setNextCallback] = useState<(value?: any) => Promise<any>>();
   const [isUploading, setIsUploading] = useState(false);
 
   const gradingAttempt = useForm<GradingAttempt>({
@@ -57,30 +57,27 @@ export default function UploadAssignmentPage({
   });
 
   const gradingAttemptValues = gradingAttempt.getValues();
-
   const handleUpdateGradingAttempt = (updated?: Partial<GradingAttempt>) => {
     gradingAttempt.reset({
       ...gradingAttemptValues,
       ...updated,
     });
-
-    if (updated?.rubricId)
-      updateGradingRubric(initialGradingAttempt.id, updated.rubricId);
-
-    if (updated?.selectors)
-      updateGradingSelectors(initialGradingAttempt.id, updated.selectors);
   };
-
   const handleNext = async () => {
     switch (currentIndex) {
       case 0:
         try {
-          await nextCallback?.(setIsUploading);
-          break;
+          setIsUploading(true);
+          await startGrading(gradingAttemptValues.id);
+          handleUpdateGradingAttempt({ status: GradingStatus.Started });
         } catch (err) {
-          console.error("Error in next callback:", err);
+          toast.error("Failed to start grading");
+          console.error("Error starting grading:", err);
           return;
+        } finally {
+          setIsUploading(false);
         }
+        break;
       case 1:
         if (gradingAttemptValues.status === GradingStatus.Started) return;
         break;
@@ -111,9 +108,6 @@ export default function UploadAssignmentPage({
                 <Button
                   type="button"
                   role="tab"
-                  onClick={() => {
-                    stepper.goTo(step.id);
-                  }}
                   variant={index <= currentIndex ? "default" : "secondary"}
                   aria-current={stepper.current.id === step.id ? "step" : undefined}
                   aria-posinset={index + 1}
@@ -138,7 +132,6 @@ export default function UploadAssignmentPage({
         {stepper.switch({
           upload: () => (
             <UploadStep
-              setNextCallback={setNextCallback}
               gradingAttempt={gradingAttemptValues}
               onGradingAttemptChange={handleUpdateGradingAttempt}
             />

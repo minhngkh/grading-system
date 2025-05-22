@@ -3,7 +3,8 @@ import { GradingAttempt } from "@/types/grading";
 import { Assessment } from "@/types/assessment";
 import SummarySection from "./summary-section";
 import ReviewResults from "./review-results";
-import { getGradingAssessments } from "@/services/gradingServices";
+import { getGradingAssessments } from "@/services/grading-service";
+import { toast } from "sonner";
 
 type ResultsStepProps = {
   gradingAttempt: GradingAttempt;
@@ -18,6 +19,9 @@ export default function ResultsStep({ gradingAttempt }: ResultsStepProps) {
     try {
       const assessments = await getGradingAssessments(gradingAttempt.id);
       setAssessments(assessments);
+    } catch (error) {
+      toast.error("Failed to fetch assessments");
+      console.error("Error fetching assessments:", error);
     } finally {
       setIsLoading(false);
     }

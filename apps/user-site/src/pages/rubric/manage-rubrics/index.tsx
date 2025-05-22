@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Rubric, RubricStatus } from "@/types/rubric";
-import { GetRubricsResult } from "@/services/rubricService";
+import { GetRubricsResult } from "@/services/rubric-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,7 +39,7 @@ import {
   Search,
   X,
 } from "lucide-react";
-import RubricView from "@/components/rubric-view";
+import RubricView from "@/components/app/rubric-view";
 import { useDebounce } from "@/hooks/use-debounce";
 import { SearchParams } from "@/types/searchParams";
 

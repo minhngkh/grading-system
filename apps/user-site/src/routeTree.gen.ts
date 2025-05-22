@@ -15,14 +15,14 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated/route
 import { Route as AuthRouteImport } from './routes/_auth/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as AuthenticatedHomeImport } from './routes/_authenticated/home'
-import { Route as AuthenticatedAnalyticsImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedChatImport } from './routes/_authenticated/chat'
 import { Route as AuthSignupImport } from './routes/_auth/signup'
 import { Route as AuthSigninImport } from './routes/_auth/signin'
-import { Route as AuthenticatedFeaturesRubricGenerationImport } from './routes/_authenticated/_features/rubric-generation'
-import { Route as AuthenticatedFeaturesManualGradeImport } from './routes/_authenticated/_features/manual-grade'
-import { Route as AuthenticatedFeaturesManageRubricsImport } from './routes/_authenticated/_features/manage-rubrics'
-import { Route as AuthenticatedFeaturesChatImport } from './routes/_authenticated/_features/chat'
-import { Route as AuthenticatedFeaturesAssignmentGradingImport } from './routes/_authenticated/_features/assignment-grading'
+import { Route as AuthenticatedRubricRubricGenerationImport } from './routes/_authenticated/_rubric/rubric-generation'
+import { Route as AuthenticatedRubricManageRubricsImport } from './routes/_authenticated/_rubric/manage-rubrics'
+import { Route as AuthenticatedReviewManualGradeImport } from './routes/_authenticated/_review/manual-grade'
+import { Route as AuthenticatedReviewAnalyticsImport } from './routes/_authenticated/_review/analytics'
+import { Route as AuthenticatedGradingAssignmentGradingImport } from './routes/_authenticated/_grading/assignment-grading'
 
 // Create/Update Routes
 
@@ -48,9 +48,9 @@ const AuthenticatedHomeRoute = AuthenticatedHomeImport.update({
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
-const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsImport.update({
-  id: '/analytics',
-  path: '/analytics',
+const AuthenticatedChatRoute = AuthenticatedChatImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
@@ -66,36 +66,37 @@ const AuthSigninRoute = AuthSigninImport.update({
   getParentRoute: () => AuthRouteRoute,
 } as any)
 
-const AuthenticatedFeaturesRubricGenerationRoute =
-  AuthenticatedFeaturesRubricGenerationImport.update({
-    id: '/_features/rubric-generation',
+const AuthenticatedRubricRubricGenerationRoute =
+  AuthenticatedRubricRubricGenerationImport.update({
+    id: '/_rubric/rubric-generation',
     path: '/rubric-generation',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
-const AuthenticatedFeaturesManualGradeRoute =
-  AuthenticatedFeaturesManualGradeImport.update({
-    id: '/_features/manual-grade',
-    path: '/manual-grade',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-
-const AuthenticatedFeaturesManageRubricsRoute =
-  AuthenticatedFeaturesManageRubricsImport.update({
-    id: '/_features/manage-rubrics',
+const AuthenticatedRubricManageRubricsRoute =
+  AuthenticatedRubricManageRubricsImport.update({
+    id: '/_rubric/manage-rubrics',
     path: '/manage-rubrics',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
-const AuthenticatedFeaturesChatRoute = AuthenticatedFeaturesChatImport.update({
-  id: '/_features/chat',
-  path: '/chat',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
+const AuthenticatedReviewManualGradeRoute =
+  AuthenticatedReviewManualGradeImport.update({
+    id: '/_review/manual-grade',
+    path: '/manual-grade',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
-const AuthenticatedFeaturesAssignmentGradingRoute =
-  AuthenticatedFeaturesAssignmentGradingImport.update({
-    id: '/_features/assignment-grading',
+const AuthenticatedReviewAnalyticsRoute =
+  AuthenticatedReviewAnalyticsImport.update({
+    id: '/_review/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+
+const AuthenticatedGradingAssignmentGradingRoute =
+  AuthenticatedGradingAssignmentGradingImport.update({
+    id: '/_grading/assignment-grading',
     path: '/assignment-grading',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
@@ -139,11 +140,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignupImport
       parentRoute: typeof AuthRouteImport
     }
-    '/_authenticated/analytics': {
-      id: '/_authenticated/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AuthenticatedAnalyticsImport
+    '/_authenticated/chat': {
+      id: '/_authenticated/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthenticatedChatImport
       parentRoute: typeof AuthenticatedRouteImport
     }
     '/_authenticated/home': {
@@ -153,39 +154,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeImport
       parentRoute: typeof AuthenticatedRouteImport
     }
-    '/_authenticated/_features/assignment-grading': {
-      id: '/_authenticated/_features/assignment-grading'
+    '/_authenticated/_grading/assignment-grading': {
+      id: '/_authenticated/_grading/assignment-grading'
       path: '/assignment-grading'
       fullPath: '/assignment-grading'
-      preLoaderRoute: typeof AuthenticatedFeaturesAssignmentGradingImport
+      preLoaderRoute: typeof AuthenticatedGradingAssignmentGradingImport
       parentRoute: typeof AuthenticatedRouteImport
     }
-    '/_authenticated/_features/chat': {
-      id: '/_authenticated/_features/chat'
-      path: '/chat'
-      fullPath: '/chat'
-      preLoaderRoute: typeof AuthenticatedFeaturesChatImport
+    '/_authenticated/_review/analytics': {
+      id: '/_authenticated/_review/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedReviewAnalyticsImport
       parentRoute: typeof AuthenticatedRouteImport
     }
-    '/_authenticated/_features/manage-rubrics': {
-      id: '/_authenticated/_features/manage-rubrics'
-      path: '/manage-rubrics'
-      fullPath: '/manage-rubrics'
-      preLoaderRoute: typeof AuthenticatedFeaturesManageRubricsImport
-      parentRoute: typeof AuthenticatedRouteImport
-    }
-    '/_authenticated/_features/manual-grade': {
-      id: '/_authenticated/_features/manual-grade'
+    '/_authenticated/_review/manual-grade': {
+      id: '/_authenticated/_review/manual-grade'
       path: '/manual-grade'
       fullPath: '/manual-grade'
-      preLoaderRoute: typeof AuthenticatedFeaturesManualGradeImport
+      preLoaderRoute: typeof AuthenticatedReviewManualGradeImport
       parentRoute: typeof AuthenticatedRouteImport
     }
-    '/_authenticated/_features/rubric-generation': {
-      id: '/_authenticated/_features/rubric-generation'
+    '/_authenticated/_rubric/manage-rubrics': {
+      id: '/_authenticated/_rubric/manage-rubrics'
+      path: '/manage-rubrics'
+      fullPath: '/manage-rubrics'
+      preLoaderRoute: typeof AuthenticatedRubricManageRubricsImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/_rubric/rubric-generation': {
+      id: '/_authenticated/_rubric/rubric-generation'
       path: '/rubric-generation'
       fullPath: '/rubric-generation'
-      preLoaderRoute: typeof AuthenticatedFeaturesRubricGenerationImport
+      preLoaderRoute: typeof AuthenticatedRubricRubricGenerationImport
       parentRoute: typeof AuthenticatedRouteImport
     }
   }
@@ -208,26 +209,25 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 )
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
-  AuthenticatedFeaturesAssignmentGradingRoute: typeof AuthenticatedFeaturesAssignmentGradingRoute
-  AuthenticatedFeaturesChatRoute: typeof AuthenticatedFeaturesChatRoute
-  AuthenticatedFeaturesManageRubricsRoute: typeof AuthenticatedFeaturesManageRubricsRoute
-  AuthenticatedFeaturesManualGradeRoute: typeof AuthenticatedFeaturesManualGradeRoute
-  AuthenticatedFeaturesRubricGenerationRoute: typeof AuthenticatedFeaturesRubricGenerationRoute
+  AuthenticatedGradingAssignmentGradingRoute: typeof AuthenticatedGradingAssignmentGradingRoute
+  AuthenticatedReviewAnalyticsRoute: typeof AuthenticatedReviewAnalyticsRoute
+  AuthenticatedReviewManualGradeRoute: typeof AuthenticatedReviewManualGradeRoute
+  AuthenticatedRubricManageRubricsRoute: typeof AuthenticatedRubricManageRubricsRoute
+  AuthenticatedRubricRubricGenerationRoute: typeof AuthenticatedRubricRubricGenerationRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
-  AuthenticatedFeaturesAssignmentGradingRoute:
-    AuthenticatedFeaturesAssignmentGradingRoute,
-  AuthenticatedFeaturesChatRoute: AuthenticatedFeaturesChatRoute,
-  AuthenticatedFeaturesManageRubricsRoute:
-    AuthenticatedFeaturesManageRubricsRoute,
-  AuthenticatedFeaturesManualGradeRoute: AuthenticatedFeaturesManualGradeRoute,
-  AuthenticatedFeaturesRubricGenerationRoute:
-    AuthenticatedFeaturesRubricGenerationRoute,
+  AuthenticatedGradingAssignmentGradingRoute:
+    AuthenticatedGradingAssignmentGradingRoute,
+  AuthenticatedReviewAnalyticsRoute: AuthenticatedReviewAnalyticsRoute,
+  AuthenticatedReviewManualGradeRoute: AuthenticatedReviewManualGradeRoute,
+  AuthenticatedRubricManageRubricsRoute: AuthenticatedRubricManageRubricsRoute,
+  AuthenticatedRubricRubricGenerationRoute:
+    AuthenticatedRubricRubricGenerationRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -238,13 +238,13 @@ export interface FileRoutesByFullPath {
   '': typeof AuthenticatedRouteRouteWithChildren
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/assignment-grading': typeof AuthenticatedFeaturesAssignmentGradingRoute
-  '/chat': typeof AuthenticatedFeaturesChatRoute
-  '/manage-rubrics': typeof AuthenticatedFeaturesManageRubricsRoute
-  '/manual-grade': typeof AuthenticatedFeaturesManualGradeRoute
-  '/rubric-generation': typeof AuthenticatedFeaturesRubricGenerationRoute
+  '/assignment-grading': typeof AuthenticatedGradingAssignmentGradingRoute
+  '/analytics': typeof AuthenticatedReviewAnalyticsRoute
+  '/manual-grade': typeof AuthenticatedReviewManualGradeRoute
+  '/manage-rubrics': typeof AuthenticatedRubricManageRubricsRoute
+  '/rubric-generation': typeof AuthenticatedRubricRubricGenerationRoute
 }
 
 export interface FileRoutesByTo {
@@ -252,13 +252,13 @@ export interface FileRoutesByTo {
   '': typeof AuthenticatedRouteRouteWithChildren
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
-  '/assignment-grading': typeof AuthenticatedFeaturesAssignmentGradingRoute
-  '/chat': typeof AuthenticatedFeaturesChatRoute
-  '/manage-rubrics': typeof AuthenticatedFeaturesManageRubricsRoute
-  '/manual-grade': typeof AuthenticatedFeaturesManualGradeRoute
-  '/rubric-generation': typeof AuthenticatedFeaturesRubricGenerationRoute
+  '/assignment-grading': typeof AuthenticatedGradingAssignmentGradingRoute
+  '/analytics': typeof AuthenticatedReviewAnalyticsRoute
+  '/manual-grade': typeof AuthenticatedReviewManualGradeRoute
+  '/manage-rubrics': typeof AuthenticatedRubricManageRubricsRoute
+  '/rubric-generation': typeof AuthenticatedRubricRubricGenerationRoute
 }
 
 export interface FileRoutesById {
@@ -268,13 +268,13 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
-  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
-  '/_authenticated/_features/assignment-grading': typeof AuthenticatedFeaturesAssignmentGradingRoute
-  '/_authenticated/_features/chat': typeof AuthenticatedFeaturesChatRoute
-  '/_authenticated/_features/manage-rubrics': typeof AuthenticatedFeaturesManageRubricsRoute
-  '/_authenticated/_features/manual-grade': typeof AuthenticatedFeaturesManualGradeRoute
-  '/_authenticated/_features/rubric-generation': typeof AuthenticatedFeaturesRubricGenerationRoute
+  '/_authenticated/_grading/assignment-grading': typeof AuthenticatedGradingAssignmentGradingRoute
+  '/_authenticated/_review/analytics': typeof AuthenticatedReviewAnalyticsRoute
+  '/_authenticated/_review/manual-grade': typeof AuthenticatedReviewManualGradeRoute
+  '/_authenticated/_rubric/manage-rubrics': typeof AuthenticatedRubricManageRubricsRoute
+  '/_authenticated/_rubric/rubric-generation': typeof AuthenticatedRubricRubricGenerationRoute
 }
 
 export interface FileRouteTypes {
@@ -284,12 +284,12 @@ export interface FileRouteTypes {
     | ''
     | '/signin'
     | '/signup'
-    | '/analytics'
+    | '/chat'
     | '/home'
     | '/assignment-grading'
-    | '/chat'
-    | '/manage-rubrics'
+    | '/analytics'
     | '/manual-grade'
+    | '/manage-rubrics'
     | '/rubric-generation'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -297,12 +297,12 @@ export interface FileRouteTypes {
     | ''
     | '/signin'
     | '/signup'
-    | '/analytics'
+    | '/chat'
     | '/home'
     | '/assignment-grading'
-    | '/chat'
-    | '/manage-rubrics'
+    | '/analytics'
     | '/manual-grade'
+    | '/manage-rubrics'
     | '/rubric-generation'
   id:
     | '__root__'
@@ -311,13 +311,13 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/_auth/signin'
     | '/_auth/signup'
-    | '/_authenticated/analytics'
+    | '/_authenticated/chat'
     | '/_authenticated/home'
-    | '/_authenticated/_features/assignment-grading'
-    | '/_authenticated/_features/chat'
-    | '/_authenticated/_features/manage-rubrics'
-    | '/_authenticated/_features/manual-grade'
-    | '/_authenticated/_features/rubric-generation'
+    | '/_authenticated/_grading/assignment-grading'
+    | '/_authenticated/_review/analytics'
+    | '/_authenticated/_review/manual-grade'
+    | '/_authenticated/_rubric/manage-rubrics'
+    | '/_authenticated/_rubric/rubric-generation'
   fileRoutesById: FileRoutesById
 }
 
@@ -361,13 +361,13 @@ export const routeTree = rootRoute
     "/_authenticated": {
       "filePath": "_authenticated/route.tsx",
       "children": [
-        "/_authenticated/analytics",
+        "/_authenticated/chat",
         "/_authenticated/home",
-        "/_authenticated/_features/assignment-grading",
-        "/_authenticated/_features/chat",
-        "/_authenticated/_features/manage-rubrics",
-        "/_authenticated/_features/manual-grade",
-        "/_authenticated/_features/rubric-generation"
+        "/_authenticated/_grading/assignment-grading",
+        "/_authenticated/_review/analytics",
+        "/_authenticated/_review/manual-grade",
+        "/_authenticated/_rubric/manage-rubrics",
+        "/_authenticated/_rubric/rubric-generation"
       ]
     },
     "/_auth/signin": {
@@ -378,32 +378,32 @@ export const routeTree = rootRoute
       "filePath": "_auth/signup.tsx",
       "parent": "/_auth"
     },
-    "/_authenticated/analytics": {
-      "filePath": "_authenticated/analytics.tsx",
+    "/_authenticated/chat": {
+      "filePath": "_authenticated/chat.tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/home": {
       "filePath": "_authenticated/home.tsx",
       "parent": "/_authenticated"
     },
-    "/_authenticated/_features/assignment-grading": {
-      "filePath": "_authenticated/_features/assignment-grading.tsx",
+    "/_authenticated/_grading/assignment-grading": {
+      "filePath": "_authenticated/_grading/assignment-grading.tsx",
       "parent": "/_authenticated"
     },
-    "/_authenticated/_features/chat": {
-      "filePath": "_authenticated/_features/chat.tsx",
+    "/_authenticated/_review/analytics": {
+      "filePath": "_authenticated/_review/analytics.tsx",
       "parent": "/_authenticated"
     },
-    "/_authenticated/_features/manage-rubrics": {
-      "filePath": "_authenticated/_features/manage-rubrics.tsx",
+    "/_authenticated/_review/manual-grade": {
+      "filePath": "_authenticated/_review/manual-grade.tsx",
       "parent": "/_authenticated"
     },
-    "/_authenticated/_features/manual-grade": {
-      "filePath": "_authenticated/_features/manual-grade.tsx",
+    "/_authenticated/_rubric/manage-rubrics": {
+      "filePath": "_authenticated/_rubric/manage-rubrics.tsx",
       "parent": "/_authenticated"
     },
-    "/_authenticated/_features/rubric-generation": {
-      "filePath": "_authenticated/_features/rubric-generation.tsx",
+    "/_authenticated/_rubric/rubric-generation": {
+      "filePath": "_authenticated/_rubric/rubric-generation.tsx",
       "parent": "/_authenticated"
     }
   }

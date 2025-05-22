@@ -2,8 +2,7 @@ import type { Rubric } from "@/types/rubric";
 import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import ChatWindow from "@/pages/features/rubric-generation/chat-window";
-import { updateRubric } from "@/services/rubricService";
+import { updateRubric } from "@/services/rubric-service";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { defineStepper } from "@stepperize/react";
@@ -11,6 +10,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { Fragment } from "react";
 import { useForm } from "react-hook-form";
 import RubricTable from "./rubric-table";
+import { toast } from "sonner";
+import ChatWindow from "./chat-window";
 
 const itemIdentifier = "rubric-gen";
 
@@ -68,6 +69,7 @@ export default function RubricGenerationPage({
         sessionStorage.removeItem(itemIdentifier);
         navigate({ to: "/manage-rubrics" });
       } catch (err) {
+        toast.error("Failed to update rubric");
         console.error(err);
       }
 
@@ -86,9 +88,10 @@ export default function RubricGenerationPage({
       }
 
       const parsed = result.data;
-      form.reset(result.data);
       await updateRubric(initialRubric?.id!, parsed);
+      form.reset(result.data);
     } catch (err) {
+      toast.error("Failed to update rubric");
       console.error(err);
     }
   };

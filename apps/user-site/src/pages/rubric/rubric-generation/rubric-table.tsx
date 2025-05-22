@@ -1,5 +1,5 @@
 import type { Rubric } from "@/types/rubric";
-import RubricView from "@/components/rubric-view";
+import RubricView from "@/components/app/rubric-view";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import EditRubric from "./edit-rubric";
 
