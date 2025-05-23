@@ -1,4 +1,5 @@
 import ErrorComponent from "@/components/app/route-error";
+import PendingComponent from "@/components/app/route-pending";
 import ManageRubricsPage from "@/pages/rubric/manage-rubrics";
 import { getRubrics } from "@/services/rubric-service";
 import { SearchParams, searchParams } from "@/types/searchParams";
@@ -15,7 +16,8 @@ export const Route = createFileRoute("/_authenticated/_rubric/manage-rubrics")({
   search: {
     middlewares: [retainSearchParams(["rowsPerPage", "currentPage", "searchTerm"])],
   },
-  errorComponent: () => ErrorComponent,
+  errorComponent: () => ErrorComponent(),
+  pendingComponent: () => PendingComponent("Loading rubrics..."),
 });
 
 function RouteComponent() {

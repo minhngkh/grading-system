@@ -16,7 +16,7 @@ function RouteComponent() {
 
   return (
     <div className="flex justify-center items-center h-full w-full">
-      <ChatInterface sendMessageCallback={handleSendMessage} className="h-[80%]" />
+      <ChatInterface sendMessageCallback={handleSendMessage} />
     </div>
   );
 }

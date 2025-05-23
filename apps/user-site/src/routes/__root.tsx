@@ -35,7 +35,7 @@ function Root() {
             </main>
           </SidebarInset>
         </SidebarProvider>
-        <Toaster position="bottom-right" />
+        <Toaster position="top-right" closeButton expand richColors />
       </ThemeProvider>
     </>
   );

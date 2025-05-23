@@ -32,20 +32,13 @@ interface EditRubricProps {
   disableEdit?: boolean;
 }
 
-type FormState = {
-  errors?: Record<string, string>;
-  message?: string;
-};
-
 export default function EditRubric({
   rubricData,
   onUpdate,
   disableEdit = false,
 }: EditRubricProps) {
-  const [errorsState, setErrorState] = useState<FormState>({
-    errors: {},
-    message: "",
-  });
+  const [errorsState, setErrorState] = useState<string[]>([]);
+
   const form = useForm<Rubric>({
     resolver: zodResolver(RubricSchema),
     defaultValues: rubricData,
@@ -53,7 +46,7 @@ export default function EditRubric({
 
   // Add this to watch form changes
   const formData = form.watch();
-  const hasErrors = errorsState?.errors && Object.keys(errorsState.errors).length > 0;
+  const hasErrors = errorsState.length > 0;
 
   const handleCriterionChange = (
     index: number,
@@ -123,25 +116,18 @@ export default function EditRubric({
 
     // If validation fails, return errors
     if (!result.success) {
-      const errors: Record<string, string> = {};
+      const errors: Set<string> = new Set();
       result.error.errors.forEach((error) => {
-        const path = error.path.join(".");
-        errors[path] = error.message;
+        errors.add(error.message);
       });
 
-      setErrorState({
-        errors,
-        message: "Please fix the errors in the form",
-      });
+      setErrorState(Array.from(errors));
 
       e.preventDefault();
       return;
     }
 
-    setErrorState({
-      errors: {},
-      message: "",
-    });
+    setErrorState([]);
     onUpdate?.(formData);
   };
 
@@ -181,13 +167,6 @@ export default function EditRubric({
     form.setValue("criteria", newCriteria);
   };
 
-  const formatErrorPath = (path: string) => {
-    return path
-      .replace(/\./g, " › ")
-      .replace(/\[(\d+)\]/g, " #$1")
-      .replace(/^./, (str) => str.toUpperCase());
-  };
-
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -195,10 +174,7 @@ export default function EditRubric({
           disabled={disableEdit}
           onClick={() => {
             form.reset(rubricData);
-            setErrorState({
-              errors: {},
-              message: "",
-            });
+            setErrorState([]);
           }}
           variant="ghost"
           size="icon"
@@ -206,7 +182,7 @@ export default function EditRubric({
           <PencilIcon />
         </Button>
       </DialogTrigger>
-      <DialogContent aria-describedby={undefined} className="flex flex-col min-w-[90%]">
+      <DialogContent aria-describedby={undefined} className="flex flex-col">
         <DialogHeader>
           <DialogTitle>Edit Rubric</DialogTitle>
         </DialogHeader>
@@ -217,13 +193,11 @@ export default function EditRubric({
               <AlertDescription>
                 <div className="font-medium mb-2">Please fix the following errors:</div>
                 <ul className="list-disc pl-5 space-y-1">
-                  {errorsState.errors &&
-                    Object.entries(errorsState.errors).map(([field, message]) => (
-                      <li key={field} className="text-sm">
-                        <span className="font-medium">{formatErrorPath(field)}:</span>{" "}
-                        {message}
-                      </li>
-                    ))}
+                  {errorsState.map((error, index) => (
+                    <li key={index} className="text-sm">
+                      {error}
+                    </li>
+                  ))}
                 </ul>
               </AlertDescription>
             </Alert>

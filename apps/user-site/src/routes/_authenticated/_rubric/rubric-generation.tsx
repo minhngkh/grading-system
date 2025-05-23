@@ -25,9 +25,7 @@ export const Route = createFileRoute("/_authenticated/_rubric/rubric-generation"
       rubricName: "New Rubric",
     };
   },
-  onLeave: () => {
-    sessionStorage.removeItem("rubricId");
-  },
+  onLeave: () => sessionStorage.removeItem("rubricId"),
   errorComponent: () => ErrorComponent(),
   pendingComponent: () => PendingComponent("Loading rubric..."),
 });

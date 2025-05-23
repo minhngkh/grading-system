@@ -2,6 +2,7 @@ import type { Rubric } from "@/types/rubric";
 import RubricView from "@/components/app/rubric-view";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import EditRubric from "./edit-rubric";
+import Spinner from "@/components/app/spinner";
 
 interface RubricTableProps {
   rubricData: Rubric;
@@ -38,8 +39,9 @@ export default function RubricTable({
       </CardHeader>
       <CardContent className={canEdit ? "h-[85%]" : "flex-1"}>
         {isApplyingEdit ? (
-          <div className="flex items-center justify-center h-full">
-            Agent is applying edits to the rubric. Please wait...
+          <div className="flex flex-col items-center justify-center h-full">
+            <Spinner />
+            <p>Agent is modifying the rubric. Please wait...</p>
           </div>
         ) : (
           <RubricView

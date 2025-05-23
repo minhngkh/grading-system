@@ -4,6 +4,13 @@ import React, { useState } from "react";
 import RubricTable from "./rubric-table";
 import ChatInterface from "@/components/app/chat-interface";
 import { UserChatPrompt } from "@/types/chat";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface ChatWindowProps {
   rubric: Rubric;
@@ -44,14 +51,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
   };
 
   return (
-    <div className="flex justify-center items-center h-full w-full">
-      <div className="grid grid-cols-7 w-full space-x-4">
-        <div className="col-span-3">
-          <ChatInterface sendMessageCallback={handleSendMessage} />
-        </div>
-
-        {rubric && (
-          <div className="col-span-4">
+    <div className="lg:grid lg:grid-cols-7 space-y-4 lg:space-y-0 size-full gap-4">
+      <div className="flex justify-end lg:hidden">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>View Rubric</Button>
+          </DialogTrigger>
+          <DialogContent className="p-8">
+            <DialogTitle className="text-lg font-semibold">Current rubric</DialogTitle>
             <RubricTable
               isApplyingEdit={isApplyingEdit}
               rubricData={rubric}
@@ -59,8 +66,22 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
               disableEdit={isLoading}
               canEdit
             />
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="h-[70vh] lg:h-full lg:col-span-3">
+        <ChatInterface sendMessageCallback={handleSendMessage} />
+      </div>
+
+      <div className="h-[40vh] hidden lg:block lg:h-full lg:col-span-4">
+        <RubricTable
+          isApplyingEdit={isApplyingEdit}
+          rubricData={rubric}
+          onUpdate={onUpdate}
+          disableEdit={isLoading}
+          canEdit
+        />
       </div>
     </div>
   );
