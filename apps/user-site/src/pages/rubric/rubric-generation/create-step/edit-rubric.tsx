@@ -183,7 +183,7 @@ export default function EditRubric({
       </DialogTrigger>
       <DialogContent
         aria-describedby={undefined}
-        className="flex flex-col md:min-w-[60vw] overflow-y-auto max-h-[90vh]"
+        className="flex flex-col min-w-[90vw] overflow-y-auto max-h-[90vh]"
       >
         <DialogHeader>
           <DialogTitle>Edit Rubric</DialogTitle>

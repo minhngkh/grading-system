@@ -9,7 +9,7 @@ export const LevelSchema = z.object({
   description: z.string(),
   weight: z
     .number()
-    .min(1, "Level weight must be at least 1")
+    .min(0, "Level weight must be at least 0")
     .max(100, "Level weight cannot exceed 100"),
   tag: z.string().min(1, "Level performance tag is required"),
 });
@@ -27,11 +27,14 @@ export const CriteriaSchema = z.object({
     .max(6, "Maximum of 6 levels allowed per criterion")
     .refine(
       (level) => {
-        const totalWeight = level.reduce((sum, lvl) => sum + (lvl.weight || 0), 0);
-        return totalWeight === 100;
+        const maxWeight = level.reduce(
+          (max, lvl) => ((lvl.weight || 0) > max ? lvl.weight || 0 : max),
+          0,
+        );
+        return maxWeight === 100;
       },
       {
-        message: "Total weight of criterion levels must equal 100",
+        message: "Max weight of criterion levels must equal 100",
       },
     ),
   plugin: z.string().optional(),
