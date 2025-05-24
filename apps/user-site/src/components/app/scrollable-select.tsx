@@ -116,7 +116,7 @@ export function RubricSelect({
           aria-expanded={open}
           className={cn("justify-between", className)}
         >
-          {selectedValue ? selectedValue.rubricName : placeholder}
+          {selectedValue ? selectedValue.name : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -156,7 +156,7 @@ export function RubricSelect({
                     setOpen(false);
                   }}
                 >
-                  {item.rubricName}
+                  {item.name}
                   <Check
                     className={cn(
                       "ml-2 h-4 w-4",

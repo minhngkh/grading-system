@@ -14,7 +14,7 @@ const rubricDeserializer = new Deserializer({
   transform: (record: Rubric) => {
     const rubric: Rubric = {
       id: record.id,
-      rubricName: record.rubricName,
+      name: record.name,
       tags: record.tags,
       criteria: record.criteria,
       updatedOn: record.updatedOn ? new Date(record.updatedOn) : undefined,
@@ -70,11 +70,7 @@ export async function createRubric(): Promise<string> {
 }
 
 export async function updateRubric(id: string, rubric: Partial<Rubric>): Promise<Rubric> {
-  const response = await axios.patch(
-    `${RUBRIC_API_URL}/${id}`,
-    { ...rubric, name: rubric.rubricName },
-    configHeaders,
-  );
+  const response = await axios.patch(`${RUBRIC_API_URL}/${id}`, rubric, configHeaders);
   return response.data;
 }
 

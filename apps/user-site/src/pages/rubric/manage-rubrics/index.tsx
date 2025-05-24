@@ -203,7 +203,7 @@ export default function ManageRubricsPage({
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent aria-describedby={undefined} className="min-w-[80%]">
           <DialogHeader>
-            <DialogTitle>{selectedRubric?.rubricName}</DialogTitle>
+            <DialogTitle>{selectedRubric?.name}</DialogTitle>
           </DialogHeader>
           {selectedRubric && (
             <div className="w-full h-full flex flex-col">
@@ -245,7 +245,7 @@ export default function ManageRubricsPage({
             ) : (
               paginatedData.map((rubric) => (
                 <TableRow key={rubric.id}>
-                  <TableCell className="font-semibold">{rubric.rubricName}</TableCell>
+                  <TableCell className="font-semibold">{rubric.name}</TableCell>
                   <TableCell>
                     {rubric.updatedOn
                       ? format(rubric.updatedOn, "MMM d, yyyy")

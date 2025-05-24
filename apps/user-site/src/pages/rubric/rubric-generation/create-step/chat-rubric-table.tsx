@@ -6,18 +6,16 @@ import Spinner from "@/components/app/spinner";
 
 interface RubricTableProps {
   rubricData: Rubric;
-  canEdit?: boolean;
-  onUpdate?: (updatedRubric: Rubric) => void;
+  onUpdate?: (updatedRubric: Partial<Rubric>) => void;
   showPlugins?: boolean;
   editPlugin?: boolean;
   disableEdit?: boolean;
   isApplyingEdit?: boolean;
 }
 
-export default function RubricTable({
+export default function ChatRubricTable({
   rubricData,
   onUpdate,
-  canEdit = false,
   showPlugins = false,
   editPlugin = false,
   disableEdit = false,
@@ -27,17 +25,15 @@ export default function RubricTable({
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
-          {canEdit && (
-            <EditRubric
-              rubricData={rubricData}
-              onUpdate={onUpdate}
-              disableEdit={disableEdit || isApplyingEdit}
-            />
-          )}
+          <CardTitle className="text-lg">{rubricData.name}</CardTitle>
+          <EditRubric
+            rubricData={rubricData}
+            onUpdate={onUpdate}
+            disableEdit={disableEdit || isApplyingEdit}
+          />
         </div>
       </CardHeader>
-      <CardContent className={canEdit ? "h-[85%]" : "flex-1"}>
+      <CardContent className="flex-1">
         {isApplyingEdit ? (
           <div className="flex flex-col items-center justify-center h-full">
             <Spinner />

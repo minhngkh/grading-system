@@ -182,7 +182,10 @@ export default function EditRubric({
           <PencilIcon />
         </Button>
       </DialogTrigger>
-      <DialogContent aria-describedby={undefined} className="flex flex-col">
+      <DialogContent
+        aria-describedby={undefined}
+        className="flex flex-col md:min-w-[60vw]"
+      >
         <DialogHeader>
           <DialogTitle>Edit Rubric</DialogTitle>
         </DialogHeader>
@@ -205,8 +208,8 @@ export default function EditRubric({
 
           <Input
             id="rubric-name"
-            value={formData.rubricName}
-            onChange={(e) => form.setValue("rubricName", e.target.value)}
+            value={formData.name}
+            onChange={(e) => form.setValue("name", e.target.value)}
             className="font-bold truncate w-full"
             placeholder="Rubric Name"
           />
@@ -390,7 +393,9 @@ export default function EditRubric({
               </table>
             </div>
             <div className="h-full flex justify-center items-center">
-              <AddButton onClick={handleAddLevel} title="Add New Level" />
+              {formData.tags.length < 6 && (
+                <AddButton onClick={handleAddLevel} title="Add New Level" />
+              )}
             </div>
           </div>
           <div className="h-full flex justify-center items-center">

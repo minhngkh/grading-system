@@ -9,10 +9,11 @@ import { defineStepper } from "@stepperize/react";
 import { useNavigate } from "@tanstack/react-router";
 import { Fragment } from "react";
 import { useForm } from "react-hook-form";
-import RubricTable from "./rubric-table";
 import { toast } from "sonner";
-import ChatWindow from "./chat-window";
+import ChatWindow from "./create-step/chat-window";
 import { useIsMobile } from "@/hooks/use-mobile";
+import PluginRubricTable from "./plugin-step/plugin-rubric-table";
+import FinalRubricTable from "./review-step/final-rubric-table";
 
 type StepData = {
   title: string;
@@ -78,16 +79,21 @@ export default function RubricGenerationPage({
     stepper.next();
   };
 
-  const onUpdateRubric = async (updatedRubric: Rubric) => {
+  const onUpdateRubric = async (updatedRubricData: Partial<Rubric>) => {
     try {
+      const updatedRubric = {
+        ...form.getValues(),
+        ...updatedRubricData,
+      };
+
       const result = RubricSchema.safeParse(updatedRubric);
 
       if (!result.success) {
         throw result.error;
       }
 
-      await updateRubric(initialRubric.id, result.data);
-      form.reset(result.data);
+      // await updateRubric(initialRubric.id, updatedRubricData);
+      form.reset(updatedRubric);
     } catch (err) {
       toast.error("Failed to update rubric");
       console.error(err);
@@ -133,9 +139,9 @@ export default function RubricGenerationPage({
         {stepper.switch({
           input: () => <ChatWindow rubric={form.getValues()} onUpdate={onUpdateRubric} />,
           edit: () => (
-            <RubricTable rubricData={form.getValues()} showPlugins editPlugin />
+            <PluginRubricTable rubricData={form.getValues()} onUpdate={onUpdateRubric} />
           ),
-          complete: () => <RubricTable rubricData={form.getValues()} showPlugins />,
+          complete: () => <FinalRubricTable rubricData={form.getValues()} />,
         })}
 
         <div className="flex w-full justify-end gap-4">

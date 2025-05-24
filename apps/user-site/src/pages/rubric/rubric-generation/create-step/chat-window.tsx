@@ -1,7 +1,7 @@
 import type { Rubric } from "@/types/rubric";
 import * as ChatService from "@/services/chat-service";
 import React, { useState } from "react";
-import RubricTable from "./rubric-table";
+import ChatRubricTable from "./chat-rubric-table";
 import ChatInterface from "@/components/app/chat-interface";
 import { UserChatPrompt } from "@/types/chat";
 import {
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 
 interface ChatWindowProps {
   rubric: Rubric;
-  onUpdate: (rubric: Rubric) => void;
+  onUpdate: (rubric: Partial<Rubric>) => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
@@ -36,10 +36,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
           setIsApplyingEdit(false);
         }, 2000);
 
-        onUpdate({
-          ...rubric,
-          ...response.rubric,
-        });
+        onUpdate(response.rubric);
       }
 
       return response.message;
@@ -59,12 +56,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
           </DialogTrigger>
           <DialogContent className="p-8">
             <DialogTitle className="text-lg font-semibold">Current rubric</DialogTitle>
-            <RubricTable
+            <ChatRubricTable
               isApplyingEdit={isApplyingEdit}
               rubricData={rubric}
               onUpdate={onUpdate}
               disableEdit={isLoading}
-              canEdit
             />
           </DialogContent>
         </Dialog>
@@ -75,12 +71,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
       </div>
 
       <div className="h-[40vh] hidden lg:block lg:h-full lg:col-span-4">
-        <RubricTable
+        <ChatRubricTable
           isApplyingEdit={isApplyingEdit}
           rubricData={rubric}
           onUpdate={onUpdate}
           disableEdit={isLoading}
-          canEdit
         />
       </div>
     </div>

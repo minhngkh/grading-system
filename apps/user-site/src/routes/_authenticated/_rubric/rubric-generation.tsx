@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/_rubric/rubric-generation"
       id: rubricId,
       tags: [],
       criteria: [],
-      rubricName: "New Rubric",
+      name: "New Rubric",
     };
   },
   onLeave: () => sessionStorage.removeItem("rubricId"),

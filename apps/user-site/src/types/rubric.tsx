@@ -17,6 +17,7 @@ export const CriteriaSchema = z.object({
   levels: z
     .array(LevelSchema)
     .min(1, "At least one level is required for criterion")
+    .max(6, "Maximum of 6 levels allowed")
     .refine(
       (level) => {
         const totalWeight = level.reduce((sum, lvl) => sum + (lvl.weight || 0), 0);
@@ -26,14 +27,16 @@ export const CriteriaSchema = z.object({
         message: "Total weight of levels must equal 100",
       },
     ),
+  plugin: z.string().optional(),
 });
 
 export const RubricSchema = z.object({
   id: z.string(),
-  rubricName: z.string().min(1, "Rubric name is required"),
+  name: z.string().min(1, "Rubric name is required"),
   tags: z
     .array(z.string().min(1, "Level name is required"))
-    .min(1, "At least one performance tag is required"),
+    .min(1, "At least one performance tag is required")
+    .max(6, "Maximum of 6 performance tags allowed"),
   criteria: z
     .array(CriteriaSchema)
     .min(1, "At least one criterion is required")
