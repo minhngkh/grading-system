@@ -1,6 +1,12 @@
 import type { Rubric } from "@/types/rubric";
 import RubricView from "@/components/app/rubric-view";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import EditRubric from "./edit-rubric";
 import Spinner from "@/components/app/spinner";
 
@@ -32,6 +38,9 @@ export default function ChatRubricTable({
             disableEdit={disableEdit || isApplyingEdit}
           />
         </div>
+        <CardDescription>
+          Edit the rubric manually or use AI to modify it.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
         {isApplyingEdit ? (
@@ -40,11 +49,15 @@ export default function ChatRubricTable({
             <p>Agent is modifying the rubric. Please wait...</p>
           </div>
         ) : (
-          <RubricView
-            rubricData={rubricData}
-            showPlugins={showPlugins}
-            editPlugin={editPlugin}
-          />
+          <div className="h-full overflow-y-auto relative">
+            <div className="h-full absolute top-0 left-0 right-0">
+              <RubricView
+                rubricData={rubricData}
+                showPlugins={showPlugins}
+                editPlugin={editPlugin}
+              />
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

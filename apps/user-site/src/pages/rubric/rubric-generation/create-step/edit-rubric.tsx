@@ -176,7 +176,6 @@ export default function EditRubric({
             form.reset(rubricData);
             setErrorState([]);
           }}
-          variant="ghost"
           size="icon"
         >
           <PencilIcon />
@@ -184,7 +183,7 @@ export default function EditRubric({
       </DialogTrigger>
       <DialogContent
         aria-describedby={undefined}
-        className="flex flex-col md:min-w-[60vw]"
+        className="flex flex-col md:min-w-[60vw] overflow-y-auto max-h-[90vh]"
       >
         <DialogHeader>
           <DialogTitle>Edit Rubric</DialogTitle>

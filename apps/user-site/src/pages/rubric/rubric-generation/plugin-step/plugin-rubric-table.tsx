@@ -1,6 +1,12 @@
 import type { Rubric } from "@/types/rubric";
 import RubricView from "@/components/app/rubric-view";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface PluginRubricTableProps {
   rubricData: Rubric;
@@ -14,9 +20,10 @@ export default function PluginRubricTable({
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
-        <div className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">{rubricData.name}</CardTitle>
-        </div>
+        <CardTitle className="text-lg">{rubricData.name}</CardTitle>
+        <CardDescription>
+          Configure the tools used for grading each criterion.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
         <RubricView rubricData={rubricData} showPlugins editPlugin />
