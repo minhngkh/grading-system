@@ -1,6 +1,6 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import UploadAssignmentPage from "@/pages/grading/grading-session.tsx";
+import UploadAssignmentPage from "@/pages/grading/grading-session";
 import { createGradingAttempt, getGradingAttempt } from "@/services/grading-service";
 import { createFileRoute } from "@tanstack/react-router";
 
