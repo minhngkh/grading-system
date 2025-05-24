@@ -15,7 +15,7 @@ export class RubricExporter {
 
     // Header
     doc.setFontSize(16);
-    doc.text(`Rubric: ${this.rubric.name}`, 14, 20);
+    doc.text(`Rubric: ${this.rubric.rubricName}`, 14, 20);
     doc.setFontSize(10);
 
     // Build table head
@@ -71,7 +71,7 @@ export class RubricExporter {
       tableLineColor: [80, 80, 80], // Dark gray border
     });
 
-    doc.save(`${this.rubric.name.replace(/\s+/g, "_")}_Rubric.pdf`);
+    doc.save(`${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.pdf`);
   }
 
   exportToExcel() {
@@ -109,10 +109,10 @@ export class RubricExporter {
 
     // Create workbook and add the worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, this.rubric.name);
+    XLSX.utils.book_append_sheet(workbook, worksheet, this.rubric.rubricName);
 
     // Write to file and save
-    const fileName = `${this.rubric.name.replace(/\s+/g, "_")}_Rubric.xlsx`;
+    const fileName = `${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
 }

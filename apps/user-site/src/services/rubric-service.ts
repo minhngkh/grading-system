@@ -14,7 +14,7 @@ const rubricDeserializer = new Deserializer({
   transform: (record: Rubric) => {
     const rubric: Rubric = {
       id: record.id,
-      name: record.name,
+      rubricName: record.rubricName,
       tags: record.tags,
       criteria: record.criteria,
       updatedOn: record.updatedOn ? new Date(record.updatedOn) : undefined,

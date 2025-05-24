@@ -207,8 +207,8 @@ export default function EditRubric({
 
           <Input
             id="rubric-name"
-            value={formData.name}
-            onChange={(e) => form.setValue("name", e.target.value)}
+            value={formData.rubricName}
+            onChange={(e) => form.setValue("rubricName", e.target.value)}
             className="font-bold truncate w-full"
             placeholder="Rubric Name"
           />

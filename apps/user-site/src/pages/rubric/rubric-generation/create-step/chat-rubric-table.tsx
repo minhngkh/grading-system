@@ -31,7 +31,7 @@ export default function ChatRubricTable({
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">{rubricData.name}</CardTitle>
+          <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
           <EditRubric
             rubricData={rubricData}
             onUpdate={onUpdate}

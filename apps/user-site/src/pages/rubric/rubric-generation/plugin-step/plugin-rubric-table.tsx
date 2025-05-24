@@ -20,7 +20,7 @@ export default function PluginRubricTable({
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="text-lg">{rubricData.name}</CardTitle>
+        <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
         <CardDescription>
           Configure the tools used for grading each criterion.
         </CardDescription>

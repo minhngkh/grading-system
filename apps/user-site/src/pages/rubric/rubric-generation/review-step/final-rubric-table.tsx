@@ -18,7 +18,7 @@ export default function FinalRubricTable({ rubricData }: FinalRubricTableProps) 
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">{rubricData.name}</CardTitle>
+          <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
           <ExportDialog rubricData={rubricData} />
         </div>
         <CardDescription>

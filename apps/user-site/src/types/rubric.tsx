@@ -39,7 +39,7 @@ export const CriteriaSchema = z.object({
 
 export const RubricSchema = z.object({
   id: z.string(),
-  name: z.string().min(1, "Rubric name is required"),
+  rubricName: z.string().min(1, "Rubric name is required"),
   tags: z
     .array(z.string().min(1, "Level name is required"))
     .min(1, "At least one performance tag is required for the rubric")
