@@ -1,4 +1,5 @@
-﻿using EventFlow.Aggregates;
+﻿using AssignmentFlow.Application.Assessments.StartAutoGrading;
+using EventFlow.Aggregates;
 namespace AssignmentFlow.Application.Assessments;
 
 public class AssessmentWriteModel
@@ -14,12 +15,34 @@ public class AssessmentWriteModel
 
     public ScoreBreakdowns ScoreBreakdowns { get; private set; } = ScoreBreakdowns.Empty;
 
-    public List<Feedback> Feedbacks { get; private set; } = [];                                                                                                                                                                                                                                              
+    public List<Feedback> Feedbacks { get; private set; } = [];
 
-    internal void Apply(Create.AssessmentCreatedEvent command)
+    public AssessmentStateMachine StateMachine { get; private set; } = new();
+
+    internal void Apply(Create.AssessmentCreatedEvent @event)
     {
-        TeacherId = command.TeacherId;
-        GradingId = command.GradingId;
-        Reference = command.SubmissionReference;
+        TeacherId = @event.TeacherId;
+        GradingId = @event.GradingId;
+        Reference = @event.SubmissionReference;
+    }
+
+    internal void Apply(AutoGradingStartedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
+    }
+
+    internal void Apply(Assess.AssessedEvent @event)
+    {
+        ScoreBreakdowns = @event.ScoreBreakdowns;
+        
+        if (@event.Feedbacks != null)
+        {
+            Feedbacks = @event.Feedbacks;
+        }
+        
+        if (@event.Grader == Grader.AIGrader)
+        {
+            StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
+        }
     }
 }

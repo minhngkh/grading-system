@@ -38,4 +38,7 @@ public sealed class Percentage : SingleValueObject<decimal>
     /// <param name="value">The percentage value (e.g., 25 for 25%)</param>
     /// <returns>A new Percentage instance</returns>
     public static Percentage New(decimal value) => new(value);
+    
+    public static Percentage operator +(Percentage a, Percentage b) => new(a.Value + b.Value);
+    public static Percentage operator -(Percentage a, Percentage b) => new(a.Value - b.Value);
 }

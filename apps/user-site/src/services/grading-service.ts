@@ -3,7 +3,7 @@ import { CriteriaSelector, GradingAttempt, GradingStatus } from "@/types/grading
 import axios, { AxiosRequestConfig } from "axios";
 import { Deserializer } from "jsonapi-serializer";
 
-const API_URL = import.meta.env.VITE_ASSIGNMENT_FLOW_URL;
+const API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
 const GRADING_API_URL = `${API_URL}/gradings`;
 const ASSESSMENT_API_URL = `${API_URL}/assessments`;
 
@@ -65,7 +65,7 @@ export async function uploadSubmission(id: string, file: File) {
   return await axios.post(
     `${GRADING_API_URL}/${id}/submissions`,
     {
-      file: file,
+      file,
     },
     fileConfigHeaders,
   );

@@ -8,6 +8,7 @@ public class AssignmentFlowDbContext(DbContextOptions<AssignmentFlowDbContext> o
 {
     public DbSet<Grading> Gradings => Set<Grading>();
     public DbSet<Assessment> Assessments => Set<Assessment>();
+    public DbSet<ScoreAdjustment> ScoreAdjustments => Set<ScoreAdjustment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

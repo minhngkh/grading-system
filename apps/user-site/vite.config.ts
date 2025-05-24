@@ -1,4 +1,5 @@
 import path from "node:path";
+import process from "node:process";
 import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
@@ -18,5 +19,13 @@ export default defineConfig({
   },
   define: {
     global: "globalThis",
+  },
+  server: {
+    ...(process.env.PORT
+      ? {
+          port: Number(process.env.PORT),
+          strictPort: true,
+        }
+      : {}),
   },
 });

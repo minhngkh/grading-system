@@ -1,13 +1,11 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "tui": {
+    "enabled": false
+  },
   "namedInputs": {
-    "default": [
-      "{projectRoot}/**/*",
-      "sharedGlobals"
-    ],
-    "production": [
-      "default"
-    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": ["default"],
     "sharedGlobals": []
   },
   "plugins": [
@@ -31,6 +29,13 @@
         "targetName": "lint"
       }
     },
-    "@nx-dotnet/core"
+    {
+      "plugin": "@nx-dotnet/core",
+      "options": {
+        "inferredTargets": {
+          "serve": false
+        }
+      }
+    }
   ]
 }

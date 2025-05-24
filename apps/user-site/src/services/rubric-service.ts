@@ -25,7 +25,7 @@ const rubricDeserializer = new Deserializer({
   },
 });
 
-const API_URL = import.meta.env.VITE_RUBRIC_ENGINE_URL;
+const API_URL = `${import.meta.env.VITE_RUBRIC_ENGINE_URL}/api/v1`;
 const RUBRIC_API_URL = `${API_URL}/rubrics`;
 
 export type GetRubricsResult = {

@@ -7,7 +7,7 @@ import {
 } from "@/types/chat";
 import axios from "axios";
 
-const AI_PLUGIN_URL = import.meta.env.VITE_AI_PLUGIN_URL;
+const AI_PLUGIN_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/ai`;
 
 export const sendRubricMessage = async (
   prompt: RubricUserPrompt,
