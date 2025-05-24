@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { UserChatPrompt } from "@/types/chat";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Send, Upload, X } from "lucide-react";
+import { Loader2, Send, Upload } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -318,7 +318,7 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                 {uploadedFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="relative group border dark:border-white rounded-md py-1 px-1 flex items-center gap-2"
+                    className="relative overflow-hidden group border dark:border-white rounded-md py-1 px-1 flex items-center gap-2"
                   >
                     {file.type === "image" && file.preview ? (
                       <img
@@ -336,12 +336,12 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                     <span className="text-xs truncate max-w-[100px]">
                       {file.file.name}
                     </span>
-                    <button
-                      className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    <div
+                      className="flex justify-center items-center absolute bg-destructive/80 size-full right-0 top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => removeFile(file.id)}
                     >
-                      <X className="size-3" />
-                    </button>
+                      <p className="text-xs font-semibold text-white">Remove</p>
+                    </div>
                   </div>
                 ))}
               </div>

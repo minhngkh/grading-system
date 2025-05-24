@@ -37,28 +37,45 @@ export const CriteriaSchema = z.object({
   plugin: z.string().optional(),
 });
 
-export const RubricSchema = z.object({
-  id: z.string(),
-  rubricName: z.string().min(1, "Rubric name is required"),
-  tags: z
-    .array(z.string().min(1, "Level name is required"))
-    .min(1, "At least one performance tag is required for the rubric")
-    .max(6, "Maximum of 6 performance tags allowed for the rubric"),
-  criteria: z
-    .array(CriteriaSchema)
-    .min(1, "At least one criterion is required for the rubric")
-    .refine(
-      (criterion) => {
-        const totalWeight = criterion.reduce((sum, crit) => sum + (crit.weight || 0), 0);
-        return totalWeight === 100;
-      },
-      {
-        message: "Total weight of rubric criteria must equal 100",
-      },
-    ),
-  updatedOn: z.date().optional(),
-  status: z.nativeEnum(RubricStatus).optional(),
-});
+export const RubricSchema = z
+  .object({
+    id: z.string(),
+    rubricName: z.string().min(1, "Rubric name is required"),
+    tags: z
+      .array(z.string().min(1, "Level name is required"))
+      .min(1, "At least one performance tag is required for the rubric")
+      .max(6, "Maximum of 6 performance tags allowed for the rubric"),
+    criteria: z
+      .array(CriteriaSchema)
+      .min(1, "At least one criterion is required for the rubric")
+      .refine(
+        (criterion) => {
+          const totalWeight = criterion.reduce(
+            (sum, crit) => sum + (crit.weight || 0),
+            0,
+          );
+          return totalWeight === 100;
+        },
+        {
+          message: "Total weight of rubric criteria must equal 100",
+        },
+      ),
+    updatedOn: z.date().optional(),
+    status: z.nativeEnum(RubricStatus).optional(),
+  })
+  .refine(
+    (data) => {
+      return data.tags.every((tag) =>
+        data.criteria.some((criterion) =>
+          criterion.levels.some((level) => level.tag === tag),
+        ),
+      );
+    },
+    {
+      message:
+        "Each rubric level must have at least one criterion with a level using that tag",
+    },
+  );
 
 export type Level = z.infer<typeof LevelSchema>;
 export type Criteria = z.infer<typeof CriteriaSchema>;

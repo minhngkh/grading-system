@@ -55,7 +55,10 @@ export default function EditRubric({
   ) => {
     const newCriteria = [...formData.criteria];
     newCriteria[index] = { ...newCriteria[index], [field]: value };
-    form.setValue("criteria", newCriteria);
+    form.reset({
+      ...formData,
+      criteria: newCriteria,
+    });
   };
 
   const handleLevelDescriptionChange = (
@@ -88,7 +91,10 @@ export default function EditRubric({
       }
     }
 
-    form.setValue("criteria", newCriteria);
+    form.reset({
+      ...formData,
+      criteria: newCriteria,
+    });
   };
 
   const handleLevelWeightChange = (
@@ -107,7 +113,10 @@ export default function EditRubric({
       newCriteria[criterionIndex].levels[levelIndex].weight = points;
     }
 
-    form.setValue("criteria", newCriteria);
+    form.reset({
+      ...formData,
+      criteria: newCriteria,
+    });
   };
 
   const handleSave = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -134,7 +143,10 @@ export default function EditRubric({
   const handleAddLevel = () => {
     const newHeaders = [...formData.tags, `Level ${formData.tags.length + 1}`];
 
-    form.setValue("tags", newHeaders);
+    form.reset({
+      ...formData,
+      tags: newHeaders,
+    });
   };
 
   const handleAddCriterion = () => {
@@ -147,7 +159,10 @@ export default function EditRubric({
       },
     ];
 
-    form.setValue("criteria", newCriteria);
+    form.reset({
+      ...formData,
+      criteria: newCriteria,
+    });
   };
 
   const handleDeleteLevel = (indexToDelete: number) => {
@@ -158,13 +173,19 @@ export default function EditRubric({
         (level) => level.tag !== formData.tags[indexToDelete],
       ),
     }));
-    form.setValue("tags", newHeaders);
-    form.setValue("criteria", newCriteria);
+    form.reset({
+      ...formData,
+      tags: newHeaders,
+      criteria: newCriteria,
+    });
   };
 
   const handleDeleteCriterion = (indexToDelete: number) => {
     const newCriteria = formData.criteria.filter((_, index) => index !== indexToDelete);
-    form.setValue("criteria", newCriteria);
+    form.reset({
+      ...formData,
+      criteria: newCriteria,
+    });
   };
 
   return (
@@ -208,7 +229,12 @@ export default function EditRubric({
           <Input
             id="rubric-name"
             value={formData.rubricName}
-            onChange={(e) => form.setValue("rubricName", e.target.value)}
+            onChange={(e) =>
+              form.reset({
+                ...formData,
+                rubricName: e.target.value,
+              })
+            }
             className="font-bold truncate w-full"
             placeholder="Rubric Name"
           />
@@ -240,7 +266,10 @@ export default function EditRubric({
                             onChange={(e) => {
                               const newHeaders = [...formData.tags];
                               newHeaders[index] = e.target.value;
-                              form.setValue("tags", newHeaders);
+                              form.reset({
+                                ...formData,
+                                tags: newHeaders,
+                              });
                             }}
                             className="font-medium text-center break-words whitespace-normal h-auto min-h-[2.5rem] py-2"
                           />
