@@ -10,21 +10,13 @@ export const Route = createFileRoute("/_authenticated/_rubric/rubric-generation"
   beforeLoad: async () => {
     let rubricId = sessionStorage.getItem("rubricId") ?? undefined;
     if (!rubricId) {
-      rubricId = "123";
-      // rubricId = await createRubric();
+      rubricId = await createRubric();
       sessionStorage.setItem("rubricId", rubricId);
     }
 
     return { rubricId };
   },
-  loader: async ({ context: { rubricId } }) => {
-    return {
-      id: rubricId,
-      tags: [],
-      criteria: [],
-      name: "New Rubric",
-    };
-  },
+  loader: async ({ context: { rubricId } }) => getRubric(rubricId),
   onLeave: () => sessionStorage.removeItem("rubricId"),
   errorComponent: () => ErrorComponent(),
   pendingComponent: () => PendingComponent("Loading rubric..."),
