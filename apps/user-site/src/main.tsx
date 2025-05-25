@@ -5,7 +5,7 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { routeTree } from "./routeTree.gen";
 import "./index.css";
-import { LoadingScreen } from "./components/loading-screen";
+import { LoadingScreen } from "./components/app/loading-screen";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 

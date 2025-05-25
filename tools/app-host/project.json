@@ -1,4 +1,11 @@
 {
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "implicitDependencies": [
+    "user-site",
+    "plugin-service"
+  ],
+
   "targets": {
     "start:http": {
       "executor": "nx:run-commands",
@@ -11,6 +18,13 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "dotnet run --launch-profile https",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "dotnet run --launch-profile dev",
         "cwd": "{projectRoot}"
       }
     }

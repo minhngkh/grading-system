@@ -5,6 +5,8 @@ import { AppSidebar } from "@/components/layout/sidebar";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { useAuth } from "@clerk/clerk-react";
 import { ErrorBoundary } from "@/components/layout/error-boundary";
+import { Toaster } from "@/components/ui/sonner";
+import { navigationItems, settingsItems } from "@/types/navigation";
 
 interface AppRouterContext {
   auth: ReturnType<typeof useAuth>;
@@ -17,12 +19,13 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
 
 function Root() {
   const { isSignedIn } = useAuth();
-
   return (
     <>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <SidebarProvider>
-          {isSignedIn && <AppSidebar />}
+          {isSignedIn && (
+            <AppSidebar navigationItems={navigationItems} settingsItems={settingsItems} />
+          )}
           <SidebarInset>
             <main className="flex-1 flex flex-col items-center">
               <AppNavbar />
@@ -32,6 +35,7 @@ function Root() {
             </main>
           </SidebarInset>
         </SidebarProvider>
+        <Toaster position="top-right" closeButton expand richColors />
       </ThemeProvider>
     </>
   );

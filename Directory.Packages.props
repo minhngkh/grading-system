@@ -5,9 +5,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="9.2.1" />
+    <PackageVersion Include="Aspire.Hosting" Version="9.2.1" />
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.2.0" />
     <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="9.2.1" />
     <PackageVersion Include="Aspire.Hosting.MongoDB" Version="9.2.0" />
+    <PackageVersion Include="Aspire.Hosting.NodeJs" Version="9.2.1" />
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="9.2.0" />
     <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="9.2.0" />
     <PackageVersion Include="Aspire.MongoDB.Driver" Version="9.1.0" />
@@ -15,6 +17,7 @@
     <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.2.0" />
     <PackageVersion Include="Aspire.RabbitMQ.Client" Version="9.1.0" />
     <PackageVersion Include="Aspire.RabbitMQ.Client.v7" Version="9.2.0" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.NodeJS.Extensions" Version="9.4.0" />
     <PackageVersion Include="EventFlow.MongoDB" Version="1.2.0" />
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
@@ -40,7 +43,7 @@
     <PackageVersion Include="Scalar.AspNetCore" Version="2.1.9" />
     <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Endpoints" Version="1.5.0" />
     <PackageVersion Include="Stateless" Version="5.17.0" />
-    <PackageVersion Include="System.Text.Json" Version="9.0.4" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.5" />
     <!-- Add the EventFlow package reference to the Domain project -->
     <PackageVersion Include="EventFlow" Version="1.2.0" />
     <PackageVersion Include="EventFlow.PostgreSql" Version="1.1.0" />

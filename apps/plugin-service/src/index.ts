@@ -1,4 +1,4 @@
-import "dotenv/config";
+// import "dotenv/config";
 
 import process from "node:process";
 import { apiGateway } from "./api";
