@@ -34,8 +34,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\tools\service-defaults\AIAG.ServiceDefaults.csproj" />
-    <ProjectReference Include="..\..\..\tools\shared-dotnet\Shared.ValueObjects\Shared.ValueObjects.csproj" />
+    <ProjectReference Include="..\..\..\tools\service-defaults\GradingSystem.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\libs\shared-dotnet\Shared.ValueObjects\Shared.ValueObjects.csproj" />
     <ProjectReference Include="..\AssignmentFlow.IntegrationEvents\AssignmentFlow.IntegrationEvents.csproj" />
   </ItemGroup>
 

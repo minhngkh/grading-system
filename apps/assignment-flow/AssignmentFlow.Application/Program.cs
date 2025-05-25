@@ -34,6 +34,7 @@ builder.Services.AddEventFlow(ef => ef
     .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
     .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
     .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
+    .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
 );
 
 builder.Services.AddCors(options =>

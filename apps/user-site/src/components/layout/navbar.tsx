@@ -56,7 +56,7 @@ const AuthenticatedNavBar = () => {
   };
 
   return (
-    <header className="w-full backdrop-blur-md sticky top-0 z-10 flex h-16 justify-end items-center gap-4 border-b bg-background/60 px-2 md:px-4">
+    <header className="w-full backdrop-blur-md sticky top-0 z-10 flex h-16 justify-end items-center gap-4 border-b bg-background/60 px-4">
       <div className="flex items-center flex-1">
         <SidebarTrigger />
         <Separator orientation="vertical" className="mx-4 h-8!" />

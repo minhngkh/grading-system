@@ -45,6 +45,32 @@ public sealed class ScoreBreakdownItem : ValueObject
         yield return RawScore;
         yield return PerformanceTag;
     }
+    
+    // Adds RawScores if other item matches the CriterionName and PerformanceTag
+    public static ScoreBreakdownItem operator +(ScoreBreakdownItem a, ScoreBreakdownItem b)
+    {
+        if (a.CriterionName != b.CriterionName)
+            throw new InvalidOperationException("Cannot add ScoreBreakdownItems with different CriterionNames.");
+
+        return new ScoreBreakdownItem(a.CriterionName)
+        {
+            RawScore = a.RawScore + b.RawScore,
+            PerformanceTag = a.PerformanceTag
+        };
+    }
+
+    // Subtracts RawScores if other item matches the CriterionName and PerformanceTag
+    public static ScoreBreakdownItem operator -(ScoreBreakdownItem a, ScoreBreakdownItem b)
+    {
+        if (a.CriterionName != b.CriterionName)
+            throw new InvalidOperationException("Cannot subtract ScoreBreakdownItems with different CriterionNames.");
+
+        return new ScoreBreakdownItem(a.CriterionName)
+        {
+            RawScore = a.RawScore - b.RawScore,
+            PerformanceTag = a.PerformanceTag
+        };
+    }
 }
 
 public sealed class ScoreBreakdownItemConverter : JsonConverter<ScoreBreakdownItem>

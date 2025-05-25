@@ -38,25 +38,18 @@ const tools: Tool[] = [
     preload: false,
   },
   {
-    name: "Manual Grading",
-    details: "Manually adjusting score based on rubric criteria.",
-    type: ToolType.Grading,
-    isFavorite: true,
-    navigation: "/manual-grade",
-  },
-  {
     name: "AI Chat",
     details: "Channels, direct messages, and file sharing to keep your team connected.",
     type: ToolType.Communication,
     isFavorite: false,
-    navigation: "/",
+    navigation: "/chat",
   },
   {
     name: "Analytics Dashboard",
     details: "Interactive charts and reports to help you make data-driven decisions.",
     type: ToolType.Analytics,
     isFavorite: false,
-    navigation: "/",
+    navigation: "/analytics",
   },
 ];
 

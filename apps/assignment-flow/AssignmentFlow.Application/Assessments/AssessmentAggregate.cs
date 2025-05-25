@@ -26,10 +26,24 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
     {
         Emit(new Create.AssessmentCreatedEvent
         {
-            ScoreBreakdowns = command.ScoreBreakdowns,
             SubmissionReference = command.SubmissionReference,
             GradingId = command.GradingId,
             TeacherId = command.TeacherId
+        });
+    }
+
+    public void StartAutoGrading()
+    {
+        Emit(new StartAutoGrading.AutoGradingStartedEvent());
+    }
+
+    public void Assess(Assess.Command command)
+    {
+        Emit(new Assess.AssessedEvent
+        {
+            Grader = command.Grader,
+            ScoreBreakdowns = command.ScoreBreakdowns,
+            Feedbacks = command.Feedbacks
         });
     }
 

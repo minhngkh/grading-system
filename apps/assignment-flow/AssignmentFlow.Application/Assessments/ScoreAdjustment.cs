@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using EventFlow.Core;
 using JsonApiDotNetCore.Controllers;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
@@ -33,17 +34,16 @@ public class ScoreAdjustment : Identifiable<string>
     public decimal DeltaScore { get; set; } = 0M;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    public string AdjustmentSource { get; set; } = ScoreAdjustmentSource.Teacher.ToString();
+    public string AdjustmentSource { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public List<ScoreBreakdownApiContract> ScoreBreakdowns { get; set; } = [];
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public List<ScoreBreakdownApiContract> DeltaScoreBreakdowns { get; set; } = [];
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
-public enum ScoreAdjustmentSource
-{
-    Teacher = 1,
-    AI = 2
-}
+public sealed class ScoreAdjustmentId(string id) : Identity<ScoreAdjustmentId>(id) { }

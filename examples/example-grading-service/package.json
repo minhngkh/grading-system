@@ -9,6 +9,10 @@
     "test": "vitest",
     "demo": "tsx examples/demo-grader-test.ts"
   },
+  "nx": {
+    "name": "example-grading-service",
+    "projectType": "application"
+  },
   "dependencies": {
     "@langchain/core": "^0.3.44",
     "@langchain/google-genai": "^0.2.3",
