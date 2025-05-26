@@ -42,7 +42,7 @@ export function ToolsList({ tools }: ToolsListProps) {
               <p className="text-sm text-muted-foreground">{tool.details}</p>
             </CardContent>
             <CardFooter className="flex justify-between items-center">
-              <Badge variant="secondary">{ToolType[tool.type]}</Badge>
+              <Badge>{ToolType[tool.type]}</Badge>
             </CardFooter>
           </Card>
         </Link>

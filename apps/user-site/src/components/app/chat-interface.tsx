@@ -318,7 +318,7 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                 {uploadedFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="relative overflow-hidden group border dark:border-white rounded-md py-1 px-1 flex items-center gap-2"
+                    className="relative overflow-hidden group border dark:border-white dark:hover:border-transparent rounded-md py-1 px-1 flex items-center gap-2"
                   >
                     {file.type === "image" && file.preview ? (
                       <img
@@ -328,7 +328,7 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                       />
                     ) : (
                       <div className="h-8 w-8 bg-accent dark:bg-foreground flex items-center justify-center rounded">
-                        <span className="text-xs text-black">
+                        <span className="text-xs text-black font-semibold">
                           {file.file.name.split(".").pop()}
                         </span>
                       </div>
