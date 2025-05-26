@@ -2,11 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RefreshCw, FileSearch } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  createCriteriaColorMap,
-  getCriteriaColorStyle,
-} from "@/pages/features/assignment-grading/result-step/colors";
 import { Assessment } from "@/types/assessment";
+import { createCriteriaColorMap, getCriteriaColorStyle } from "./colors";
 
 const ResultCardSkeleton = () => (
   <Card className="overflow-hidden py-0">

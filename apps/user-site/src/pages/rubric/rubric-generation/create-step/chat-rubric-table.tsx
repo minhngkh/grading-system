@@ -28,7 +28,7 @@ export default function ChatRubricTable({
   isApplyingEdit = false,
 }: RubricTableProps) {
   return (
-    <Card className="w-full h-full flex flex-col">
+    <Card className="w-full h-full">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>

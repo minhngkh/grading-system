@@ -7,6 +7,7 @@ import { UserChatPrompt } from "@/types/chat";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -26,8 +27,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
     try {
       const response = await ChatService.sendRubricMessage({
         ...chatPrompt,
-        rubric,
+        rubric: {
+          rubricName: rubric.rubricName,
+          tags: rubric.tags,
+          criteria: rubric.criteria,
+        },
       });
+
+      console.log("Chat response:", response);
 
       if (response.rubric) {
         setIsApplyingEdit(true);
@@ -54,14 +61,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
           <DialogTrigger asChild>
             <Button>View Rubric</Button>
           </DialogTrigger>
-          <DialogContent className="p-8">
-            <DialogTitle className="text-lg font-semibold">Current rubric</DialogTitle>
-            <ChatRubricTable
-              isApplyingEdit={isApplyingEdit}
-              rubricData={rubric}
-              onUpdate={onUpdate}
-              disableEdit={isLoading}
-            />
+          <DialogContent
+            className="flex flex-col min-h-[90vh] min-w-[90vw]"
+            aria-describedby={undefined}
+          >
+            <DialogHeader>
+              <DialogTitle className="text-lg">Rubric Details</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 grid">
+              <ChatRubricTable
+                isApplyingEdit={isApplyingEdit}
+                rubricData={rubric}
+                onUpdate={onUpdate}
+                disableEdit={isLoading}
+              />
+            </div>
           </DialogContent>
         </Dialog>
       </div>
