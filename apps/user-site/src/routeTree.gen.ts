@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/_auth/route'
 import { Route as IndexImport } from './routes/index'
+import { Route as AuthenticatedProfileImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedHomeImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedChatImport } from './routes/_authenticated/chat'
 import { Route as AuthSignupImport } from './routes/_auth/signup'
@@ -40,6 +41,12 @@ const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const AuthenticatedProfileRoute = AuthenticatedProfileImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 const AuthenticatedHomeRoute = AuthenticatedHomeImport.update({
@@ -154,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeImport
       parentRoute: typeof AuthenticatedRouteImport
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
     '/_authenticated/_grading/assignment-grading': {
       id: '/_authenticated/_grading/assignment-grading'
       path: '/assignment-grading'
@@ -211,6 +225,7 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedGradingAssignmentGradingRoute: typeof AuthenticatedGradingAssignmentGradingRoute
   AuthenticatedReviewAnalyticsRoute: typeof AuthenticatedReviewAnalyticsRoute
   AuthenticatedReviewManualGradeRoute: typeof AuthenticatedReviewManualGradeRoute
@@ -221,6 +236,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedGradingAssignmentGradingRoute:
     AuthenticatedGradingAssignmentGradingRoute,
   AuthenticatedReviewAnalyticsRoute: AuthenticatedReviewAnalyticsRoute,
@@ -240,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof AuthSignupRoute
   '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/assignment-grading': typeof AuthenticatedGradingAssignmentGradingRoute
   '/analytics': typeof AuthenticatedReviewAnalyticsRoute
   '/manual-grade': typeof AuthenticatedReviewManualGradeRoute
@@ -254,6 +271,7 @@ export interface FileRoutesByTo {
   '/signup': typeof AuthSignupRoute
   '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/assignment-grading': typeof AuthenticatedGradingAssignmentGradingRoute
   '/analytics': typeof AuthenticatedReviewAnalyticsRoute
   '/manual-grade': typeof AuthenticatedReviewManualGradeRoute
@@ -270,6 +288,7 @@ export interface FileRoutesById {
   '/_auth/signup': typeof AuthSignupRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/_grading/assignment-grading': typeof AuthenticatedGradingAssignmentGradingRoute
   '/_authenticated/_review/analytics': typeof AuthenticatedReviewAnalyticsRoute
   '/_authenticated/_review/manual-grade': typeof AuthenticatedReviewManualGradeRoute
@@ -286,6 +305,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/chat'
     | '/home'
+    | '/profile'
     | '/assignment-grading'
     | '/analytics'
     | '/manual-grade'
@@ -299,6 +319,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/chat'
     | '/home'
+    | '/profile'
     | '/assignment-grading'
     | '/analytics'
     | '/manual-grade'
@@ -313,6 +334,7 @@ export interface FileRouteTypes {
     | '/_auth/signup'
     | '/_authenticated/chat'
     | '/_authenticated/home'
+    | '/_authenticated/profile'
     | '/_authenticated/_grading/assignment-grading'
     | '/_authenticated/_review/analytics'
     | '/_authenticated/_review/manual-grade'
@@ -363,6 +385,7 @@ export const routeTree = rootRoute
       "children": [
         "/_authenticated/chat",
         "/_authenticated/home",
+        "/_authenticated/profile",
         "/_authenticated/_grading/assignment-grading",
         "/_authenticated/_review/analytics",
         "/_authenticated/_review/manual-grade",
@@ -384,6 +407,10 @@ export const routeTree = rootRoute
     },
     "/_authenticated/home": {
       "filePath": "_authenticated/home.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/profile": {
+      "filePath": "_authenticated/profile.tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/_grading/assignment-grading": {

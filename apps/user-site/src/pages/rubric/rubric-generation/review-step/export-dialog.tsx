@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Download, FileText, FileSpreadsheet, Loader2, CheckCircle } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,13 +20,13 @@ const exportTypes = [
     id: "pdf",
     name: "PDF Document",
     description: "Portable Document Format",
-    icon: FileText,
+    icon: <FileText className="h-5 w-5 text-muted-foreground" />,
   },
   {
     id: "excel",
     name: "Excel Spreadsheet",
     description: "Microsoft Excel format",
-    icon: FileSpreadsheet,
+    icon: <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />,
   },
 ];
 
@@ -104,7 +103,7 @@ export default function ExportDialog({ rubricData }: ExportDialogProps) {
                   htmlFor={type.id}
                   className="flex items-center gap-3 cursor-pointer flex-1"
                 >
-                  <type.icon className="h-5 w-5 text-muted-foreground" />
+                  {type.icon}
                   <div className="grid gap-1">
                     <div className="font-medium">{type.name}</div>
                     <div className="text-sm text-muted-foreground">

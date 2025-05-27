@@ -50,12 +50,9 @@ const AuthenticatedNavBar = () => {
   const [commandOpen, setCommandOpen] = useState(false);
 
   const handleLogout = async () => {
-    const confirm = window.confirm("Are you sure you want to logout?");
-    if (confirm) {
-      await signOut();
-      await router.invalidate();
-      navigate({ to: "/" });
-    }
+    await signOut();
+    await router.invalidate();
+    navigate({ to: "/" });
   };
 
   return (
@@ -102,7 +99,15 @@ const AuthenticatedNavBar = () => {
                 user?.primaryEmailAddress?.emailAddress}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                navigate({
+                  to: "/profile",
+                })
+              }
+            >
+              Profile
+            </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onClick={handleLogout}>
               Log out
             </DropdownMenuItem>

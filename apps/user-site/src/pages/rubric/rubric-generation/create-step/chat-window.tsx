@@ -1,5 +1,5 @@
 import type { Rubric } from "@/types/rubric";
-import * as ChatService from "@/services/chat-service";
+import { ChatService } from "@/services/chat-service";
 import React, { useState } from "react";
 import ChatRubricTable from "./chat-rubric-table";
 import ChatInterface from "@/components/app/chat-interface";
@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface ChatWindowProps {
   rubric: Rubric;
@@ -34,8 +35,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
         },
       });
 
-      console.log("Chat response:", response);
-
       if (response.rubric) {
         setIsApplyingEdit(true);
 
@@ -48,7 +47,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
 
       return response.message;
     } catch (error) {
-      throw error;
+      toast.error("An error occurred while processing your request. Please try again.");
     } finally {
       setIsLoading(false);
     }

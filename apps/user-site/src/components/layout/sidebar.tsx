@@ -62,7 +62,7 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
               <SidebarMenu>
                 {settingsItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton tooltip={item.title} asChild>
                       <Link to={item.to}>
                         {item.icon}
                         <span>{item.title}</span>

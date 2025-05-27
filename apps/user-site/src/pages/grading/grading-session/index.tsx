@@ -10,7 +10,7 @@ import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
-import { startGrading } from "@/services/grading-service";
+import { GradingService } from "@/services/grading-service";
 import { toast } from "sonner";
 
 type StepData = {
@@ -68,7 +68,7 @@ export default function UploadAssignmentPage({
       case 0:
         try {
           setIsUploading(true);
-          await startGrading(gradingAttemptValues.id);
+          await GradingService.startGrading(gradingAttemptValues.id);
           handleUpdateGradingAttempt({ status: GradingStatus.Started });
         } catch (err) {
           toast.error("Failed to start grading");

@@ -2,7 +2,7 @@ import type { Rubric } from "@/types/rubric";
 import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { updateRubric } from "@/services/rubric-service";
+import { RubricService } from "@/services/rubric-service";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { defineStepper } from "@stepperize/react";
@@ -66,7 +66,7 @@ export default function RubricGenerationPage({
 
     if (stepper.isLast) {
       try {
-        await updateRubric(initialRubric?.id!, form.getValues());
+        await RubricService.updateRubric(initialRubric?.id!, form.getValues());
         navigate({ to: "/manage-rubrics" });
       } catch (err) {
         toast.error("Failed to update rubric");

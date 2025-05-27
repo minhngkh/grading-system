@@ -22,7 +22,7 @@ type UploadedFile = {
 };
 
 type AIChatProps = {
-  sendMessageCallback: (response: UserChatPrompt) => Promise<string>;
+  sendMessageCallback: (response: UserChatPrompt) => Promise<string | undefined>;
   className?: string;
   isRubricChat?: boolean;
 };
@@ -77,6 +77,10 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
         prompt: newMessage.message,
         files: newMessage.files?.map((file) => file.file),
       });
+
+      if (!agentResponse) {
+        throw new Error("No response from agent");
+      }
 
       setMessages((prev) => [...prev, { message: agentResponse, who: "agent" }]);
     } catch (error) {

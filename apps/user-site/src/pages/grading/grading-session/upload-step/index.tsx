@@ -7,11 +7,7 @@ import { GradingAttempt } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import {
-  updateGradingRubric,
-  updateGradingSelectors,
-  uploadSubmission,
-} from "@/services/grading-service";
+import { GradingService } from "@/services/grading-service";
 import Spinner from "@/components/app/spinner";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -36,14 +32,14 @@ export default function UploadStep({
       });
 
       try {
-        await updateGradingRubric(gradingAttempt.id, rubric.id);
+        await GradingService.updateGradingRubric(gradingAttempt.id, rubric.id);
       } catch (error) {
         toast.error("Failed to update rubric");
         console.error("Error updating rubric:", error);
         return;
       }
       try {
-        await updateGradingSelectors(gradingAttempt.id, selectors);
+        await GradingService.updateGradingSelectors(gradingAttempt.id, selectors);
       } catch (error) {
         toast.error("Failed to update selectors");
         console.error("Error updating selectors:", error);
@@ -71,7 +67,7 @@ export default function UploadStep({
         await Promise.all(
           newFiles.map(async (file, index) => {
             try {
-              await uploadSubmission(gradingAttempt.id, file);
+              await GradingService.uploadSubmission(gradingAttempt.id, file);
               const updatedProgress = Math.round(((index + 1) * 100) / newFiles.length);
               setProgress(updatedProgress);
             } catch (error) {

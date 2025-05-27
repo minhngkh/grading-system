@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import RubricView from "@/components/app/rubric-view";
 import { useDebounce } from "@/hooks/use-debounce";
-import { SearchParams } from "@/types/searchParams";
+import { SearchParams } from "@/types/search-params";
 
 type SortConfig = {
   key: "rubricName" | "updatedOn" | "status" | null;

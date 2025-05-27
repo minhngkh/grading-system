@@ -13,8 +13,6 @@ import Spinner from "@/components/app/spinner";
 interface RubricTableProps {
   rubricData: Rubric;
   onUpdate?: (updatedRubric: Partial<Rubric>) => void;
-  showPlugins?: boolean;
-  editPlugin?: boolean;
   disableEdit?: boolean;
   isApplyingEdit?: boolean;
 }
@@ -22,8 +20,6 @@ interface RubricTableProps {
 export default function ChatRubricTable({
   rubricData,
   onUpdate,
-  showPlugins = false,
-  editPlugin = false,
   disableEdit = false,
   isApplyingEdit = false,
 }: RubricTableProps) {
@@ -51,11 +47,7 @@ export default function ChatRubricTable({
         ) : (
           <div className="h-full overflow-y-auto relative">
             <div className="h-full absolute top-0 left-0 right-0">
-              <RubricView
-                rubricData={rubricData}
-                showPlugins={showPlugins}
-                editPlugin={editPlugin}
-              />
+              <RubricView rubricData={rubricData} />
             </div>
           </div>
         )}

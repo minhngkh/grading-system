@@ -14,32 +14,8 @@ interface Notification {
 }
 
 export default function NotificationButton() {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "1",
-      title: "New message",
-      message: "You have received a new message from John Doe",
-      time: "2 min ago",
-      read: false,
-    },
-    {
-      id: "2",
-      title: "System update",
-      message: "Your system has been updated to version 2.1.0",
-      time: "1 hour ago",
-      read: false,
-    },
-    {
-      id: "3",
-      title: "Meeting reminder",
-      message: "Team standup meeting in 15 minutes",
-      time: "3 hours ago",
-      read: true,
-    },
-  ]);
-
   const [isOpen, setIsOpen] = useState(false);
-
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const markAsRead = (id: string) => {

@@ -1,7 +1,7 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import UploadAssignmentPage from "@/pages/grading/grading-session";
-import { createGradingAttempt, getGradingAttempt } from "@/services/grading-service";
+import { GradingService } from "@/services/grading-service";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/_grading/assignment-grading")({
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/_grading/assignment-gradin
 
     let gradingId = sessionStorage.getItem("gradingId") ?? undefined;
     if (!gradingId) {
-      gradingId = await createGradingAttempt();
+      gradingId = await GradingService.createGradingAttempt();
       sessionStorage.setItem("gradingId", gradingId);
     }
 
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_authenticated/_grading/assignment-gradin
   },
   loader: async ({ context: { gradingId, gradingStep } }) => {
     // Fetch the grading attempt details using the attemptId
-    const attempt = await getGradingAttempt(gradingId);
+    const attempt = await GradingService.getGradingAttempt(gradingId);
     return { gradingStep, attempt };
   },
   onLeave: () => {

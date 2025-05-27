@@ -1,8 +1,8 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import ManageRubricsPage from "@/pages/rubric/manage-rubrics";
-import { getRubrics } from "@/services/rubric-service";
-import { SearchParams, searchParams } from "@/types/searchParams";
+import { RubricService } from "@/services/rubric-service";
+import { SearchParams, searchParams } from "@/types/search-params";
 import { createFileRoute, retainSearchParams, useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/_rubric/manage-rubrics")({
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_authenticated/_rubric/manage-rubrics")({
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => {
     const { rowsPerPage, currentPage, searchTerm } = deps;
-    return getRubrics(currentPage, rowsPerPage, searchTerm);
+    return RubricService.getRubrics(currentPage, rowsPerPage, searchTerm);
   },
   search: {
     middlewares: [retainSearchParams(["rowsPerPage", "currentPage", "searchTerm"])],

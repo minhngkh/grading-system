@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
 import { ManualLocationDialog } from "./manual-location-dialog";
 import { GradingAttempt } from "@/types/grading";
-import { updateGradingSelectors } from "@/services/grading-service";
+import { GradingService } from "@/services/grading-service";
 import { toast } from "sonner";
 
 enum SelectLocationType {
@@ -46,9 +46,10 @@ export default function CriteriaMapper({
     updatedGradingAttempt.selectors[index].pattern = value;
 
     try {
-      // Call the service to update the selectors
-      await updateGradingSelectors(gradingAttempt.id, updatedGradingAttempt.selectors);
-      // Update the local state
+      await GradingService.updateGradingSelectors(
+        gradingAttempt.id,
+        updatedGradingAttempt.selectors,
+      );
       onGradingAttemptChange?.(updatedGradingAttempt);
     } catch (error) {
       toast.error("Failed to update selectors");
