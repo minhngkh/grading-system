@@ -16,17 +16,16 @@ import {
   GradingResult,
 } from "@/types/submission";
 
-import EssayHighlighter from "./viewer/essay-viewer";
-import CodeHighlighter from "./viewer/code-viewer";
+import HighlightableViewer from "./viewer/highlightable-viewer";
 import React from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 export interface AssignmentViewerProps {
   breakdowns: SubmissionBreakdown1[];
@@ -196,82 +195,78 @@ const AssignmentViewer = ({
       <div className="flex">
         <div className="px-3 w-full">
           <TabsContent value="submission" className="border rounded shadow h-[56vh] flex">
-            <div className="w-3/4 border-r pr-2 overflow-y-auto relative">
-              {selectedFileData?.type === "code" ? (
-                <CodeHighlighter
-                  code={selectedFileData?.processedContent || ""}
-                  feedbacks={selectedFileFeedbacks}
-                  updateFeedback={handleFeedbackUpdate}
-                  isHighlightMode={isHighlightMode} // Pass highlight mode to CodeViewer
-                  onHighlightComplete={() => setIsHighlightMode(false)} // Reset highlight mode
-                />
-              ) : (
-                <EssayHighlighter
-                  essay={selectedFileData?.processedContent || ""}
-                  feedbacks={selectedFileFeedbacks}
-                  isHighlightMode={isHighlightMode}
-                  onHighlightComplete={() => setIsHighlightMode(false)}
-                  updateFeedback={(criterionId, newFeedbacks) => {
-                    setGradingResult((prev) => ({
-                      ...prev,
-                      criterionResults: prev.criterionResults.map((criterionResult) =>
-                        criterionResult.criterionId === criterionId
-                          ? {
-                              ...criterionResult,
-                              feedback: [...criterionResult.feedback, ...newFeedbacks],
-                            }
-                          : criterionResult,
-                      ),
-                    }));
-                  }}
-                  criterionId={selectedFileData?.criterionId || ""} // Pass criterionId
-                />
-              )}
-              <div className="absolute top-2 right-2 z-30">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-1"
-                      >
-                        <MenuIcon className="w-4 h-4" />
-                        File
-                      </Button>
-                    </TooltipTrigger>
-
-                    <TooltipContent
-                      side="bottom"
-                      align="end"
-                      className="p-1 bg-popover text-popover-foreground shadow-lg rounded-md w-40"
+            <div className="w-3/4 border-r pr-2 overflow-y-auto flex flex-col relative">
+              {/* Toolbar: File dropdown + (có thể thêm các nút khác sau này) */}
+              <div className="flex items-center gap-2 px-2 py-2 border-b bg-background sticky top-0 z-20">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1"
                     >
-                      <ul className="max-h-60 overflow-auto space-y-1">
-                        {uniqueFiles.map((file) => {
-                          const name = getFileName(file.fileReference);
-                          const isSelected = selectedFile === name;
-                          return (
-                            <li key={name}>
-                              <Button
-                                variant={isSelected ? "secondary" : "ghost"}
-                                size="sm"
-                                className="w-full justify-start"
-                                onClick={() => setSelectedFile(name)}
-                              >
-                                {file.type === "code" ? (
-                                  <Code className="w-4 h-4 mr-2" />
-                                ) : (
-                                  <FileIcon className="w-4 h-4 mr-2" />
-                                )}
-                                <span className="text-sm">{name}</span>
-                              </Button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                      <MenuIcon className="w-4 h-4" />
+                      File
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-44">
+                    {uniqueFiles.map((file) => {
+                      const name = getFileName(file.fileReference);
+                      const isSelected = selectedFile === name;
+                      return (
+                        <DropdownMenuItem
+                          key={name}
+                          onClick={() => setSelectedFile(name)}
+                          className={`flex items-center gap-2 cursor-pointer ${isSelected ? "bg-accent" : ""}`}
+                        >
+                          {file.type === "code" ? (
+                            <Code className="w-4 h-4" />
+                          ) : (
+                            <FileIcon className="w-4 h-4" />
+                          )}
+                          <span className="text-sm">{name}</span>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {/* Có thể thêm các nút khác ở đây nếu muốn */}
+              </div>
+              {/* Nội dung code/essay */}
+              <div className="flex-1">
+                {selectedFileData?.type === "code" ? (
+                  <HighlightableViewer
+                    type="code"
+                    content={selectedFileData?.processedContent || ""}
+                    feedbacks={selectedFileFeedbacks}
+                    updateFeedback={handleFeedbackUpdate}
+                    isHighlightMode={isHighlightMode}
+                    onHighlightComplete={() => setIsHighlightMode(false)}
+                    activeFeedbackId={activeFeedbackId}
+                  />
+                ) : (
+                  <HighlightableViewer
+                    type="essay"
+                    content={selectedFileData?.processedContent || ""}
+                    feedbacks={selectedFileFeedbacks}
+                    updateFeedback={(newFeedbacks) => {
+                      setGradingResult((prev) => ({
+                        ...prev,
+                        criterionResults: prev.criterionResults.map((criterionResult) =>
+                          criterionResult.criterionId === selectedFileData?.criterionId
+                            ? {
+                                ...criterionResult,
+                                feedback: [...criterionResult.feedback, ...newFeedbacks],
+                              }
+                            : criterionResult,
+                        ),
+                      }));
+                    }}
+                    isHighlightMode={isHighlightMode}
+                    onHighlightComplete={() => setIsHighlightMode(false)}
+                    activeFeedbackId={activeFeedbackId}
+                  />
+                )}
               </div>
             </div>
             <div className="w-1/4 my-3 px-3">

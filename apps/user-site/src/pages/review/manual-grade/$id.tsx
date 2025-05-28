@@ -40,10 +40,7 @@ export default function ManualAdjustScorePage({
     0,
   );
   const maxScore =
-    criteria.reduce(
-      (total, criteria) => total + (criteria.totalCriterionPoints || 0),
-      0,
-    ) || 0;
+    criteria.reduce((total, criteria) => total + 10 * (criteria.weight ?? 0), 0) || 0;
 
   const handleUpdateFeedback = (criterionId: string, feedbacks: Feedback[]) => {
     setGradingResult((prev) => ({
@@ -84,7 +81,7 @@ export default function ManualAdjustScorePage({
 
   return (
     <div className="w-full flex flex-col px-4">
-      <div className="relative w-3/4 mx-auto my-2 flex items-center">
+      <div className="relative w-3/4 mx-auto mb-2 flex">
         <Badge className="w-full text-sm" variant="outline">
           {submission.id}
         </Badge>
@@ -116,8 +113,7 @@ export default function ManualAdjustScorePage({
             <TabsList className="flex border-b w-full dark:border-gray-700">
               {gradingResult.criterionResults.map((criteriaResult) => {
                 const maxPoints =
-                  criteria.find((c) => c.id === criteriaResult.criterionId)
-                    ?.totalCriterionPoints || 0;
+                  criteria.find((c) => c.id === criteriaResult.criterionId)?.weight || 0;
 
                 return (
                   <TabsTrigger
@@ -175,30 +171,30 @@ export default function ManualAdjustScorePage({
                   >
                     {criterion.levels.map((level) => (
                       <Button
-                        key={level.points}
+                        key={level.weight}
                         onClick={() =>
                           setGradingResult((prev) => ({
                             ...prev,
                             criterionResults: prev.criterionResults.map((cr) =>
                               cr.criterionId === criteriaResult.criterionId
-                                ? { ...cr, score: level.points }
+                                ? { ...cr, score: level.weight }
                                 : cr,
                             ),
                           }))
                         }
                         variant="outline"
                         className={`p-5 flex flex-col items-start rounded-md text-left w-full h-[70px] cursor-pointer transition-colors relative ${
-                          criteriaResult.score === level.points
+                          criteriaResult.score === level.weight
                             ? "bg-[#D4E3FC] hover:bg-[#D4E3FC] dark:bg-[#2D3748] dark:hover:bg-[#2D3748]"
                             : "bg-[#EAF1F6] hover:bg-[#D4E3FC] dark:bg-[#1A202C] dark:hover:bg-[#2D3748]"
                         }`}
                       >
                         <div className="font-bold whitespace-nowrap flex justify-between w-full">
                           <span>
-                            {level.points} - {level.performanceTag}
+                            {level.weight} - {level.tag}
                           </span>
                           <span className="w-6 h-6 flex-shrink-0">
-                            {criteriaResult.score === level.points && (
+                            {criteriaResult.score === level.weight && (
                               <Check className="text-blue-500 dark:text-blue-300" />
                             )}
                           </span>
