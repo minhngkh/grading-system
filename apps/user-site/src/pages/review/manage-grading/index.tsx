@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
-import { GetGradingAttemptsResult } from "@/services/gradingServices";
+import { GetGradingAttemptsResult } from "@/services/grading-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { SearchParams } from "@/types/searchParams";
+import { useNavigate } from "@tanstack/react-router";
 
 type SortConfig = {
   key: "id" | "rubricId" | "status" | "updatedOn" | null;
@@ -57,6 +58,13 @@ export default function ManageGradingAttemptsPage({
   setSearchParam,
   results,
 }: ManageGradingAttemptsPageProps) {
+  const navigate = useNavigate();
+  const handleView = (gradingId: string) => {
+    navigate({ to: "/manage-assessments/$id", params: { id: gradingId } });
+  };
+
+  const [isLoading, setIsLoading] = useState(false);
+
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "updatedOn",
     direction: "desc",
@@ -289,8 +297,8 @@ export default function ManageGradingAttemptsPage({
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => {
+                            handleView(attempt.id);
                             setSelectedAttempt(attempt);
-                            setIsViewDialogOpen(true);
                           }}
                         >
                           View Details

@@ -1,10 +1,10 @@
-import ErrorComponent from "@/components/routeError";
-import ManageGradingAttemptsPage from "@/pages/features/manage-grading";
-import { getGradingAttempts } from "@/services/gradingServices";
+import ErrorComponent from "@/components/app/route-error";
+import ManageGradingAttemptsPage from "@/pages/review/manage-grading";
+import { getGradingAttempts } from "@/services/grading-service";
 import { SearchParams, searchParams } from "@/types/searchParams";
 import { createFileRoute, retainSearchParams, useNavigate } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/_features/manage-grading")({
+export const Route = createFileRoute("/_authenticated/_review/manage-grading")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,

@@ -1,18 +1,14 @@
-packages: 
+packages:
   - "apps/*"
   - "libs/*"
   - "examples/*"
   - "tools/*"
-packages:
-  - apps/*
-  - libs/*
-  - examples/*
 
 ignoredBuiltDependencies:
-  - '@clerk/shared'
-  - '@nx-dotnet/core'
-  - '@parcel/watcher'
-  - '@swc/core'
+  - "@clerk/shared"
+  - "@nx-dotnet/core"
+  - "@parcel/watcher"
+  - "@swc/core"
   - esbuild
   - nx
   - protobufjs

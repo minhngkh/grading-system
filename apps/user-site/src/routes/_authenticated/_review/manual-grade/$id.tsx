@@ -5,7 +5,7 @@ import { getRubric } from "@/services/rubricService";
 import { createFileRoute } from "@tanstack/react-router";
 import { Rubric } from "@/types/rubric";
 
-export const Route = createFileRoute("/_authenticated/_features/manual-grade/$id")({
+export const Route = createFileRoute("/_authenticated/_review/manual-grade/$id")({
   component: RoutePage,
   loader: async ({ params }) => {
     const submissionId = params.id;
