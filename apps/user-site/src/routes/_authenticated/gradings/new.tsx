@@ -4,7 +4,7 @@ import UploadAssignmentPage from "@/pages/grading/grading-session";
 import { GradingService } from "@/services/grading-service";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/_grading/assignment-grading")({
+export const Route = createFileRoute("/_authenticated/gradings/new")({
   component: RouteComponent,
   beforeLoad: async () => {
     const gradingStep = sessionStorage.getItem("gradingStep") ?? undefined;

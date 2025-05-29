@@ -12,6 +12,8 @@ import Spinner from "@/components/app/spinner";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { InfoToolTip } from "@/components/app/info-tooltip";
 
 interface UploadStepProps {
   onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
@@ -25,6 +27,7 @@ export default function UploadStep({
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+
   const handleSelectRubric = async (rubric: Rubric | undefined) => {
     if (rubric) {
       const selectors = rubric.criteria.map((criterion) => {
@@ -54,6 +57,7 @@ export default function UploadStep({
       onGradingAttemptChange(undefined);
     }
   };
+
   const handleFileUpload = async (files: File[]) => {
     const newFiles = files.filter(
       (file) => !uploadedFiles.some((existing) => existing.name === file.name),
@@ -96,7 +100,7 @@ export default function UploadStep({
   };
 
   return (
-    <div className="size-full space-y-6">
+    <div className="size-full space-y-4">
       {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -114,13 +118,17 @@ export default function UploadStep({
         </DialogContent>
       </Dialog>
 
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Select Rubric</h2>
-        <div className="flex w-full gap-4">
+      <div className="space-y-1">
+        <div className="flex items-center space-x-1">
+          <h2 className="text-lg font-semibold">Select Rubric</h2>
+          <InfoToolTip description="Choose a rubric to use for grading. If you don't have a rubric, you can create one." />
+        </div>
+        <div className="flex items-center w-full gap-4">
           <RubricSelect
             gradingAttempt={gradingAttempt}
             onRubricChange={handleSelectRubric}
           />
+          <span>or</span>
           <Button variant="outline" asChild>
             <Link preload={false} to="/rubric-generation">
               Create New Rubric
@@ -129,12 +137,34 @@ export default function UploadStep({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Upload Files</h2>
+      <div className="space-y-1">
+        <div className="flex items-center space-x-1">
+          <h2 className="text-lg font-semibold">Scale Factor</h2>
+          <InfoToolTip description="Adjust the scale factor for grading. This will affect the overall grading score of each submission." />
+        </div>
+        <Input
+          className="max-w-32"
+          type="number"
+          value={gradingAttempt.scaleFactor || ""}
+          onChange={(e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value)) {
+              onGradingAttemptChange({ scaleFactor: value });
+            }
+          }}
+          placeholder="1"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <div className="flex items-center space-x-1">
+          <h2 className="text-lg font-semibold">Upload Files</h2>
+          <InfoToolTip description="Choose files to upload for grading. Only .zip files are accepted." />
+        </div>
         <FileUploader onFileUpload={handleFileUpload} accept=".zip" multiple />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Uploaded Files</h2>
           {uploadedFiles.length > 0 && (

@@ -46,18 +46,7 @@ export default function ReviewResults({ isLoading, assessments }: ReviewResultsP
 
   return (
     <section>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">Grading Results</h2>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-          disabled={isLoading}
-        >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-          Rerun All
-        </Button>
-      </div>
+      <h2 className="text-2xl font-bold">Grading Results</h2>
       {isLoading ? (
         <ResultCardSkeleton />
       ) : (

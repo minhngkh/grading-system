@@ -7,6 +7,13 @@ const API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
 const GRADING_API_URL = `${API_URL}/gradings`;
 const ASSESSMENT_API_URL = `${API_URL}/assessments`;
 
+export type GetGradingsResult = {
+  data: GradingAttempt[];
+  meta: {
+    total: number;
+  };
+};
+
 export class GradingService {
   static configHeaders: AxiosRequestConfig = {
     headers: {
@@ -55,6 +62,25 @@ export class GradingService {
       { selectors },
       this.configHeaders,
     );
+  }
+
+  static async getGradingAttempts(
+    page?: number,
+    perPage?: number,
+    search?: string,
+  ): Promise<GetGradingsResult> {
+    const params = new URLSearchParams();
+
+    if (page !== undefined) params.append("page[number]", page.toString());
+    if (perPage !== undefined) params.append("page[size]", perPage.toString());
+    if (search && search.length > 0) params.append("filter", `contains(id,'${search}')`);
+
+    const url = `${GRADING_API_URL}?${params.toString()}`;
+    const response = await axios.get(url, this.configHeaders);
+    const data = await this.gradingDeserializer.deserialize(response.data);
+    const meta = response.data.meta;
+
+    return { data, meta };
   }
 
   static async getGradingAttempt(id: string): Promise<GradingAttempt> {

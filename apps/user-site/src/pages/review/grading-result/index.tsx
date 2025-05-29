@@ -5,12 +5,13 @@ import SummarySection from "./summary-section";
 import ReviewResults from "./review-results";
 import { GradingService } from "@/services/grading-service";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 type ResultsStepProps = {
   gradingAttempt: GradingAttempt;
 };
 
-export default function ResultsStep({ gradingAttempt }: ResultsStepProps) {
+export default function GradingResult({ gradingAttempt }: ResultsStepProps) {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,7 +33,21 @@ export default function ResultsStep({ gradingAttempt }: ResultsStepProps) {
   }, []);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <div className="flex">
+        <div className="flex items-center gap-2 p-2 border rounded-lg shadow-sm">
+          <p className="ms-1 text-sm font-semibold">Actions: </p>
+          <Button size="sm" disabled={isLoading}>
+            Change Scale Factor
+          </Button>
+          <Button size="sm" disabled={isLoading}>
+            View Rubric
+          </Button>
+          <Button size="sm" disabled={isLoading}>
+            Regrade All
+          </Button>
+        </div>
+      </div>
       <SummarySection isLoading={isLoading} assessments={assessments} />
       <ReviewResults isLoading={isLoading} assessments={assessments} />
     </div>

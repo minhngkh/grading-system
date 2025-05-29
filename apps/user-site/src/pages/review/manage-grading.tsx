@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
-import { Rubric, RubricStatus } from "@/types/rubric";
-import { GetRubricsResult } from "@/services/rubric-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,39 +36,39 @@ import {
   Search,
   X,
 } from "lucide-react";
-import RubricView from "@/components/app/rubric-view";
 import { useDebounce } from "@/hooks/use-debounce";
 import { SearchParams } from "@/types/search-params";
+import { GradingAttempt, GradingStatus } from "@/types/grading";
+import { Link } from "@tanstack/react-router";
+import { GetGradingsResult } from "@/services/grading-service";
 
 type SortConfig = {
-  key: "rubricName" | "updatedOn" | "status" | null;
+  key: "id" | "lastModified" | "status" | null;
   direction: "asc" | "desc";
 };
 
-type ManageRubricsPageProps = {
+type ManageGradingsPageProps = {
   searchParams: SearchParams;
-  results: GetRubricsResult;
+  results: GetGradingsResult;
   setSearchParam: (partial: Partial<SearchParams>) => void;
 };
 
-export default function ManageRubricsPage({
+export default function ManageGradingsPage({
   searchParams,
   setSearchParam,
   results,
-}: ManageRubricsPageProps) {
+}: ManageGradingsPageProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: "rubricName",
+    key: "id",
     direction: "desc",
   });
   const { currentPage, rowsPerPage } = searchParams;
   const {
-    data: rubrics,
+    data: gradings,
     meta: { total: totalCount },
   } = results;
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.searchTerm || "");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedRubric, setSelectedRubric] = useState<Rubric | null>(null);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("All");
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
@@ -82,12 +79,12 @@ export default function ManageRubricsPage({
   }, [debouncedSearchTerm]);
 
   // Apply client filtering for status only
-  const filteredRubrics =
-    statusFilter === "all"
-      ? rubrics
-      : rubrics.filter((rubric) => rubric.status === statusFilter);
+  const filteredGradings =
+    statusFilter === "All"
+      ? gradings
+      : gradings.filter((grading) => grading.status === statusFilter);
 
-  const sortedRubrics = [...filteredRubrics].sort((a, b) => {
+  const sortedGradings = [...filteredGradings].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const aKey = a[sortConfig.key];
     const bKey = b[sortConfig.key];
@@ -105,8 +102,8 @@ export default function ManageRubricsPage({
   });
 
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = sortedRubrics.slice(startIndex, startIndex + rowsPerPage);
-  const totalPages = Math.ceil(sortedRubrics.length / rowsPerPage);
+  const paginatedData = sortedGradings.slice(startIndex, startIndex + rowsPerPage);
+  const totalPages = Math.ceil(sortedGradings.length / rowsPerPage);
 
   const requestSort = (key: SortConfig["key"]) => {
     let direction: "asc" | "desc" = "asc";
@@ -118,7 +115,7 @@ export default function ManageRubricsPage({
     setSortConfig({ key, direction });
   };
 
-  const getSortIcon = (key: keyof Rubric) => {
+  const getSortIcon = (key: keyof GradingAttempt) => {
     if (sortConfig.key !== key) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
@@ -130,12 +127,12 @@ export default function ManageRubricsPage({
     );
   };
 
-  const getStatusBadge = (status?: RubricStatus) => {
+  const getStatusBadge = (status?: GradingStatus) => {
     switch (status) {
-      case RubricStatus.Draft:
-        return <Badge variant="default">Drafted</Badge>;
-      case RubricStatus.Used:
-        return <Badge variant="secondary">Used</Badge>;
+      case GradingStatus.Completed:
+        return <Badge variant="default">Completed</Badge>;
+      case GradingStatus.Created:
+        return <Badge variant="secondary">Created</Badge>;
       default:
         return <Badge variant="destructive">None</Badge>;
     }
@@ -143,22 +140,22 @@ export default function ManageRubricsPage({
 
   const clearFilters = () => {
     setSearchTerm("");
-    setStatusFilter("all");
+    setStatusFilter("All");
   };
 
   return (
     <div className="w-full">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">Rubrics</h2>
-        <p className="text-muted-foreground">Manage your assessment rubrics</p>
+        <h2 className="text-2xl font-bold">Gradings</h2>
+        <p className="text-muted-foreground">Manage your assessment gradings</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            id="rubric_name"
-            placeholder="Search rubrics..."
+            id="grading_name"
+            placeholder="Search gradings..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -188,43 +185,33 @@ export default function ManageRubricsPage({
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="drafted">Drafted</SelectItem>
-            <SelectItem value="used">Used</SelectItem>
+            <SelectItem value="All">All Statuses</SelectItem>
+            {Object.values(GradingStatus).map((status) => (
+              <SelectItem key={status} value={status}>
+                {GradingStatus[status]}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        {statusFilter !== "all" && (
+        {statusFilter !== "All" && (
           <Button variant="ghost" onClick={clearFilters} className="w-full sm:w-auto">
             Clear Filters
           </Button>
         )}
       </div>
 
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent aria-describedby={undefined} className="min-w-[80%]">
-          <DialogHeader>
-            <DialogTitle>{selectedRubric?.rubricName}</DialogTitle>
-          </DialogHeader>
-          {selectedRubric && (
-            <div className="w-full h-full flex flex-col">
-              <RubricView rubricData={selectedRubric} showPlugins />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
       <div className="w-full overflow-auto border rounded-md">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => requestSort("rubricName")} className="w-[40%]">
+              <TableHead onClick={() => requestSort("id")} className="w-[40%]">
                 <div className="flex items-center cursor-pointer">
-                  Rubric Name {getSortIcon("rubricName")}
+                  ID {getSortIcon("id")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => requestSort("updatedOn")} className="w-[20%]">
+              <TableHead onClick={() => requestSort("lastModified")} className="w-[20%]">
                 <div className="flex items-center cursor-pointer">
-                  Updated On {getSortIcon("updatedOn")}
+                  Last Modified {getSortIcon("lastModified")}
                 </div>
               </TableHead>
               <TableHead onClick={() => requestSort("status")} className="w-[20%]">
@@ -239,19 +226,19 @@ export default function ManageRubricsPage({
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
-                  No rubrics found.
+                  No gradings found.
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedData.map((rubric) => (
-                <TableRow key={rubric.id}>
-                  <TableCell className="font-semibold">{rubric.rubricName}</TableCell>
+              paginatedData.map((grading) => (
+                <TableRow key={grading.id}>
+                  <TableCell className="font-semibold">{grading.id}</TableCell>
                   <TableCell>
-                    {rubric.updatedOn
-                      ? format(rubric.updatedOn, "MMM d, yyyy")
+                    {grading.lastModified
+                      ? format(grading.lastModified, "MMM d, yyyy")
                       : "Not set"}
                   </TableCell>
-                  <TableCell>{getStatusBadge(rubric.status)}</TableCell>
+                  <TableCell>{getStatusBadge(grading.status)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -263,13 +250,10 @@ export default function ManageRubricsPage({
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedRubric(rubric);
-                            setIsViewDialogOpen(true);
-                          }}
-                        >
-                          View Rubric
+                        <DropdownMenuItem asChild>
+                          <Link to="/grading/$id" params={{ id: grading.id }}>
+                            View Grading
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
@@ -288,9 +272,9 @@ export default function ManageRubricsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            {statusFilter === "all"
-              ? `Showing ${rubrics.length} of ${totalCount} rubrics`
-              : `Showing ${paginatedData.length} of ${sortedRubrics.length} rubrics`}
+            {statusFilter === "All"
+              ? `Showing ${gradings.length} of ${totalCount} gradings`
+              : `Showing ${paginatedData.length} of ${sortedGradings.length} gradings`}
           </p>
           <Select
             value={rowsPerPage.toString()}

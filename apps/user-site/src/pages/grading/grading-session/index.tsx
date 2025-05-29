@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { defineStepper } from "@stepperize/react";
 import React, { useState } from "react";
 import GradingProgressStep from "./grading-step";
-import ResultsStep from "./result-step";
+import GradingResult from "../../review/grading-result";
 import UploadStep from "./upload-step";
 import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
 import { useForm } from "react-hook-form";
@@ -142,7 +142,7 @@ export default function UploadAssignmentPage({
               onGradingAttemptChange={handleUpdateGradingAttempt}
             />
           ),
-          review: () => <ResultsStep gradingAttempt={gradingAttemptValues} />,
+          review: () => <GradingResult gradingAttempt={gradingAttemptValues} />,
         })}
       </div>
       <div className="flex w-full justify-end gap-4">

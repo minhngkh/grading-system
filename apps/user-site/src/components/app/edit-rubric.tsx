@@ -30,12 +30,14 @@ interface EditRubricProps {
   rubricData: Rubric;
   onUpdate?: (rubric: Rubric) => void;
   disableEdit?: boolean;
+  variant?: "button" | "text";
 }
 
 export default function EditRubric({
   rubricData,
   onUpdate,
   disableEdit = false,
+  variant = "button",
 }: EditRubricProps) {
   const [errorsState, setErrorState] = useState<string[]>([]);
 
@@ -190,17 +192,21 @@ export default function EditRubric({
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button
-          disabled={disableEdit}
-          onClick={() => {
-            form.reset(rubricData);
-            setErrorState([]);
-          }}
-          size="icon"
-        >
-          <PencilIcon />
-        </Button>
+      <DialogTrigger
+        disabled={disableEdit}
+        asChild
+        onClick={() => {
+          form.reset(rubricData);
+          setErrorState([]);
+        }}
+      >
+        {variant === "button" ? (
+          <Button size="icon">
+            <PencilIcon />
+          </Button>
+        ) : (
+          "Edit Rubric"
+        )}
       </DialogTrigger>
       <DialogContent
         aria-describedby={undefined}

@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import EditRubric from "./edit-rubric";
+import EditRubric from "../../../../components/app/edit-rubric";
 import Spinner from "@/components/app/spinner";
 
 interface RubricTableProps {

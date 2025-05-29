@@ -25,17 +25,17 @@ export const NavigationItems: NavigationData[] = [
   {
     title: "Create Rubric",
     icon: <ClipboardPlus className="size-4" />,
-    to: "/rubric-generation",
+    to: "/rubrics/new",
   },
   {
     title: "Manage Rubrics",
     icon: <Library className="size-4" />,
-    to: "/manage-rubrics",
+    to: "/rubrics",
   },
   {
     title: "Grade Assignments",
     icon: <BookOpenCheck className="size-4" />,
-    to: "/assignment-grading",
+    to: "/gradings/new",
   },
   {
     title: "AI Assistant",

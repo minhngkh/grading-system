@@ -4,7 +4,7 @@ import RubricGenerationPage from "@/pages/rubric/rubric-generation";
 import { RubricService } from "@/services/rubric-service";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/_rubric/rubric-generation")({
+export const Route = createFileRoute("/_authenticated/rubrics/new")({
   preload: false,
   component: RoutePage,
   beforeLoad: async () => {

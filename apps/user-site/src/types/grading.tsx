@@ -25,6 +25,7 @@ export const GradingSchema = z.object({
     })
     .min(1, { message: "Selectors cannot be empty" }),
   status: z.nativeEnum(GradingStatus).optional(),
+  lastModified: z.date().optional(),
 });
 
 export type CriteriaSelector = z.infer<typeof SelectorSchema>;
