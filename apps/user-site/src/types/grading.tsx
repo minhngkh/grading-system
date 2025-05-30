@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export enum GradingStatus {
-  Created,
-  Started,
-  Graded,
-  Failed,
-  Completed,
+  Created = "Created",
+  Started = "Started",
+  Graded = "Graded",
+  Completed = "Completed",
+  Failed = "Failed",
 }
 
 export const SelectorSchema = z.object({
@@ -25,6 +25,7 @@ export const GradingSchema = z.object({
     })
     .min(1, { message: "Selectors cannot be empty" }),
   status: z.nativeEnum(GradingStatus).optional(),
+  lastModified: z.date().optional(),
 });
 
 export type CriteriaSelector = z.infer<typeof SelectorSchema>;
