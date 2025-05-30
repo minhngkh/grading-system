@@ -62,27 +62,27 @@ export default function ManageGradingsPage({
     key: "id",
     direction: "desc",
   });
-  const { currentPage, rowsPerPage } = searchParams;
+  const { page, perPage } = searchParams;
   const {
     data: gradings,
     meta: { total: totalCount },
   } = results;
-  const [searchTerm, setSearchTerm] = useState<string>(searchParams.searchTerm || "");
+  const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
   const [statusFilter, setStatusFilter] = useState<string>("All");
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
     setSearchParam({
-      searchTerm: debouncedSearchTerm,
-      currentPage: 1,
+      search: debouncedSearchTerm,
+      page: 1,
     });
   }, [debouncedSearchTerm]);
 
   // Apply client filtering for status only
   const filteredGradings =
-    statusFilter === "All"
-      ? gradings
-      : gradings.filter((grading) => grading.status === statusFilter);
+    statusFilter === "All" ? gradings : (
+      gradings.filter((grading) => grading.status === statusFilter)
+    );
 
   const sortedGradings = [...filteredGradings].sort((a, b) => {
     if (!sortConfig.key) return 0;
@@ -101,9 +101,9 @@ export default function ManageGradingsPage({
     return 0;
   });
 
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = sortedGradings.slice(startIndex, startIndex + rowsPerPage);
-  const totalPages = Math.ceil(sortedGradings.length / rowsPerPage);
+  const startIndex = (page - 1) * perPage;
+  const paginatedData = sortedGradings.slice(startIndex, startIndex + perPage);
+  const totalPages = Math.ceil(sortedGradings.length / perPage);
 
   const requestSort = (key: SortConfig["key"]) => {
     let direction: "asc" | "desc" = "asc";
@@ -120,11 +120,9 @@ export default function ManageGradingsPage({
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
 
-    return sortConfig.direction === "asc" ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
+    return sortConfig.direction === "asc" ?
+        <ArrowUp className="ml-2 h-4 w-4" />
+      : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   const getStatusBadge = (status?: GradingStatus) => {
@@ -178,7 +176,7 @@ export default function ManageGradingsPage({
           value={statusFilter}
           onValueChange={(value) => {
             setStatusFilter(value);
-            setSearchParam({ currentPage: 1 });
+            setSearchParam({ page: 1 });
           }}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
@@ -223,20 +221,19 @@ export default function ManageGradingsPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length === 0 ? (
+            {paginatedData.length === 0 ?
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No gradings found.
                 </TableCell>
               </TableRow>
-            ) : (
-              paginatedData.map((grading) => (
+            : paginatedData.map((grading) => (
                 <TableRow key={grading.id}>
                   <TableCell className="font-semibold">{grading.id}</TableCell>
                   <TableCell>
-                    {grading.lastModified
-                      ? format(grading.lastModified, "MMM d, yyyy")
-                      : "Not set"}
+                    {grading.lastModified ?
+                      format(grading.lastModified, "MMM d, yyyy")
+                    : "Not set"}
                   </TableCell>
                   <TableCell>{getStatusBadge(grading.status)}</TableCell>
                   <TableCell className="text-right">
@@ -251,7 +248,7 @@ export default function ManageGradingsPage({
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link to="/grading/$id" params={{ id: grading.id }}>
+                          <Link to="/gradings/$id" params={{ id: grading.id }}>
                             View Grading
                           </Link>
                         </DropdownMenuItem>
@@ -264,7 +261,7 @@ export default function ManageGradingsPage({
                   </TableCell>
                 </TableRow>
               ))
-            )}
+            }
           </TableBody>
         </Table>
       </div>
@@ -272,14 +269,14 @@ export default function ManageGradingsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            {statusFilter === "All"
-              ? `Showing ${gradings.length} of ${totalCount} gradings`
-              : `Showing ${paginatedData.length} of ${sortedGradings.length} gradings`}
+            {statusFilter === "All" ?
+              `Showing ${gradings.length} of ${totalCount} gradings`
+            : `Showing ${paginatedData.length} of ${sortedGradings.length} gradings`}
           </p>
           <Select
-            value={rowsPerPage.toString()}
+            value={perPage.toString()}
             onValueChange={(value) => {
-              setSearchParam({ rowsPerPage: Number.parseInt(value), currentPage: 1 });
+              setSearchParam({ perPage: Number.parseInt(value), page: 1 });
             }}
           >
             <SelectTrigger className="w-[70px]">
@@ -299,9 +296,9 @@ export default function ManageGradingsPage({
             variant="outline"
             size="icon"
             onClick={() => {
-              setSearchParam({ currentPage: Math.max(currentPage - 1, 1) });
+              setSearchParam({ page: Math.max(page - 1, 1) });
             }}
-            disabled={currentPage === 1}
+            disabled={page === 1}
           >
             <ChevronLeft className="h-4 w-4" />
             <span className="sr-only">Previous page</span>
@@ -311,34 +308,32 @@ export default function ManageGradingsPage({
               let pageNum = i + 1;
 
               // Adjust page numbers for larger datasets
-              if (totalPages > 5 && currentPage > 3) {
-                pageNum = currentPage - 2 + i;
+              if (totalPages > 5 && page > 3) {
+                pageNum = page - 2 + i;
                 if (pageNum > totalPages) return null;
               }
 
               return (
                 <Button
                   key={pageNum}
-                  variant={currentPage === pageNum ? "default" : "outline"}
+                  variant={page === pageNum ? "default" : "outline"}
                   size="icon"
                   className="w-8 h-8"
-                  onClick={() => setSearchParam({ currentPage: pageNum })}
+                  onClick={() => setSearchParam({ page: pageNum })}
                 >
                   {pageNum}
                 </Button>
               );
             })}
 
-            {totalPages > 5 && currentPage < totalPages - 2 && (
-              <span className="mx-1">...</span>
-            )}
+            {totalPages > 5 && page < totalPages - 2 && <span className="mx-1">...</span>}
 
-            {totalPages > 5 && currentPage < totalPages - 1 && (
+            {totalPages > 5 && page < totalPages - 1 && (
               <Button
-                variant={currentPage === totalPages ? "default" : "outline"}
+                variant={page === totalPages ? "default" : "outline"}
                 size="icon"
                 className="w-8 h-8"
-                onClick={() => setSearchParam({ currentPage: totalPages })}
+                onClick={() => setSearchParam({ page: totalPages })}
               >
                 {totalPages}
               </Button>
@@ -347,10 +342,8 @@ export default function ManageGradingsPage({
           <Button
             variant="outline"
             size="icon"
-            onClick={() =>
-              setSearchParam({ currentPage: Math.min(currentPage + 1, totalPages) })
-            }
-            disabled={currentPage === totalPages || totalPages === 0}
+            onClick={() => setSearchParam({ page: Math.min(page + 1, totalPages) })}
+            disabled={page === totalPages || totalPages === 0}
           >
             <ChevronRight className="h-4 w-4" />
             <span className="sr-only">Next page</span>

@@ -65,12 +65,12 @@ export default function ManageRubricsPage({
     key: "rubricName",
     direction: "desc",
   });
-  const { currentPage, rowsPerPage } = searchParams;
+  const { page, perPage } = searchParams;
   const {
     data: rubrics,
     meta: { total: totalCount },
   } = results;
-  const [searchTerm, setSearchTerm] = useState<string>(searchParams.searchTerm || "");
+  const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [selectedRubric, setSelectedRubric] = useState<Rubric | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -78,16 +78,16 @@ export default function ManageRubricsPage({
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
     setSearchParam({
-      searchTerm: debouncedSearchTerm,
-      currentPage: 1,
+      search: debouncedSearchTerm,
+      page: 1,
     });
   }, [debouncedSearchTerm]);
 
   // Apply client filtering for status only
   const filteredRubrics =
-    statusFilter === "All"
-      ? rubrics
-      : rubrics.filter((rubric) => rubric.status === statusFilter);
+    statusFilter === "All" ? rubrics : (
+      rubrics.filter((rubric) => rubric.status === statusFilter)
+    );
 
   const sortedRubrics = [...filteredRubrics].sort((a, b) => {
     if (!sortConfig.key) return 0;
@@ -106,9 +106,9 @@ export default function ManageRubricsPage({
     return 0;
   });
 
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = sortedRubrics.slice(startIndex, startIndex + rowsPerPage);
-  const totalPages = Math.ceil(sortedRubrics.length / rowsPerPage);
+  const startIndex = (page - 1) * perPage;
+  const paginatedData = sortedRubrics.slice(startIndex, startIndex + perPage);
+  const totalPages = Math.ceil(sortedRubrics.length / perPage);
 
   const requestSort = (key: SortConfig["key"]) => {
     let direction: "asc" | "desc" = "asc";
@@ -125,11 +125,9 @@ export default function ManageRubricsPage({
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
 
-    return sortConfig.direction === "asc" ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
+    return sortConfig.direction === "asc" ?
+        <ArrowUp className="ml-2 h-4 w-4" />
+      : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
   const getStatusBadge = (status?: RubricStatus) => {
@@ -193,7 +191,7 @@ export default function ManageRubricsPage({
           value={statusFilter}
           onValueChange={(value) => {
             setStatusFilter(value);
-            setSearchParam({ currentPage: 1 });
+            setSearchParam({ page: 1 });
           }}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
@@ -248,20 +246,19 @@ export default function ManageRubricsPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length === 0 ? (
+            {paginatedData.length === 0 ?
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No rubrics found.
                 </TableCell>
               </TableRow>
-            ) : (
-              paginatedData.map((rubric) => (
+            : paginatedData.map((rubric) => (
                 <TableRow key={rubric.id}>
                   <TableCell className="font-semibold">{rubric.rubricName}</TableCell>
                   <TableCell>
-                    {rubric.updatedOn
-                      ? format(rubric.updatedOn, "MMM d, yyyy")
-                      : "Not set"}
+                    {rubric.updatedOn ?
+                      format(rubric.updatedOn, "MMM d, yyyy")
+                    : "Not set"}
                   </TableCell>
                   <TableCell>{getStatusBadge(rubric.status)}</TableCell>
                   <TableCell className="text-right">
@@ -301,7 +298,7 @@ export default function ManageRubricsPage({
                   </TableCell>
                 </TableRow>
               ))
-            )}
+            }
           </TableBody>
         </Table>
       </div>
@@ -309,14 +306,14 @@ export default function ManageRubricsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            {statusFilter === "All"
-              ? `Showing ${rubrics.length} of ${totalCount} rubrics`
-              : `Showing ${paginatedData.length} of ${sortedRubrics.length} rubrics`}
+            {statusFilter === "All" ?
+              `Showing ${rubrics.length} of ${totalCount} rubrics`
+            : `Showing ${paginatedData.length} of ${sortedRubrics.length} rubrics`}
           </p>
           <Select
-            value={rowsPerPage.toString()}
+            value={perPage.toString()}
             onValueChange={(value) => {
-              setSearchParam({ rowsPerPage: Number.parseInt(value), currentPage: 1 });
+              setSearchParam({ perPage: Number.parseInt(value), page: 1 });
             }}
           >
             <SelectTrigger className="w-[70px]">
@@ -336,9 +333,9 @@ export default function ManageRubricsPage({
             variant="outline"
             size="icon"
             onClick={() => {
-              setSearchParam({ currentPage: Math.max(currentPage - 1, 1) });
+              setSearchParam({ page: Math.max(page - 1, 1) });
             }}
-            disabled={currentPage === 1}
+            disabled={page === 1}
           >
             <ChevronLeft className="h-4 w-4" />
             <span className="sr-only">Previous page</span>
@@ -348,34 +345,32 @@ export default function ManageRubricsPage({
               let pageNum = i + 1;
 
               // Adjust page numbers for larger datasets
-              if (totalPages > 5 && currentPage > 3) {
-                pageNum = currentPage - 2 + i;
+              if (totalPages > 5 && page > 3) {
+                pageNum = page - 2 + i;
                 if (pageNum > totalPages) return null;
               }
 
               return (
                 <Button
                   key={pageNum}
-                  variant={currentPage === pageNum ? "default" : "outline"}
+                  variant={page === pageNum ? "default" : "outline"}
                   size="icon"
                   className="w-8 h-8"
-                  onClick={() => setSearchParam({ currentPage: pageNum })}
+                  onClick={() => setSearchParam({ page: pageNum })}
                 >
                   {pageNum}
                 </Button>
               );
             })}
 
-            {totalPages > 5 && currentPage < totalPages - 2 && (
-              <span className="mx-1">...</span>
-            )}
+            {totalPages > 5 && page < totalPages - 2 && <span className="mx-1">...</span>}
 
-            {totalPages > 5 && currentPage < totalPages - 1 && (
+            {totalPages > 5 && page < totalPages - 1 && (
               <Button
-                variant={currentPage === totalPages ? "default" : "outline"}
+                variant={page === totalPages ? "default" : "outline"}
                 size="icon"
                 className="w-8 h-8"
-                onClick={() => setSearchParam({ currentPage: totalPages })}
+                onClick={() => setSearchParam({ page: totalPages })}
               >
                 {totalPages}
               </Button>
@@ -384,10 +379,8 @@ export default function ManageRubricsPage({
           <Button
             variant="outline"
             size="icon"
-            onClick={() =>
-              setSearchParam({ currentPage: Math.min(currentPage + 1, totalPages) })
-            }
-            disabled={currentPage === totalPages || totalPages === 0}
+            onClick={() => setSearchParam({ page: Math.min(page + 1, totalPages) })}
+            disabled={page === totalPages || totalPages === 0}
           >
             <ChevronRight className="h-4 w-4" />
             <span className="sr-only">Next page</span>

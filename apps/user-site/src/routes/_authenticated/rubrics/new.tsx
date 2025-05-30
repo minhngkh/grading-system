@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/rubrics/new")({
 
     return { rubricId };
   },
-  loader: async ({ context: { rubricId } }) => RubricService.getRubric(rubricId),
+  loader: ({ context: { rubricId } }) => RubricService.getRubric(rubricId),
   onLeave: () => sessionStorage.removeItem("rubricId"),
   errorComponent: () => ErrorComponent(),
   pendingComponent: () => PendingComponent("Loading rubric..."),
