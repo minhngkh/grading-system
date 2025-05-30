@@ -1,11 +1,16 @@
 import "dotenv/config";
 
-import type { AIService } from "./service";
-import { actionCaller } from "@/utils/actions";
-import { createZodValidatedServiceBroker } from "@/utils/typed-moleculer";
-import { describe, it, expect } from "vitest";
-import { createRubric, gradeUsingRubric } from "./core";
-import { aiService } from "./service";
+import type { CoreMessage } from "ai";
+import type { Rubric } from "./core";
+import { describe, expect, it } from "vitest";
+import { generateChatResponse, gradeUsingRubric } from "./core";
+
+function createMessage(prompt: string): CoreMessage {
+  return {
+    role: "user",
+    content: prompt,
+  };
+}
 
 describe.concurrent("test ai plugin", () => {
   const sampleRubricPrompt = `
@@ -16,7 +21,7 @@ describe.concurrent("test ai plugin", () => {
     `;
   const sampleGeneralQuestion = `
     What is the difference between formative and summative assessment?
-  `
+  `;
   const sampleCode = `
     function calculateSum(numbers) {
       let sum = 0;
@@ -27,7 +32,7 @@ describe.concurrent("test ai plugin", () => {
     }
     `;
 
-  const sampleRubric = {
+  const sampleRubric: Rubric = {
     criteria: [
       {
         levels: [
@@ -156,79 +161,57 @@ describe.concurrent("test ai plugin", () => {
         weight: 40,
       },
     ],
+    weightInRange: "true",
     rubricName: "Code Quality Rubric",
     tags: ["0", "1", "2", "3"],
   };
 
   it("grade using sample rubric directly", async () => {
-    const result = await gradeUsingRubric( sampleRubric , sampleCode);
+    const result = await gradeUsingRubric(sampleRubric, sampleCode);
     if (result.isErr()) {
       throw result.error;
     }
   });
 
   it("generate rubric then grade it directly", async () => {
-    const rubricResult = await createRubric(sampleRubricPrompt, true);
-    if (rubricResult.isErr()) {
-      throw rubricResult.error;
+    const chatResponseResult = await generateChatResponse({
+      messages: [createMessage(sampleRubricPrompt)],
+    });
+    if (chatResponseResult.isErr()) {
+      throw chatResponseResult.error;
     }
 
-    const rubric = rubricResult.value;
-    
-    if (!rubric.rubric) {
+    const chatResponse = chatResponseResult.value;
+
+    if (chatResponse.stream) {
+      throw new Error("Rubric generation returned a stream, expected a rubric object");
+    }
+
+    if (!chatResponse.result.rubric) {
       throw new Error("Rubric is null or undefined");
     }
-    const result = await gradeUsingRubric(rubric.rubric, sampleCode);
+    const result = await gradeUsingRubric(chatResponse.result.rubric, sampleCode);
     if (result.isErr()) {
       throw result.error;
     }
   });
 
-  it("Generate rubric in general question and rubric request", async () => {
-    const rubricResult = await createRubric(sampleGeneralQuestion, true);
-    if (rubricResult.isErr()) {
-      throw rubricResult.error;
+  it("ask general question", async () => {
+    const chatResult = await generateChatResponse({
+      messages: [createMessage(sampleGeneralQuestion)],
+    });
+    if (chatResult.isErr()) {
+      throw chatResult.error;
     }
 
-    const { message, rubric } = rubricResult.value;
+    const chatResponse = chatResult.value;
+    if (chatResponse.stream) {
+      throw new Error("Expected a non-stream response for general question");
+    }
+
+    const { message, rubric } = chatResponse.result;
 
     expect(typeof message).toBe("string");
     expect(rubric).toBeNull();
-  });
-
-  it("generate rubric then grade it via broker", async () => {
-    const broker = createZodValidatedServiceBroker();
-    broker.createService(aiService);
-
-    await broker.start();
-
-    const rubricResult = await actionCaller<AIService>()(
-      broker,
-      "ai.createRubric",
-      {
-        prompt: sampleRubricPrompt,
-        scoreInRange: true,
-        rubric: sampleRubric
-      },
-    );
-    if (rubricResult.isErr()) {
-      throw rubricResult.error;
-    }
-
-    const rubric = rubricResult.value;
- 
-    const result = await actionCaller<AIService>()(
-      broker,
-      "ai.grade",
-      {
-        rubric: rubric.rubric ?? (() => { throw new Error("Rubric is null or undefined"); })(),
-        prompt: sampleCode,
-      },
-    );
-    if (result.isErr()) {
-      throw result.error;
-    }
-
-    await broker.stop();
   });
 });

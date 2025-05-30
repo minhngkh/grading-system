@@ -13,6 +13,12 @@ var postgres = builder.AddPostgres("postgres", username, password).WithDataVolum
 var rubricDb = postgres.AddDatabase("rubricdb");
 var assignmentFlowDb = postgres.AddDatabase("assignmentflowdb");
 
+var mongo = builder
+    .AddMongoDB("mongo", userName: username, password: password)
+    .WithDataVolume();
+
+var pluginDb = mongo.AddDatabase("plugindb");
+
 var dbgateContainer = builder.AddContainer("dbgate", "dbgate/dbgate", "alpine");
 var dbgate = dbgateContainer
     .WaitFor(postgres)
@@ -20,7 +26,7 @@ var dbgate = dbgateContainer
     .WithHttpEndpoint(targetPort: 3000, name: "dbgate-ui")
     .WithEnvironment(ctx =>
     {
-        ctx.EnvironmentVariables["CONNECTIONS"] = "con1";
+        ctx.EnvironmentVariables["CONNECTIONS"] = "con1,con2";
         ctx.EnvironmentVariables["LABEL_con1"] = "postgres";
         ctx.EnvironmentVariables["SERVER_con1"] = postgres.Resource.Name;
         ctx.EnvironmentVariables["PORT_con1"] =
@@ -32,6 +38,16 @@ var dbgate = dbgateContainer
             .PasswordParameter
             .Value;
         ctx.EnvironmentVariables["ENGINE_con1"] = "postgres@dbgate-plugin-postgres";
+
+        ctx.EnvironmentVariables["LABEL_con2"] = "mongo";
+        ctx.EnvironmentVariables["SERVER_con2"] = mongo.Resource.Name;
+        ctx.EnvironmentVariables["PORT_con2"] =
+            mongo.Resource.PrimaryEndpoint.TargetPort?.ToString() ?? "";
+        ctx.EnvironmentVariables["USER_con2"] =
+            mongo.Resource.UserNameParameter?.Value ?? "";
+        ctx.EnvironmentVariables["PASSWORD_con2"] =
+            mongo.Resource.PasswordParameter?.Value ?? "";
+        ctx.EnvironmentVariables["ENGINE_con2"] = "mongo@dbgate-plugin-mongo";
     });
 
 var rabbitmq = builder
@@ -81,6 +97,7 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
 }
 
 var nx = builder.AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm);
+
 // .WithPackageInstallation();
 
 IResourceBuilder<NxMonorepoProjectResource>? pluginService = null;
@@ -91,7 +108,9 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
             port: builder.Configuration.GetValue<int?>("PluginService:Port"),
             isProxied: toProxy,
             env: "PORT"
-        );
+        )
+        .WithReference(pluginDb)
+        .WaitFor(pluginDb);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
@@ -103,6 +122,7 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
+        // TODO: Back to using references instead of doing this manually
         .WithEnvironment(ctx =>
         {
             var pluginServiceEndpoint = pluginService?.GetEndpoint("http");

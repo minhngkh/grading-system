@@ -1,0 +1,21 @@
+{
+  "name": "@grading-system/utils",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts",
+      "default": "./src/*.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "nx": {
+    "name": "utils",
+    "projectType": "library"
+  },
+  "dependencies": {}
+}

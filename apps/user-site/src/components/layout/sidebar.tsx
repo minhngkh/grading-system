@@ -11,30 +11,14 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { Home, LifeBuoy, Package, Settings } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 
-const navigationItems: NavigationData[] = [
-  {
-    title: "Home",
-    icon: <Home className="size-4" />,
-    to: "/home",
-  },
-];
+type SidebarProps = {
+  navigationItems: NavigationData[];
+  settingsItems?: NavigationData[];
+};
 
-const settingsItems: NavigationData[] = [
-  {
-    title: "Settings",
-    icon: <Settings className="size-4" />,
-    to: "/",
-  },
-  {
-    title: "Help",
-    icon: <LifeBuoy className="size-4" />,
-    to: "/",
-  },
-];
-
-export function AppSidebar() {
+export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -43,7 +27,7 @@ export function AppSidebar() {
             <SidebarMenuButton size="lg" asChild>
               <Link to="/home">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Package className="size-4" />
+                  <GraduationCap className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">Assessly</span>
@@ -60,7 +44,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton tooltip={item.title} asChild>
                     <Link to={item.to} activeProps={{ className: "bg-secondary" }}>
                       {item.icon}
                       <span>{item.title}</span>
@@ -71,23 +55,25 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.to}>
-                      {item.icon}
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {settingsItems && (
+          <SidebarGroup>
+            <SidebarGroupLabel>System</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {settingsItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton tooltip={item.title} asChild>
+                      <Link to={item.to}>
+                        {item.icon}
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   );

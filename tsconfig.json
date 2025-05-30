@@ -1,6 +1,22 @@
 {
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
-  "references": [],
-  "files": []
+  "files": [],
+  "references": [
+    {
+      "path": "./examples/example-grading-service"
+    },
+    {
+      "path": "./examples/example-next-app"
+    },
+    {
+      "path": "./apps/plugin-service"
+    },
+    {
+      "path": "./libs/utils"
+    },
+    {
+      "path": "./libs/typed-moleculer"
+    }
+  ]
 }
