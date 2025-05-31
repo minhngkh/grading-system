@@ -24,25 +24,31 @@ const SummaryCardSkeleton = () => (
   </>
 );
 
-type SummarySectionProps = {
+interface SummarySectionProps {
   isLoading: boolean;
   assessments: Assessment[];
-};
+  scaleFactor: number;
+}
 
-export default function SummarySection({ isLoading, assessments }: SummarySectionProps) {
-  const totalScore = assessments.length ? assessments[0].scaleFactor : 1;
-
-  const averageScore = assessments.length
-    ? assessments.reduce((sum, item) => sum + item.rawScore * item.scaleFactor, 0) /
+export default function SummarySection({
+  isLoading,
+  assessments,
+  scaleFactor,
+}: SummarySectionProps) {
+  const averageScore =
+    assessments.length ?
+      assessments.reduce((sum, item) => sum + (item.rawScore * scaleFactor) / 100, 0) /
       assessments.length
     : 0;
 
-  const highestScore = assessments.length
-    ? Math.max(...assessments.map((item) => item.rawScore * item.scaleFactor))
+  const highestScore =
+    assessments.length ?
+      Math.max(...assessments.map((item) => (item.rawScore * scaleFactor) / 100))
     : 0;
 
-  const lowestScore = assessments.length
-    ? Math.min(...assessments.map((item) => item.rawScore * item.scaleFactor))
+  const lowestScore =
+    assessments.length ?
+      Math.min(...assessments.map((item) => (item.rawScore * scaleFactor) / 100))
     : 0;
 
   return (
@@ -55,10 +61,9 @@ export default function SummarySection({ isLoading, assessments }: SummarySectio
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoading ?
             <SummaryCardSkeleton />
-          ) : (
-            <>
+          : <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex flex-col items-center p-4 bg-muted rounded-lg">
                   <span className="text-sm font-medium text-blue-600">Average Score</span>
@@ -67,7 +72,7 @@ export default function SummarySection({ isLoading, assessments }: SummarySectio
                     <div
                       className="bg-blue-600 h-2.5 rounded-full"
                       style={{
-                        width: `${Math.round((averageScore * 100) / totalScore)}%`,
+                        width: `${Math.round((averageScore * 100) / scaleFactor)}%`,
                       }}
                     />
                   </div>
@@ -83,7 +88,7 @@ export default function SummarySection({ isLoading, assessments }: SummarySectio
                     <div
                       className="bg-green-600 h-2.5 rounded-full"
                       style={{
-                        width: `${Math.round((highestScore * 100) / totalScore)}%`,
+                        width: `${Math.round((highestScore * 100) / scaleFactor)}%`,
                       }}
                     />
                   </div>
@@ -95,7 +100,7 @@ export default function SummarySection({ isLoading, assessments }: SummarySectio
                     <div
                       className="bg-red-600 h-2.5 rounded-full"
                       style={{
-                        width: `${Math.round((lowestScore * 100) / totalScore)}%`,
+                        width: `${Math.round((lowestScore * 100) / scaleFactor)}%`,
                       }}
                     />
                   </div>
@@ -113,7 +118,7 @@ export default function SummarySection({ isLoading, assessments }: SummarySectio
                 </p>
               </div>
             </>
-          )}
+          }
         </CardContent>
       </Card>
     </section>

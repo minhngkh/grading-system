@@ -30,9 +30,9 @@ const exportTypes = [
   },
 ];
 
-type ExportDialogProps = {
+interface ExportDialogProps {
   rubricData: Rubric;
-};
+}
 
 export default function ExportDialog({ rubricData }: ExportDialogProps) {
   const [open, setOpen] = useState(false);
@@ -124,22 +124,21 @@ export default function ExportDialog({ rubricData }: ExportDialogProps) {
             Cancel
           </Button>
           <Button onClick={handleExport} disabled={loading || success} className="gap-2">
-            {loading ? (
+            {loading ?
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Exporting...
               </>
-            ) : success ? (
+            : success ?
               <>
                 <CheckCircle className="h-4 w-4" />
                 Success!
               </>
-            ) : (
-              <>
+            : <>
                 <Download className="h-4 w-4" />
                 Export
               </>
-            )}
+            }
           </Button>
         </DialogFooter>
       </DialogContent>

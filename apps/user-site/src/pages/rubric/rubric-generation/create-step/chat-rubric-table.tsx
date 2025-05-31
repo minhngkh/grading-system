@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import EditRubric from "../../../../components/app/edit-rubric";
+import EditRubric from "@/components/app/edit-rubric";
 import Spinner from "@/components/app/spinner";
 
 interface RubricTableProps {
@@ -39,18 +39,17 @@ export default function ChatRubricTable({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
-        {isApplyingEdit ? (
+        {isApplyingEdit ?
           <div className="flex flex-col items-center justify-center h-full">
             <Spinner />
             <p>Agent is modifying the rubric. Please wait...</p>
           </div>
-        ) : (
-          <div className="h-full overflow-y-auto relative">
+        : <div className="h-full overflow-y-auto relative">
             <div className="h-full absolute top-0 left-0 right-0">
               <RubricView rubricData={rubricData} />
             </div>
           </div>
-        )}
+        }
       </CardContent>
     </Card>
   );

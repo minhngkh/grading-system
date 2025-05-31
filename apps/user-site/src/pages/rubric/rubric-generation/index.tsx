@@ -67,7 +67,7 @@ export default function RubricGenerationPage({
     if (stepper.isLast) {
       try {
         await RubricService.updateRubric(initialRubric?.id!, form.getValues());
-        navigate({ to: "/manage-rubrics" });
+        navigate({ to: "/rubrics" });
       } catch (err) {
         toast.error("Failed to update rubric");
         console.error(err);

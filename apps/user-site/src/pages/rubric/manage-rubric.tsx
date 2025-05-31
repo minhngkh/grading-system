@@ -50,11 +50,11 @@ type SortConfig = {
   direction: "asc" | "desc";
 };
 
-type ManageRubricsPageProps = {
+interface ManageRubricsPageProps {
   searchParams: SearchParams;
   results: GetRubricsResult;
   setSearchParam: (partial: Partial<SearchParams>) => void;
-};
+}
 
 export default function ManageRubricsPage({
   searchParams,

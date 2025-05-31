@@ -30,7 +30,7 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
                   <GraduationCap className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">Assessly</span>
+                  <span className="font-semibold">IntelliGrade</span>
                 </div>
               </Link>
             </SidebarMenuButton>

@@ -4,6 +4,7 @@ import { RefreshCw, FileSearch } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Assessment } from "@/types/assessment";
 import { createCriteriaColorMap, getCriteriaColorStyle } from "./colors";
+import { Link } from "@tanstack/react-router";
 
 const ResultCardSkeleton = () => (
   <Card className="overflow-hidden py-0">
@@ -33,12 +34,17 @@ const ResultCardSkeleton = () => (
   </Card>
 );
 
-type ReviewResultsProps = {
+interface ReviewResultsProps {
   isLoading: boolean;
   assessments: Assessment[];
-};
+  scaleFactor: number;
+}
 
-export default function ReviewResults({ isLoading, assessments }: ReviewResultsProps) {
+export default function ReviewResults({
+  isLoading,
+  assessments,
+  scaleFactor,
+}: ReviewResultsProps) {
   // Create color map from all unique criteria names
   const allCriteriaNames =
     assessments[0]?.scoreBreakdowns.map((breakdown) => breakdown.criterionName) || [];
@@ -46,21 +52,24 @@ export default function ReviewResults({ isLoading, assessments }: ReviewResultsP
 
   return (
     <section>
-      <h2 className="text-2xl font-bold">Grading Results</h2>
-      {isLoading ? (
+      <h2 className="text-2xl font-bold mb-4">Grading Results</h2>
+      {isLoading ?
         <ResultCardSkeleton />
-      ) : (
-        <div className="space-y-4">
+      : <div className="space-y-4">
           {assessments.map((item) => (
             <Card key={item.id} className="overflow-hidden py-0">
               <div className="flex flex-col md:flex-row">
-                <div className="flex-1 p-6">
+                <Link
+                  to="/assessments/$id"
+                  params={{ id: item.id }}
+                  className="flex-1 p-6"
+                >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                       {item.submissionReference}
                     </h3>
                     <span className="text-2xl font-bold">
-                      {item.rawScore * item.scaleFactor} ({item.rawScore}%)
+                      {(item.rawScore * scaleFactor) / 100} ({item.rawScore}%)
                     </span>
                   </div>
 
@@ -71,32 +80,29 @@ export default function ReviewResults({ isLoading, assessments }: ReviewResultsP
                         criteriaColorMap,
                       );
 
-                      const percentage = Math.round(score.rawScore * 100);
-                      const finalScore = (
-                        score.rawScore *
-                        item.rawScore *
-                        item.scaleFactor
-                      ).toFixed(2);
+                      const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(
+                        2,
+                      );
 
                       return (
                         <div key={index} className="space-y-1">
                           <div className="flex justify-between text-sm">
                             <span className={colorStyle.text}>{score.criterionName}</span>
                             <span className={colorStyle.text}>
-                              {finalScore} ({percentage}%)
+                              {finalScore} ({score.rawScore}%)
                             </span>
                           </div>
                           <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                             <div
                               className={`h-full ${colorStyle.bg}`}
-                              style={{ width: `${percentage}%` }}
+                              style={{ width: `${score.rawScore}%` }}
                             ></div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
+                </Link>
 
                 <div className="flex md:flex-col justify-end p-4 bg-muted">
                   <Button
@@ -115,7 +121,7 @@ export default function ReviewResults({ isLoading, assessments }: ReviewResultsP
             </Card>
           ))}
         </div>
-      )}
+      }
     </section>
   );
 }

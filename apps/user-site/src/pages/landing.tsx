@@ -7,15 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Check,
-  ChevronRight,
-  Clock,
-  Code,
-  Layers,
-  LayoutGrid,
-  MessageSquare,
-} from "lucide-react";
+import { Check, ChevronRight, Layers, LayoutGrid, Cpu, Edit3 } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -28,19 +20,19 @@ export default function LandingPage() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Streamline your workflow, amplify your productivity
+                    Revolutionize Your Grading with AI Precision
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    The all-in-one platform that helps teams manage projects, automate
-                    workflows, and collaborate seamlessly.
+                    IntelliGrade is an AI-powered platform that helps educators streamline
+                    grading, provide insightful feedback, and enhance learning outcomes.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button size="lg" className="gap-1">
-                    Start for free <ChevronRight className="h-4 w-4" />
+                    Request a Demo <ChevronRight className="h-4 w-4" />
                   </Button>
                   <Button size="lg" variant="outline">
-                    Book a demo
+                    Learn More
                   </Button>
                 </div>
               </div>
@@ -48,7 +40,7 @@ export default function LandingPage() {
                 src="https://placehold.co/550/orange/white"
                 width={550}
                 height={550}
-                alt="Dashboard Preview"
+                alt="AI Grading Dashboard Preview"
                 className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
               />
             </div>
@@ -64,48 +56,52 @@ export default function LandingPage() {
                   Features
                 </div>
                 <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-                  Everything you need to succeed
+                  Unlock the Power of AI in Education
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl">
-                  Our platform provides all the tools you need to manage your projects
-                  efficiently and collaborate with your team.
+                  Discover the comprehensive features designed to support educators and
+                  improve the grading process.
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mx-auto grid max-w-5xl items-start gap-6 py-12 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader>
                   <LayoutGrid className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Project Management</CardTitle>
+                  <CardTitle>Dynamic Rubric Generation</CardTitle>
                   <CardDescription>
-                    Organize tasks, set deadlines, and track progress all in one place.
+                    Effortlessly create, customize, and manage grading rubrics with AI
+                    suggestions or from scratch.
                   </CardDescription>
                 </CardHeader>
               </Card>
               <Card>
                 <CardHeader>
-                  <MessageSquare className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Team Collaboration</CardTitle>
+                  <Cpu className="h-10 w-10 text-primary mb-2" />
+                  <CardTitle>AI-Powered Grading</CardTitle>
                   <CardDescription>
-                    Communicate effectively with integrated chat and file sharing.
+                    Leverage Large Language Models for fast, consistent, and insightful
+                    grading across various assignment types.
                   </CardDescription>
                 </CardHeader>
               </Card>
               <Card>
                 <CardHeader>
-                  <Clock className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Time Tracking</CardTitle>
+                  <Edit3 className="h-10 w-10 text-primary mb-2" />
+                  <CardTitle>Educator-in-the-Loop</CardTitle>
                   <CardDescription>
-                    Monitor time spent on tasks and generate detailed reports.
+                    Review AI-generated scores, provide nuanced feedback, and maintain
+                    full control over final evaluations.
                   </CardDescription>
                 </CardHeader>
               </Card>
               <Card>
                 <CardHeader>
-                  <Code className="h-10 w-10 text-primary mb-2" />
-                  <CardTitle>Automation</CardTitle>
+                  <Layers className="h-10 w-10 text-primary mb-2" />
+                  <CardTitle>Modular Plugin Architecture</CardTitle>
                   <CardDescription>
-                    Automate repetitive tasks and workflows to save time.
+                    Extend capabilities with specialized plugins for code analysis,
+                    plagiarism detection, and more.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -122,11 +118,11 @@ export default function LandingPage() {
                   Testimonials
                 </div>
                 <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-                  Trusted by teams worldwide
+                  Trusted by Educators
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl">
-                  See what our customers have to say about how StreamLine has transformed
-                  their workflow.
+                  See how IntelliGrade is transforming educational workflows and enhancing
+                  the grading experience.
                 </p>
               </div>
             </div>
@@ -142,16 +138,16 @@ export default function LandingPage() {
                       className="rounded-full"
                     />
                     <div>
-                      <CardTitle className="text-base">Sarah Johnson</CardTitle>
-                      <CardDescription>Product Manager at TechCorp</CardDescription>
+                      <CardTitle className="text-base">Dr. Eleanor Vance</CardTitle>
+                      <CardDescription>Professor of Computer Science</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    "StreamLine has completely transformed how our team manages projects.
-                    The intuitive interface and powerful features have boosted our
-                    productivity by 30%."
+                    "IntelliGrade has significantly reduced my grading time for
+                    programming assignments, allowing me to focus more on curriculum
+                    development and student interaction."
                   </p>
                 </CardContent>
               </Card>
@@ -166,15 +162,18 @@ export default function LandingPage() {
                       className="rounded-full"
                     />
                     <div>
-                      <CardTitle className="text-base">Michael Chen</CardTitle>
-                      <CardDescription>CTO at StartupX</CardDescription>
+                      <CardTitle className="text-base">Samuel Green</CardTitle>
+                      <CardDescription>
+                        Teaching Assistant, Literature Dept.
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    "The automation features in StreamLine have saved us countless hours
-                    of manual work. Our team can now focus on what really matters."
+                    "The AI's ability to provide initial feedback on essays is incredible.
+                    IntelliGrade helps students identify areas for improvement early on,
+                    making my final review much more efficient."
                   </p>
                 </CardContent>
               </Card>
@@ -189,16 +188,16 @@ export default function LandingPage() {
                       className="rounded-full"
                     />
                     <div>
-                      <CardTitle className="text-base">Emily Rodriguez</CardTitle>
-                      <CardDescription>Team Lead at DesignHub</CardDescription>
+                      <CardTitle className="text-base">Maria Rodriguez</CardTitle>
+                      <CardDescription>Head of Academic Technology</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    "As a design team, we needed a tool that was both powerful and
-                    visually appealing. StreamLine delivers on both fronts and has become
-                    essential to our workflow."
+                    "Implementing IntelliGrade has standardized our grading process across
+                    departments, ensuring fairness and consistency while providing
+                    valuable data insights."
                   </p>
                 </CardContent>
               </Card>
@@ -215,40 +214,41 @@ export default function LandingPage() {
                   Pricing
                 </div>
                 <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-                  Simple, transparent pricing
+                  Flexible Plans for Every Need
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl">
-                  Choose the plan that's right for you and your team.
+                  Choose the plan that's right for you, your department, or your
+                  institution.
                 </p>
               </div>
             </div>
             <div className="mx-auto grid max-w-5xl gap-6 py-12 md:grid-cols-3">
               <Card>
                 <CardHeader>
-                  <CardTitle>Starter</CardTitle>
+                  <CardTitle>Individual</CardTitle>
                   <div className="text-4xl font-bold">
-                    $9
+                    Free
                     <span className="text-sm font-normal text-muted-foreground">
-                      /month
+                      /pilot
                     </span>
                   </div>
                   <CardDescription>
-                    Perfect for individuals and small projects.
+                    Perfect for individual educators exploring AI grading.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Up to 5 projects</span>
+                      <span>AI-Assisted Rubric Creation</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Basic task management</span>
+                      <span>Basic AI Grading (Text-based)</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>1GB storage</span>
+                      <span>Manual Review & Override</span>
                     </li>
                   </ul>
                 </CardContent>
@@ -261,79 +261,69 @@ export default function LandingPage() {
                   <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground mb-2">
                     Popular
                   </div>
-                  <CardTitle>Professional</CardTitle>
-                  <div className="text-4xl font-bold">
-                    $29
-                    <span className="text-sm font-normal text-muted-foreground">
-                      /month
-                    </span>
-                  </div>
+                  <CardTitle>Department</CardTitle>
+                  <div className="text-4xl font-bold">Contact Us</div>
                   <CardDescription>
-                    Ideal for growing teams and businesses.
+                    Ideal for academic departments and larger teams.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Unlimited projects</span>
+                      <span>Everything in Individual</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Advanced task management</span>
+                      <span>Advanced AI Grading (Code, PDF)</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>10GB storage</span>
+                      <span>Basic Plugin Integrations</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Team collaboration tools</span>
+                      <span>Team Collaboration Tools</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Basic automation</span>
+                      <span>Basic Reporting</span>
                     </li>
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full">Get Started</Button>
+                  <Button className="w-full">Contact Sales</Button>
                 </CardFooter>
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle>Enterprise</CardTitle>
-                  <div className="text-4xl font-bold">
-                    $99
-                    <span className="text-sm font-normal text-muted-foreground">
-                      /month
-                    </span>
-                  </div>
+                  <CardTitle>Institution</CardTitle>
+                  <div className="text-4xl font-bold">Custom</div>
                   <CardDescription>
-                    For large organizations with complex needs.
+                    Comprehensive solution for universities and organizations.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Everything in Professional</span>
+                      <span>Everything in Department</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Unlimited storage</span>
+                      <span>Full Plugin Access & Customization</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Advanced automation</span>
+                      <span>Advanced Analytics & Reporting</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Dedicated support</span>
+                      <span>Dedicated Support & Training</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-primary" />
-                      <span>Custom integrations</span>
+                      <span>LMS Integration Options</span>
                     </li>
                   </ul>
                 </CardContent>
@@ -351,19 +341,19 @@ export default function LandingPage() {
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-                  Ready to streamline your workflow?
+                  Ready to Enhance Your Grading Process?
                 </h2>
                 <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                  Join thousands of teams that use StreamLine to boost productivity and
-                  collaboration.
+                  Join educators who are leveraging IntelliGrade to save time, improve
+                  feedback, and foster student success.
                 </p>
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
                 <Button size="lg" className="gap-1">
-                  Get started for free <ChevronRight className="h-4 w-4" />
+                  Request a Demo <ChevronRight className="h-4 w-4" />
                 </Button>
                 <Button size="lg" variant="outline">
-                  Schedule a demo
+                  Explore Features
                 </Button>
               </div>
             </div>
@@ -375,11 +365,12 @@ export default function LandingPage() {
       <footer className="w-full border-t py-6 md:py-0 px-4 md:px-6 mb-0">
         <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
           <div className="flex items-center gap-2">
-            <Layers className="h-6 w-6 text-primary" />
-            <span className="text-lg font-bold">StreamLine</span>
+            <Cpu className="h-6 w-6 text-primary" /> {/* Changed Icon */}
+            <span className="text-lg font-bold">IntelliGrade</span> {/* Changed Name */}
           </div>
           <p className="text-center text-sm text-muted-foreground md:text-left">
-            &copy; {new Date().getFullYear()} StreamLine. All rights reserved.
+            &copy; {new Date().getFullYear()} IntelliGrade. All rights reserved.{" "}
+            {/* Changed Name */}
           </p>
         </div>
       </footer>
