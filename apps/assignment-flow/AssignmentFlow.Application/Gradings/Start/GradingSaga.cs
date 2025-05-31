@@ -42,7 +42,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         });
 
         //We first create empty assessment for each submission
-        logger.LogTrace("Creating assessments for grading {GradingId}", gradingSummary.Id);
+        logger.LogInformation("Creating assessments for grading {GradingId}", gradingSummary.Id);
         foreach (var submission in gradingSummary.Submissions)
         {
             var assessmentId = Assessments.AssessmentId.NewComb();

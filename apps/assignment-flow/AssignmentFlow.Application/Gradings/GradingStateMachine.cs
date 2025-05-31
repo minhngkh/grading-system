@@ -21,10 +21,11 @@ public sealed class GradingStateMachine : StateMachine<GradingState, GradingTrig
             .Permit(GradingTrigger.Start, GradingState.Started);
         
         Configure(GradingState.Started)
+            .PermitReentry(GradingTrigger.Start) // Allow restart
             .Permit(GradingTrigger.FinishGrading, GradingState.Graded);
 
         Configure(GradingState.Graded)
-            .Permit(GradingTrigger.Start, GradingState.Created)
+            .Permit(GradingTrigger.Start, GradingState.Started)
             .Permit(GradingTrigger.Complete, GradingState.Completed);
     }
 }
