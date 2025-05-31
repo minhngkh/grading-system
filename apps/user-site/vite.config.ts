@@ -27,5 +27,12 @@ export default defineConfig({
           strictPort: true,
         }
       : {}),
+    proxy: {
+      "/azure": {
+        target: "http://127.0.0.1:61899/devstoreaccount1/submissions-store",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/azure/, ""),
+      },
+    },
   },
 });

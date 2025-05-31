@@ -7,20 +7,18 @@ import { Check } from "lucide-react";
 import AssignmentViewer from "./assignment-viewer";
 import { Rubric } from "@/types/rubric";
 // import { updateGradingResult, updateSubmission } from "@/services/submissionService";
-import { LoadingScreen } from "@/components/loading-screen";
+import { LoadingScreen } from "@/components/app/loading-screen";
+import { Assessment } from "@/types/assessment";
 interface ManualAdjustScorePageProps {
-  initSubmission: Submission;
-  initGradingResult: GradingResult;
+  initAssessment: Assessment;
   initRubric: Rubric;
 }
 
 export default function ManualAdjustScorePage({
-  initSubmission,
-  initGradingResult,
+  initAssessment,
   initRubric,
 }: ManualAdjustScorePageProps) {
-  const [submission, setSubmission] = useState(initSubmission);
-  const [gradingResult, setGradingResult] = useState(initGradingResult || {});
+  const [assessment, setAssessment] = useState(initAssessment || {});
   const [criteria, setCriteria] = useState(initRubric.criteria || []);
   const [activeScoreTab, setActiveScoreTab] = useState(criteria[0]?.id || "");
   const [isLoading, setIsLoading] = useState(false);
@@ -28,28 +26,38 @@ export default function ManualAdjustScorePage({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!initSubmission || !initGradingResult || !initRubric) {
+    if (!initAssessment || !initRubric) {
       setError("Missing required data");
       return;
     }
     setError(null);
-  }, [initSubmission, initGradingResult, initRubric]);
+  }, [initAssessment, initRubric]);
 
-  const currentScore = gradingResult.criterionResults.reduce(
-    (total, criterionResult) => total + criterionResult.score,
-    0,
-  );
-  const maxScore =
-    criteria.reduce((total, criteria) => total + 10 * (criteria.weight ?? 0), 0) || 0;
+  const currentScore = assessment.rawScore || 0;
+  const maxScore = criteria.reduce((total, c) => total + (c.weight ?? 0), 0) || 0;
 
-  const handleUpdateFeedback = (criterionId: string, feedbacks: Feedback[]) => {
-    setGradingResult((prev) => ({
+  const handleUpdateFeedback = (
+    criterionName: string,
+    feedbacks: Assessment["feedbacks"],
+  ) => {
+    setAssessment((prev) => ({
       ...prev,
-      criterionResults: prev.criterionResults.map((criterionResult) =>
-        criterionResult.criterionId === criterionId
-          ? { ...criterionResult, feedback: feedbacks }
-          : criterionResult,
+      feedbacks: [
+        ...prev.feedbacks.filter((fb) => fb.criterion !== criterionName),
+        ...feedbacks,
+      ],
+    }));
+  };
+
+  const handleScoreChange = (criterionName: string, newScore: number) => {
+    setAssessment((prev) => ({
+      ...prev,
+      scoreBreakdowns: prev.scoreBreakdowns.map((b) =>
+        b.criterionName === criterionName ? { ...b, rawScore: newScore } : b,
       ),
+      rawScore: prev.scoreBreakdowns
+        .map((b) => (b.criterionName === criterionName ? newScore : b.rawScore))
+        .reduce((sum, s) => sum + s, 0),
     }));
   };
 
@@ -58,20 +66,20 @@ export default function ManualAdjustScorePage({
     setError(null);
 
     try {
-      if (!gradingResult.criterionResults.every((cr) => cr.score >= 0)) {
+      if (!assessment.scoreBreakdowns.every((b) => b.rawScore >= 0)) {
         throw new Error("Invalid scores detected");
       }
-
-      console.log("Submission and GradingResult updated successfully.");
+      // Submit logic here (call API or update backend)
+      console.log("Assessment updated successfully.", assessment);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit grading");
-      console.error("Failed to update Submission and GradingResult:", err);
+      setError(err instanceof Error ? err.message : "Failed to submit assessment");
+      console.error("Failed to update Assessment:", err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading || !submission || !gradingResult || !initRubric) {
+  if (isLoading || !initAssessment || !initRubric) {
     return <LoadingScreen />;
   }
 
@@ -83,52 +91,36 @@ export default function ManualAdjustScorePage({
     <div className="w-full flex flex-col px-4">
       <div className="relative w-3/4 mx-auto mb-2 flex">
         <Badge className="w-full text-sm" variant="outline">
-          {submission.id}
+          {assessment.id}
         </Badge>
       </div>
 
       <div className="w-full">
         <AssignmentViewer
-          breakdowns={submission?.breakdowns || []}
-          gradingResult={gradingResult}
-          setGradingResult={setGradingResult}
-          testCases={[]}
-          updateFeedback={(criterionId, breakdownId, comment) => {
-            const criterionResult = gradingResult.criterionResults.find(
-              (result) => result.criterionId === criterionId,
-            );
-
-            if (!criterionResult) return;
-
-            const updatedFeedbacks = criterionResult.feedback.map((fb) =>
-              fb.id === breakdownId ? { ...fb, comment } : fb,
-            );
-
-            handleUpdateFeedback(criterionId, updatedFeedbacks);
-          }}
+          assessment={assessment}
+          setAssessment={setAssessment}
+          rubric={initRubric}
         />
 
         <div className="flex flex-col">
           <Tabs value={activeScoreTab} onValueChange={setActiveScoreTab} className="mt-2">
             <TabsList className="flex border-b w-full dark:border-gray-700">
-              {gradingResult.criterionResults.map((criteriaResult) => {
-                const maxPoints =
-                  criteria.find((c) => c.id === criteriaResult.criterionId)?.weight || 0;
-
+              {assessment.scoreBreakdowns.map((breakdown) => {
+                const criterion = criteria.find(
+                  (c) => c.name === breakdown.criterionName,
+                );
+                const maxPoints = criterion?.weight ?? 0;
                 return (
                   <TabsTrigger
-                    key={criteriaResult.criterionId}
-                    value={criteriaResult.criterionId}
+                    key={breakdown.criterionName}
+                    value={breakdown.criterionName}
                     className="flex-1 flex justify-between pl-4 pr-7 cursor-pointer"
                   >
-                    <div className="font-bold">
-                      {criteria.find((c) => c.id === criteriaResult.criterionId)?.name ||
-                        "Unknown"}
-                    </div>
+                    <div className="font-bold">{breakdown.criterionName}</div>
                     <div className="text-sm flex items-center gap-2">
                       <input
                         type="number"
-                        value={criteriaResult.score}
+                        value={breakdown.rawScore}
                         min={0}
                         max={maxPoints}
                         step={0.5}
@@ -136,14 +128,7 @@ export default function ManualAdjustScorePage({
                           let newScore = parseFloat(e.target.value) || 0;
                           if (newScore < 0) newScore = 0;
                           if (newScore > maxPoints) newScore = maxPoints;
-                          setGradingResult((prev) => ({
-                            ...prev,
-                            criterionResults: prev.criterionResults.map((cr) =>
-                              cr.criterionId === criteriaResult.criterionId
-                                ? { ...cr, score: newScore }
-                                : cr,
-                            ),
-                          }));
+                          handleScoreChange(breakdown.criterionName, newScore);
                         }}
                         className="w-12 text-center border rounded px-1 dark:bg-gray-800 dark:text-gray-300"
                       />
@@ -154,14 +139,14 @@ export default function ManualAdjustScorePage({
               })}
             </TabsList>
 
-            {gradingResult.criterionResults.map((criteriaResult) => {
-              const criterion = criteria.find((c) => c.id === criteriaResult.criterionId);
+            {assessment.scoreBreakdowns.map((breakdown) => {
+              const criterion = criteria.find((c) => c.name === breakdown.criterionName);
               if (!criterion) return null;
 
               return (
                 <TabsContent
-                  key={criteriaResult.criterionId}
-                  value={criteriaResult.criterionId}
+                  key={breakdown.criterionName}
+                  value={breakdown.criterionName}
                 >
                   <div
                     className="grid gap-4"
@@ -173,18 +158,11 @@ export default function ManualAdjustScorePage({
                       <Button
                         key={level.weight}
                         onClick={() =>
-                          setGradingResult((prev) => ({
-                            ...prev,
-                            criterionResults: prev.criterionResults.map((cr) =>
-                              cr.criterionId === criteriaResult.criterionId
-                                ? { ...cr, score: level.weight }
-                                : cr,
-                            ),
-                          }))
+                          handleScoreChange(breakdown.criterionName, level.weight)
                         }
                         variant="outline"
                         className={`p-5 flex flex-col items-start rounded-md text-left w-full h-[70px] cursor-pointer transition-colors relative ${
-                          criteriaResult.score === level.weight
+                          breakdown.rawScore === level.weight
                             ? "bg-[#D4E3FC] hover:bg-[#D4E3FC] dark:bg-[#2D3748] dark:hover:bg-[#2D3748]"
                             : "bg-[#EAF1F6] hover:bg-[#D4E3FC] dark:bg-[#1A202C] dark:hover:bg-[#2D3748]"
                         }`}
@@ -194,7 +172,7 @@ export default function ManualAdjustScorePage({
                             {level.weight} - {level.tag}
                           </span>
                           <span className="w-6 h-6 flex-shrink-0">
-                            {criteriaResult.score === level.weight && (
+                            {breakdown.rawScore === level.weight && (
                               <Check className="text-blue-500 dark:text-blue-300" />
                             )}
                           </span>

@@ -1,12 +1,14 @@
 import { z } from "zod";
 
 export const ScoreBreakdownSchema = z.object({
+  id: z.string().optional(),
   criterionName: z.string(),
   tag: z.string(),
   rawScore: z.number(),
 });
 
 export const FeedbackItemSchema = z.object({
+  id: z.string().optional(),
   criterion: z.string(),
   fileRef: z.string(),
   fromLine: z.number(),

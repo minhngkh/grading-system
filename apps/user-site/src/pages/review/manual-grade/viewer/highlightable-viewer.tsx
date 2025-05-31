@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ShikiHighlighter from "react-shiki";
-import { Feedback } from "@/types/submission";
+import { FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
 import { Button } from "@/components/ui/button";
 import "./viewer.css";
@@ -8,8 +8,8 @@ import "./viewer.css";
 interface HighlightableViewerProps {
   type: "code" | "essay";
   content: string;
-  feedbacks: Feedback[];
-  updateFeedback: (newFeedbacks: Feedback[]) => void;
+  feedbacks: FeedbackItem[];
+  updateFeedback: (newFeedbacks: FeedbackItem[]) => void;
   isHighlightMode: boolean;
   onHighlightComplete: () => void;
   activeFeedbackId?: string | null;
@@ -146,17 +146,16 @@ export default function HighlightableViewer({
   const addFeedback = () => {
     if (!selectionRange || !newComment.trim()) return;
     const { from, to } = selectionRange;
-    const newFeedback = {
-      id: `${Date.now()}`,
+    const newFeedback: FeedbackItem = {
+      criterion: "", // Nếu cần, truyền criterion qua prop hoặc context
+      fileRef: "", // Nếu cần, truyền fileRef qua prop hoặc context
+      fromLine: from.line,
+      toLine: to.line,
+      fromCol: from.col,
+      toCol: to.col,
       comment: newComment.trim(),
       tag: newFeedbackTag,
-      DocumentLocation: {
-        id: `${Date.now()}`,
-        fromLine: from.line,
-        toLine: to.line,
-        fromCol: from.col,
-        toCol: to.col,
-      },
+      id: `${Date.now()}`,
     };
     updateFeedback([newFeedback]);
     setNewComment("");
@@ -168,10 +167,9 @@ export default function HighlightableViewer({
 
   // --- Render content ---
   const renderContent = () => {
-    // Nếu có activeFeedbackId và không ở highlight mode, chỉ render feedback đó
     const visibleFeedbacks =
       activeFeedbackId && !isHighlightMode
-        ? feedbacks.filter((fb) => fb.id === activeFeedbackId)
+        ? feedbacks.filter((fb) => (fb.id || fb.comment) === activeFeedbackId)
         : feedbacks;
 
     if (type === "code") {
@@ -179,7 +177,6 @@ export default function HighlightableViewer({
       return (
         <ShikiHighlighter
           language="ts"
-          // theme={getShikiTheme()}
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
@@ -189,20 +186,20 @@ export default function HighlightableViewer({
               preprocess(code, options) {
                 options.decorations = visibleFeedbacks.map((fb) => ({
                   start: {
-                    line: fb.DocumentLocation.fromLine,
-                    character: fb.DocumentLocation.fromCol,
+                    line: fb.fromLine,
+                    character: fb.fromCol,
                   },
                   end: {
-                    line: fb.DocumentLocation.toLine,
-                    character: fb.DocumentLocation.toCol,
+                    line: fb.toLine,
+                    character: fb.toCol,
                   },
                   properties: {
                     class:
                       "annotation-span" +
-                      (activeFeedbackId && fb.id === activeFeedbackId
+                      (activeFeedbackId && (fb.id || fb.comment) === activeFeedbackId
                         ? " annotation-span-focused"
                         : ""),
-                    "data-id": fb.id,
+                    "data-id": fb.id || fb.comment,
                     "data-comment": fb.comment,
                     "data-tag": fb.tag,
                   },
@@ -227,13 +224,10 @@ export default function HighlightableViewer({
       );
     }
     // Essay
-    // Overlapping highlights: mỗi đoạn có thể có nhiều feedback, mỗi feedback là 1 span lồng nhau, mỗi span có class riêng
     function getFeedbackGroupsForLine(lineIdx: number, lineLength: number) {
-      // Build all feedback boundaries (start/end) for this line
-      const boundaries: { pos: number; type: "start" | "end"; fb: Feedback }[] = [];
-      // Sử dụng visibleFeedbacks thay vì feedbacks
+      const boundaries: { pos: number; type: "start" | "end"; fb: FeedbackItem }[] = [];
       visibleFeedbacks.forEach((fb) => {
-        const { fromLine, toLine, fromCol, toCol } = fb.DocumentLocation;
+        const { fromLine, toLine, fromCol, toCol } = fb;
         if (lineIdx < fromLine || lineIdx > toLine) return;
         const start = lineIdx === fromLine ? fromCol : 0;
         const end = lineIdx === toLine ? toCol : lineLength;
@@ -243,8 +237,8 @@ export default function HighlightableViewer({
         }
       });
       boundaries.sort((a, b) => a.pos - b.pos || (a.type === "end" ? -1 : 1));
-      const segments: { start: number; end: number; feedbacks: Feedback[] }[] = [];
-      let active: Feedback[] = [];
+      const segments: { start: number; end: number; feedbacks: FeedbackItem[] }[] = [];
+      let active: FeedbackItem[] = [];
       let lastPos = 0;
       for (const b of boundaries) {
         if (b.pos > lastPos) {
@@ -268,14 +262,13 @@ export default function HighlightableViewer({
             <div key={i} data-line={i}>
               {segments.map((seg, idx) => {
                 let inner: React.ReactNode = line.slice(seg.start, seg.end);
-                // Lồng từng feedback một, mỗi feedback một class riêng biệt
                 seg.feedbacks.forEach((fb, fbIdx) => {
                   inner = (
                     <span
-                      key={fb.id + "-" + idx + "-" + fbIdx}
+                      key={(fb.id || fb.comment) + "-" + idx + "-" + fbIdx}
                       className={
                         "annotation-span" +
-                        (activeFeedbackId && fb.id === activeFeedbackId
+                        (activeFeedbackId && (fb.id || fb.comment) === activeFeedbackId
                           ? " annotation-span-focused"
                           : "") +
                         " " +
@@ -283,7 +276,7 @@ export default function HighlightableViewer({
                           ? "highlight-top"
                           : "highlight-under")
                       }
-                      data-id={fb.id}
+                      data-id={fb.id || fb.comment}
                       data-comment={fb.comment}
                       data-tag={fb.tag}
                     >

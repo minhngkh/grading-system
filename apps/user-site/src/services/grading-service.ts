@@ -31,6 +31,11 @@ export async function getGradingAssessments(id: string): Promise<Assessment[]> {
   return gradingDeserializer.deserialize(response.data);
 }
 
+export async function getGradingAssessment(id: string): Promise<Assessment[]> {
+  const response = await axios.get(`${ASSESSMENT_API_URL}/${id}`, configHeaders);
+  return gradingDeserializer.deserialize(response.data);
+}
+
 export async function createGradingAttempt(): Promise<string> {
   const response = await axios.post(GRADING_API_URL, {}, configHeaders);
   return response.data;

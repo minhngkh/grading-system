@@ -4,6 +4,7 @@ import { RefreshCw, FileSearch } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Assessment } from "@/types/assessment";
 import { createCriteriaColorMap, getCriteriaColorStyle } from "./colors";
+import { useNavigate } from "@tanstack/react-router";
 
 const ResultCardSkeleton = () => (
   <Card className="overflow-hidden py-0">
@@ -40,6 +41,7 @@ type ReviewResultsProps = {
 
 export default function ReviewResults({ isLoading, assessments }: ReviewResultsProps) {
   // Create color map from all unique criteria names
+  const navigate = useNavigate();
   const allCriteriaNames =
     assessments[0]?.scoreBreakdowns.map((breakdown) => breakdown.criterionName) || [];
   const criteriaColorMap = createCriteriaColorMap(allCriteriaNames);
@@ -68,7 +70,7 @@ export default function ReviewResults({ isLoading, assessments }: ReviewResultsP
                 <div className="flex-1 p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
-                      {item.submissionReference}
+                      {item.id}
                     </h3>
                     <span className="text-2xl font-bold">
                       {item.rawScore * item.scaleFactor} ({item.rawScore}%)
@@ -117,7 +119,12 @@ export default function ReviewResults({ isLoading, assessments }: ReviewResultsP
                     <RefreshCw className="h-4 w-4" />
                     Rerun
                   </Button>
-                  <Button className="flex items-center gap-2 w-full">
+                  <Button
+                    className="flex items-center gap-2 w-full"
+                    onClick={() =>
+                      navigate({ to: "/manual-grade/$id", params: { id: item.id } })
+                    }
+                  >
                     <FileSearch className="h-4 w-4" />
                     Review
                   </Button>

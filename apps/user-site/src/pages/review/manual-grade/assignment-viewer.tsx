@@ -1,21 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TestResult from "./test-result";
-import { useEffect, useState, useMemo } from "react";
-import {
-  Code,
-  FileIcon,
-  Highlighter,
-  MenuIcon,
-  MessageSquare,
-  Trash2,
-} from "lucide-react";
-import {
-  TestCase,
-  SubmissionBreakdown1,
-  Feedback,
-  GradingResult,
-} from "@/types/submission";
-
+import { useState, useMemo } from "react";
+import { FileIcon, Highlighter, MenuIcon, MessageSquare, Trash2 } from "lucide-react";
 import HighlightableViewer from "./viewer/highlightable-viewer";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -26,145 +12,62 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { Assessment } from "@/types/assessment";
+import { Rubric } from "@/types/rubric";
+import PDFViewer from "./viewer/pdf-view";
 
 export interface AssignmentViewerProps {
-  breakdowns: SubmissionBreakdown1[];
-  gradingResult: GradingResult;
-  setGradingResult: React.Dispatch<React.SetStateAction<GradingResult>>;
-  testCases: TestCase[];
-  updateFeedback: (criterionId: string, breakdownId: string, feedback: string) => void;
+  assessment: Assessment;
+  setAssessment: React.Dispatch<React.SetStateAction<Assessment>>;
+  rubric: Rubric;
 }
 
 const AssignmentViewer = ({
-  breakdowns,
-  gradingResult,
-  setGradingResult,
-  testCases,
-  updateFeedback,
+  assessment,
+  setAssessment,
+  rubric,
 }: AssignmentViewerProps) => {
-  // Add validation for required props
-  useEffect(() => {
-    if (!breakdowns.length) {
-      console.warn("No breakdowns provided");
-    }
-    if (!gradingResult?.criterionResults) {
-      console.warn("Invalid grading result structure");
-    }
-  }, [breakdowns, gradingResult]);
-
-  const getFileName = (fileReference: string | undefined) => {
-    if (fileReference) {
-      try {
-        const url = new URL(fileReference);
-        const segments = url.pathname.split("/");
-        return segments.pop() ?? "";
-      } catch {
-        const parts = fileReference.split("/");
-        return parts.pop() ?? "";
-      }
-    }
-    return "Unknown file";
-  };
+  // Lấy danh sách file từ feedbacks
+  const files = Array.from(new Set(assessment.feedbacks.map((fb) => fb.fileRef)));
   const [activeTab, setActiveTab] = useState("submission");
-  const [selectedFile, setSelectedFile] = useState<string>(
-    getFileName(breakdowns[0].fileReference),
-  );
+  const [selectedFile, setSelectedFile] = useState(files[0] || "");
   const [isHighlightMode, setIsHighlightMode] = useState(false);
   const [activeFeedbackId, setActiveFeedbackId] = useState<string | null>(null);
 
-  const uniqueFiles = Array.from(
-    new Map(
-      breakdowns.map((breakdown) => [getFileName(breakdown.fileReference), breakdown]),
-    ).values(),
-  );
-
-  // Memoize frequently used values
-  const selectedFileData = useMemo(
-    () => uniqueFiles.find((file) => getFileName(file.fileReference) === selectedFile),
-    [uniqueFiles, selectedFile],
-  );
-
-  const renderTabsTrigger = (tabs: { value: string; label: string }[]) =>
-    tabs.map(({ value, label }) => (
-      <TabsTrigger key={value} value={value} className="p-2 flex-1 cursor-pointer">
-        {label}
-      </TabsTrigger>
-    ));
-
+  // Lọc feedbacks theo file đang chọn
   const selectedFileFeedbacks = useMemo(
-    () =>
-      gradingResult?.criterionResults
-        ?.filter((cr) => cr.criterionId === selectedFileData?.criterionId)
-        .flatMap((cr) => cr.feedback) || [],
-    [gradingResult, selectedFileData],
+    () => assessment.feedbacks.filter((fb) => fb.fileRef === selectedFile),
+    [assessment.feedbacks, selectedFile],
   );
 
-  // Improved feedback update handler with validation
-  const handleFeedbackUpdate = (newFeedbacks: Feedback[]) => {
-    if (!selectedFileData?.criterionId) {
-      console.error("No criterion ID available for feedback update");
-      return;
-    }
+  // Lấy nội dung file (ở đây chỉ có 1 file, mock)
+  const fileContent = "File content is not available in mock data.";
 
-    setGradingResult((prev) => ({
+  // Thêm feedback mới cho criterion (dựa trên criterion của feedback đầu tiên trong newFeedbacks)
+  const handleFeedbackUpdate = (newFeedbacks: any[]) => {
+    if (!newFeedbacks.length) return;
+    const criterion = newFeedbacks[0].criterion;
+    setAssessment((prev) => ({
       ...prev,
-      criterionResults: prev.criterionResults.map((cr) =>
-        cr.criterionId === selectedFileData.criterionId
-          ? {
-              ...cr,
-              feedback: [...cr.feedback, ...newFeedbacks].filter(
-                // Remove duplicates
-                (fb, index, self) => index === self.findIndex((f) => f.id === fb.id),
-              ),
-            }
-          : cr,
-      ),
+      feedbacks: [
+        ...prev.feedbacks.filter((fb) => fb.criterion !== criterion),
+        ...newFeedbacks,
+      ],
     }));
   };
 
-  const toggleHighlightMode = () => {
-    setIsHighlightMode((prev) => !prev);
-  };
+  const toggleHighlightMode = () => setIsHighlightMode((prev) => !prev);
 
   const handleFeedbackClick = (feedbackId: string) => {
-    setActiveFeedbackId((prev) => {
-      if (prev === feedbackId) {
-        // If the same feedback is clicked again, deactivate it
-        document
-          .querySelectorAll(`.annotation-span[data-id="${feedbackId}"]`)
-          .forEach((el) => el.classList.remove("actived")); // Remove actived class
-        return null;
-      } else {
-        // Activate the clicked feedback
-        document
-          .querySelectorAll(".annotation-span")
-          .forEach((el) => el.classList.remove("actived")); // Remove actived class from all
-        document
-          .querySelectorAll(`.annotation-span[data-id="${feedbackId}"]`)
-          .forEach((el) => el.classList.add("actived")); // Add actived class to selected feedback
-        return feedbackId;
-      }
-    });
+    setActiveFeedbackId((prev) => (prev === feedbackId ? null : feedbackId));
   };
 
   const handleDeleteFeedback = (feedbackId: string) => {
-    setGradingResult((prev) => ({
+    setAssessment((prev) => ({
       ...prev,
-      criterionResults: prev.criterionResults.map((criterionResult) =>
-        criterionResult.criterionId === selectedFileData?.criterionId
-          ? {
-              ...criterionResult,
-              feedback: criterionResult.feedback.filter((fb) => fb.id !== feedbackId),
-            }
-          : criterionResult,
-      ),
+      feedbacks: prev.feedbacks.filter((fb) => fb.id !== feedbackId),
     }));
-    if (activeFeedbackId === feedbackId) {
-      setActiveFeedbackId(null); // Reset active feedback if it was deleted
-    }
-    document
-      .querySelectorAll(`.annotation-span[data-id="${feedbackId}"]`)
-      .forEach((el) => el.classList.remove("hovered")); // Remove hovered class from deleted feedback
+    if (activeFeedbackId === feedbackId) setActiveFeedbackId(null);
   };
 
   const getBadgeClass = (tag: string | undefined) => {
@@ -185,18 +88,17 @@ const AssignmentViewer = ({
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="flex border-b w-full">
-        {renderTabsTrigger([
-          { value: "submission", label: "Submission" },
-          { value: "test-result", label: "Test Result" },
-          { value: "feedback", label: "Feedback Overview" },
-        ])}
+        <TabsTrigger value="submission" className="p-2 flex-1 cursor-pointer">
+          Submission
+        </TabsTrigger>
+        <TabsTrigger value="feedback" className="p-2 flex-1 cursor-pointer">
+          Feedback Overview
+        </TabsTrigger>
       </TabsList>
-
       <div className="flex">
         <div className="px-3 w-full">
           <TabsContent value="submission" className="border rounded shadow h-[56vh] flex">
             <div className="w-3/4 border-r pr-2 overflow-y-auto flex flex-col relative">
-              {/* Toolbar: File dropdown + (có thể thêm các nút khác sau này) */}
               <div className="flex items-center gap-2 px-2 py-2 border-b bg-background sticky top-0 z-20">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -210,63 +112,31 @@ const AssignmentViewer = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-44">
-                    {uniqueFiles.map((file) => {
-                      const name = getFileName(file.fileReference);
-                      const isSelected = selectedFile === name;
-                      return (
-                        <DropdownMenuItem
-                          key={name}
-                          onClick={() => setSelectedFile(name)}
-                          className={`flex items-center gap-2 cursor-pointer ${isSelected ? "bg-accent" : ""}`}
-                        >
-                          {file.type === "code" ? (
-                            <Code className="w-4 h-4" />
-                          ) : (
-                            <FileIcon className="w-4 h-4" />
-                          )}
-                          <span className="text-sm">{name}</span>
-                        </DropdownMenuItem>
-                      );
-                    })}
+                    {files.map((name) => (
+                      <DropdownMenuItem
+                        key={name}
+                        onClick={() => setSelectedFile(name)}
+                        className={`flex items-center gap-2 cursor-pointer ${
+                          selectedFile === name ? "bg-accent" : ""
+                        }`}
+                      >
+                        <FileIcon className="w-4 h-4" />
+                        <span className="text-sm">{name}</span>
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                {/* Có thể thêm các nút khác ở đây nếu muốn */}
               </div>
-              {/* Nội dung code/essay */}
               <div className="flex-1">
-                {selectedFileData?.type === "code" ? (
-                  <HighlightableViewer
-                    type="code"
-                    content={selectedFileData?.processedContent || ""}
-                    feedbacks={selectedFileFeedbacks}
-                    updateFeedback={handleFeedbackUpdate}
-                    isHighlightMode={isHighlightMode}
-                    onHighlightComplete={() => setIsHighlightMode(false)}
-                    activeFeedbackId={activeFeedbackId}
-                  />
-                ) : (
-                  <HighlightableViewer
-                    type="essay"
-                    content={selectedFileData?.processedContent || ""}
-                    feedbacks={selectedFileFeedbacks}
-                    updateFeedback={(newFeedbacks) => {
-                      setGradingResult((prev) => ({
-                        ...prev,
-                        criterionResults: prev.criterionResults.map((criterionResult) =>
-                          criterionResult.criterionId === selectedFileData?.criterionId
-                            ? {
-                                ...criterionResult,
-                                feedback: [...criterionResult.feedback, ...newFeedbacks],
-                              }
-                            : criterionResult,
-                        ),
-                      }));
-                    }}
-                    isHighlightMode={isHighlightMode}
-                    onHighlightComplete={() => setIsHighlightMode(false)}
-                    activeFeedbackId={activeFeedbackId}
-                  />
-                )}
+                <HighlightableViewer
+                  type="essay"
+                  content={fileContent}
+                  feedbacks={selectedFileFeedbacks}
+                  updateFeedback={handleFeedbackUpdate}
+                  isHighlightMode={isHighlightMode}
+                  onHighlightComplete={() => setIsHighlightMode(false)}
+                  activeFeedbackId={activeFeedbackId}
+                />
               </div>
             </div>
             <div className="w-1/4 my-3 px-3">
@@ -286,21 +156,20 @@ const AssignmentViewer = ({
               </p>
               <div className="space-y-2 max-h-[46vh] overflow-y-auto">
                 {selectedFileFeedbacks.length > 0 ? (
-                  selectedFileFeedbacks.map((feedback) => (
+                  selectedFileFeedbacks.map((feedback, idx) => (
                     <div
-                      key={feedback.id}
+                      key={feedback.id || idx}
                       className={`flex p-2 rounded-md cursor-pointer text-sm gap-1 items-start ${
-                        activeFeedbackId === feedback.id
+                        activeFeedbackId === (feedback.id || feedback.comment)
                           ? "bg-accent text-accent-foreground"
                           : "hover:bg-muted"
                       }`}
-                      onClick={() => handleFeedbackClick(feedback.id)}
+                      onClick={() => handleFeedbackClick(feedback.id || feedback.comment)}
                     >
                       <MessageSquare className="w-4 h-4 mt-1.25 mr-2 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">
-                          Lines {feedback.DocumentLocation.fromLine + 1}-
-                          {feedback.DocumentLocation.toLine + 1}
+                          Lines {feedback.fromLine + 1}-{feedback.toLine + 1}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
                           {feedback.comment}
@@ -317,8 +186,8 @@ const AssignmentViewer = ({
                       <Trash2
                         className="w-4 h-4 mt-1 text-gray-500 hover:text-red-500 cursor-pointer"
                         onClick={(e) => {
-                          e.stopPropagation(); // Prevent triggering feedback click
-                          handleDeleteFeedback(feedback.id);
+                          e.stopPropagation();
+                          handleDeleteFeedback(feedback.id || feedback.comment);
                         }}
                       />
                     </div>
@@ -330,49 +199,40 @@ const AssignmentViewer = ({
             </div>
           </TabsContent>
           <TabsContent
-            value="test-result"
-            className="p-2 border rounded shadow h-[51vh] overflow-auto"
-          >
-            <TestResult content={testCases} />
-          </TabsContent>
-          <TabsContent
             value="feedback"
             className="p-2 border rounded shadow h-[51vh] overflow-auto"
           >
             <div className="space-y-4">
-              {breakdowns.map((breakdown) => {
-                const fileRef = breakdown.fileReference;
-                return (
-                  <div className="space-y-2" key={breakdown.id}>
-                    <div>
-                      <strong>Targeted File:</strong>{" "}
-                      {fileRef ? getFileName(fileRef) : "N/A"}
-                    </div>
-                    <div>
-                      <strong>Feedback:</strong>
-                      <textarea
-                        className="w-full mt-1 p-2 border rounded"
-                        value={
-                          gradingResult.criterionResults
-                            .find((cr) => cr.criterionId === breakdown.criterionId)
-                            ?.feedback.find((fb) => fb.id === breakdown.id)?.comment || ""
-                        }
-                        onChange={(e) =>
-                          updateFeedback(
-                            breakdown.criterionId,
-                            breakdown.id,
-                            e.target.value,
-                          )
-                        }
-                      />
-                    </div>
+              {rubric.criteria.map((criterion) => (
+                <div className="space-y-2" key={criterion.name}>
+                  <div>
+                    <strong>Criterion:</strong> {criterion.name}
                   </div>
-                );
-              })}
+                  <div>
+                    <strong>Feedback:</strong>
+                    <ul className="list-disc ml-4">
+                      {assessment.feedbacks
+                        .filter((fb) => fb.criterion === criterion.name)
+                        .map((fb, idx) => (
+                          <li key={fb.comment + idx}>
+                            {fb.comment}{" "}
+                            <Badge
+                              variant="outline"
+                              className={`ml-2 ${getBadgeClass(fb.tag)}`}
+                            >
+                              {fb.tag}
+                            </Badge>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
             </div>
           </TabsContent>
         </div>
       </div>
+      <PDFViewer />
     </Tabs>
   );
 };
