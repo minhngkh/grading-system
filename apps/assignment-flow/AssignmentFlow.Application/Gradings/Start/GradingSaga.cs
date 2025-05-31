@@ -1,10 +1,9 @@
 ﻿using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Assessments.Create;
-using AssignmentFlow.Application.Gradings.Start;
 using EventFlow.Aggregates;
 using EventFlow.Sagas;
 using EventFlow.Sagas.AggregateSagas;
-namespace AssignmentFlow.Application.Gradings;
+namespace AssignmentFlow.Application.Gradings.Start;
 
 public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSagaLocator>,
     ISagaIsStartedBy<GradingAggregate, GradingId, GradingStartedEvent>,
@@ -55,6 +54,8 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
                 TeacherId = TeacherId.With(gradingSummary.TeacherId)
             });
         }
+
+        logger.LogInformation("Completed creating assessments for grading {GradingId}", gradingSummary.Id);
     }
 
     public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessmentCreatedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)

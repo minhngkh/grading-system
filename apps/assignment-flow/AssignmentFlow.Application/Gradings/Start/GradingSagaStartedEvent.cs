@@ -1,6 +1,6 @@
 ﻿using EventFlow.Aggregates;
 
-namespace AssignmentFlow.Application.Gradings;
+namespace AssignmentFlow.Application.Gradings.Start;
 
 public class GradingSagaStartedEvent : AggregateEvent<GradingSaga, GradingSagaId>
 {

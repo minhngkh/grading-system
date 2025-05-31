@@ -1,7 +1,7 @@
 ﻿using EventFlow.Aggregates;
 using EventFlow.Sagas;
 
-namespace AssignmentFlow.Application.Gradings;
+namespace AssignmentFlow.Application.Gradings.Start;
 
 public class GradingSagaLocator : ISagaLocator
 {
@@ -11,7 +11,7 @@ public class GradingSagaLocator : ISagaLocator
     {
         return domainEvent.GetAggregateEvent() switch
         {
-            Gradings.Start.GradingStartedEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(domainEvent.GetIdentity().Value))),
+            GradingStartedEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(domainEvent.GetIdentity().Value))),
             Assessments.Create.AssessmentCreatedEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(@event.GradingId))),
             _ => throw new ArgumentNullException(nameof(domainEvent))
         };
