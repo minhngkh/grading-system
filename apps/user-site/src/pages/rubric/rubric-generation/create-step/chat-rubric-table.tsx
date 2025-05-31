@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/card";
 import EditRubric from "@/components/app/edit-rubric";
 import Spinner from "@/components/app/spinner";
+import { useState } from "react";
+import { PencilIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface RubricTableProps {
   rubricData: Rubric;
@@ -23,16 +26,19 @@ export default function ChatRubricTable({
   disableEdit = false,
   isApplyingEdit = false,
 }: RubricTableProps) {
+  const [isEditing, setIsEditing] = useState(false);
+
   return (
     <Card className="w-full h-full">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
-          <EditRubric
-            rubricData={rubricData}
-            onUpdate={onUpdate}
-            disableEdit={disableEdit || isApplyingEdit}
-          />
+          <Button
+            disabled={disableEdit || isApplyingEdit}
+            onClick={() => setIsEditing(true)}
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Button>
         </div>
         <CardDescription>
           Edit the rubric manually or use AI to modify it.
@@ -50,6 +56,14 @@ export default function ChatRubricTable({
             </div>
           </div>
         }
+        {isEditing && (
+          <EditRubric
+            open={isEditing}
+            onOpenChange={setIsEditing}
+            rubricData={rubricData}
+            onUpdate={onUpdate}
+          />
+        )}
       </CardContent>
     </Card>
   );

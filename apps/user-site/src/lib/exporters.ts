@@ -2,8 +2,15 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Rubric } from "@/types/rubric"; // adjust path
 import * as XLSX from "xlsx";
+import { GradingAttempt } from "@/types/grading";
+import { Assessment } from "@/types/assessment";
 
-export class RubricExporter {
+export interface DataExporter {
+  exportToPDF(): void;
+  exportToExcel(): void;
+}
+
+export class RubricExporter implements DataExporter {
   constructor(private rubric: Rubric) {
     // Initialize any properties if needed
   }
@@ -114,5 +121,22 @@ export class RubricExporter {
     // Write to file and save
     const fileName = `${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.xlsx`;
     XLSX.writeFile(workbook, fileName);
+  }
+}
+
+export class GradingExporter implements DataExporter {
+  constructor(
+    private grading: GradingAttempt,
+    private assessments: Assessment[],
+  ) {
+    // Initialize any properties if needed
+  }
+
+  exportToPDF() {
+    throw new Error("PDF export not implemented for GradingExporter");
+  }
+
+  exportToExcel() {
+    throw new Error("Excel export not implemented for GradingExporter");
   }
 }

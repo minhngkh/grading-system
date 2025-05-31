@@ -1,6 +1,6 @@
 import type { Rubric } from "@/types/rubric";
 import { ChatService } from "@/services/chat-service";
-import React, { useState } from "react";
+import { useState } from "react";
 import ChatRubricTable from "./chat-rubric-table";
 import ChatInterface from "@/components/app/chat-interface";
 import { UserChatPrompt } from "@/types/chat";
@@ -19,7 +19,7 @@ interface ChatWindowProps {
   onUpdate: (rubric: Partial<Rubric>) => void;
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
+export default function ChatWindow({ rubric, onUpdate }: ChatWindowProps) {
   const [isApplyingEdit, setIsApplyingEdit] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -93,6 +93,4 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ rubric, onUpdate }) => {
       </div>
     </div>
   );
-};
-
-export default ChatWindow;
+}

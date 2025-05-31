@@ -14,14 +14,14 @@ import { useState } from "react";
 interface ChangeScaleFactorDialogProps {
   initialScaleFactor: number;
   onChangeScaleFactor: (newScaleFactor: number) => void;
-  isOpen?: boolean;
+  open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 export const ChangeScaleFactorDialog = ({
   initialScaleFactor,
   onChangeScaleFactor,
-  isOpen,
+  open,
   onOpenChange,
 }: ChangeScaleFactorDialogProps) => {
   const [scaleFactor, setScaleFactor] = useState(initialScaleFactor);
@@ -31,7 +31,7 @@ export const ChangeScaleFactorDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Change Scale Factor</DialogTitle>
