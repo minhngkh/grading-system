@@ -3,7 +3,6 @@ import { Rubric, RubricStatus } from "@/types/rubric";
 import { GetRubricsResult, RubricService } from "@/services/rubric-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,11 +38,11 @@ import {
   Search,
   X,
 } from "lucide-react";
-import RubricView from "@/components/app/rubric-view";
 import { useDebounce } from "@/hooks/use-debounce";
 import { SearchParams } from "@/types/search-params";
 import EditRubric from "@/components/app/edit-rubric";
 import { toast } from "sonner";
+import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
 
 type SortConfig = {
   key: "rubricName" | "updatedOn" | "status" | null;
@@ -72,8 +71,8 @@ export default function ManageRubricsPage({
   } = results;
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
   const [statusFilter, setStatusFilter] = useState<string>("All");
-  const [selectedRubric, setSelectedRubric] = useState<Rubric | null>(null);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [viewRubricOpen, setViewRubricOpen] = useState<boolean>(false);
+  const [editRubricOpen, setEditRubricOpen] = useState<boolean>(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
@@ -210,19 +209,6 @@ export default function ManageRubricsPage({
         )}
       </div>
 
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent aria-describedby={undefined} className="min-w-[80%]">
-          <DialogHeader>
-            <DialogTitle>{selectedRubric?.rubricName}</DialogTitle>
-          </DialogHeader>
-          {selectedRubric && (
-            <div className="w-full h-full flex flex-col">
-              <RubricView rubricData={selectedRubric} showPlugins />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
       <div className="w-full overflow-auto border rounded-md">
         <Table>
           <TableHeader>
@@ -274,20 +260,17 @@ export default function ManageRubricsPage({
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => {
-                            setSelectedRubric(rubric);
-                            setIsViewDialogOpen(true);
+                            setViewRubricOpen(true);
                           }}
                         >
                           View Rubric
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <EditRubric
-                            rubricData={rubric}
-                            onUpdate={(updatedRubric) => {
-                              onUpdateRubric(rubric.id, updatedRubric);
-                            }}
-                            variant="text"
-                          />
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditRubricOpen(true);
+                          }}
+                        >
+                          Edit Rubric
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">
@@ -296,6 +279,23 @@ export default function ManageRubricsPage({
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
+                  {viewRubricOpen && (
+                    <ViewRubricDialog
+                      open={viewRubricOpen}
+                      onOpenChange={setViewRubricOpen}
+                      initialRubric={rubric}
+                    />
+                  )}
+                  {editRubricOpen && (
+                    <EditRubric
+                      open={editRubricOpen}
+                      onOpenChange={setEditRubricOpen}
+                      rubricData={rubric}
+                      onUpdate={(updatedRubric) => {
+                        onUpdateRubric(rubric.id, updatedRubric);
+                      }}
+                    />
+                  )}
                 </TableRow>
               ))
             }

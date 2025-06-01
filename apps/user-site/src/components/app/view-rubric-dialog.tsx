@@ -1,25 +1,35 @@
 import RubricView from "@/components/app/rubric-view";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { RubricService } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
 import { useEffect, useState } from "react";
 
 type RubricDialogProps = {
-  rubricId: string;
-  isOpen?: boolean;
+  rubricId?: string;
+  initialRubric?: Rubric;
+  open?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
 
 export const ViewRubricDialog = ({
   rubricId,
-  isOpen,
+  initialRubric,
+  open,
   onOpenChange,
 }: RubricDialogProps) => {
-  const [rubric, setRubric] = useState<Rubric | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [rubric, setRubric] = useState<Rubric | undefined>(initialRubric);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchRubric = async () => {
+      if (!rubricId) return;
+
       try {
         setIsLoading(true);
         const fetchedRubric = await RubricService.getRubric(rubricId);
@@ -30,14 +40,19 @@ export const ViewRubricDialog = ({
         setIsLoading(false);
       }
     };
-    if (isOpen) {
-      fetchRubric();
-    }
-  }, [isOpen, rubricId]);
+
+    if (!rubric) fetchRubric();
+  }, [rubricId]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent aria-describedby={undefined} className="min-w-[80%]">
+        <DialogHeader>
+          <DialogTitle>View Rubric</DialogTitle>
+          <DialogDescription>
+            Review the details of the selected rubric.
+          </DialogDescription>
+        </DialogHeader>
         {isLoading ?
           <div>Loading...</div>
         : rubric ?

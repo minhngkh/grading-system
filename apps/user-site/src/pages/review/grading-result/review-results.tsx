@@ -55,6 +55,8 @@ export default function ReviewResults({
       <h2 className="text-2xl font-bold mb-4">Grading Results</h2>
       {isLoading ?
         <ResultCardSkeleton />
+      : assessments.length === 0 ?
+        <div>No assessments found for this grading session.</div>
       : <div className="space-y-4">
           {assessments.map((item) => (
             <Card key={item.id} className="overflow-hidden py-0">

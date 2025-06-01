@@ -47,6 +47,7 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
                   <SidebarMenuButton tooltip={item.title} asChild>
                     <Link
                       to={item.to}
+                      preload={item.preload ?? "intent"}
                       activeOptions={{ exact: true }}
                       activeProps={{ className: "bg-secondary" }}
                     >
@@ -68,6 +69,7 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton tooltip={item.title} asChild>
                       <Link
+                        preload={item.preload ?? "intent"}
                         to={item.to}
                         activeOptions={{ exact: true }}
                         activeProps={{ className: "bg-secondary" }}
