@@ -1,6 +1,6 @@
 ﻿using EventFlow.Aggregates;
 
-namespace AssignmentFlow.Application.Gradings;
+namespace AssignmentFlow.Application.Gradings.Start;
 
 public class GradingSagaWriteModel :
     AggregateState<GradingSaga, GradingSagaId, GradingSagaWriteModel>,
@@ -9,7 +9,7 @@ public class GradingSagaWriteModel :
     public TeacherId TeacherId { get; private set; } = TeacherId.Empty;
     public Shared.GradingId GradingId { get; private set; } = Shared.GradingId.Empty;
     public RubricId RubricId { get; private set; } = RubricId.Empty;
-    public List<Shared.AssessmentId> AssessmentIds { get; private set; } = [];
+    public List<AssessmentId> AssessmentIds { get; private set; } = [];
 
     internal void Apply(GradingSagaStartedEvent e)
     {

@@ -34,7 +34,7 @@ public class Assessment
     public string GradingId { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    [MaxLength(ModelConstants.ShortText)]
+    [MaxLength(ModelConstants.ShortMediumText)]
     public string SubmissionReference { get; set; } = string.Empty;
 
     /// <summary>
