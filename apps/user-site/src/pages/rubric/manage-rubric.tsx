@@ -329,62 +329,68 @@ export default function ManageRubricsPage({
         </div>
 
         <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              setSearchParam({ page: Math.max(page - 1, 1) });
-            }}
-            disabled={page === 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="sr-only">Previous page</span>
-          </Button>
-          <div className="flex items-center gap-1 mx-2">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum = i + 1;
-
-              // Adjust page numbers for larger datasets
-              if (totalPages > 5 && page > 3) {
-                pageNum = page - 2 + i;
-                if (pageNum > totalPages) return null;
-              }
-
-              return (
-                <Button
-                  key={pageNum}
-                  variant={page === pageNum ? "default" : "outline"}
-                  size="icon"
-                  className="w-8 h-8"
-                  onClick={() => setSearchParam({ page: pageNum })}
-                >
-                  {pageNum}
-                </Button>
-              );
-            })}
-
-            {totalPages > 5 && page < totalPages - 2 && <span className="mx-1">...</span>}
-
-            {totalPages > 5 && page < totalPages - 1 && (
+          {totalPages > 1 && (
+            <>
               <Button
-                variant={page === totalPages ? "default" : "outline"}
+                variant="outline"
                 size="icon"
-                className="w-8 h-8"
-                onClick={() => setSearchParam({ page: totalPages })}
+                onClick={() => {
+                  setSearchParam({ page: Math.max(page - 1, 1) });
+                }}
+                disabled={page === 1}
               >
-                {totalPages}
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Previous page</span>
               </Button>
-            )}
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setSearchParam({ page: Math.min(page + 1, totalPages) })}
-            disabled={page === totalPages || totalPages === 0}
-          >
-            <ChevronRight className="h-4 w-4" />
-            <span className="sr-only">Next page</span>
-          </Button>
+              <div className="flex items-center gap-1 mx-2">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = i + 1;
+
+                  // Adjust page numbers for larger datasets
+                  if (totalPages > 5 && page > 3) {
+                    pageNum = page - 2 + i;
+                    if (pageNum > totalPages) return null;
+                  }
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={page === pageNum ? "default" : "outline"}
+                      size="icon"
+                      className="w-8 h-8"
+                      onClick={() => setSearchParam({ page: pageNum })}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+
+                {totalPages > 5 && page < totalPages - 2 && (
+                  <span className="mx-1">...</span>
+                )}
+
+                {totalPages > 5 && page < totalPages - 1 && (
+                  <Button
+                    variant={page === totalPages ? "default" : "outline"}
+                    size="icon"
+                    className="w-8 h-8"
+                    onClick={() => setSearchParam({ page: totalPages })}
+                  >
+                    {totalPages}
+                  </Button>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setSearchParam({ page: Math.min(page + 1, totalPages) })}
+                disabled={page === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Next page</span>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

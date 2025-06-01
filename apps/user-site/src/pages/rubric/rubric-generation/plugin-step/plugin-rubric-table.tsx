@@ -22,11 +22,17 @@ export default function PluginRubricTable({
       <CardHeader>
         <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
         <CardDescription>
-          Configure the tools used for grading each criterion.
+          Configure the tools used for grading each criterion. If you need to edit a
+          plugin, click on the plugin name to select a different one.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
-        <RubricView rubricData={rubricData} showPlugins editPlugin />
+        <RubricView
+          rubricData={rubricData}
+          showPlugins
+          editPlugin
+          onEditPlugin={onUpdate}
+        />
       </CardContent>
     </Card>
   );
