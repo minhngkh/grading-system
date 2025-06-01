@@ -69,10 +69,7 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
                       "flex flex-col gap-2 items-center text-center p-4 hover:bg-muted rounded-md border",
                       criterion.plugin === plugin.name && "bg-muted",
                     )}
-                    onClick={() => {
-                      onSelect(index, plugin.name);
-                      onOpenChange(false);
-                    }}
+                    onClick={() => onSelect(index, plugin.name)}
                   >
                     <div className="font-medium">
                       {plugin.name}

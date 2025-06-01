@@ -12,8 +12,6 @@ export class PluginService {
       },
     });
 
-    console.log("PluginService.getAll response:", response.data);
-
     return PluginListSchema.safeParse(response.data);
   }
 }

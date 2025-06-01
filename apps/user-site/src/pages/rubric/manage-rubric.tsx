@@ -43,6 +43,7 @@ import { SearchParams } from "@/types/search-params";
 import EditRubric from "@/components/app/edit-rubric";
 import { toast } from "sonner";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
+import { useRouter } from "@tanstack/react-router";
 
 type SortConfig = {
   key: "rubricName" | "updatedOn" | "status" | null;
@@ -72,7 +73,9 @@ export default function ManageRubricsPage({
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [viewRubricOpen, setViewRubricOpen] = useState<boolean>(false);
+  const [selectedRubricIndex, setSelectedRubricIndex] = useState<number | null>(null);
   const [editRubricOpen, setEditRubricOpen] = useState<boolean>(false);
+  const router = useRouter();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
@@ -149,6 +152,7 @@ export default function ManageRubricsPage({
     try {
       await RubricService.updateRubric(id, updatedRubricData);
       toast.success("Rubric updated successfully");
+      router.invalidate();
     } catch (err) {
       toast.error("Failed to update rubric");
       console.error(err);
@@ -238,8 +242,8 @@ export default function ManageRubricsPage({
                   No rubrics found.
                 </TableCell>
               </TableRow>
-            : paginatedData.map((rubric) => (
-                <TableRow key={rubric.id}>
+            : paginatedData.map((rubric, index) => (
+                <TableRow key={index}>
                   <TableCell className="font-semibold">{rubric.rubricName}</TableCell>
                   <TableCell>
                     {rubric.updatedOn ?
@@ -261,6 +265,7 @@ export default function ManageRubricsPage({
                         <DropdownMenuItem
                           onClick={() => {
                             setViewRubricOpen(true);
+                            setSelectedRubricIndex(index);
                           }}
                         >
                           View Rubric
@@ -268,39 +273,36 @@ export default function ManageRubricsPage({
                         <DropdownMenuItem
                           onClick={() => {
                             setEditRubricOpen(true);
+                            setSelectedRubricIndex(index);
                           }}
                         >
                           Edit Rubric
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
-                  {viewRubricOpen && (
-                    <ViewRubricDialog
-                      open={viewRubricOpen}
-                      onOpenChange={setViewRubricOpen}
-                      initialRubric={rubric}
-                    />
-                  )}
-                  {editRubricOpen && (
-                    <EditRubric
-                      open={editRubricOpen}
-                      onOpenChange={setEditRubricOpen}
-                      rubricData={rubric}
-                      onUpdate={(updatedRubric) => {
-                        onUpdateRubric(rubric.id, updatedRubric);
-                      }}
-                    />
-                  )}
                 </TableRow>
               ))
             }
           </TableBody>
         </Table>
+        {viewRubricOpen && selectedRubricIndex !== null && (
+          <ViewRubricDialog
+            open={viewRubricOpen}
+            onOpenChange={setViewRubricOpen}
+            initialRubric={paginatedData[selectedRubricIndex]}
+          />
+        )}
+        {editRubricOpen && selectedRubricIndex !== null && (
+          <EditRubric
+            open={editRubricOpen}
+            onOpenChange={setEditRubricOpen}
+            rubricData={paginatedData[selectedRubricIndex]}
+            onUpdate={(updatedRubric) =>
+              onUpdateRubric(paginatedData[selectedRubricIndex].id, updatedRubric)
+            }
+          />
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
@@ -329,7 +331,7 @@ export default function ManageRubricsPage({
         </div>
 
         <div className="flex items-center gap-1">
-          {totalPages > 1 && (
+          {totalPages > 0 && (
             <>
               <Button
                 variant="outline"
