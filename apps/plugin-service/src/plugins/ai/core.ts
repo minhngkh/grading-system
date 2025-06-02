@@ -239,6 +239,7 @@ export async function generateChatResponse(options: {
       asError,
     );
     if (responseResult.isErr()) {
+      console.debug(responseResult.error)
       return err(
         wrapError(
           responseResult.error,

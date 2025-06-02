@@ -68,7 +68,6 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
     rubricEngine = builder
         .AddProject<Projects.RubricEngine_Application>("rubric-engine")
         .WithHttpsEndpoint(
-            name: "rubric-engine",
             port: builder.Configuration.GetValue<int?>("RubricEngine:Port"),
             isProxied: toProxy
         )
@@ -84,7 +83,6 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
     assignmentFlow = builder
         .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
         .WithHttpsEndpoint(
-            name: "assignment-flow",
             port: builder.Configuration.GetValue<int?>("AssignmentFlow:Port"),
             isProxied: toProxy
         )
@@ -124,18 +122,21 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
+        .WaitFor(rubricEngine)
+        .WaitFor(assignmentFlow)
         // TODO: Back to using references instead of doing this manually
         .WithEnvironment(ctx =>
         {
+            
             var pluginServiceEndpoint = pluginService?.GetEndpoint("http");
             ctx.EnvironmentVariables["VITE_PLUGIN_SERVICE_URL"] =
                 pluginServiceEndpoint?.Url ?? "";
 
-            var rubricEngineEndpoint = rubricEngine?.GetEndpoint("http");
+            var rubricEngineEndpoint = rubricEngine?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_RUBRIC_ENGINE_URL"] =
                 rubricEngineEndpoint?.Url ?? "";
 
-            var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("http");
+            var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
                 assignmentFlowEndpoint?.Url ?? "";
         });
