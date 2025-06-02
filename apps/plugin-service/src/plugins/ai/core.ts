@@ -130,8 +130,7 @@ const chatSystemPrompt = dedent`
     - Provide the answer to the question naturally in the \`message\` field
     - Ignore any provided rubric
   - If the input is a **rubric request** (creating or updating a rubric):
-    - If an **existing rubric is provided**, update it based on the user's input
-    - If **no rubric is provided**, create a new rubric from scratch based if the user's said so
+    - update the \`rubric\` field with the new or updated rubric
     - After creating/updating the rubric, provide back a detailed message about what you have done in the \`message\` field and reason behind it (if needed)
 
   ---

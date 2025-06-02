@@ -52,7 +52,9 @@ var dbgate = dbgateContainer
 
 var rabbitmq = builder
     .AddRabbitMQ("messaging", username, password)
-    .WithManagementPlugin();
+    .WithManagementPlugin(
+        port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
+    );
 
 var blobs = builder
     .AddAzureStorage("storage")
@@ -127,7 +129,6 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
         // TODO: Back to using references instead of doing this manually
         .WithEnvironment(ctx =>
         {
-            
             var pluginServiceEndpoint = pluginService?.GetEndpoint("http");
             ctx.EnvironmentVariables["VITE_PLUGIN_SERVICE_URL"] =
                 pluginServiceEndpoint?.Url ?? "";

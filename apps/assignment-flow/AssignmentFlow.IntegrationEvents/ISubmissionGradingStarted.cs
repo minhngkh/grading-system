@@ -1,5 +1,8 @@
-﻿namespace AssignmentFlow.IntegrationEvents;
+﻿using MassTransit;
 
+namespace AssignmentFlow.IntegrationEvents;
+
+[EntityName("grading.submission.started")]
 public interface ISubmissionGradingStarted
 {
     public string AssessmentId { get; set; }
@@ -9,7 +12,7 @@ public interface ISubmissionGradingStarted
 public class Criterion
 {
     public required string CriterionName { get; set; }
-    public required string[]  FileRefs { get; set; }
+    public required string[] FileRefs { get; set; }
     public required Level[] Levels { get; set; }
     public required string Plugin { get; set; }
     public required string Configuration { get; set; }
