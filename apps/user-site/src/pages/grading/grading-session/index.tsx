@@ -37,15 +37,15 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
 
 interface UploadAssignmentPageProps {
   initialGradingAttempt: GradingAttempt;
-  initalStep?: string;
+  initialStep?: string;
 }
 
 export default function UploadAssignmentPage({
   initialGradingAttempt,
-  initalStep,
+  initialStep,
 }: UploadAssignmentPageProps) {
   const stepper = useStepper({
-    initialStep: initalStep,
+    initialStep,
   });
   const currentIndex = utils.getIndex(stepper.current.id);
   const navigate = useNavigate();
@@ -63,6 +63,12 @@ export default function UploadAssignmentPage({
       ...updated,
     });
   };
+
+  const handlePrev = () => {
+    stepper.prev();
+    sessionStorage.setItem("gradingStep", stepper.current.id);
+  };
+
   const handleNext = async () => {
     switch (currentIndex) {
       case 0:
@@ -146,7 +152,7 @@ export default function UploadAssignmentPage({
         })}
       </div>
       <div className="flex w-full justify-end gap-4">
-        <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
+        <Button variant="secondary" onClick={handlePrev} disabled={stepper.isFirst}>
           Back
         </Button>
         <Button disabled={isNextButtonDisabled()} onClick={handleNext}>
