@@ -5,6 +5,7 @@ export const ChatRubricSchema = z.object({
   rubricName: z.string().min(1, "Rubric name is required"),
   tags: z.array(z.string()),
   criteria: z.array(CriteriaSchema),
+  weightInRange: z.string().optional().default("false"),
 });
 
 export type ChatRubric = z.infer<typeof ChatRubricSchema>;

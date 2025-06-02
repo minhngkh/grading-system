@@ -43,7 +43,7 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() && uploadedFiles.length === 0) return;
+    if (!inputMessage.trim()) return;
 
     setIsLoading(true);
 
@@ -53,7 +53,11 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
       who: "user",
       files: uploadedFiles.length > 0 ? [...uploadedFiles] : undefined,
     };
-    setMessages((prev) => [...prev, newMessage]);
+
+    const newMessages = [...messages, newMessage];
+    setMessages(newMessages);
+
+    console.log("Sending messages:", newMessages);
 
     // Clear input and files
     setInputMessage("");
@@ -61,7 +65,7 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
 
     try {
       // Handle the response from the agent
-      const agentResponse = await sendMessageCallback?.(messages);
+      const agentResponse = await sendMessageCallback?.(newMessages);
 
       if (!agentResponse) {
         throw new Error("No response from agent");

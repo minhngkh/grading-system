@@ -7,7 +7,7 @@ import {
 } from "@/types/chat";
 import axios, { AxiosRequestConfig } from "axios";
 
-const AI_PLUGIN_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/ai`;
+const AI_PLUGIN_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/plugins/ai`;
 
 export class ChatService {
   static configHeaders: AxiosRequestConfig = {
@@ -43,8 +43,7 @@ export class ChatService {
       messages: formattedMessages,
     };
 
-    const res = await axios.post(`${AI_PLUGIN_URL}/rubric`, data, this.configHeaders);
-
+    const res = await axios.post(`${AI_PLUGIN_URL}/chat`, data, this.configHeaders);
     return {
       message: res.data.message,
       rubric: res.data.rubric ? ChatRubricSchema.parse(res.data.rubric) : undefined,
@@ -69,14 +68,11 @@ export class ChatService {
       ],
     }));
 
-    const data = {
+    const data = JSON.stringify({
       messages: formattedMessages,
-    };
-
-    console.log("Sending chat message to AI plugin:", data);
+    });
 
     const res = await axios.post(`${AI_PLUGIN_URL}/chat`, data, this.configHeaders);
-
     return {
       message: res.data.message,
     };

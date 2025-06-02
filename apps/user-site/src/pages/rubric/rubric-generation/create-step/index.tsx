@@ -29,6 +29,7 @@ export default function ChatWindow({ rubric, onUpdate }: ChatWindowProps) {
         rubricName: rubric.rubricName,
         tags: rubric.tags,
         criteria: rubric.criteria,
+        weightInRange: "false",
       });
 
       if (response.rubric) {
