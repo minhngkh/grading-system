@@ -10,7 +10,7 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/", CreateRubric)
             .WithName("CreateRubric")
-            .Produces<Rubric>()
+            .Produces<Rubric>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;

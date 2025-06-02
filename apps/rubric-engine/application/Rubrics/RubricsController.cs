@@ -2,9 +2,8 @@
 using JsonApiDotNetCore.Controllers;
 using JsonApiDotNetCore.Services;
 using Microsoft.AspNetCore.Mvc;
-using RubricEngine.Application.Rubrics;
 
-namespace RubricEngine.Application;
+namespace RubricEngine.Application.Rubrics;
 
 [Route("api/v1/[controller]")]
 public class RubricsController : BaseJsonApiController<Rubric, string>
