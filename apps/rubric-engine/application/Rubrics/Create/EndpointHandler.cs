@@ -1,7 +1,6 @@
 ﻿using System.Security.Claims;
 using EventFlow;
 using EventFlow.Queries;
-using RubricEngine.Application.Shared;
 
 namespace RubricEngine.Application.Rubrics.Create;
 
@@ -11,13 +10,13 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/", CreateRubric)
             .WithName("CreateRubric")
+            .Produces<Rubric>()
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;
     }
 
     private static async Task<IResult> CreateRubric(
-        CreateRubricRequest request,
         ICommandBus commandBus,
         IQueryProcessor queryProcessor,
         IHttpContextAccessor contextAccessor,
@@ -36,11 +35,13 @@ public static class EndpointHandler
         await commandBus.PublishAsync(
             new Command(
                 rubricId,
-                new RubricName(request.Name),
                 new TeacherId(teacherId)),
             cancellationToken)
             .ConfigureAwait(false);
 
-        return TypedResults.Created<string>("", rubricId.Value);
+        var rubric = await queryProcessor.ProcessAsync(
+            new ReadModelByIdQuery<Rubric>(rubricId), cancellationToken);
+
+        return TypedResults.CreatedAtRoute<Rubric>(rubric, "GetRubricById", new { id = rubricId });
     }
 }

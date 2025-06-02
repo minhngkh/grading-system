@@ -7,5 +7,4 @@ namespace RubricEngine.Application.Rubrics.Create;
 public class RubricCreatedEvent : AggregateEvent<RubricAggregate, RubricId>
 {
     public required TeacherId TeacherId { get; init; }
-    public required RubricName Name { get; init; }
 }

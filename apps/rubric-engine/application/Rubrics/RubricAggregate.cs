@@ -30,7 +30,6 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
         Emit(new Create.RubricCreatedEvent
         {
             TeacherId = command.TeacherId,
-            Name = command.Name
         });
     }
 
