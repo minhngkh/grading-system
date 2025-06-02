@@ -71,12 +71,12 @@ export class RubricService {
   static async updateRubric(id: string, rubric: Partial<Rubric>): Promise<Rubric> {
     const response = await axios.patch(
       `${RUBRIC_API_URL}/${id}`,
-      {
-        name: rubric.rubricName,
-        ...rubric,
-      },
+      rubric,
       this.configHeaders,
     );
     return response.data;
+  }
+  static async deleteRubric(id: string): Promise<void> {
+    await axios.delete(`${RUBRIC_API_URL}/${id}`, this.configHeaders);
   }
 }
