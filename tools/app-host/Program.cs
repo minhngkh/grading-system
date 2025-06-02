@@ -67,7 +67,8 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
 {
     rubricEngine = builder
         .AddProject<Projects.RubricEngine_Application>("rubric-engine")
-        .WithHttpEndpoint(
+        .WithHttpsEndpoint(
+            name: "rubric-engine",
             port: builder.Configuration.GetValue<int?>("RubricEngine:Port"),
             isProxied: toProxy
         )
@@ -82,7 +83,8 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
 {
     assignmentFlow = builder
         .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
-        .WithHttpEndpoint(
+        .WithHttpsEndpoint(
+            name: "assignment-flow",
             port: builder.Configuration.GetValue<int?>("AssignmentFlow:Port"),
             isProxied: toProxy
         )

@@ -8,10 +8,13 @@ public class Grader : StringValueObject
 
     private Grader(string value) : base(value switch
     {
-        "teacher" => Teacher,
-        "aiGrader" => AIGrader,
+        "teacher" => value,
+        "aiGrader" => value,
         _ => throw new ArgumentException($"Invalid grader type: '{value}'. Allowed values are 'teacher' or 'aiGrader'.", nameof(value))
-    }){ }
+    })
+    {
+        // Constructor body remains empty as in the provided snippet
+    }
 
     public static implicit operator string(Grader valueObject) => valueObject.Value;
 
