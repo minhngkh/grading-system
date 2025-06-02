@@ -3,7 +3,7 @@ import { ChatService } from "@/services/chat-service";
 import { useState } from "react";
 import ChatRubricTable from "./chat-rubric-table";
 import ChatInterface from "@/components/app/chat-interface";
-import { UserChatPrompt } from "@/types/chat";
+import { ChatMessage } from "@/types/chat";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 
 interface ChatWindowProps {
   rubric: Rubric;
@@ -23,16 +22,13 @@ export default function ChatWindow({ rubric, onUpdate }: ChatWindowProps) {
   const [isApplyingEdit, setIsApplyingEdit] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = async (chatPrompt: UserChatPrompt) => {
+  const handleSendMessage = async (messages: ChatMessage[]) => {
     setIsLoading(true);
     try {
-      const response = await ChatService.sendRubricMessage({
-        ...chatPrompt,
-        rubric: {
-          rubricName: rubric.rubricName,
-          tags: rubric.tags,
-          criteria: rubric.criteria,
-        },
+      const response = await ChatService.sendRubricMessage(messages, {
+        rubricName: rubric.rubricName,
+        tags: rubric.tags,
+        criteria: rubric.criteria,
       });
 
       if (response.rubric) {
@@ -47,7 +43,7 @@ export default function ChatWindow({ rubric, onUpdate }: ChatWindowProps) {
 
       return response.message;
     } catch (error) {
-      toast.error("An error occurred while processing your request. Please try again.");
+      throw error;
     } finally {
       setIsLoading(false);
     }

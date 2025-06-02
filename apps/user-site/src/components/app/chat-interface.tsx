@@ -1,28 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { encodeFileToBase64Async } from "@/lib/file-encoder";
 import { cn } from "@/lib/utils";
-import { UserChatPrompt } from "@/types/chat";
+import { ChatMessage, UploadedFile } from "@/types/chat";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Send, Upload } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-type ChatMessage = {
-  message: string;
-  who: "user" | "agent";
-  files?: UploadedFile[];
-};
-
-type UploadedFile = {
-  id: string;
-  file: File;
-  preview?: string;
-  type: "image" | "document";
-};
-
 interface AIChatProps {
-  sendMessageCallback: (response: UserChatPrompt) => Promise<string | undefined>;
+  sendMessageCallback: (messages: ChatMessage[]) => Promise<string | undefined>;
   className?: string;
   isRubricChat?: boolean;
 }
@@ -73,24 +61,22 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
 
     try {
       // Handle the response from the agent
-      const agentResponse = await sendMessageCallback?.({
-        prompt: newMessage.message,
-        files: newMessage.files?.map((file) => file.file),
-      });
+      const agentResponse = await sendMessageCallback?.(messages);
 
       if (!agentResponse) {
         throw new Error("No response from agent");
       }
 
-      setMessages((prev) => [...prev, { message: agentResponse, who: "agent" }]);
+      const responseMessage: ChatMessage = {
+        message: agentResponse,
+        who: "agent",
+      };
+
+      setMessages((prev) => [...prev, responseMessage]);
     } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          message: "An error occurred while processing your request.",
-          who: "agent",
-        },
-      ]);
+      toast.error("Failed to send message", {
+        description: "There was an issue sending your message. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -138,28 +124,32 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
     }
   };
 
-  const addFiles = (files: File[]) => {
+  const addFiles = async (files: File[]) => {
     try {
-      const newFiles = files.map((file) => {
-        const id = Math.random().toString(36).substring(2);
-        const isImage = file.type.startsWith("image/");
+      const newFiles = await Promise.all(
+        files.map(async (file) => {
+          const id = Math.random().toString(36).substring(2);
+          const isImage = file.type.startsWith("image/");
 
-        const fileObj: UploadedFile = {
-          id,
-          file,
-          type: isImage ? "image" : "document",
-        };
+          const url = await encodeFileToBase64Async(file);
+          const fileObj: UploadedFile = {
+            id,
+            file,
+            type: isImage ? "image" : "document",
+            url,
+          };
 
-        if (isImage) {
-          try {
-            fileObj.preview = URL.createObjectURL(file);
-          } catch (error) {
-            console.error("Failed to create preview:", error);
+          if (isImage) {
+            try {
+              fileObj.preview = URL.createObjectURL(file);
+            } catch (error) {
+              console.error("Failed to create preview:", error);
+            }
           }
-        }
 
-        return fileObj;
-      });
+          return fileObj;
+        }),
+      );
 
       setUploadedFiles((prev) => [...prev, ...newFiles]);
     } catch (error) {
