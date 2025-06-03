@@ -89,18 +89,18 @@ public sealed class Tag : StringValueObject
     private Tag() { }
 
     [JsonConstructor]
-    public Tag(string value) : base(GetPredefinedTagOrThrow(value).Value)
+    public Tag(string value) : base(GetPredefinedTagOrThrow(value))
     {
     }
 
-    private static Tag GetPredefinedTagOrThrow(string value)
+    private static string GetPredefinedTagOrThrow(string value)
         => value switch
         {
-            "info" => Info,
-            "success" => Success,
-            "notice" => Notice,
-            "tip" => Tip,
-            "caution" => Caution,
+            "info" => value,
+            "success" => value,
+            "notice" => value,
+            "tip" => value,
+            "caution" => value,
             _ when string.IsNullOrEmpty(value) => Empty,
             _ => throw new ArgumentException("Invalid tag value", nameof(value)),
         };
