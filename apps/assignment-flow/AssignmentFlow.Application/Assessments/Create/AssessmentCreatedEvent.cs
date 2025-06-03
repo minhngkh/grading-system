@@ -9,4 +9,5 @@ public class AssessmentCreatedEvent : AggregateEvent<AssessmentAggregate, Assess
     public required SubmissionReference SubmissionReference { get; init; }
     public required GradingId GradingId { get; init; }
     public required TeacherId TeacherId { get; init; }
+    public required RubricId RubricId { get; init; }
 }

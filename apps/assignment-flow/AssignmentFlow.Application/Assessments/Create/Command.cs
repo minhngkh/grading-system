@@ -6,6 +6,7 @@ public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentI
     public required SubmissionReference SubmissionReference { get; init; }
     public required GradingId GradingId { get; init; }
     public required TeacherId TeacherId { get; init; }
+    public required RubricId RubricId { get; init; }
 }
 
 public class CommandHandler : CommandHandler<AssessmentAggregate, AssessmentId, Command>

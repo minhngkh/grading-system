@@ -56,7 +56,8 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             {
                 SubmissionReference = SubmissionReference.New(submission.Reference),
                 GradingId = Shared.GradingId.With(gradingSummary.Id),
-                TeacherId = TeacherId.With(gradingSummary.TeacherId)
+                TeacherId = TeacherId.With(gradingSummary.TeacherId),
+                RubricId = RubricId.With(gradingSummary.RubricId)
             });
         }
 

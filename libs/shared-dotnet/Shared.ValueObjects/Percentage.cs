@@ -41,4 +41,6 @@ public sealed class Percentage : SingleValueObject<decimal>
     
     public static Percentage operator +(Percentage a, Percentage b) => new(a.Value + b.Value);
     public static Percentage operator -(Percentage a, Percentage b) => new(a.Value - b.Value);
+
+    public static Percentage operator *(Percentage a, decimal b) => new(a.Value * b);
 }
