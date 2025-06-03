@@ -10,6 +10,7 @@
   },
   "nx": {},
   "dependencies": {
+    "@azure/storage-blob": "^12.27.0",
     "@hono/node-server": "^1.14.2",
     "@hono/zod-validator": "^0.4.1",
     "@scalar/hono-api-reference": "^0.9.1",

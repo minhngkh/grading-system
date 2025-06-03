@@ -114,7 +114,9 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
         .WithReference(pluginDb)
         .WaitFor(pluginDb)
         .WithReference(rabbitmq)
-        .WaitFor(rabbitmq);
+        .WaitFor(rabbitmq)
+        .WithReference(blobs)
+        .WaitFor(blobs);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? gradingService = null;
