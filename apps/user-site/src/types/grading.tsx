@@ -15,6 +15,10 @@ export const SelectorSchema = z.object({
     .min(1, { message: "Pattern cannot be empty" }),
 });
 
+export const SubmissionSchema = z.object({
+  reference: z.string(),
+});
+
 export const GradingSchema = z.object({
   id: z.string({ required_error: "Grading ID is required" }),
   rubricId: z.string().optional(),
@@ -26,7 +30,9 @@ export const GradingSchema = z.object({
     .min(1, { message: "Selectors cannot be empty" }),
   status: z.nativeEnum(GradingStatus).optional(),
   lastModified: z.date().optional(),
+  submissions: z.array(SubmissionSchema),
 });
 
 export type CriteriaSelector = z.infer<typeof SelectorSchema>;
 export type GradingAttempt = z.infer<typeof GradingSchema>;
+export type Submission = z.infer<typeof SubmissionSchema>;

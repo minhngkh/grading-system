@@ -63,7 +63,7 @@ export default function RubricGenerationPage({
 
   const handlePrev = () => {
     stepper.prev();
-    sessionStorage.setItem("rubricStep", stepper.current.id);
+    sessionStorage.setItem("rubricStep", steps[currentIndex - 1].id);
   };
 
   const handleNext = async () => {
@@ -84,7 +84,7 @@ export default function RubricGenerationPage({
     }
 
     stepper.next();
-    sessionStorage.setItem("rubricStep", stepper.current.id);
+    sessionStorage.setItem("rubricStep", steps[currentIndex + 1].id);
   };
 
   const onUpdateRubric = async (updatedRubricData: Partial<Rubric>) => {

@@ -45,8 +45,9 @@ export default function UploadAssignmentPage({
   initialStep,
 }: UploadAssignmentPageProps) {
   const stepper = useStepper({
-    initialStep,
+    initialStep: initialStep,
   });
+
   const currentIndex = utils.getIndex(stepper.current.id);
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
@@ -57,16 +58,40 @@ export default function UploadAssignmentPage({
   });
 
   const gradingAttemptValues = gradingAttempt.getValues();
-  const handleUpdateGradingAttempt = (updated?: Partial<GradingAttempt>) => {
-    gradingAttempt.reset({
-      ...gradingAttemptValues,
-      ...updated,
-    });
+  const handleUpdateGradingAttempt = async (updated?: Partial<GradingAttempt>) => {
+    if (!updated) return;
+
+    try {
+      if (updated.selectors)
+        await GradingService.updateGradingSelectors(
+          gradingAttemptValues.id,
+          updated.selectors,
+        );
+
+      if (updated.rubricId)
+        await GradingService.updateGradingRubric(
+          gradingAttemptValues.id,
+          updated.rubricId,
+        );
+
+      if (updated.scaleFactor)
+        await GradingService.updateGradingScaleFactor(
+          gradingAttemptValues.id,
+          updated.scaleFactor,
+        );
+
+      gradingAttempt.reset({
+        ...gradingAttemptValues,
+        ...updated,
+      });
+    } catch (err) {
+      toast.error("Failed to update grading attempt");
+    }
   };
 
   const handlePrev = () => {
     stepper.prev();
-    sessionStorage.setItem("gradingStep", stepper.current.id);
+    sessionStorage.setItem("gradingStep", steps[currentIndex - 1].id);
   };
 
   const handleNext = async () => {
@@ -92,7 +117,7 @@ export default function UploadAssignmentPage({
     }
 
     stepper.next();
-    sessionStorage.setItem("gradingStep", stepper.current.id);
+    sessionStorage.setItem("gradingStep", steps[currentIndex + 1].id);
   };
 
   const isNextButtonDisabled = () => {

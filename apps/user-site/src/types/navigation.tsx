@@ -26,7 +26,7 @@ export const NavigationItems: NavigationData[] = [
   {
     title: "Create Rubric",
     icon: <ClipboardPlus className="size-4" />,
-    to: "/rubrics/new",
+    to: "/rubrics/create",
     preload: false,
   },
   {
@@ -37,7 +37,7 @@ export const NavigationItems: NavigationData[] = [
   {
     title: "Grade Assignments",
     icon: <BookOpenCheck className="size-4" />,
-    to: "/gradings/new",
+    to: "/gradings/create",
     preload: false,
   },
   {

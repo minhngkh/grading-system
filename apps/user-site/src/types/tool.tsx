@@ -30,7 +30,7 @@ export const SystemTools: Tool[] = [
     details: "Features include code completion, debugging tools, and Git integration.",
     type: ToolType.Rubric,
     isFavorite: true,
-    navigation: "/rubrics/new",
+    navigation: "/rubrics/create",
     preload: false,
   },
   {
@@ -46,7 +46,7 @@ export const SystemTools: Tool[] = [
     details: "Create task lists, set deadlines, and monitor progress on your projects.",
     type: ToolType.Grading,
     isFavorite: false,
-    navigation: "/gradings/new",
+    navigation: "/gradings/create",
     preload: false,
   },
   {
