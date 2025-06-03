@@ -37,7 +37,7 @@ export async function init() {
       return;
     }
 
-    const breakdown: z.infer<typeof submissionGradedEvent.schema>["scoreBreakdown"] = [];
+    const breakdown: z.infer<typeof submissionGradedEvent.schema>["scoreBreakdowns"] = [];
     const errors: z.infer<typeof submissionGradedEvent.schema>["errors"] = [];
 
     result.value.forEach((item) => {
@@ -65,7 +65,7 @@ export async function init() {
 
     submissionGradedEmitter.emit({
       assessmentId: data.assessmentId,
-      scoreBreakdown: breakdown,
+      scoreBreakdowns: breakdown,
       errors: errors.length > 0 ? errors : undefined,
     });
   });
