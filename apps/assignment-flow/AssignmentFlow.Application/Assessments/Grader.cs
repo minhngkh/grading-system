@@ -7,6 +7,7 @@ public class Grader : StringValueObject
     public static Grader Teacher => new("teacher");
     public static Grader AIGrader => new("aiGrader");
     public static Grader Default => Teacher;
+    public bool IsAIGrader => Value == "aiGrader";
 
     [JsonConstructor]
     private Grader(string value)

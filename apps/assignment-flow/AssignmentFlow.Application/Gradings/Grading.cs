@@ -22,7 +22,8 @@ public class Grading
     IAmReadModelFor<GradingAggregate, GradingId, ScaleFactorUpdatedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, RubricChangedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionAddedEvent>,
-    IAmReadModelFor<GradingAggregate, GradingId, GradingStartedEvent>
+    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingStartedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingFinishedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -74,12 +75,6 @@ public class Grading
     public GradingStateMachine StateMachine => new(() => Enum.Parse<GradingState>(Status), AfterStateUpdated);
 
     private void AfterStateUpdated(GradingState newState) => Status = Enum.GetName(newState) ?? throw new InvalidOperationException();
-
-    private void UpdateLastModifiedData(IDomainEvent domainEvent)
-    {
-        LastModified = domainEvent.Timestamp.ToUniversalTime();
-        Version = domainEvent.AggregateSequenceNumber;
-    }
     
     public bool IsActionAllowed(string action) => StateMachine.PermittedTriggers.Any(a => Enum.GetName(a) == action);
     
@@ -137,8 +132,21 @@ public class Grading
         return Task.CompletedTask;
     }
 
-    public async Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, GradingStartedEvent> domainEvent, CancellationToken cancellationToken)
+    public async Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, AutoGradingStartedEvent> domainEvent, CancellationToken cancellationToken)
     {
         await StateMachine.FireAsync(GradingTrigger.Start);
+        UpdateLastModifiedData(domainEvent);
+    }
+
+    public async Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, AutoGradingFinishedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        await StateMachine.FireAsync(GradingTrigger.FinishGrading);
+        UpdateLastModifiedData(domainEvent);
+    }
+
+    private void UpdateLastModifiedData(IDomainEvent domainEvent)
+    {
+        LastModified = domainEvent.Timestamp.ToUniversalTime();
+        Version = domainEvent.AggregateSequenceNumber;
     }
 }

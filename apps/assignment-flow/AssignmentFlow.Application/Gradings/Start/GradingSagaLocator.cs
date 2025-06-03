@@ -11,7 +11,7 @@ public class GradingSagaLocator : ISagaLocator
     {
         return domainEvent.GetAggregateEvent() switch
         {
-            GradingStartedEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(domainEvent.GetIdentity().Value))),
+            AutoGradingStartedEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(domainEvent.GetIdentity().Value))),
             Assessments.Create.AssessmentCreatedEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(@event.GradingId))),
             _ => throw new ArgumentNullException(nameof(domainEvent))
         };
