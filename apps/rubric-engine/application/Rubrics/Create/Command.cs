@@ -4,13 +4,11 @@ namespace RubricEngine.Application.Rubrics.Create;
 
 public class Command : Command<RubricAggregate, RubricId>
 {
-    public Command(RubricId aggregateId, RubricName name, TeacherId teacherId)
+    public Command(RubricId aggregateId, TeacherId teacherId)
         : base(aggregateId)
     {
-        Name = name;
         TeacherId = teacherId;
     }
-    public RubricName Name { get; }
     public TeacherId TeacherId { get; }
 }
 

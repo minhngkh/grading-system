@@ -8,14 +8,12 @@ using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
-using JsonApiDotNetCore.Controllers;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
 using static JsonApiDotNetCore.Resources.Annotations.AttrCapabilities;
 
 namespace AssignmentFlow.Application.Gradings;
 
-[Resource(GenerateControllerEndpoints = JsonApiEndpoints.Query)]
 public class Grading
     : Identifiable<string>,
     IReadModel,

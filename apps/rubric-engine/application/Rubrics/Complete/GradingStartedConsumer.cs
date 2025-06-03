@@ -38,7 +38,6 @@ public class GradingStartedConsumer(
         // 1. Create the new rubric (clone)
         var createCommand = new Create.Command(
             clonedRubricId,
-            RubricName.New(originalRubricData.RubricName),
             TeacherId.With(originalRubricData.TeacherId)
         );
         await commandBus.PublishAsync(createCommand, context.CancellationToken);
@@ -47,6 +46,7 @@ public class GradingStartedConsumer(
         
         var updateCommand = new Update.Command(clonedRubricId)
         {
+            Name = RubricName.New(originalRubricData.RubricName),
             PerformanceTags = originalRubricData.PerformanceTags.ToPerformanceTags(),
             Criteria = originalRubricData.Criteria.ToCriteria()
         };

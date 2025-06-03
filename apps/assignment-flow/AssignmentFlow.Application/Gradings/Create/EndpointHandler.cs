@@ -1,6 +1,5 @@
 ﻿using EventFlow;
 using EventFlow.Queries;
-using Microsoft.AspNetCore.Mvc;
 using RubricEngine.Application.Protos;
 
 namespace AssignmentFlow.Application.Gradings.Create;
@@ -11,18 +10,13 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/", CreateGrading)
             .WithName("CreateGrading")
-            .Produces(StatusCodes.Status201Created, typeof(string))
+            .Produces<Grading>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;
     }
 
-    public class CreateRubricRequest
-    {
-    }
-
     private static async Task<IResult> CreateGrading(
-        CreateRubricRequest _,
         ICommandBus commandBus,
         IQueryProcessor queryProcessor,
         IHttpContextAccessor contextAccessor,
@@ -37,6 +31,9 @@ public static class EndpointHandler
             TeacherId = teacherId
         }, cancellationToken);
 
-        return TypedResults.Created("/", gradingId.Value);
+        var grading = await queryProcessor.ProcessAsync(
+            new ReadModelByIdQuery<Grading>(gradingId), cancellationToken);
+
+        return TypedResults.CreatedAtRoute<Grading>(grading, "GetGradingById", new { id = gradingId });
     }
 }
