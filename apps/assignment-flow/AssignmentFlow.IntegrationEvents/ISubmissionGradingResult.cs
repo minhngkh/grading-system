@@ -1,5 +1,8 @@
-﻿namespace AssignmentFlow.IntegrationEvents;
+﻿using MassTransit;
 
+namespace AssignmentFlow.IntegrationEvents;
+
+[EntityName("grading.submission.graded")]
 public interface ISubmissionGradingResult
 {
     public string AssessmentId { get; set; }

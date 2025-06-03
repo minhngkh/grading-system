@@ -1,7 +1,12 @@
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { LanguageModelV1ProviderMetadata } from "@ai-sdk/provider";
-import { google as originalGoogle } from "@ai-sdk/google";
+import process from "node:process";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { customProvider } from "ai";
+
+const originalGoogle = createGoogleGenerativeAI({
+  apiKey: process.env.GOOGLE_API_KEY,
+});
 
 export const google = customProvider({
   languageModels: {

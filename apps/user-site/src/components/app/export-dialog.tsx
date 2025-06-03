@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, FileText, FileSpreadsheet, Loader2, CheckCircle } from "lucide-react";
+import { Download, FileText, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,12 +8,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Rubric } from "@/types/rubric";
-import { RubricExporter } from "@/lib/rubric-export";
+import { DataExporter } from "@/lib/exporters";
+import { toast } from "sonner";
 
 const exportTypes = [
   {
@@ -30,59 +29,53 @@ const exportTypes = [
   },
 ];
 
-type ExportDialogProps = {
-  rubricData: Rubric;
-};
+interface ExportDialogProps<TArgs extends any[]> {
+  exporterClass: new (...args: TArgs) => DataExporter;
+  args: TArgs;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
 
-export default function ExportDialog({ rubricData }: ExportDialogProps) {
-  const [open, setOpen] = useState(false);
+export default function ExportDialog<TArgs extends any[]>({
+  exporterClass,
+  args,
+  open,
+  onOpenChange,
+}: ExportDialogProps<TArgs>) {
   const [selectedType, setSelectedType] = useState("pdf");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState(true);
 
   const handleExport = async () => {
     setLoading(true);
-
-    const exporter = new RubricExporter(rubricData);
-    switch (selectedType) {
-      case "pdf":
-        exporter.exportToPDF();
-        break;
-      case "excel":
-        exporter.exportToExcel();
-        break;
-      default:
-        break;
-    }
-
-    setLoading(false);
     setSuccess(true);
 
-    // Show success for 1 second then close dialog
-    setTimeout(() => {
+    const exporter = new exporterClass(...args);
+    try {
+      switch (selectedType) {
+        case "pdf":
+          exporter.exportToPDF();
+          break;
+        case "excel":
+          exporter.exportToExcel();
+          break;
+        default:
+          throw new Error(`Unsupported export type: ${selectedType}`);
+      }
+
+      onOpenChange?.(false);
+    } catch (error) {
+      toast.error(
+        `Export failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
       setSuccess(false);
-      setOpen(false);
-    }, 1000);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(newOpen) => {
-        setOpen(newOpen);
-        if (!newOpen) {
-          // Reset states when dialog closes
-          setLoading(false);
-          setSuccess(false);
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Download className="h-4 w-4" />
-          Export
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Export Data</DialogTitle>
@@ -92,7 +85,7 @@ export default function ExportDialog({ rubricData }: ExportDialogProps) {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <RadioGroup
-            disabled={loading || success}
+            disabled={loading}
             value={selectedType}
             onValueChange={setSelectedType}
           >
@@ -115,31 +108,28 @@ export default function ExportDialog({ rubricData }: ExportDialogProps) {
             ))}
           </RadioGroup>
         </div>
+        {!success && !loading && (
+          <div className="text-destructive">Export failed. Please try again.</div>
+        )}
         <DialogFooter className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => setOpen(false)}
-            disabled={loading || success}
+            onClick={() => onOpenChange?.(false)}
+            disabled={loading}
           >
             Cancel
           </Button>
-          <Button onClick={handleExport} disabled={loading || success} className="gap-2">
-            {loading ? (
+          <Button onClick={handleExport} disabled={loading} className="gap-2">
+            {loading ?
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Exporting...
               </>
-            ) : success ? (
-              <>
-                <CheckCircle className="h-4 w-4" />
-                Success!
-              </>
-            ) : (
-              <>
+            : <>
                 <Download className="h-4 w-4" />
                 Export
               </>
-            )}
+            }
           </Button>
         </DialogFooter>
       </DialogContent>

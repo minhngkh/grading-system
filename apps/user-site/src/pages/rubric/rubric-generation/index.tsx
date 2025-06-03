@@ -10,10 +10,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { Fragment } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import ChatWindow from "./create-step/chat-window";
+import ChatWindow from "./create-step";
 import { useIsMobile } from "@/hooks/use-mobile";
-import PluginRubricTable from "./plugin-step/plugin-rubric-table";
-import FinalRubricTable from "./review-step/final-rubric-table";
+import PluginRubricTable from "./plugin-step";
+import FinalRubricTable from "./review-step";
 
 type StepData = {
   title: string;
@@ -67,7 +67,7 @@ export default function RubricGenerationPage({
     if (stepper.isLast) {
       try {
         await RubricService.updateRubric(initialRubric?.id!, form.getValues());
-        navigate({ to: "/manage-rubrics" });
+        navigate({ to: "/rubrics" });
       } catch (err) {
         toast.error("Failed to update rubric");
         console.error(err);

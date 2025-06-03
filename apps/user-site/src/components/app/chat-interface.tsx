@@ -21,11 +21,11 @@ type UploadedFile = {
   type: "image" | "document";
 };
 
-type AIChatProps = {
+interface AIChatProps {
   sendMessageCallback: (response: UserChatPrompt) => Promise<string | undefined>;
   className?: string;
   isRubricChat?: boolean;
-};
+}
 
 export default function ChatInterface({ sendMessageCallback, className }: AIChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -257,19 +257,18 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                               message.who === "user" ? "bg-primary/10" : "bg-muted/50",
                             )}
                           >
-                            {file.type === "image" && file.preview ? (
+                            {file.type === "image" && file.preview ?
                               <img
                                 src={file.preview}
                                 alt={file.file.name}
                                 className="max-h-32 object-cover border rounded-lg overflow-hidden"
                               />
-                            ) : (
-                              <div className="px-3 py-2 flex items-center gap-2 border rounded-lg overflow-hidden">
+                            : <div className="px-3 py-2 flex items-center gap-2 border rounded-lg overflow-hidden">
                                 <span className="text-xs font-medium">
                                   {file.file.name}
                                 </span>
                               </div>
-                            )}
+                            }
                           </div>
                         ))}
                       </div>
@@ -285,9 +284,9 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                         <div
                           className={cn(
                             "inline-block rounded-lg px-4 py-2 text-sm transition-all",
-                            message.who === "user"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted",
+                            message.who === "user" ?
+                              "bg-primary text-primary-foreground"
+                            : "bg-muted",
                           )}
                         >
                           {message.message}
@@ -324,19 +323,18 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                     key={file.id}
                     className="relative overflow-hidden group border dark:border-white dark:hover:border-transparent rounded-md py-1 px-1 flex items-center gap-2"
                   >
-                    {file.type === "image" && file.preview ? (
+                    {file.type === "image" && file.preview ?
                       <img
                         src={file.preview}
                         alt={file.file.name}
                         className="h-8 w-8 object-cover rounded"
                       />
-                    ) : (
-                      <div className="h-8 w-8 bg-accent dark:bg-foreground flex items-center justify-center rounded">
+                    : <div className="h-8 w-8 bg-accent dark:bg-foreground flex items-center justify-center rounded">
                         <span className="text-xs text-black font-semibold">
                           {file.file.name.split(".").pop()}
                         </span>
                       </div>
-                    )}
+                    }
                     <span className="text-xs truncate max-w-[100px]">
                       {file.file.name}
                     </span>

@@ -27,7 +27,7 @@ const UnauthenticatedNavBar = () => {
           onClick={() => navigate({ to: "/" })}
           className="text-xl font-bold cursor-pointer"
         >
-          Assessly
+          IntelliGrade
         </h6>
       </div>
       <div className="flex items-center gap-4">
@@ -81,7 +81,9 @@ const AuthenticatedNavBar = () => {
           size="icon"
           className="h-9 w-9"
         >
-          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          {theme === "dark" ?
+            <Sun className="h-5 w-5" />
+          : <Moon className="h-5 w-5" />}
           <span className="sr-only">Toggle Theme</span>
         </Button>
         <Separator orientation="vertical" className="h-8!" />

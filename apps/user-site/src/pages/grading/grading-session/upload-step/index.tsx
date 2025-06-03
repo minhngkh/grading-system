@@ -130,7 +130,7 @@ export default function UploadStep({
           />
           <span>or</span>
           <Button variant="outline" asChild>
-            <Link preload={false} to="/rubric-generation">
+            <Link preload={false} to="/rubrics/new">
               Create New Rubric
             </Link>
           </Button>

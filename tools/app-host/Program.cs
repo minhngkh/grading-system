@@ -52,7 +52,9 @@ var dbgate = dbgateContainer
 
 var rabbitmq = builder
     .AddRabbitMQ("messaging", username, password)
-    .WithManagementPlugin();
+    .WithManagementPlugin(
+        port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
+    );
 
 var blobs = builder
     .AddAzureStorage("storage")
@@ -68,7 +70,6 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
     rubricEngine = builder
         .AddProject<Projects.RubricEngine_Application>("rubric-engine")
         .WithHttpsEndpoint(
-            name: "rubric-engine",
             port: builder.Configuration.GetValue<int?>("RubricEngine:Port"),
             isProxied: toProxy
         )
@@ -84,7 +85,6 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
     assignmentFlow = builder
         .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
         .WithHttpsEndpoint(
-            name: "assignment-flow",
             port: builder.Configuration.GetValue<int?>("AssignmentFlow:Port"),
             isProxied: toProxy
         )
@@ -112,7 +112,24 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
             env: "PORT"
         )
         .WithReference(pluginDb)
-        .WaitFor(pluginDb);
+        .WaitFor(pluginDb)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq)
+        .WithReference(blobs)
+        .WaitFor(blobs);
+}
+
+IResourceBuilder<NxMonorepoProjectResource>? gradingService = null;
+if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
+{
+    gradingService = nx.AddProject("grading-service", "dev")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("GradingService:Port"),
+            isProxied: toProxy,
+            env: "PORT"
+        )
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
@@ -124,6 +141,8 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
+        .WaitFor(rubricEngine)
+        .WaitFor(assignmentFlow)
         // TODO: Back to using references instead of doing this manually
         .WithEnvironment(ctx =>
         {
@@ -131,11 +150,11 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             ctx.EnvironmentVariables["VITE_PLUGIN_SERVICE_URL"] =
                 pluginServiceEndpoint?.Url ?? "";
 
-            var rubricEngineEndpoint = rubricEngine?.GetEndpoint("http");
+            var rubricEngineEndpoint = rubricEngine?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_RUBRIC_ENGINE_URL"] =
                 rubricEngineEndpoint?.Url ?? "";
 
-            var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("http");
+            var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
                 assignmentFlowEndpoint?.Url ?? "";
         });

@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,22 +21,22 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, PencilIcon, PlusCircle, Trash2 } from "lucide-react";
+import { AlertCircle, PlusCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 interface EditRubricProps {
   rubricData: Rubric;
   onUpdate?: (rubric: Rubric) => void;
-  disableEdit?: boolean;
-  variant?: "button" | "text";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export default function EditRubric({
   rubricData,
   onUpdate,
-  disableEdit = false,
-  variant = "button",
+  open,
+  onOpenChange,
 }: EditRubricProps) {
   const [errorsState, setErrorState] = useState<string[]>([]);
 
@@ -190,24 +189,16 @@ export default function EditRubric({
     });
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setErrorState([]);
+      form.reset(rubricData);
+    }
+    onOpenChange?.(open);
+  };
+
   return (
-    <Dialog>
-      <DialogTrigger
-        disabled={disableEdit}
-        asChild
-        onClick={() => {
-          form.reset(rubricData);
-          setErrorState([]);
-        }}
-      >
-        {variant === "button" ? (
-          <Button size="icon">
-            <PencilIcon />
-          </Button>
-        ) : (
-          "Edit Rubric"
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         aria-describedby={undefined}
         className="flex flex-col min-w-[90vw] overflow-y-auto max-h-[90vh]"
@@ -293,14 +284,13 @@ export default function EditRubric({
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {formData.criteria.length === 0 ? (
+                  {formData.criteria.length === 0 ?
                     <tr>
                       <td colSpan={formData.tags.length + 1} className="text-center p-4">
                         No criteria available. Please add a criterion.
                       </td>
                     </tr>
-                  ) : (
-                    formData.criteria.map((criterion, index) => (
+                  : formData.criteria.map((criterion, index) => (
                       <tr key={index} className="border-t">
                         <td className={cn("p-2", formData.tags.length > 0 && "border-r")}>
                           <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
@@ -422,7 +412,7 @@ export default function EditRubric({
                         })}
                       </tr>
                     ))
-                  )}
+                  }
                 </tbody>
               </table>
             </div>

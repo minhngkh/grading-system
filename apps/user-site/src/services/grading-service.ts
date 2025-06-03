@@ -1,11 +1,9 @@
-import { Assessment } from "@/types/assessment";
 import { CriteriaSelector, GradingAttempt, GradingStatus } from "@/types/grading";
 import axios, { AxiosRequestConfig } from "axios";
 import { Deserializer } from "jsonapi-serializer";
 
-const API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
-const GRADING_API_URL = `${API_URL}/gradings`;
-const ASSESSMENT_API_URL = `${API_URL}/assessments`;
+const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
+const GRADING_API_URL = `${ASSIGNMENT_FLOW_API_URL}/gradings`;
 
 export type GetGradingsResult = {
   data: GradingAttempt[];
@@ -30,14 +28,6 @@ export class GradingService {
   static gradingDeserializer = new Deserializer({
     keyForAttribute: "camelCase",
   });
-
-  static async getGradingAssessments(id: string): Promise<Assessment[]> {
-    const response = await axios.get(
-      `${ASSESSMENT_API_URL}?filter=equals(gradingId,'${id}')`,
-      this.configHeaders,
-    );
-    return this.gradingDeserializer.deserialize(response.data);
-  }
 
   static async createGradingAttempt(): Promise<string> {
     const response = await axios.post(GRADING_API_URL, {}, this.configHeaders);

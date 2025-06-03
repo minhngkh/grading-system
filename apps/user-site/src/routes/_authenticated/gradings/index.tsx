@@ -9,12 +9,12 @@ export const Route = createFileRoute("/_authenticated/gradings/")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
-  loader: async ({ deps }) => {
-    const { rowsPerPage, currentPage, searchTerm } = deps;
-    return GradingService.getGradingAttempts(currentPage, rowsPerPage, searchTerm);
+  loader: ({ deps }) => {
+    const { perPage, page, search } = deps;
+    return GradingService.getGradingAttempts(page, perPage, search);
   },
   search: {
-    middlewares: [retainSearchParams(["rowsPerPage", "currentPage", "searchTerm"])],
+    middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },
   errorComponent: () => ErrorComponent(),
   pendingComponent: () => PendingComponent("Loading rubrics..."),
@@ -30,9 +30,9 @@ function RouteComponent() {
       search: (prev) => {
         return {
           ...prev,
-          searchTerm: partial.searchTerm?.trim() || undefined,
-          currentPage: partial.currentPage || prev.currentPage,
-          rowsPerPage: partial.rowsPerPage || prev.rowsPerPage,
+          search: partial.search?.trim() || undefined,
+          page: partial.page || prev.page,
+          perPage: partial.perPage || prev.perPage,
         };
       },
       replace: true,
