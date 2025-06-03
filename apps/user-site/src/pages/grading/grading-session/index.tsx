@@ -62,16 +62,16 @@ export default function UploadAssignmentPage({
     if (!updated) return;
 
     try {
-      if (updated.selectors)
-        await GradingService.updateGradingSelectors(
-          gradingAttemptValues.id,
-          updated.selectors,
-        );
-
       if (updated.rubricId)
         await GradingService.updateGradingRubric(
           gradingAttemptValues.id,
           updated.rubricId,
+        );
+
+      if (updated.selectors)
+        await GradingService.updateGradingSelectors(
+          gradingAttemptValues.id,
+          updated.selectors,
         );
 
       if (updated.scaleFactor)

@@ -78,7 +78,20 @@ export default function UploadStep({
           }),
         );
 
-        setUploadedFiles([...uploadedFiles, ...newFiles]);
+        const updatedFiles = [...uploadedFiles, ...newFiles];
+
+        onGradingAttemptChange({
+          submissions: [
+            ...gradingAttempt.submissions,
+            ...updatedFiles.map((file) => {
+              return {
+                reference: file.name,
+              };
+            }),
+          ],
+        });
+
+        setUploadedFiles(updatedFiles);
       } catch (error) {
         console.error("Error uploading files:", error);
       } finally {
