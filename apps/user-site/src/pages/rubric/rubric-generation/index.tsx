@@ -36,12 +36,14 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
 
 interface RubricGenerationPageProps {
   initialRubric: Rubric;
+  rubricStep?: string;
 }
 
 export default function RubricGenerationPage({
   initialRubric,
+  rubricStep,
 }: RubricGenerationPageProps) {
-  const stepper = useStepper();
+  const stepper = useStepper({ initialStep: rubricStep });
   const currentIndex = utils.getIndex(stepper.current.id);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -57,6 +59,11 @@ export default function RubricGenerationPage({
     }
 
     return false;
+  };
+
+  const handlePrev = () => {
+    stepper.prev();
+    sessionStorage.setItem("rubricStep", steps[currentIndex - 1].id);
   };
 
   const handleNext = async () => {
@@ -77,6 +84,7 @@ export default function RubricGenerationPage({
     }
 
     stepper.next();
+    sessionStorage.setItem("rubricStep", steps[currentIndex + 1].id);
   };
 
   const onUpdateRubric = async (updatedRubricData: Partial<Rubric>) => {
@@ -145,7 +153,7 @@ export default function RubricGenerationPage({
         })}
 
         <div className="flex w-full justify-end gap-4">
-          <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
+          <Button variant="secondary" onClick={handlePrev} disabled={stepper.isFirst}>
             Back
           </Button>
           <Button disabled={isNextDisabled()} onClick={handleNext}>

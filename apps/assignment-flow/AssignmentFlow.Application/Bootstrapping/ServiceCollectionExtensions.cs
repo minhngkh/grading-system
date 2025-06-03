@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
             {
                 configurator.Host(new Uri(configuration.GetConnectionString("messaging")!));
                 configurator.ConfigureEndpoints(context);
+                configurator.UseRawJsonDeserializer(isDefault: true);
             });
         });
         //services.AddHostedService<Worker>();

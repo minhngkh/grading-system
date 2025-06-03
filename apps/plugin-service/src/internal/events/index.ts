@@ -27,7 +27,7 @@ export const submissionGradedEvent = {
   name: "grading.submission.graded",
   schema: z.object({
     assessmentId: z.string(),
-    scoreBreakdown: z
+    scoreBreakdowns: z
       .array(
         z.object({
           criterionName: z.string(),
@@ -46,8 +46,7 @@ export const submissionGradedEvent = {
             }),
           ),
         }),
-      )
-      .optional(),
-    errors: z.array(z.string()).optional(),
+      ),
+    errors: z.array(z.string()),
   }),
 } satisfies ServiceEvent;

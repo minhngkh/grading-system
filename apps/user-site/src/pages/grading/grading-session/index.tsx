@@ -37,16 +37,17 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
 
 interface UploadAssignmentPageProps {
   initialGradingAttempt: GradingAttempt;
-  initalStep?: string;
+  initialStep?: string;
 }
 
 export default function UploadAssignmentPage({
   initialGradingAttempt,
-  initalStep,
+  initialStep,
 }: UploadAssignmentPageProps) {
   const stepper = useStepper({
-    initialStep: initalStep,
+    initialStep: initialStep,
   });
+
   const currentIndex = utils.getIndex(stepper.current.id);
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
@@ -57,12 +58,42 @@ export default function UploadAssignmentPage({
   });
 
   const gradingAttemptValues = gradingAttempt.getValues();
-  const handleUpdateGradingAttempt = (updated?: Partial<GradingAttempt>) => {
-    gradingAttempt.reset({
-      ...gradingAttemptValues,
-      ...updated,
-    });
+  const handleUpdateGradingAttempt = async (updated?: Partial<GradingAttempt>) => {
+    if (!updated) return;
+
+    try {
+      if (updated.rubricId)
+        await GradingService.updateGradingRubric(
+          gradingAttemptValues.id,
+          updated.rubricId,
+        );
+
+      if (updated.selectors)
+        await GradingService.updateGradingSelectors(
+          gradingAttemptValues.id,
+          updated.selectors,
+        );
+
+      if (updated.scaleFactor)
+        await GradingService.updateGradingScaleFactor(
+          gradingAttemptValues.id,
+          updated.scaleFactor,
+        );
+
+      gradingAttempt.reset({
+        ...gradingAttemptValues,
+        ...updated,
+      });
+    } catch (err) {
+      toast.error("Failed to update grading attempt");
+    }
   };
+
+  const handlePrev = () => {
+    stepper.prev();
+    sessionStorage.setItem("gradingStep", steps[currentIndex - 1].id);
+  };
+
   const handleNext = async () => {
     switch (currentIndex) {
       case 0:
@@ -86,7 +117,7 @@ export default function UploadAssignmentPage({
     }
 
     stepper.next();
-    sessionStorage.setItem("gradingStep", stepper.current.id);
+    sessionStorage.setItem("gradingStep", steps[currentIndex + 1].id);
   };
 
   const isNextButtonDisabled = () => {
@@ -146,7 +177,7 @@ export default function UploadAssignmentPage({
         })}
       </div>
       <div className="flex w-full justify-end gap-4">
-        <Button variant="secondary" onClick={stepper.prev} disabled={stepper.isFirst}>
+        <Button variant="secondary" onClick={handlePrev} disabled={stepper.isFirst}>
           Back
         </Button>
         <Button disabled={isNextButtonDisabled()} onClick={handleNext}>

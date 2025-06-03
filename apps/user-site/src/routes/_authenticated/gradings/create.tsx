@@ -4,18 +4,19 @@ import UploadAssignmentPage from "@/pages/grading/grading-session";
 import { GradingService } from "@/services/grading-service";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/gradings/new")({
+export const Route = createFileRoute("/_authenticated/gradings/create")({
   component: RouteComponent,
   beforeLoad: async () => {
     let gradingId = sessionStorage.getItem("gradingId") ?? undefined;
-    if (!gradingId) {
-      gradingId = await GradingService.createGradingAttempt();
-      sessionStorage.setItem("gradingId", gradingId);
-    }
-
     return { gradingId };
   },
-  loader: ({ context: { gradingId } }) => GradingService.getGradingAttempt(gradingId),
+  loader: async ({ context: { gradingId } }) => {
+    if (!gradingId) {
+      return await GradingService.createGradingAttempt();
+    }
+
+    return await GradingService.getGradingAttempt(gradingId);
+  },
   onLeave: () => {
     sessionStorage.removeItem("gradingStep");
     sessionStorage.removeItem("gradingId");
@@ -26,8 +27,14 @@ export const Route = createFileRoute("/_authenticated/gradings/new")({
 
 function RouteComponent() {
   const gradingStep = sessionStorage.getItem("gradingStep") ?? undefined;
+  const { gradingId } = Route.useRouteContext();
   const attempt = Route.useLoaderData();
+
+  if (!gradingId) {
+    sessionStorage.setItem("gradingId", attempt.id);
+  }
+
   return (
-    <UploadAssignmentPage initalStep={gradingStep} initialGradingAttempt={attempt} />
+    <UploadAssignmentPage initialStep={gradingStep} initialGradingAttempt={attempt} />
   );
 }

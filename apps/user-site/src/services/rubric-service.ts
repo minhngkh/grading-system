@@ -60,12 +60,14 @@ export class RubricService {
     const response = await axios.get(`${RUBRIC_API_URL}/${id}`, this.configHeaders);
     return this.rubricDeserializer.deserialize(response.data);
   }
-  static async createRubric(): Promise<string> {
+
+  static async createRubric(): Promise<Rubric> {
     const response = await axios.post(
       RUBRIC_API_URL,
       { name: "New Rubric" },
       this.configHeaders,
     );
+
     return response.data;
   }
   static async updateRubric(id: string, rubric: Partial<Rubric>): Promise<Rubric> {

@@ -5,17 +5,20 @@ export const ChatRubricSchema = z.object({
   rubricName: z.string().min(1, "Rubric name is required"),
   tags: z.array(z.string()),
   criteria: z.array(CriteriaSchema),
+  weightInRange: z.string().optional().default("false"),
 });
+
+export type ChatRubric = z.infer<typeof ChatRubricSchema>;
 
 export interface RubricUserPrompt {
   prompt: string;
-  rubric?: z.infer<typeof ChatRubricSchema>;
+  rubric?: ChatRubric;
   files?: File[];
 }
 
 export interface RubricAgentResponse {
   message: string;
-  rubric?: z.infer<typeof ChatRubricSchema>;
+  rubric?: ChatRubric;
 }
 
 export interface UserChatPrompt {
@@ -26,3 +29,17 @@ export interface UserChatPrompt {
 export interface AgentChatResponse {
   message: string;
 }
+
+export type ChatMessage = {
+  message: string;
+  who: "user" | "agent";
+  files?: UploadedFile[];
+};
+
+export type UploadedFile = {
+  id: string;
+  file: File;
+  preview?: string;
+  type: "image" | "document";
+  url: string;
+};

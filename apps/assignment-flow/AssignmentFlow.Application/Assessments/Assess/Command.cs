@@ -13,7 +13,7 @@ public class CommandHandler : CommandHandler<AssessmentAggregate, AssessmentId, 
 {
     public override Task ExecuteAsync(AssessmentAggregate aggregate, Command command, CancellationToken cancellationToken)
     {
-        if (!aggregate.IsNew)
+        if (aggregate.IsNew)
             return Task.CompletedTask;
 
         aggregate.Assess(command);

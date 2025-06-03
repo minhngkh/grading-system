@@ -6,7 +6,7 @@ import { RubricSelect } from "@/components/app/scrollable-select";
 import { GradingAttempt } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GradingService } from "@/services/grading-service";
 import Spinner from "@/components/app/spinner";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { InfoToolTip } from "@/components/app/info-tooltip";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface UploadStepProps {
   onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
@@ -27,35 +28,31 @@ export default function UploadStep({
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [scaleFactor, setScaleFactor] = useState<number | undefined>(
+    gradingAttempt.scaleFactor,
+  );
+
+  const debounceScaleFactor = useDebounce(scaleFactor, 500);
+
+  useEffect(() => {
+    if (debounceScaleFactor !== undefined) {
+      onGradingAttemptChange({ scaleFactor: debounceScaleFactor });
+    }
+  }, [debounceScaleFactor]);
 
   const handleSelectRubric = async (rubric: Rubric | undefined) => {
-    if (rubric) {
-      const selectors = rubric.criteria.map((criterion) => {
-        return { criterion: criterion.name, pattern: "*" };
-      });
-
-      try {
-        await GradingService.updateGradingRubric(gradingAttempt.id, rubric.id);
-      } catch (error) {
-        toast.error("Failed to update rubric");
-        console.error("Error updating rubric:", error);
-        return;
-      }
-      try {
-        await GradingService.updateGradingSelectors(gradingAttempt.id, selectors);
-      } catch (error) {
-        toast.error("Failed to update selectors");
-        console.error("Error updating selectors:", error);
-        return;
-      }
-
-      onGradingAttemptChange({
-        rubricId: rubric.id,
-        selectors: selectors,
-      });
-    } else {
-      onGradingAttemptChange(undefined);
+    if (!rubric) {
+      return;
     }
+
+    const selectors = rubric.criteria.map((criterion) => {
+      return { criterion: criterion.name, pattern: "*" };
+    });
+
+    await onGradingAttemptChange({
+      rubricId: rubric.id,
+      selectors: selectors,
+    });
   };
 
   const handleFileUpload = async (files: File[]) => {
@@ -81,7 +78,20 @@ export default function UploadStep({
           }),
         );
 
-        setUploadedFiles([...uploadedFiles, ...newFiles]);
+        const updatedFiles = [...uploadedFiles, ...newFiles];
+
+        onGradingAttemptChange({
+          submissions: [
+            ...gradingAttempt.submissions,
+            ...updatedFiles.map((file) => {
+              return {
+                reference: file.name,
+              };
+            }),
+          ],
+        });
+
+        setUploadedFiles(updatedFiles);
       } catch (error) {
         console.error("Error uploading files:", error);
       } finally {
@@ -90,14 +100,15 @@ export default function UploadStep({
     }
   };
 
-  const handleRemoveFile = (i: number) => {
-    const updatedFiles = uploadedFiles.filter((_, index) => index !== i);
-    setUploadedFiles(updatedFiles);
-  };
+  // TODO: Implement file removal functionality if needed
+  // const handleRemoveFile = (i: number) => {
+  //   const updatedFiles = uploadedFiles.filter((_, index) => index !== i);
+  //   setUploadedFiles(updatedFiles);
+  // };
 
-  const handleRemoveAllFiles = () => {
-    setUploadedFiles([]);
-  };
+  // const handleRemoveAllFiles = () => {
+  //   setUploadedFiles([]);
+  // };
 
   return (
     <div className="size-full space-y-4">
@@ -130,7 +141,7 @@ export default function UploadStep({
           />
           <span>or</span>
           <Button variant="outline" asChild>
-            <Link preload={false} to="/rubrics/new">
+            <Link preload={false} to="/rubrics/create">
               Create New Rubric
             </Link>
           </Button>
@@ -145,14 +156,15 @@ export default function UploadStep({
         <Input
           className="max-w-32"
           type="number"
-          value={gradingAttempt.scaleFactor || ""}
+          min={1}
+          value={scaleFactor ?? ""}
           onChange={(e) => {
             const value = parseFloat(e.target.value);
             if (!isNaN(value)) {
-              onGradingAttemptChange({ scaleFactor: value });
+              setScaleFactor(value);
             }
           }}
-          placeholder="1"
+          placeholder="10"
         />
       </div>
 
@@ -167,19 +179,18 @@ export default function UploadStep({
       <div className="space-y-1">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Uploaded Files</h2>
-          {uploadedFiles.length > 0 && (
+          {gradingAttempt.submissions.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRemoveAllFiles}
               className="text-destructive hover:text-destructive"
             >
               Remove All
             </Button>
           )}
         </div>
-        <FileList files={uploadedFiles} onDelete={handleRemoveFile} />
-        {gradingAttempt && uploadedFiles.length > 0 && (
+        <FileList gradingAttempt={gradingAttempt} />
+        {gradingAttempt.submissions.length > 0 && (
           <CriteriaMapper
             gradingAttempt={gradingAttempt}
             onGradingAttemptChange={onGradingAttemptChange}

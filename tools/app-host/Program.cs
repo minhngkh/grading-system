@@ -129,7 +129,9 @@ if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
             env: "PORT"
         )
         .WithReference(rabbitmq)
-        .WaitFor(rabbitmq);
+        .WaitFor(rabbitmq)
+        .WithReference(blobs)
+        .WaitFor(blobs);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;

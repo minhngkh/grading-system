@@ -1,13 +1,12 @@
 import {
   AgentChatResponse,
-  ChatRubricSchema,
-  UserChatPrompt,
+  ChatMessage,
+  ChatRubric,
   type RubricAgentResponse,
-  type RubricUserPrompt,
 } from "@/types/chat";
 import axios, { AxiosRequestConfig } from "axios";
 
-const AI_PLUGIN_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/ai`;
+const AI_PLUGIN_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/plugins/ai`;
 
 export class ChatService {
   static configHeaders: AxiosRequestConfig = {
@@ -17,18 +16,63 @@ export class ChatService {
     },
   };
 
-  static async sendRubricMessage(prompt: RubricUserPrompt): Promise<RubricAgentResponse> {
-    const res = await axios.post(`${AI_PLUGIN_URL}/rubric`, prompt, this.configHeaders);
+  static async sendRubricMessage(
+    messages: ChatMessage[],
+    rubric?: ChatRubric,
+  ): Promise<RubricAgentResponse> {
+    const formattedMessages = messages.map((message) => ({
+      role: message.who === "user" ? "user" : "assistant",
+      content: [
+        {
+          type: "text",
+          text: message.message,
+        },
+        ...(message.files ?
+          message.files.map((file) => ({
+            type: "file",
+            data: file.url,
+            mimeType: file.type,
+          }))
+        : []),
+      ],
+    }));
 
+    const data = {
+      rubric: rubric,
+      messages: formattedMessages,
+    };
+
+    const res = await axios.post(`${AI_PLUGIN_URL}/chat`, data, this.configHeaders);
     return {
       message: res.data.message,
-      rubric: res.data.rubric ? ChatRubricSchema.parse(res.data.rubric) : undefined,
+      // TODO: Handle rubric schema validation
+      rubric: res.data.rubric ? res.data.rubric : undefined,
     };
   }
 
-  static async sendChatMessage(prompt: UserChatPrompt): Promise<AgentChatResponse> {
-    const res = await axios.post(`${AI_PLUGIN_URL}/chat`, prompt, this.configHeaders);
+  static async sendChatMessage(messages: ChatMessage[]): Promise<AgentChatResponse> {
+    const formattedMessages = messages.map((message) => ({
+      role: message.who === "user" ? "user" : "assistant",
+      content: [
+        {
+          type: "text",
+          text: message.message,
+        },
+        ...(message.files ?
+          message.files.map((file) => ({
+            type: "file",
+            data: file.url,
+            mimeType: file.type,
+          }))
+        : []),
+      ],
+    }));
 
+    const data = JSON.stringify({
+      messages: formattedMessages,
+    });
+
+    const res = await axios.post(`${AI_PLUGIN_URL}/chat`, data, this.configHeaders);
     return {
       message: res.data.message,
     };
