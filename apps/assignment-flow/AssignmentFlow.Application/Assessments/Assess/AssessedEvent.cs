@@ -9,4 +9,6 @@ public class AssessedEvent : AggregateEvent<AssessmentAggregate, AssessmentId>
     public required Grader Grader { get; init; }
     public required ScoreBreakdowns ScoreBreakdowns { get; init; }
     public required List<Feedback>? Feedbacks { get; init; }
+
+    public required GradingId GradingId { get; init; }
 }

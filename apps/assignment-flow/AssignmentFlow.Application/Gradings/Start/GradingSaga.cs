@@ -40,7 +40,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         Emit(new GradingSagaStartedEvent
         {
             RubricId = RubricId.With(gradingSummary.RubricId),
-            GradingId = GradingId.With(gradingSummary.Id),
+            GradingId = Shared.GradingId.With(gradingSummary.Id),
             TeacherId = TeacherId.With(gradingSummary.TeacherId),
             SubmissionReferences = [.. gradingSummary.Submissions
                 .Select(s => SubmissionReference.New(s.Reference))]
@@ -132,7 +132,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
 
         if (aggregateState.FailedAssessmentIds.Count == 0)
         {
-            Publish(new CompleteAutoGradingCommand(aggregateState.GradingId));
+            Publish(new CompleteAutoGradingCommand(GradingId.With(aggregateState.GradingId)));
         }
         else
         {

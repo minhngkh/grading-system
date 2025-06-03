@@ -40,7 +40,10 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void StartAutoGrading()
     {
-        Emit(new StartAutoGrading.AutoGradingStartedEvent());
+        Emit(new StartAutoGrading.AutoGradingStartedEvent
+        {
+            GradingId = State.GradingId
+        });
     }
 
     public void Assess(Assess.Command command)
@@ -54,7 +57,8 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         {
             Grader = command.Grader,
             ScoreBreakdowns = command.ScoreBreakdowns,
-            Feedbacks = command.Feedbacks
+            Feedbacks = command.Feedbacks,
+            GradingId = State.GradingId,
         });
     }
 

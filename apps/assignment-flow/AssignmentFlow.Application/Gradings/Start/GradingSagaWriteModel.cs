@@ -7,7 +7,7 @@ public class GradingSagaWriteModel :
     IEventApplier<GradingSaga, GradingSagaId>
 {
     public TeacherId TeacherId { get; private set; } = TeacherId.Empty;
-    public GradingId GradingId { get; private set; } = null!;
+    public Shared.GradingId GradingId { get; private set; } = Shared.GradingId.Empty;
     public RubricId RubricId { get; private set; } = RubricId.Empty;
 
     public HashSet<SubmissionReference> PendingSubmissionRefs { get; private set; } = [];
