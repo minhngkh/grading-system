@@ -59,7 +59,7 @@ public sealed class FeedbackConverter : JsonConverter<Feedback>
         var jObject = JObject.Load(reader);
         var criterion = jObject.GetRequired<CriterionName>("Criterion");
         var comment = jObject.GetRequired<Comment>("Comment");
-        var attachment = jObject.GetRequired<Highlight>("Attachment");
+        var attachment = jObject.GetRequired<Highlight>("Highlight");
         var tag = jObject.GetRequired<Tag>("Tag");
         return Feedback.New(criterion, comment, attachment, tag);
     }
@@ -101,7 +101,7 @@ public sealed class Tag : StringValueObject
             "notice" => value,
             "tip" => value,
             "caution" => value,
-            _ when string.IsNullOrEmpty(value) => Empty,
+            _ when string.IsNullOrEmpty(value) => value, //TODO: look at this
             _ => throw new ArgumentException("Invalid tag value", nameof(value)),
         };
     

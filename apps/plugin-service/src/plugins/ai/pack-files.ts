@@ -27,7 +27,7 @@ export function getBlobFile(blobUrl: string): string {
   const name = getBlobName(blobUrl, DEFAULT_CONTAINER);
   const parts = name.split("/");
 
-  return parts[1];
+  return path.join(...parts.slice(1));
 }
 
 export async function downloadFiles(blobUrls: string[]) {
