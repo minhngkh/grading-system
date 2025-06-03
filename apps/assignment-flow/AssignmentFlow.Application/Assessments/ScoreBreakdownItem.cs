@@ -23,7 +23,7 @@ public sealed class ScoreBreakdownItem : ValueObject
 
     public void NormalizeRawScore(decimal factor)
     {
-        RawScore *= factor;
+        RawScore *= (factor / 100);
     }
 
     /// <summary>
