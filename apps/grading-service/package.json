@@ -1,21 +1,15 @@
 {
-  "name": "@grading-system/plugin-service",
+  "name": "@grading-system/grading-service",
   "type": "module",
   "private": true,
   "scripts": {
     "dev": "node --import @swc-node/register/esm-register --watch --watch-preserve-output ./src/index.ts"
   },
   "nx": {
-    "name": "plugin-service",
+    "name": "grading-service",
     "projectType": "application"
   },
-  "dependencies": {
-    "@ai-sdk/google": "^1.2.18",
-    "@ai-sdk/openai": "^1.3.22",
-    "@ai-sdk/provider": "^1.1.3",
-    "ai": "^4.3.16",
-    "repomix": "^0.3.8"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@grading-system/typed-moleculer": "workspace:*",
     "@grading-system/utils": "workspace:*"

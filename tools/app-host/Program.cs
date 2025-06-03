@@ -52,7 +52,9 @@ var dbgate = dbgateContainer
 
 var rabbitmq = builder
     .AddRabbitMQ("messaging", username, password)
-    .WithManagementPlugin();
+    .WithManagementPlugin(
+        port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
+    );
 
 var blobs = builder
     .AddAzureStorage("storage")
@@ -110,7 +112,24 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
             env: "PORT"
         )
         .WithReference(pluginDb)
-        .WaitFor(pluginDb);
+        .WaitFor(pluginDb)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq)
+        .WithReference(blobs)
+        .WaitFor(blobs);
+}
+
+IResourceBuilder<NxMonorepoProjectResource>? gradingService = null;
+if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
+{
+    gradingService = nx.AddProject("grading-service", "dev")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("GradingService:Port"),
+            isProxied: toProxy,
+            env: "PORT"
+        )
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
@@ -127,7 +146,6 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
         // TODO: Back to using references instead of doing this manually
         .WithEnvironment(ctx =>
         {
-            
             var pluginServiceEndpoint = pluginService?.GetEndpoint("http");
             ctx.EnvironmentVariables["VITE_PLUGIN_SERVICE_URL"] =
                 pluginServiceEndpoint?.Url ?? "";

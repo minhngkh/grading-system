@@ -2,15 +2,15 @@
 
 import type { CoreMessage, StreamObjectResult } from "ai";
 import type { Result } from "neverthrow";
-import type { LanguageModelWithOptions } from "@/internal/llm/types";
+import type { LanguageModelWithOptions } from "@/core/llm/types";
 import { asError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { generateObject, streamObject } from "ai";
 import dedent from "dedent";
 import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { z } from "zod";
-import { googleProviderOptions } from "@/internal/llm/providers/google";
-import { registry } from "@/internal/llm/registry";
+import { googleProviderOptions } from "@/core/llm/providers/google";
+import { registry } from "@/core/llm/registry";
 
 /**
  * Only works with Gemini model atm, using OpenAi models require schema to use nullable
@@ -54,7 +54,10 @@ const weightRangeSchema = z
 function createRubricSchema(weightInRange: boolean) {
   // FIXME: need to remove min(2) at tags if using gpt model
   return z.object({
-    rubricName: z.string(),
+    rubricName: z
+      .string()
+      .optional()
+      .describe("name of the rubric, should not be empty in most cases"),
     weightInRange: z
       .literal(weightInRange ? "true" : "false")
       .describe(
@@ -93,9 +96,7 @@ function createChatResponseSchema(rubricSchema: z.ZodSchema) {
     rubric: rubricSchema
       .nullable()
       .describe("The rubric object, or null if not applicable"),
-    message: z
-      .string()
-      .describe("Explanation of the action taken response to the user"),
+    message: z.string().describe("Explanation of the action taken response to the user"),
   });
 }
 
@@ -130,8 +131,7 @@ const chatSystemPrompt = dedent`
     - Provide the answer to the question naturally in the \`message\` field
     - Ignore any provided rubric
   - If the input is a **rubric request** (creating or updating a rubric):
-    - If an **existing rubric is provided**, update it based on the user's input
-    - If **no rubric is provided**, create a new rubric from scratch based if the user's said so
+    - update the \`rubric\` field with the new or updated rubric
     - After creating/updating the rubric, provide back a detailed message about what you have done in the \`message\` field and reason behind it (if needed)
 
   ---
@@ -239,7 +239,7 @@ export async function generateChatResponse(options: {
       asError,
     );
     if (responseResult.isErr()) {
-      console.debug(responseResult.error)
+      console.debug(responseResult.error);
       return err(
         wrapError(
           responseResult.error,
@@ -290,10 +290,7 @@ export async function generateChatResponse(options: {
 
 export const feedbackSchema = z.object({
   comment: z.string().describe("short comment about the reason"),
-  fileRef: z
-    .string()
-    .optional()
-    .describe("The url to the file that the comment refers to, not required"),
+  fileRef: z.string().describe("The file that the comment refers to"),
   position: z
     .object({
       fromLine: z.number().int(),
@@ -302,7 +299,7 @@ export const feedbackSchema = z.object({
       toColumn: z.number().int().optional(),
     })
     .describe(
-      "The position of the part where it conclude to the comment, relative to the the file (if any)",
+      "Position of part of the files to highlight the reason why you conclude to that comment, this is relative to the file itself",
     ),
 });
 
@@ -322,6 +319,10 @@ export const gradingResultSchema = z.object({
         feedback: z
           .array(feedbackSchema)
           .describe("feedback reasons for the grading score"),
+        summary: z
+          .string()
+          .optional()
+          .describe("summary feedback for the grading result"),
       }),
     )
     .describe("grading results for each criterion in the rubric"),
@@ -403,11 +404,14 @@ function createGradingSystemPrompt(rubric: Rubric) {
 
 
     ### Instructions
+    - The input you will be given is generated using repomix, it will show you the structure and content of all the files that you will use to grade
     - Here are some more detailed specs of the output:
       - You must grade all of the criterion that is in the "criteria" array of the rubric
       - You must grade the criterion by reading the level description then give and choose the one that is the most appropriate for the input
       - The score must be exactly the same as the level's weight (or if it contains a max and min value, then the graded score must be both: lower or equal to the max value; higher and *must not* equal to the min value. for example, if "weight": { "max": 100, "min":75 }, the score should be in range 75 < score <= 100).
-      - If the input does not provide any information about the what file it is referring to, you can just ignore the \`fileRef\` field
+      - If the score you gave:
+        - is 100, you don't have to provide any detailed feedback in the \`feedback\` field
+        - is less than 100, you should provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the input that you based your decision on, if applicable
   `;
 }
 
@@ -421,7 +425,7 @@ export async function gradeUsingRubric(
 
   const responseResult = await fromPromise(
     generateObject({
-      ...gradingOptions,
+      model: gradingOptions.model,
       schema: gradingResultSchema,
       system: gradingSystemPrompt,
       prompt,
