@@ -15,6 +15,10 @@
     "importHelpers": true,
     // "noEmitOnError": true,
     "isolatedModules": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    
+    // typegoose
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
   }
 }

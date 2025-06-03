@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/use-debounce";
-import { getRubrics } from "@/services/rubric-service";
+import { RubricService } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GradingAttempt } from "@/types/grading";
@@ -47,7 +47,7 @@ export function RubricSelect({
   const search = useCallback(
     async (currentPage: number, search: string, resetItems = false) => {
       try {
-        const result = await getRubrics(currentPage, pageSize, search);
+        const result = await RubricService.getRubrics(currentPage, pageSize, search);
 
         if (resetItems) {
           setItems(result.data);

@@ -1,15 +1,39 @@
 // TODO: Update validation logic
 
+import type { CoreMessage, StreamObjectResult } from "ai";
 import type { Result } from "neverthrow";
-import type { Model } from "./providers";
-import { asError, wrapError } from "@/utils/error";
-import logger from "@/utils/logger";
-import { err, fromPromise, ok } from "neverthrow";
+import type { LanguageModelWithOptions } from "@/internal/llm/types";
+import { asError, wrapError } from "@grading-system/utils/error";
+import logger from "@grading-system/utils/logger";
+import { generateObject, streamObject } from "ai";
+import dedent from "dedent";
+import { err, fromPromise, fromThrowable, ok } from "neverthrow";
 import { z } from "zod";
-import zodToJsonSchema from "zod-to-json-schema";
-import { getClient } from "./providers";
+import { googleProviderOptions } from "@/internal/llm/providers/google";
+import { registry } from "@/internal/llm/registry";
 
-const DEFAULT_MODEL: Model = "gpt-4o-mini";
+/**
+ * Only works with Gemini model atm, using OpenAi models require schema to use nullable
+ * instead of optional. Due to the current (2025-03-23) superior price and speed of Gemini
+ * models, just leave it as it is :)
+ */
+const chatOptions: LanguageModelWithOptions = {
+  model: registry.languageModel("google:gemini-2.5-flash-preview"),
+  providerOptions: googleProviderOptions["gemini-2.5-flash-preview"]({
+    thinking: {
+      mode: "disabled",
+    },
+  }),
+};
+
+const gradingOptions: LanguageModelWithOptions = {
+  model: registry.languageModel("google:gemini-2.5-flash-preview"),
+  providerOptions: googleProviderOptions["gemini-2.5-flash-preview"]({
+    thinking: {
+      mode: "disabled",
+    },
+  }),
+};
 
 const weightExactSchema = z
   .number()
@@ -27,26 +51,25 @@ const weightRangeSchema = z
     "When grading this rubric, if the criterion met the level's description, the score should be lower or equal to the criterion's max weight and higher than the min weight",
   );
 
-const weightSchema = z.union([weightExactSchema, weightRangeSchema]);
-
-type weightSchemaType =
-  | typeof weightSchema
-  | typeof weightExactSchema
-  | typeof weightRangeSchema;
-
-function generateRubricSchema(schema: weightSchemaType) {
-  // need to remove min(2) at tags if using gpt model 
+function createRubricSchema(weightInRange: boolean) {
+  // FIXME: need to remove min(2) at tags if using gpt model
   return z.object({
     rubricName: z.string(),
-    tags: z
-      .array(z.string())
-      .describe("tags for each level in each criterion"),
+    weightInRange: z
+      .literal(weightInRange ? "true" : "false")
+      .describe(
+        "whether the weight of each criteria's level should be in a range or an exact number",
+      ),
+    tags: z.array(z.string()).describe("tags for each level in each criterion"),
     criteria: z.array(
       z.object({
         name: z.string().describe("name of the criterion"),
-        weight: weightExactSchema.describe(
-          "weight of the criterion in the rubric, must be greater than 0 and less than or equal to 100",
-        ),
+        weight: z
+          .number()
+          .int()
+          .describe(
+            "weight of the criterion in the rubric, must be greater than 0 and less than or equal to 100",
+          ),
         levels: z
           .array(
             z.object({
@@ -55,7 +78,7 @@ function generateRubricSchema(schema: weightSchemaType) {
                 .describe(
                   "tag of the level, must be one of the rubric's performance tags",
                 ),
-              weight: schema,
+              weight: weightInRange ? weightRangeSchema : weightExactSchema,
               description: z.string(),
             }),
           )
@@ -65,87 +88,74 @@ function generateRubricSchema(schema: weightSchemaType) {
   });
 }
 
-function generateRubricResponseSchema(schema: weightSchemaType) {
-  const rubricSchema = generateRubricSchema(schema);
-
+function createChatResponseSchema(rubricSchema: z.ZodSchema) {
   return z.object({
-    message: z.string().describe("A natural language response message"),
-    rubric: rubricSchema.nullable().describe("The rubric object, or null if not applicable"),
+    rubric: rubricSchema
+      .nullable()
+      .describe("The rubric object, or null if not applicable"),
+    message: z
+      .string()
+      .describe("Explanation of the action taken response to the user"),
   });
 }
- 
 
-export const rubricSchemaChat = generateRubricResponseSchema(weightSchema);
-export const rubricSchema = generateRubricSchema(weightSchema);
+const rubricSchemaVariant = {
+  weightInRange: createRubricSchema(true),
+  weightNotInRange: createRubricSchema(false),
+};
+export const rubricSchema = z.discriminatedUnion("weightInRange", [
+  rubricSchemaVariant.weightInRange,
+  rubricSchemaVariant.weightNotInRange,
+]);
+export type Rubric = z.infer<typeof rubricSchema>;
 
-function generateCreateRubricPrompt(scoreInRange: boolean) {
+const chatResponseSchemaVariant = {
+  weightInRange: createChatResponseSchema(rubricSchemaVariant.weightInRange),
+  weightNotInRange: createChatResponseSchema(rubricSchemaVariant.weightNotInRange),
+};
+export const chatResponseSchema = createChatResponseSchema(rubricSchema);
+export type ChatResponse = z.infer<typeof chatResponseSchema>;
 
-  const rubricOnlySchema = generateRubricSchema(scoreInRange ? weightRangeSchema : weightExactSchema,);
-  const outputSchema = generateRubricResponseSchema(scoreInRange ? weightRangeSchema : weightExactSchema,);
-  const systemPrompt = `
-You are a helpful AI assistant that can create or update a grading rubric based on the user's input.
+// TODO: Add scoreInRange
+// TODO: Refine the prompt to completely block out of scope usage
+// TODO: Try to enforce property order when streaming
+const chatSystemPrompt = dedent`
+  You are a helpful AI assistant that can create and update a rubric used for grading based on the user's input, or just answer general questions that resolves around creating rubric and using it for grading.
 
-You must always return a JSON object with:
-- \`message\`: a natural-language response string
-- \`rubric\`: the rubric object if applicable, or \`null\` if the input is a general question
+  ---
 
----
+  ### Decision Logic
+  - If the user's input is a **general question** (e.g. about grading, rubrics, tags, or weights), you must:
+    - Return \`rubric: null\`
+    - Provide the answer to the question naturally in the \`message\` field
+    - Ignore any provided rubric
+  - If the input is a **rubric request** (creating or updating a rubric):
+    - If an **existing rubric is provided**, update it based on the user's input
+    - If **no rubric is provided**, create a new rubric from scratch based if the user's said so
+    - After creating/updating the rubric, provide back a detailed message about what you have done in the \`message\` field and reason behind it (if needed)
 
-### Decision Logic
-- If the user's input is a **general question** (e.g. about grading, rubrics, tags, or weights), you must:
-  - Answer the question naturally in the \`message\`
-  - Return \`rubric: null\`
-  - Ignore any provided rubric
-- If the input is a **rubric request**:
-  - If an **existing rubric is provided**, update it based on the user's input.
-  - If **no rubric is provided**, create a new rubric from scratch based on the input.
+  ---
 
----
-
-### JSON output schema
-\`\`\`json
-${JSON.stringify(zodToJsonSchema(outputSchema, "rubric"), null, 2)}
-\`\`\`
-
-
-### Instructions
-Here are some more specific specifications of the output:
-  - The \`tag\` of each criterion's level must be one of the rubric's \`tags\`
-  - criteria's levels do not have to include all the performance tags
-  - Total weight of all criteria must add up to 100% and no criteria's weight is 0
-  - tags for each level in each criterion are used as an id to differentiate each levels and must be numbers like ['0', '1', '2', '3']. Level with the lower tag value is the higher weight level
-  ${
-    scoreInRange ?
-      `
-  - The \`weight\` of each criterion's level must have the max value equal to the higher level's weight (if exists) and the min value equal to the lower level's weight (if exists)
-  - The max weight of the highest level must be 100
-  - The min weight of the lowest level must be 0
-  `
-    : `
-  - The \`weight\` of the highest \`weight\` must be 100
-  `
-  }
+  ### Instructions
+  Here are some more specific specifications of the output:
+    - The \`tag\` of each criterion's level must be one of the rubric's \`tags\`
+    - criteria's levels do not have to include all the performance tags
+    - Total weight of all criteria must add up to 100% and no criteria's weight is 0
+    - tags for each level in each criterion are used as an id to differentiate each levels and must be numbers like ['0', '1', '2', '3']. Level with the lower tag value is the higher weight level
+    - Depends on the \`weightInRange\` value:
+      - If \`weightInRange\` is \`true\`:
+        - The \`weight\` of each criterion's level must have the max value equal to the higher level's weight (if exists) and the min value equal to the lower level's weight (if exists)
+        - The max weight of the highest level must be 100
+        - The min weight of the lowest level must be 0
+    - The \`weight\` of the highest \`weight\` must be 100
+    - When there is mismatch in \`weightInRange\` of the current rubric and the output rubric that force you to change the \`weightInRange\` value, you must notify the user about this in the \`message\` field
 `;
 
-  return {
-    systemPrompt,
-    outputSchema,
-    rubricOnlySchema,
-  };
-}
-
-export type ResponseRubric = z.infer<
-  ReturnType<typeof generateCreateRubricPrompt>["outputSchema"]
->;
-export type Rubric = z.infer<
-  ReturnType<typeof generateCreateRubricPrompt>["rubricOnlySchema"]
->;
-
-function validateRubric(responseRubric: ResponseRubric): Result<void, Error> {
-  if(responseRubric.rubric) {
-    for (const criterion of responseRubric.rubric.criteria) {
+function validateChatResponse(chatResponse: ChatResponse): Result<void, Error> {
+  if (chatResponse.rubric) {
+    for (const criterion of chatResponse.rubric.criteria) {
       for (const level of criterion.levels) {
-        if (!responseRubric.rubric!.tags.includes(level.tag)) {
+        if (!chatResponse.rubric!.tags.includes(level.tag)) {
           return err(new Error(`\`tag\` must be one of the rubric's \`tags\``));
         }
       }
@@ -155,72 +165,125 @@ function validateRubric(responseRubric: ResponseRubric): Result<void, Error> {
   return ok();
 }
 
+type ActualChatResponse =
+  | {
+      stream: false;
+      result: ChatResponse;
+    }
+  | {
+      stream: true;
+      result: StreamObjectResult<unknown, ChatResponse, never>;
+    };
+
 /**
  *
- * @param prompt
- * @param scoreInRange whether the score should be in the range of the criterion's weight and the next lower level's weight
- * @returns the rubric
+ * @param options - The options for generating the chat response
+ * @param options.messages - The messages to send to the LLM, must end with a user message
+ * @param options.weightInRange - Whether the weight of each criterion's level should be
+ * in a range or an exact number, defaults to `null` (not specified)
+ * @param options.rubric - The current rubric
+ * @param options.stream - Whether to stream the response or not, defaults to `false`
+ * @returns Chat response or stream of it
  */
-export async function createRubric(
-  prompt: string,
-  scoreInRange: boolean = false,
-  rubric ?: Rubric,
-): Promise<Result<ResponseRubric, Error>> {
-  const { outputSchema, systemPrompt } =
-    generateCreateRubricPrompt(scoreInRange);
-  console.log("rubric", rubric);
-  const client = getClient(DEFAULT_MODEL, systemPrompt);
-  if (rubric){
-    // Update: use the existing rubric and the prompt to generate an updated rubric
+export async function generateChatResponse(options: {
+  messages: CoreMessage[];
+  weightInRange?: boolean | null;
+  rubric?: Rubric;
+  stream?: boolean;
+}): Promise<Result<ActualChatResponse, Error>> {
+  const toStream = options.stream ?? false;
+  const hasWeightInRange =
+    typeof options.weightInRange === "undefined" ? null : options.weightInRange;
+
+  let outputSchema;
+  switch (hasWeightInRange) {
+    case null:
+      outputSchema = chatResponseSchema;
+      break;
+    case true:
+      outputSchema = chatResponseSchemaVariant.weightInRange;
+      break;
+    case false:
+      outputSchema = chatResponseSchemaVariant.weightNotInRange;
+      break;
+  }
+
+  // if (currentMessage.role !== "user") {
+  //   return err(new Error("The last message must be from the user"));
+  // }
+
+  if (options.rubric) {
     logger.info("Updating existing rubric using LLM");
-    const updatedPrompt = `
-### This is existing Rubric
-\`\`\`json
-${JSON.stringify(rubric, null, 2)}
-\`\`\`
 
-### User's Input
-${prompt}
-`;
+    options.messages.splice(-1, 0, {
+      role: "user",
+      content: dedent`
+      This is my current rubric:
+      \`\`\`json
+      ${JSON.stringify(options.rubric, null, 2)}
+      \`\`\`
+    `,
+    });
+  } else {
+    logger.info("Creating new rubric using LLM");
+  }
+
+  if (!toStream) {
     const responseResult = await fromPromise(
-      client.generate(updatedPrompt, outputSchema, "rubric"),
+      generateObject({
+        ...chatOptions,
+        schema: outputSchema,
+        system: chatSystemPrompt,
+        messages: options.messages,
+      }),
       asError,
     );
     if (responseResult.isErr()) {
-      return err(wrapError(responseResult.error, "Failed to update rubric"));
-    }
-
-    const updatedRubric = responseResult.value;
-    logger.debug("Updated rubric", updatedRubric);
-
-    const validationResult = validateRubric(updatedRubric);
-    if (validationResult.isErr()) {
       return err(
-        wrapError(validationResult.error, "Invalid updated rubric from LLM"),
+        wrapError(
+          responseResult.error,
+          `Failed to ${options.rubric ? "update" : "create"} rubric`,
+        ),
       );
     }
 
-    return ok(updatedRubric);
-  } else{
-    const responseResult = await fromPromise(
-      client.generate(prompt, outputSchema, "rubric"),
+    const response = responseResult.value.object;
+
+    const validationResult = validateChatResponse(response);
+    if (validationResult.isErr()) {
+      return err(wrapError(validationResult.error, "Invalid response from LLM"));
+    }
+
+    return ok({
+      stream: false,
+      result: response,
+    });
+  } else {
+    const safeStreamObject = fromThrowable(
+      () =>
+        streamObject({
+          ...chatOptions,
+          schema: outputSchema,
+          system: chatSystemPrompt,
+          messages: options.messages,
+        }),
       asError,
     );
+
+    const responseResult = safeStreamObject();
     if (responseResult.isErr()) {
-      return err(wrapError(responseResult.error, "Failed to generate rubric"));
-    }
-
-    const _rubric = responseResult.value;
-    // console.log("Generated rubric:", JSON.stringify(rubric, null, 2));
-    logger.debug("Generated rubric", rubric);
-
-    const validationResult = validateRubric(_rubric);
-    if (validationResult.isErr()) {
       return err(
-        wrapError(validationResult.error, "Invalid rubric getting from LLM"),
+        wrapError(
+          responseResult.error,
+          `Failed to ${options.rubric ? "update" : "create"} rubric (stream)`,
+        ),
       );
     }
-    return ok(_rubric);
+
+    return ok({
+      stream: true,
+      result: responseResult.value,
+    });
   }
 }
 
@@ -229,9 +292,7 @@ export const feedbackSchema = z.object({
   fileRef: z
     .string()
     .optional()
-    .describe(
-      "The url to the file that the comment refers to, not required",
-    ),
+    .describe("The url to the file that the comment refers to, not required"),
   position: z
     .object({
       fromLine: z.number().int(),
@@ -268,135 +329,115 @@ export const gradingResultSchema = z.object({
 type GradingResult = z.infer<typeof gradingResultSchema>;
 
 function validateGradingResult(
-  responseRubric: Rubric,
+  rubric: Rubric,
   gradingResult: GradingResult,
 ): Result<void, Error> {
-  if (responseRubric){
-    for (const critRes of gradingResult.results) {
-      if (!responseRubric.tags.includes(critRes.tag)) {
-        return err(
-          new Error(
-            `\`performanceTag\` must be one of the rubric's \`performanceTags\``,
-          ),
-        );
-      }
-
-      const criterion = responseRubric.criteria.find(
-        (criterion) => criterion.name === critRes.criterion,
+  for (const critRes of gradingResult.results) {
+    if (!rubric.tags.includes(critRes.tag)) {
+      return err(
+        new Error(`\`performanceTag\` must be one of the rubric's \`performanceTags\``),
       );
-      if (!criterion) {
-        return err(
-          new Error(`\`criterion\` must be one of the rubric's \`criteria\``),
-        );
-      }
+    }
 
-      // low to high
-      const sortedLevels = [
-        ...criterion.levels.map((level) => {
-          if (typeof level.weight === "number") {
-            // Have to do this since ts can't infer
-            return {
-              ...level,
-              weight: level.weight,
-            };
-          }
+    const criterion = rubric.criteria.find(
+      (criterion) => criterion.name === critRes.criterion,
+    );
+    if (!criterion) {
+      return err(new Error(`\`criterion\` must be one of the rubric's \`criteria\``));
+    }
+
+    // low to high
+    const sortedLevels = [
+      ...criterion.levels.map((level) => {
+        if (typeof level.weight === "number") {
+          // Have to do this since ts can't infer
           return {
             ...level,
-            weight: level.weight.max,
+            weight: level.weight,
           };
-        }),
-      ].sort((a, b) => {
-        return a.weight - b.weight;
-      });
+        }
+        return {
+          ...level,
+          weight: level.weight.max,
+        };
+      }),
+    ].sort((a, b) => {
+      return a.weight - b.weight;
+    });
 
-      const levelIdx = sortedLevels.findIndex(
-        (level) => level.tag === critRes.tag,
+    const levelIdx = sortedLevels.findIndex((level) => level.tag === critRes.tag);
+    if (levelIdx === -1) {
+      return err(
+        new Error(`\`tag\` must be one of the criterion's \`levels\`'s \`tag\``),
       );
-      if (levelIdx === -1) {
-        return err(
-          new Error(
-            `\`tag\` must be one of the criterion's \`levels\`'s \`tag\``,
-          ),
-        );
-      }
+    }
 
-      if (critRes.score > sortedLevels[levelIdx].weight) {
-        return err(
-          new Error(
-            `\`score\`(${critRes.score}) must be less than or equal to the criterion's \`weight\`(${sortedLevels[levelIdx].weight})`,
-          ),
-        );
-      } else if (
-        levelIdx !== 0 &&
-        critRes.score <= sortedLevels[levelIdx - 1].weight
-      ) {
-        return err(
-          new Error(
-            `\`score\`(${critRes.score}) must be greater than the next lower level's \`weight\`(${sortedLevels[levelIdx - 1].weight})`,
-          ),
-        );
-      }
+    if (critRes.score > sortedLevels[levelIdx].weight) {
+      return err(
+        new Error(
+          `\`score\`(${critRes.score}) must be less than or equal to the criterion's \`weight\`(${sortedLevels[levelIdx].weight})`,
+        ),
+      );
+    } else if (levelIdx !== 0 && critRes.score <= sortedLevels[levelIdx - 1].weight) {
+      return err(
+        new Error(
+          `\`score\`(${critRes.score}) must be greater than the next lower level's \`weight\`(${sortedLevels[levelIdx - 1].weight})`,
+        ),
+      );
     }
   }
 
   return ok();
 }
 
-function generateGradingPrompt(responseRubric: Rubric) {
-  const prompt = `
-- You are a helpful AI assistant that grades the input using the provided rubric bellow
+function createGradingSystemPrompt(rubric: Rubric) {
+  return dedent`
+    - You are a helpful AI assistant that grades the input using the provided rubric bellow
 
-### JSON output schema
-- The output should be in JSON format that matches following \`gradingResult\` schema:
-\`\`\`json
-${JSON.stringify(zodToJsonSchema(gradingResultSchema, "gradingResult"), null, 2)}
-\`\`\`
-
-### Rubric used for grading
-- The exact rubric that you should use for grading:
-\`\`\`json
-${JSON.stringify(responseRubric)}
-\`\`\`
+    ### Rubric used for grading
+    - The exact rubric that you should use for grading:
+    \`\`\`json
+    ${JSON.stringify(rubric)}
+    \`\`\`
 
 
-### Instructions
-- Here are some more detailed specs of the output:
-  - You must grade all of the criterion that is in the "criteria" array of the rubric
-  - You must grade the criterion by reading the level description then give and choose the one that is the most appropriate for the input
-  - The score must be exactly the same as the level's weight (or if it contains a max and min value, then the graded score must be both: lower or equal to the max value; higher and *must not* equal to the min value. for example, if "weight": { "max": 100, "min":75 }, the score should be in range 75 < score <= 100).
-  - If the input does not provide any information about the what file it is referring to, you can just ignore the \`fileRef\` field
-`;
-
-  return prompt;
+    ### Instructions
+    - Here are some more detailed specs of the output:
+      - You must grade all of the criterion that is in the "criteria" array of the rubric
+      - You must grade the criterion by reading the level description then give and choose the one that is the most appropriate for the input
+      - The score must be exactly the same as the level's weight (or if it contains a max and min value, then the graded score must be both: lower or equal to the max value; higher and *must not* equal to the min value. for example, if "weight": { "max": 100, "min":75 }, the score should be in range 75 < score <= 100).
+      - If the input does not provide any information about the what file it is referring to, you can just ignore the \`fileRef\` field
+  `;
 }
 
 export async function gradeUsingRubric(
-  responseRubric: Rubric,
+  rubric: Rubric,
   prompt: string,
 ): Promise<Result<GradingResult, Error>> {
-  const gradingPrompt = generateGradingPrompt(responseRubric);
-  const client = getClient(DEFAULT_MODEL, gradingPrompt);
+  logger.info("Grading using LLM");
+
+  const gradingSystemPrompt = createGradingSystemPrompt(rubric);
 
   const responseResult = await fromPromise(
-    client.generate(prompt, gradingResultSchema, "gradingResult"),
+    generateObject({
+      ...gradingOptions,
+      schema: gradingResultSchema,
+      system: gradingSystemPrompt,
+      prompt,
+    }),
     asError,
   );
   if (responseResult.isErr()) {
     return err(wrapError(responseResult.error, "Failed to grade"));
   }
 
-  const gradingRes = responseResult.value;
-  logger.debug("Grading result", gradingRes);
+  const gradingRes = responseResult.value.object;
 
-  const validationResult = validateGradingResult(responseRubric, gradingRes);
+  const validationResult = validateGradingResult(rubric, gradingRes);
   if (validationResult.isErr()) {
     return err(
-      wrapError(
-        validationResult.error,
-        "Invalid grading result getting from LLM",
-      ),
+      wrapError(validationResult.error, "Invalid grading result getting from LLM"),
     );
   }
-
   return ok(gradingRes);
 }

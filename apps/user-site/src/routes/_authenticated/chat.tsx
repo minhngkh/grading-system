@@ -1,5 +1,5 @@
 import ChatInterface from "@/components/app/chat-interface";
-import { sendChatMessage } from "@/services/chat-service";
+import { ChatService } from "@/services/chat-service";
 import { UserChatPrompt } from "@/types/chat";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/chat")({
 function RouteComponent() {
   const handleSendMessage = async (chatPrompt: UserChatPrompt) => {
     // Handle sending the chat message
-    const agentResponse = await sendChatMessage(chatPrompt);
+    const agentResponse = await ChatService.sendChatMessage(chatPrompt);
     return agentResponse.message;
   };
 

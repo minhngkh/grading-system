@@ -1,34 +1,53 @@
 import type { Context } from "moleculer";
-import { defineTypedService2 } from "@/utils/typed-moleculer";
+import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
+import { coreMessageSchema } from "ai";
 import { ZodParams } from "moleculer-zod-validator";
-import { z } from "zod";
-import { createRubric, gradeUsingRubric, rubricSchema  } from "./core";
+import z from "zod";
+import { generateChatResponse, gradeUsingRubric, rubricSchema } from "./core";
 
-const createRubricParams = new ZodParams({
-  prompt: z.string().min(1, "Prompt is required"),
-  scoreInRange: z.boolean().default(false).optional(),
-  rubric: rubricSchema.nullable(),
+export const chatRubricActionSchema = z.object({
+  messages: z.array(coreMessageSchema).describe("Chat messages"),
+  weightInRange: z
+    .boolean()
+    .nullable()
+    .optional()
+    .default(null)
+    .describe("Type of weight in each level"),
+  rubric: rubricSchema.optional().describe("Current rubric"),
+  stream: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("Whether to stream the response or not"),
 });
+export const chatRubricActionParams = new ZodParams(chatRubricActionSchema.shape);
 
-const gradeParams = new ZodParams({
+export const gradeActionSchema = z.object({
   rubric: rubricSchema,
-  prompt: z.string().min(1, "Prompt is required"),
+  prompt: z.string().min(1),
 });
+export const gradeActionParams = new ZodParams(gradeActionSchema.shape);
 
-export const aiService = defineTypedService2("ai", {
+export const aiService = defineTypedService2({
+  name: "ai",
   version: 1,
   actions: {
-    createRubric: {
-      params: createRubricParams.schema,
-      handler(ctx: Context<typeof createRubricParams.context>) {
-        const { prompt, scoreInRange, rubric } = ctx.params;
+    chatRubric: {
+      params: chatRubricActionParams.schema,
+      handler(ctx: Context<typeof chatRubricActionParams.context>) {
+        const params = ctx.params;
 
-        return createRubric(prompt, scoreInRange, rubric ?? undefined);
+        return generateChatResponse({
+          messages: params.messages,
+          weightInRange: params.weightInRange,
+          rubric: params.rubric,
+          stream: params.stream,
+        });
       },
     },
     grade: {
-      params: gradeParams.schema,
-      handler(ctx: Context<typeof gradeParams.context>) {
+      params: gradeActionParams.schema,
+      handler(ctx: Context<typeof gradeActionParams.context>) {
         const { rubric, prompt } = ctx.params;
 
         if (!rubric) {
@@ -37,11 +56,11 @@ export const aiService = defineTypedService2("ai", {
         return gradeUsingRubric(rubric, prompt);
       },
     },
-    test: {
-      handler(ctx) {
-        return "hello world";
-      },
-    },
+    // test: {
+    //   handler(ctx: Context) {
+    //     return "hello world";
+    //   },
+    // },
   },
 });
 

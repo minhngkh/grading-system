@@ -5,48 +5,32 @@ import {
   type RubricAgentResponse,
   type RubricUserPrompt,
 } from "@/types/chat";
-import axios from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 
 const AI_PLUGIN_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/ai`;
 
-export const sendRubricMessage = async (
-  prompt: RubricUserPrompt,
-): Promise<RubricAgentResponse> => {
-  const res = await axios.post(`${AI_PLUGIN_URL}/rubric`, prompt, {
+export class ChatService {
+  static configHeaders: AxiosRequestConfig = {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
     },
-  });
-
-  return {
-    message: res.data.message,
-    rubric: res.data.rubric ? ChatRubricSchema.parse(res.data.rubric) : undefined,
   };
-};
 
-export const sendChatMessage = async (
-  prompt: UserChatPrompt,
-): Promise<AgentChatResponse> => {
-  const res = await axios.post(`${AI_PLUGIN_URL}/chat`, prompt, {
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
+  static async sendRubricMessage(prompt: RubricUserPrompt): Promise<RubricAgentResponse> {
+    const res = await axios.post(`${AI_PLUGIN_URL}/rubric`, prompt, this.configHeaders);
 
-  return {
-    message: res.data.message,
-  };
-};
+    return {
+      message: res.data.message,
+      rubric: res.data.rubric ? ChatRubricSchema.parse(res.data.rubric) : undefined,
+    };
+  }
 
-export const uploadFile = async (file: File): Promise<void> => {
-  const formData = new FormData();
-  formData.append("file", file);
+  static async sendChatMessage(prompt: UserChatPrompt): Promise<AgentChatResponse> {
+    const res = await axios.post(`${AI_PLUGIN_URL}/chat`, prompt, this.configHeaders);
 
-  // await axios.post(`${AI_PLUGIN_URL}/upload`, formData, {
-  //   headers: {
-  //     "Content-Type": "multipart/form-data",
-  //   },
-  // });
-};
+    return {
+      message: res.data.message,
+    };
+  }
+}

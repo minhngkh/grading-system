@@ -1,57 +1,7 @@
-import type { Tool } from "@/types/tool";
 import ToolsFilter from "@/pages/home/tool-filter";
 import { ToolsList } from "@/pages/home/tool-list";
-import { ToolType } from "@/types/tool";
+import { SystemTools, ToolType } from "@/types/tool";
 import { useState } from "react";
-
-const tools: Tool[] = [
-  {
-    name: "Generate Rubric",
-    details: "Features include code completion, debugging tools, and Git integration.",
-    type: ToolType.Rubric,
-    isFavorite: true,
-    navigation: "/rubric-generation",
-    preload: false,
-  },
-  {
-    name: "Manage Rubric",
-    details:
-      "Includes components, patterns, and guidelines for creating cohesive user interfaces.",
-    type: ToolType.Management,
-    isFavorite: true,
-    navigation: "/manage-rubrics",
-  },
-  {
-    name: "Manage Grading",
-    details:
-      "Includes components, patterns, and guidelines for creating cohesive user interfaces.",
-    type: ToolType.Management,
-    isFavorite: true,
-    navigation: "/manage-grading",
-  },
-  {
-    name: "Grade Assignments",
-    details: "Create task lists, set deadlines, and monitor progress on your projects.",
-    type: ToolType.Grading,
-    isFavorite: false,
-    navigation: "/assignment-grading",
-    preload: false,
-  },
-  {
-    name: "AI Chat",
-    details: "Channels, direct messages, and file sharing to keep your team connected.",
-    type: ToolType.Communication,
-    isFavorite: false,
-    navigation: "/chat",
-  },
-  {
-    name: "Analytics Dashboard",
-    details: "Interactive charts and reports to help you make data-driven decisions.",
-    type: ToolType.Analytics,
-    isFavorite: false,
-    navigation: "/analytics",
-  },
-];
 
 export default function HomePage() {
   const [filter, setFilter] = useState<ToolType | undefined>();
@@ -67,7 +17,9 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold tracking-tight">Features</h2>
           <ToolsFilter currentFilter={filter} filterFunction={handleFilter} />
         </div>
-        <ToolsList tools={tools.filter((tool) => !filter || tool.type === filter)} />
+        <ToolsList
+          tools={SystemTools.filter((tool) => !filter || tool.type === filter)}
+        />
       </section>
     </div>
   );

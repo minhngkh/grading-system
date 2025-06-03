@@ -16,29 +16,29 @@ export type NavigationData = {
   to: LinkProps["to"];
 };
 
-export const navigationItems: NavigationData[] = [
+export const NavigationItems: NavigationData[] = [
   {
     title: "Home",
     icon: <Home className="size-4" />,
     to: "/home",
   },
   {
-    title: "Rubric Generation",
+    title: "Create Rubric",
     icon: <ClipboardPlus className="size-4" />,
-    to: "/rubric-generation",
+    to: "/rubrics/new",
   },
   {
-    title: "Rubric Management",
+    title: "Manage Rubrics",
     icon: <Library className="size-4" />,
-    to: "/manage-rubrics",
+    to: "/rubrics",
   },
   {
-    title: "Submission Grading",
+    title: "Grade Assignments",
     icon: <BookOpenCheck className="size-4" />,
-    to: "/assignment-grading",
+    to: "/gradings/new",
   },
   {
-    title: "Chat with AI",
+    title: "AI Assistant",
     icon: <BotMessageSquare className="size-4" />,
     to: "/chat",
   },

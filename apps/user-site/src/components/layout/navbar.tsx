@@ -1,5 +1,6 @@
 import { useTheme } from "@/context/theme-provider";
 import { Button } from "@/components/ui/button";
+import { CommandMenu } from "@/components/app/command-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,12 +9,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { SignedIn, SignedOut, useClerk } from "@clerk/clerk-react";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { Bell, Settings, User } from "lucide-react";
+import { Moon, Search, Sun, User } from "lucide-react";
+import { useState } from "react";
+import NotificationButton from "@/components/app/notification-button";
 
 const UnauthenticatedNavBar = () => {
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ const UnauthenticatedNavBar = () => {
           onClick={() => navigate({ to: "/" })}
           className="text-xl font-bold cursor-pointer"
         >
-          Assessly
+          IntelliGrade
         </h6>
       </div>
       <div className="flex items-center gap-4">
@@ -45,14 +47,12 @@ const AuthenticatedNavBar = () => {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const router = useRouter();
+  const [commandOpen, setCommandOpen] = useState(false);
 
   const handleLogout = async () => {
-    const confirm = window.confirm("Are you sure you want to logout?");
-    if (confirm) {
-      await signOut();
-      await router.invalidate();
-      navigate({ to: "/" });
-    }
+    await signOut();
+    await router.invalidate();
+    navigate({ to: "/" });
   };
 
   return (
@@ -62,28 +62,28 @@ const AuthenticatedNavBar = () => {
         <Separator orientation="vertical" className="mx-4 h-8!" />
       </div>
       <div className="flex items-center gap-2">
-        <form className="hidden md:block w-full">
-          <div className="relative">
-            <Input
-              id="search"
-              name="search"
-              type="search"
-              placeholder="Search..."
-              className="h-9 md:w-[200px] lg:w-[300px]"
-            />
-          </div>
-        </form>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">Notifications</span>
+        <Button
+          variant="outline"
+          className="hidden md:flex h-9 md:w-[200px] lg:w-[300px] justify-start text-sm text-muted-foreground"
+          onClick={() => setCommandOpen(true)}
+        >
+          <Search className="mr-2 h-4 w-4" />
+          Search...
+          <kbd className="pointer-events-none ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
         </Button>
+        <CommandMenu open={commandOpen} setOpen={setCommandOpen} />
+        <NotificationButton />
         <Button
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
           variant="ghost"
           size="icon"
           className="h-9 w-9"
         >
-          <Settings className="h-5 w-5" />
+          {theme === "dark" ?
+            <Sun className="h-5 w-5" />
+          : <Moon className="h-5 w-5" />}
           <span className="sr-only">Toggle Theme</span>
         </Button>
         <Separator orientation="vertical" className="h-8!" />
@@ -101,10 +101,18 @@ const AuthenticatedNavBar = () => {
                 user?.primaryEmailAddress?.emailAddress}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                navigate({
+                  to: "/profile",
+                })
+              }
+            >
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={handleLogout}>
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

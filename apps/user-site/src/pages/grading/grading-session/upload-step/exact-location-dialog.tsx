@@ -27,14 +27,9 @@ export function ExactLocationDialog({
   const [currentInput, setCurrentInput] = useState<string>("");
   const [paths, setPaths] = useState<string[]>([]);
 
-  // Function to add the current input path to the paths list
   const addPath = () => {
     if (!currentInput.trim()) return;
-
-    // Add the path to the list
     setPaths([...paths, currentInput.trim()]);
-
-    // Clear current input field
     setCurrentInput("");
   };
 
@@ -45,11 +40,8 @@ export function ExactLocationDialog({
     }
   };
 
-  // Handle confirmation, joining all paths with space
   const handleConfirm = () => {
     let allPaths = [...paths];
-
-    // Include current input if it's not empty
     if (currentInput.trim()) {
       allPaths.push(currentInput.trim());
     }
@@ -58,7 +50,6 @@ export function ExactLocationDialog({
     onConfirm(finalPaths !== "" ? finalPaths : "*");
   };
 
-  // Edit a previously added path
   const handleEditPath = (path: string, index: number) => {
     setPaths(paths.filter((_, i) => i !== index));
     setCurrentInput(path);

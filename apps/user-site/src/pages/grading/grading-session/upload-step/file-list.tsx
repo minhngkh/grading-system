@@ -19,7 +19,6 @@ interface FileListProps {
 }
 
 export function FileList({ files, onDelete }: FileListProps) {
-  // Function to determine file type icon and badge text based on file extension
   const getFileInfo = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase() || "";
 

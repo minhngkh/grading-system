@@ -1,5 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -11,7 +17,7 @@ import { useEffect, useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
 import { ManualLocationDialog } from "./manual-location-dialog";
 import { GradingAttempt } from "@/types/grading";
-import { updateGradingSelectors } from "@/services/grading-service";
+import { GradingService } from "@/services/grading-service";
 import { toast } from "sonner";
 
 enum SelectLocationType {
@@ -46,9 +52,10 @@ export default function CriteriaMapper({
     updatedGradingAttempt.selectors[index].pattern = value;
 
     try {
-      // Call the service to update the selectors
-      await updateGradingSelectors(gradingAttempt.id, updatedGradingAttempt.selectors);
-      // Update the local state
+      await GradingService.updateGradingSelectors(
+        gradingAttempt.id,
+        updatedGradingAttempt.selectors,
+      );
       onGradingAttemptChange?.(updatedGradingAttempt);
     } catch (error) {
       toast.error("Failed to update selectors");
@@ -77,35 +84,43 @@ export default function CriteriaMapper({
     <Card className="w-full gap-0 mt-4">
       <CardHeader>
         <CardTitle>
-          <p>File format detected: zip. Select content path for each criteria</p>
-          <div className="mt-4 gap-2 flex items-center">
-            <span>Using file: </span>
-            <Select
-              value={uploadedFiles[chosenFileIndex]?.name}
-              onValueChange={(value) => {
-                const index = uploadedFiles.findIndex((file) => file?.name === value);
-                if (index !== -1) {
-                  setChosenFileIndex(index);
-                  setCriterionPathType({});
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Choose file" />
-              </SelectTrigger>
-              <SelectContent>
-                {uploadedFiles.map((file, index) => (
-                  <SelectItem key={index} value={file?.name}>
-                    {file?.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span> to specify selectors</span>
-          </div>
+          File format detected: zip. Select content path for each criteria
         </CardTitle>
+        <CardDescription>
+          Select the content path for each criterion based on the uploaded file. You can
+          choose between manual selection or exact path matching.
+          <br />
+          <span className="text-sm text-muted-foreground">
+            Note: If you select "All files", it will match all files in the selected file.
+          </span>
+        </CardDescription>
       </CardHeader>
       <CardContent className="p-6">
+        <div className="my-4 gap-2 flex items-center">
+          <span>Using file </span>
+          <Select
+            value={uploadedFiles[chosenFileIndex]?.name}
+            onValueChange={(value) => {
+              const index = uploadedFiles.findIndex((file) => file?.name === value);
+              if (index !== -1) {
+                setChosenFileIndex(index);
+                setCriterionPathType({});
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Choose file" />
+            </SelectTrigger>
+            <SelectContent>
+              {uploadedFiles.map((file, index) => (
+                <SelectItem key={index} value={file?.name}>
+                  {file?.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span> to configure the grading selectors</span>
+        </div>
         <div className="grid gap-4">
           <div className="grid grid-cols-3 gap-4 font-semibold">
             <div>Criteria</div>

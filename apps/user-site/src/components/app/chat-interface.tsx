@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { UserChatPrompt } from "@/types/chat";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Send, Upload, X } from "lucide-react";
+import { Loader2, Send, Upload } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -21,11 +21,11 @@ type UploadedFile = {
   type: "image" | "document";
 };
 
-type AIChatProps = {
-  sendMessageCallback: (response: UserChatPrompt) => Promise<string>;
+interface AIChatProps {
+  sendMessageCallback: (response: UserChatPrompt) => Promise<string | undefined>;
   className?: string;
   isRubricChat?: boolean;
-};
+}
 
 export default function ChatInterface({ sendMessageCallback, className }: AIChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -77,6 +77,10 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
         prompt: newMessage.message,
         files: newMessage.files?.map((file) => file.file),
       });
+
+      if (!agentResponse) {
+        throw new Error("No response from agent");
+      }
 
       setMessages((prev) => [...prev, { message: agentResponse, who: "agent" }]);
     } catch (error) {
@@ -253,19 +257,18 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                               message.who === "user" ? "bg-primary/10" : "bg-muted/50",
                             )}
                           >
-                            {file.type === "image" && file.preview ? (
+                            {file.type === "image" && file.preview ?
                               <img
                                 src={file.preview}
                                 alt={file.file.name}
                                 className="max-h-32 object-cover border rounded-lg overflow-hidden"
                               />
-                            ) : (
-                              <div className="px-3 py-2 flex items-center gap-2 border rounded-lg overflow-hidden">
+                            : <div className="px-3 py-2 flex items-center gap-2 border rounded-lg overflow-hidden">
                                 <span className="text-xs font-medium">
                                   {file.file.name}
                                 </span>
                               </div>
-                            )}
+                            }
                           </div>
                         ))}
                       </div>
@@ -281,9 +284,9 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                         <div
                           className={cn(
                             "inline-block rounded-lg px-4 py-2 text-sm transition-all",
-                            message.who === "user"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted",
+                            message.who === "user" ?
+                              "bg-primary text-primary-foreground"
+                            : "bg-muted",
                           )}
                         >
                           {message.message}
@@ -318,30 +321,29 @@ export default function ChatInterface({ sendMessageCallback, className }: AIChat
                 {uploadedFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="relative group border dark:border-white rounded-md py-1 px-1 flex items-center gap-2"
+                    className="relative overflow-hidden group border dark:border-white dark:hover:border-transparent rounded-md py-1 px-1 flex items-center gap-2"
                   >
-                    {file.type === "image" && file.preview ? (
+                    {file.type === "image" && file.preview ?
                       <img
                         src={file.preview}
                         alt={file.file.name}
                         className="h-8 w-8 object-cover rounded"
                       />
-                    ) : (
-                      <div className="h-8 w-8 bg-accent dark:bg-foreground flex items-center justify-center rounded">
-                        <span className="text-xs text-black">
+                    : <div className="h-8 w-8 bg-accent dark:bg-foreground flex items-center justify-center rounded">
+                        <span className="text-xs text-black font-semibold">
                           {file.file.name.split(".").pop()}
                         </span>
                       </div>
-                    )}
+                    }
                     <span className="text-xs truncate max-w-[100px]">
                       {file.file.name}
                     </span>
-                    <button
-                      className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    <div
+                      className="flex justify-center items-center absolute bg-destructive/80 size-full right-0 top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => removeFile(file.id)}
                     >
-                      <X className="size-3" />
-                    </button>
+                      <p className="text-xs font-semibold text-white">Remove</p>
+                    </div>
                   </div>
                 ))}
               </div>

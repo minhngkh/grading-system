@@ -30,7 +30,7 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
                   <GraduationCap className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">Assessly</span>
+                  <span className="font-semibold">IntelliGrade</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -62,7 +62,7 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
               <SidebarMenu>
                 {settingsItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton tooltip={item.title} asChild>
                       <Link to={item.to}>
                         {item.icon}
                         <span>{item.title}</span>

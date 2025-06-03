@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { type ToolsFilterProps, ToolType } from "@/types/tool";
 
 const toolTypeList = Object.values(ToolType);
@@ -13,7 +14,10 @@ const ToolsFilter: React.FC<ToolsFilterProps> = ({
         <Badge
           variant={currentFilter !== type ? "outline" : "default"}
           onClick={() => filterFunction(type)}
-          className="py-1 px-2 cursor-pointer"
+          className={cn(
+            "py-1 px-2 cursor-pointer",
+            currentFilter !== type && "hover:bg-accent",
+          )}
           key={index}
         >
           {type}

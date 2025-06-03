@@ -1,6 +1,6 @@
 import { GradingStatus, GradingAttempt } from "@/types/grading";
 import { usePolling } from "@/hooks/use-polling";
-import { getGradingStatus } from "@/services/grading-service";
+import { GradingService } from "@/services/grading-service";
 import Spinner from "@/components/app/spinner";
 import { useCallback } from "react";
 import { toast } from "sonner";
@@ -15,7 +15,7 @@ export default function GradingProgressStep({
   onGradingAttemptChange,
 }: GradingProgressStepProps) {
   const pollingFn = useCallback(
-    () => getGradingStatus(gradingAttempt.id),
+    () => GradingService.getGradingStatus(gradingAttempt.id),
     [gradingAttempt.id],
   );
 
