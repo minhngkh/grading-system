@@ -22,5 +22,5 @@ public class Level
 {
     public required string Tag { get; set; }
     public required string Description { get; set; }
-    public required decimal Weight { get; set; }
+    public required decimal Weight { get; set; } // FIXME: this is a string in payload
 }

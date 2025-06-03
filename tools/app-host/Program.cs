@@ -112,7 +112,22 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
             env: "PORT"
         )
         .WithReference(pluginDb)
-        .WaitFor(pluginDb);
+        .WaitFor(pluginDb)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq);
+}
+
+IResourceBuilder<NxMonorepoProjectResource>? gradingService = null;
+if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
+{
+    gradingService = nx.AddProject("grading-service", "dev")
+        .WithHttpEndpoint(
+            port: builder.Configuration.GetValue<int?>("GradingService:Port"),
+            isProxied: toProxy,
+            env: "PORT"
+        )
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;

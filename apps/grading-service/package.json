@@ -1,0 +1,19 @@
+{
+  "name": "@grading-system/grading-service",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "node --import @swc-node/register/esm-register --watch --watch-preserve-output ./src/index.ts"
+  },
+  "nx": {
+    "name": "grading-service",
+    "projectType": "application"
+  },
+  "dependencies": {
+    "@azure/storage-blob": "^12.27.0"
+  },
+  "devDependencies": {
+    "@grading-system/typed-moleculer": "workspace:*",
+    "@grading-system/utils": "workspace:*"
+  }
+}

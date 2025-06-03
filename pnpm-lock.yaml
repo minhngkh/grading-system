@@ -20,6 +20,9 @@ importers:
       '@typegoose/typegoose':
         specifier: ~12.16.0
         version: 12.16.0(mongoose@8.15.1)
+      amqplib:
+        specifier: ^0.10.8
+        version: 0.10.8
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -37,13 +40,13 @@ importers:
         version: 0.4.8(@hono/zod-validator@0.4.3(hono@4.7.11)(zod@3.25.48))(hono@4.7.11)(openapi-types@12.1.3)(zod-openapi@4.2.4(zod@3.25.48))(zod@3.25.48)
       moleculer:
         specifier: ^0.14.35
-        version: 0.14.35(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
+        version: 0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
       moleculer-web:
         specifier: ^0.10.8
-        version: 0.10.8(moleculer@0.14.35(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))
+        version: 0.10.8(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))
       moleculer-zod-validator:
         specifier: ^3.3.1
-        version: 3.3.1(moleculer@0.14.35(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))(zod@3.25.48)
+        version: 3.3.1(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))(zod@3.25.48)
       mongoose:
         specifier: ~8.15.0
         version: 8.15.1
@@ -90,6 +93,9 @@ importers:
       '@swc/helpers':
         specifier: ^0.5.17
         version: 0.5.17
+      '@types/amqplib':
+        specifier: ^0.10.7
+        version: 0.10.7
       '@types/node':
         specifier: ~22.15.0
         version: 22.15.29
@@ -137,6 +143,10 @@ importers:
         version: 3.17.0
 
   apps/grading-service:
+    dependencies:
+      '@azure/storage-blob':
+        specifier: ^12.27.0
+        version: 12.27.0
     devDependencies:
       '@grading-system/typed-moleculer':
         specifier: workspace:*
@@ -523,6 +533,54 @@ packages:
   '@apidevtools/json-schema-ref-parser@11.9.3':
     resolution: {integrity: sha512-60vepv88RwcJtSHrD6MjIL6Ta3SOYbgfnkHb+ppAVK+o9mXprRtulx7VlRl3lN3bbvysAfCS7WMVfhUYemB0IQ==}
     engines: {node: '>= 16'}
+
+  '@azure/abort-controller@2.1.2':
+    resolution: {integrity: sha512-nBrLsEWm4J2u5LpAPjxADTlq3trDgVZZXHNKabeXZtpq3d3AbN/KGO82R87rdDz5/lYB024rtEf10/q0urNgsA==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/core-auth@1.9.0':
+    resolution: {integrity: sha512-FPwHpZywuyasDSLMqJ6fhbOK3TqUdviZNF8OqRGA4W5Ewib2lEEZ+pBsYcBa88B2NGO/SEnYPGhyBqNlE8ilSw==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/core-client@1.9.4':
+    resolution: {integrity: sha512-f7IxTD15Qdux30s2qFARH+JxgwxWLG2Rlr4oSkPGuLWm+1p5y1+C04XGLA0vmX6EtqfutmjvpNmAfgwVIS5hpw==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/core-http-compat@2.3.0':
+    resolution: {integrity: sha512-qLQujmUypBBG0gxHd0j6/Jdmul6ttl24c8WGiLXIk7IHXdBlfoBqW27hyz3Xn6xbfdyVSarl1Ttbk0AwnZBYCw==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/core-lro@2.7.2':
+    resolution: {integrity: sha512-0YIpccoX8m/k00O7mDDMdJpbr6mf1yWo2dfmxt5A8XVZVVMz2SSKaEbMCeJRvgQ0IaSlqhjT47p4hVIRRy90xw==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/core-paging@1.6.2':
+    resolution: {integrity: sha512-YKWi9YuCU04B55h25cnOYZHxXYtEvQEbKST5vqRga7hWY9ydd3FZHdeQF8pyh+acWZvppw13M/LMGx0LABUVMA==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/core-rest-pipeline@1.20.0':
+    resolution: {integrity: sha512-ASoP8uqZBS3H/8N8at/XwFr6vYrRP3syTK0EUjDXQy0Y1/AUS+QeIRThKmTNJO2RggvBBxaXDPM7YoIwDGeA0g==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/core-tracing@1.2.0':
+    resolution: {integrity: sha512-UKTiEJPkWcESPYJz3X5uKRYyOcJD+4nYph+KpfdPRnQJVrZfk0KJgdnaAWKfhsBBtAf/D58Az4AvCJEmWgIBAg==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/core-util@1.12.0':
+    resolution: {integrity: sha512-13IyjTQgABPARvG90+N2dXpC+hwp466XCdQXPCRlbWHgd3SJd5Q1VvaBGv6k1BIa4MQm6hAF1UBU1m8QUxV8sQ==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/core-xml@1.4.5':
+    resolution: {integrity: sha512-gT4H8mTaSXRz7eGTuQyq1aIJnJqeXzpOe9Ay7Z3FrCouer14CbV3VzjnJrNrQfbBpGBLO9oy8BmrY75A0p53cA==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/logger@1.2.0':
+    resolution: {integrity: sha512-0hKEzLhpw+ZTAfNJyRrn6s+V0nDWzXk9OjBr2TiGIu0OfMr5s2V4FpKLTAK3Ca5r5OKLbf4hkOGDPyiRjie/jA==}
+    engines: {node: '>=18.0.0'}
+
+  '@azure/storage-blob@12.27.0':
+    resolution: {integrity: sha512-IQjj9RIzAKatmNca3D6bT0qJ+Pkox1WZGOg2esJF2YLHb45pQKOwGPIAV+w3rfgkj7zV3RMxpn/c6iftzSOZJQ==}
+    engines: {node: '>=18.0.0'}
 
   '@babel/code-frame@7.26.2':
     resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
@@ -3112,6 +3170,9 @@ packages:
     peerDependencies:
       mongoose: ~8.15.0
 
+  '@types/amqplib@0.10.7':
+    resolution: {integrity: sha512-IVj3avf9AQd2nXCx0PGk/OYq7VmHiyNxWFSb5HhU9ATh+i+gHWvVcljFTcTWQ/dyHJCTrzCixde+r/asL2ErDA==}
+
   '@types/argparse@1.0.38':
     resolution: {integrity: sha512-ebDJ9b0e702Yr7pWgB0jzm+CX4Srzz8RcXtLJDJB+BSccqMa36uyH/zUsSYao5+BD1ytv3k3rPYCq4mAE1hsXA==}
 
@@ -3395,6 +3456,10 @@ packages:
     resolution: {integrity: sha512-3i8NrFcZeeDHJ+7ZUuDkGT+UHq+XoFGsymNK2jZCOHcfEzRQ0BdpRtdpSx/Iyf3MHLWIcLS0COuOPibKQboIiQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
+  '@typespec/ts-http-runtime@0.2.2':
+    resolution: {integrity: sha512-Gz/Sm64+Sq/vklJu1tt9t+4R2lvnud8NbTD/ZfpZtMiUX7YeVpCA8j6NSW8ptwcoLL+NmYANwqP8DV0q/bwl2w==}
+    engines: {node: '>=18.0.0'}
+
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
 
@@ -3671,6 +3736,10 @@ packages:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
     engines: {node: '>= 6.0.0'}
 
+  agent-base@7.1.3:
+    resolution: {integrity: sha512-jRR5wdylq8CkOe6hei19GGZnxM6rBGwFl3Bg0YItGDimvjGtAvdZk4Pu6Cl4u4Igsws4a1fd1Vq3ezrhn4KmFw==}
+    engines: {node: '>= 14'}
+
   agentkeepalive@4.6.0:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
@@ -3728,6 +3797,10 @@ packages:
 
   alien-signals@0.4.14:
     resolution: {integrity: sha512-itUAVzhczTmP2U5yX67xVpsbbOiquusbWVyA9N+sy6+r6YVbFkahXvNCeEPWEOMhwDYwbVbGHFkVL03N9I5g+Q==}
+
+  amqplib@0.10.8:
+    resolution: {integrity: sha512-Tfn1O9sFgAP8DqeMEpt2IacsVTENBpblB3SqLdn0jK2AeX8iyCvbptBc8lyATT9bQ31MsjVwUSQ1g8f4jHOUfw==}
+    engines: {node: '>=10'}
 
   ansi-colors@4.1.3:
     resolution: {integrity: sha512-/6w/C21Pm1A7aZitlI5Ni/2J6FFQN8i1Cvz3kHABAAbw93v/NlvKdVOqz7CCWz/3iv/JplRSEEZ83XION15ovw==}
@@ -3934,6 +4007,9 @@ packages:
 
   buffer-from@1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
+
+  buffer-more-ints@1.0.0:
+    resolution: {integrity: sha512-EMetuGFz5SLsT0QTnXzINh4Ksr+oo4i+UGTXEshiGCQWnsgSs7ZhJ8fzlwQ+OzEMs0MpDAMr1hxnblp5a4vcHg==}
 
   buffer@5.7.1:
     resolution: {integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==}
@@ -4918,6 +4994,10 @@ packages:
   fast-uri@3.0.6:
     resolution: {integrity: sha512-Atfo14OibSv5wAp4VWNsFYE1AchQRTv9cBGWET4pZWHzYshFSS9NQI6I57rdKn9croWVMbYFbLhJ+yJvmZIIHw==}
 
+  fast-xml-parser@5.2.3:
+    resolution: {integrity: sha512-OdCYfRqfpuLUFonTNjvd30rCBZUneHpSQkCqfaeWQ9qrKcl6XlWeDBNVwGb+INAIxRshuN2jF+BE0L6gbBO2mw==}
+    hasBin: true
+
   fastest-validator@1.19.0:
     resolution: {integrity: sha512-wUfJBrXmccVz4kARAiWTkuqsC6EFeqbNxwfysCDk+maExBPP8KxyBwaWtayrWjKIaBIbaz+rqI2kel6ecayxcg==}
 
@@ -5264,9 +5344,17 @@ packages:
     resolution: {integrity: sha512-n2hY8YdoRE1i7r6M0w9DIw5GgZN0G25P8zLCRQ8rjXtTU3vsNFBI/vWK/UIeE6g5MUUz6avwAPXmL6Fy9D/90w==}
     engines: {node: '>= 6'}
 
+  http-proxy-agent@7.0.2:
+    resolution: {integrity: sha512-T1gkAiYYDWYx3V5Bmyu7HcfcvL7mUrTWiM6yOfa3PIphViJ/gFPbvidQ+veqSOHci/PxBcDabeUNCzpOODJZig==}
+    engines: {node: '>= 14'}
+
   https-proxy-agent@5.0.1:
     resolution: {integrity: sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==}
     engines: {node: '>= 6'}
+
+  https-proxy-agent@7.0.6:
+    resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
+    engines: {node: '>= 14'}
 
   humanize-ms@1.2.1:
     resolution: {integrity: sha512-Fl70vYtsAFb/C06PTS9dZBo7ihau+Tu/DNCk/OyHhea07S+aeMWpFFkUaXRa8fI+ScZbEI8dfSxwY7gxZ9SAVQ==}
@@ -7409,6 +7497,9 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
+  strnum@2.1.1:
+    resolution: {integrity: sha512-7ZvoFTiCnGxBtDqJ//Cu6fWtZtc7Y3x+QOirG15wztbdngGSkht27o2pyGWrVy0b4WAy3jbKmnoK6g5VlVNUUw==}
+
   style-to-js@1.1.16:
     resolution: {integrity: sha512-/Q6ld50hKYPH3d/r6nr117TZkHR0w0kGGIVfpG9N6D8NymRPM9RqCUv4pRpJ62E5DqOYx2AFpbZMyCPnjQCnOw==}
 
@@ -8270,6 +8361,105 @@ snapshots:
       '@jsdevtools/ono': 7.1.3
       '@types/json-schema': 7.0.15
       js-yaml: 4.1.0
+
+  '@azure/abort-controller@2.1.2':
+    dependencies:
+      tslib: 2.8.1
+
+  '@azure/core-auth@1.9.0':
+    dependencies:
+      '@azure/abort-controller': 2.1.2
+      '@azure/core-util': 1.12.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/core-client@1.9.4':
+    dependencies:
+      '@azure/abort-controller': 2.1.2
+      '@azure/core-auth': 1.9.0
+      '@azure/core-rest-pipeline': 1.20.0
+      '@azure/core-tracing': 1.2.0
+      '@azure/core-util': 1.12.0
+      '@azure/logger': 1.2.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/core-http-compat@2.3.0':
+    dependencies:
+      '@azure/abort-controller': 2.1.2
+      '@azure/core-client': 1.9.4
+      '@azure/core-rest-pipeline': 1.20.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/core-lro@2.7.2':
+    dependencies:
+      '@azure/abort-controller': 2.1.2
+      '@azure/core-util': 1.12.0
+      '@azure/logger': 1.2.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/core-paging@1.6.2':
+    dependencies:
+      tslib: 2.8.1
+
+  '@azure/core-rest-pipeline@1.20.0':
+    dependencies:
+      '@azure/abort-controller': 2.1.2
+      '@azure/core-auth': 1.9.0
+      '@azure/core-tracing': 1.2.0
+      '@azure/core-util': 1.12.0
+      '@azure/logger': 1.2.0
+      '@typespec/ts-http-runtime': 0.2.2
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/core-tracing@1.2.0':
+    dependencies:
+      tslib: 2.8.1
+
+  '@azure/core-util@1.12.0':
+    dependencies:
+      '@azure/abort-controller': 2.1.2
+      '@typespec/ts-http-runtime': 0.2.2
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/core-xml@1.4.5':
+    dependencies:
+      fast-xml-parser: 5.2.3
+      tslib: 2.8.1
+
+  '@azure/logger@1.2.0':
+    dependencies:
+      '@typespec/ts-http-runtime': 0.2.2
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/storage-blob@12.27.0':
+    dependencies:
+      '@azure/abort-controller': 2.1.2
+      '@azure/core-auth': 1.9.0
+      '@azure/core-client': 1.9.4
+      '@azure/core-http-compat': 2.3.0
+      '@azure/core-lro': 2.7.2
+      '@azure/core-paging': 1.6.2
+      '@azure/core-rest-pipeline': 1.20.0
+      '@azure/core-tracing': 1.2.0
+      '@azure/core-util': 1.12.0
+      '@azure/core-xml': 1.4.5
+      '@azure/logger': 1.2.0
+      events: 3.3.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
 
   '@babel/code-frame@7.26.2':
     dependencies:
@@ -11080,6 +11270,10 @@ snapshots:
       semver: 7.7.2
       tslib: 2.8.1
 
+  '@types/amqplib@0.10.7':
+    dependencies:
+      '@types/node': 22.15.29
+
   '@types/argparse@1.0.38': {}
 
   '@types/babel__core@7.20.5':
@@ -11180,7 +11374,7 @@ snapshots:
 
   '@types/node-fetch@2.6.12':
     dependencies:
-      '@types/node': 18.19.110
+      '@types/node': 22.15.29
       form-data: 4.0.2
 
   '@types/node@18.19.110':
@@ -11505,6 +11699,14 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 8.33.1
       eslint-visitor-keys: 4.2.0
+
+  '@typespec/ts-http-runtime@0.2.2':
+    dependencies:
+      http-proxy-agent: 7.0.2
+      https-proxy-agent: 7.0.6
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
 
   '@ungap/structured-clone@1.3.0': {}
 
@@ -11848,6 +12050,8 @@ snapshots:
       - supports-color
     optional: true
 
+  agent-base@7.1.3: {}
+
   agentkeepalive@4.6.0:
     dependencies:
       humanize-ms: 1.2.1
@@ -11912,6 +12116,11 @@ snapshots:
       require-from-string: 2.0.2
 
   alien-signals@0.4.14: {}
+
+  amqplib@0.10.8:
+    dependencies:
+      buffer-more-ints: 1.0.0
+      url-parse: 1.5.10
 
   ansi-colors@4.1.3: {}
 
@@ -12134,6 +12343,8 @@ snapshots:
     optional: true
 
   buffer-from@1.1.2: {}
+
+  buffer-more-ints@1.0.0: {}
 
   buffer@5.7.1:
     dependencies:
@@ -13152,8 +13363,7 @@ snapshots:
 
   eventemitter3@4.0.7: {}
 
-  events@3.3.0:
-    optional: true
+  events@3.3.0: {}
 
   expect-type@1.2.1: {}
 
@@ -13205,6 +13415,10 @@ snapshots:
   fast-safe-stringify@2.1.1: {}
 
   fast-uri@3.0.6: {}
+
+  fast-xml-parser@5.2.3:
+    dependencies:
+      strnum: 2.1.1
 
   fastest-validator@1.19.0: {}
 
@@ -13518,6 +13732,13 @@ snapshots:
       - supports-color
     optional: true
 
+  http-proxy-agent@7.0.2:
+    dependencies:
+      agent-base: 7.1.3
+      debug: 4.4.1
+    transitivePeerDependencies:
+      - supports-color
+
   https-proxy-agent@5.0.1:
     dependencies:
       agent-base: 6.0.2
@@ -13525,6 +13746,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
     optional: true
+
+  https-proxy-agent@7.0.6:
+    dependencies:
+      agent-base: 7.1.3
+      debug: 4.4.1
+    transitivePeerDependencies:
+      - supports-color
 
   humanize-ms@1.2.1:
     dependencies:
@@ -14529,7 +14757,7 @@ snapshots:
       pkg-types: 1.3.1
       ufo: 1.6.1
 
-  moleculer-web@0.10.8(moleculer@0.14.35(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)):
+  moleculer-web@0.10.8(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)):
     dependencies:
       '@fastify/busboy': 1.2.1
       body-parser: 1.20.3
@@ -14539,19 +14767,19 @@ snapshots:
       isstream: 0.1.2
       kleur: 4.1.5
       lodash: 4.17.21
-      moleculer: 0.14.35(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
+      moleculer: 0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
       path-to-regexp: 3.3.0
       qs: 6.14.0
       serve-static: 1.16.2
     transitivePeerDependencies:
       - supports-color
 
-  moleculer-zod-validator@3.3.1(moleculer@0.14.35(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))(zod@3.25.48):
+  moleculer-zod-validator@3.3.1(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))(zod@3.25.48):
     dependencies:
-      moleculer: 0.14.35(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
+      moleculer: 0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
       zod: 3.25.48
 
-  moleculer@0.14.35(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0):
+  moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0):
     dependencies:
       args: 5.0.3
       eventemitter2: 6.4.9
@@ -14564,6 +14792,7 @@ snapshots:
       node-fetch: 2.7.0(encoding@0.1.13)
       recursive-watch: 1.1.4
     optionalDependencies:
+      amqplib: 0.10.8
       debug: 4.4.1
       log4js: 6.9.1
       pino: 9.6.0
@@ -15214,8 +15443,7 @@ snapshots:
 
   quansync@0.2.10: {}
 
-  querystringify@2.2.0:
-    optional: true
+  querystringify@2.2.0: {}
 
   queue-microtask@1.2.3: {}
 
@@ -15472,8 +15700,7 @@ snapshots:
 
   require-from-string@2.0.2: {}
 
-  requires-port@1.0.0:
-    optional: true
+  requires-port@1.0.0: {}
 
   resolve-from@4.0.0: {}
 
@@ -15954,6 +16181,8 @@ snapshots:
 
   strip-json-comments@3.1.1: {}
 
+  strnum@2.1.1: {}
+
   style-to-js@1.1.16:
     dependencies:
       style-to-object: 1.0.8
@@ -16407,7 +16636,6 @@ snapshots:
     dependencies:
       querystringify: 2.2.0
       requires-port: 1.0.0
-    optional: true
 
   use-callback-ref@1.3.3(@types/react@19.1.6)(react@19.1.0):
     dependencies:
