@@ -60,7 +60,7 @@ export const ViewRubricDialog = ({
             <DialogHeader>
               <DialogTitle>{rubric?.rubricName}</DialogTitle>
             </DialogHeader>
-            <div className="w-full h-full flex flex-col">
+            <div className="w-full h-[60vh] overflow-y-auto flex flex-col">
               <RubricView rubricData={rubric} showPlugins />
             </div>
           </>

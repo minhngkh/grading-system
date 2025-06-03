@@ -41,6 +41,11 @@ export const NavigationItems: NavigationData[] = [
     preload: false,
   },
   {
+    title: "Manage Gradings",
+    icon: <Library className="size-4" />,
+    to: "/gradings",
+  },
+  {
     title: "AI Assistant",
     icon: <BotMessageSquare className="size-4" />,
     to: "/chat",

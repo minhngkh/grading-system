@@ -63,4 +63,11 @@ export const SystemTools: Tool[] = [
     isFavorite: false,
     navigation: "/analytics",
   },
+  {
+    name: "Manage Gradings",
+    details: "Tools for managing and reviewing grading sessions.",
+    type: ToolType.Review,
+    isFavorite: false,
+    navigation: "/gradings",
+  },
 ];
