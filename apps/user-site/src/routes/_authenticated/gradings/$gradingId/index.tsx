@@ -4,10 +4,10 @@ import GradingResult from "@/pages/review/grading-result";
 import { GradingService } from "@/services/grading-service";
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/gradings/$id")({
+export const Route = createFileRoute("/_authenticated/gradings/$gradingId/")({
   component: RouteComponent,
-  loader: async ({ params: { id } }) => {
-    return await GradingService.getGradingAttempt(id);
+  loader: async ({ params: { gradingId } }) => {
+    return await GradingService.getGradingAttempt(gradingId);
   },
   errorComponent: () => ErrorComponent(),
   pendingComponent: () => PendingComponent("Loading grading result..."),

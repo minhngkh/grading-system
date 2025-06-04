@@ -23,6 +23,7 @@ export default function RubricView({
       </div>
     );
   }
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCriterionIndex, setSelectedCriterionIndex] = useState<number | null>(
     null,

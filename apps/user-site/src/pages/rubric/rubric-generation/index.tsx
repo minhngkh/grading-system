@@ -50,11 +50,7 @@ export default function RubricGenerationPage({
   });
 
   const isNextDisabled = () => {
-    if (stepper.isFirst) {
-      return !form.formState.isValid;
-    }
-
-    return false;
+    return stepper.isFirst && !form.formState.isValid;
   };
 
   const handlePrev = () => {

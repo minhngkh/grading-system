@@ -1,0 +1,33 @@
+import ErrorComponent from "@/components/app/route-error";
+import PendingComponent from "@/components/app/route-pending";
+import ManualAdjustScorePage from "@/pages/review/manual-grade/$id";
+import { AssessmentService } from "@/services/assessment-service";
+import { GradingService } from "@/services/grading-service";
+import { RubricService } from "@/services/rubric-service";
+import { createFileRoute } from "@tanstack/react-router";
+
+export const Route = createFileRoute(
+  "/_authenticated/gradings/$gradingId/assessments/$assessmentId",
+)({
+  component: RouteComponent,
+  loader: async ({ params: { assessmentId, gradingId } }) => {
+    const [grading, assessment] = await Promise.all([
+      GradingService.getGradingAttempt(gradingId),
+      AssessmentService.getAssessmentById(assessmentId),
+    ]);
+
+    if (grading.rubricId === undefined) {
+      throw new Error("This assessment does not have a rubric associated with it.");
+    }
+
+    const rubric = await RubricService.getRubric(grading.rubricId);
+    return { assessment, rubric };
+  },
+  errorComponent: () => ErrorComponent(),
+  pendingComponent: () => PendingComponent("Loading assessment..."),
+});
+
+function RouteComponent() {
+  const { assessment, rubric } = Route.useLoaderData();
+  return <ManualAdjustScorePage initAssessment={assessment} initRubric={rubric} />;
+}

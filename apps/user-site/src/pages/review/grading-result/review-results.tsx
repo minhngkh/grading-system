@@ -4,7 +4,8 @@ import { RefreshCw, FileSearch } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Assessment } from "@/types/assessment";
 import { createCriteriaColorMap, getCriteriaColorStyle } from "./colors";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { Separator } from "@/components/ui/separator";
 
 const ResultCardSkeleton = () => (
   <Card className="overflow-hidden py-0">
@@ -49,7 +50,6 @@ export default function ReviewResults({
   const allCriteriaNames =
     assessments[0]?.scoreBreakdowns.map((breakdown) => breakdown.criterionName) || [];
   const criteriaColorMap = createCriteriaColorMap(allCriteriaNames);
-  const navigate = useNavigate();
 
   return (
     <section>
@@ -62,17 +62,13 @@ export default function ReviewResults({
           {assessments.map((item) => (
             <Card key={item.id} className="overflow-hidden py-0">
               <div className="flex flex-col md:flex-row">
-                <Link
-                  to="/assessments/$id"
-                  params={{ id: item.id }}
-                  className="flex-1 p-6"
-                >
+                <div className="flex-1 p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                       {item.submissionReference}
                     </h3>
                     <span className="text-2xl font-bold">
-                      {(item.rawScore * scaleFactor) / 100} ({item.rawScore}%)
+                      {(item.rawScore * scaleFactor) / 100} point(s)
                     </span>
                   </div>
 
@@ -95,17 +91,12 @@ export default function ReviewResults({
                               {finalScore} ({score.rawScore}%)
                             </span>
                           </div>
-                          <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${colorStyle.bg}`}
-                              style={{ width: `${score.rawScore}%` }}
-                            ></div>
-                          </div>
+                          {index !== item.scoreBreakdowns.length - 1 && <Separator />}
                         </div>
                       );
                     })}
                   </div>
-                </Link>
+                </div>
 
                 <div className="flex md:flex-col justify-end p-4 bg-muted">
                   <Button
@@ -115,15 +106,15 @@ export default function ReviewResults({
                     <RefreshCw className="h-4 w-4" />
                     Rerun
                   </Button>
-                  <Button className="flex items-center gap-2 w-full">
-                    <FileSearch
-                      className="h-4 w-4"
-                      onClick={() =>
-                        navigate({ to: "/assessments/$id", params: { id: item.id } })
-                      }
-                    />
-                    Review
-                  </Button>
+                  <Link
+                    to="/gradings/$gradingId/assessments/$assessmentId"
+                    params={{ gradingId: item.gradingId, assessmentId: item.id }}
+                  >
+                    <Button className="flex items-center gap-2 w-full">
+                      <FileSearch className="h-4 w-4" />
+                      Review
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </Card>

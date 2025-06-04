@@ -19,11 +19,6 @@ export type Tool = {
   preload?: LinkProps["preload"];
 };
 
-export interface ToolsFilterProps {
-  currentFilter: ToolType | undefined;
-  filterFunction?: (type: ToolType | undefined) => void;
-}
-
 export const SystemTools: Tool[] = [
   {
     name: "Generate Rubric",

@@ -57,7 +57,6 @@ export default function CriteriaMapper({
       await onGradingAttemptChange?.({ selectors: updatedSelector });
     } catch (error) {
       toast.error("Failed to update selectors");
-      console.error("Error updating selectors:", error);
     }
   };
 

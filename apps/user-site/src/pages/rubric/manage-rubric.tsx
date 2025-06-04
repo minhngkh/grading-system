@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Rubric, RubricStatus } from "@/types/rubric";
+import { Rubric } from "@/types/rubric";
 import { GetRubricsResult, RubricService } from "@/services/rubric-service";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,7 +47,7 @@ import ExportDialog from "@/components/app/export-dialog";
 import { RubricExporter } from "@/lib/exporters";
 
 type SortConfig = {
-  key: "rubricName" | "updatedOn" | "status" | null;
+  key: "rubricName" | "updatedOn" | null;
   direction: "asc" | "desc";
 };
 
@@ -73,7 +72,6 @@ export default function ManageRubricsPage({
     meta: { total: totalCount },
   } = results;
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
-  const [statusFilter, setStatusFilter] = useState<string>("All");
   const [viewRubricOpen, setViewRubricOpen] = useState<boolean>(false);
   const [selectedRubricIndex, setSelectedRubricIndex] = useState<number | null>(null);
   const [editRubricOpen, setEditRubricOpen] = useState<boolean>(false);
@@ -88,13 +86,8 @@ export default function ManageRubricsPage({
     });
   }, [debouncedSearchTerm]);
 
-  // Apply client filtering for status only
-  const filteredRubrics =
-    statusFilter === "All" ? rubrics : (
-      rubrics.filter((rubric) => rubric.status === statusFilter)
-    );
-
-  const sortedRubrics = [...filteredRubrics].sort((a, b) => {
+  // Remove client filtering - use rubrics directly
+  const sortedRubrics = [...rubrics].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const aKey = a[sortConfig.key];
     const bKey = b[sortConfig.key];
@@ -133,20 +126,8 @@ export default function ManageRubricsPage({
       : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
-  const getStatusBadge = (status?: RubricStatus) => {
-    switch (status) {
-      case RubricStatus.Draft:
-        return <Badge variant="default">Drafted</Badge>;
-      case RubricStatus.Used:
-        return <Badge variant="secondary">Used</Badge>;
-      default:
-        return <Badge variant="destructive">None</Badge>;
-    }
-  };
-
   const clearFilters = () => {
     setSearchTerm("");
-    setStatusFilter("All");
   };
 
   const onUpdateRubric = async (id: string, updatedRubricData: Partial<Rubric>) => {
@@ -191,23 +172,7 @@ export default function ManageRubricsPage({
             </Button>
           )}
         </div>
-        <Select
-          value={statusFilter}
-          onValueChange={(value) => {
-            setStatusFilter(value);
-            setSearchParam({ page: 1 });
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All Statuses</SelectItem>
-            <SelectItem value="Drafted">Drafted</SelectItem>
-            <SelectItem value="Used">Used</SelectItem>
-          </SelectContent>
-        </Select>
-        {statusFilter !== "All" && (
+        {searchTerm.length > 0 && (
           <Button variant="ghost" onClick={clearFilters} className="w-full sm:w-auto">
             Clear Filters
           </Button>
@@ -218,19 +183,14 @@ export default function ManageRubricsPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => requestSort("rubricName")} className="w-[40%]">
+              <TableHead onClick={() => requestSort("rubricName")} className="w-[50%]">
                 <div className="flex items-center cursor-pointer">
                   Rubric Name {getSortIcon("rubricName")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => requestSort("updatedOn")} className="w-[20%]">
+              <TableHead onClick={() => requestSort("updatedOn")} className="w-[30%]">
                 <div className="flex items-center cursor-pointer">
                   Updated On {getSortIcon("updatedOn")}
-                </div>
-              </TableHead>
-              <TableHead onClick={() => requestSort("status")} className="w-[20%]">
-                <div className="flex items-center cursor-pointer">
-                  Status {getSortIcon("status")}
                 </div>
               </TableHead>
               <TableHead className="w-[20%] text-right">Actions</TableHead>
@@ -239,7 +199,7 @@ export default function ManageRubricsPage({
           <TableBody>
             {sortedRubrics.length === 0 ?
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={3} className="h-24 text-center">
                   No rubrics found.
                 </TableCell>
               </TableRow>
@@ -251,7 +211,6 @@ export default function ManageRubricsPage({
                       format(rubric.updatedOn, "MMM d, yyyy")
                     : "Not set"}
                   </TableCell>
-                  <TableCell>{getStatusBadge(rubric.status)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

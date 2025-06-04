@@ -255,13 +255,12 @@ export default function ManageGradingsPage({
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link to="/gradings/$id" params={{ id: grading.id }}>
+                          <Link
+                            to="/gradings/$gradingId"
+                            params={{ gradingId: grading.id }}
+                          >
                             View Grading
                           </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
