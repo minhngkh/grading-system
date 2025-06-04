@@ -42,14 +42,6 @@ export const SystemTools: Tool[] = [
     navigation: "/rubrics",
   },
   {
-    name: "Manage Gradings",
-    details:
-      "Includes components, patterns, and guidelines for creating cohesive user interfaces.",
-    type: ToolType.Grading,
-    isFavorite: true,
-    navigation: "/gradings",
-  },
-  {
     name: "Grade Assignments",
     details: "Create task lists, set deadlines, and monitor progress on your projects.",
     type: ToolType.Grading,
