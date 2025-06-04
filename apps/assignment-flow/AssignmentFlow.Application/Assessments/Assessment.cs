@@ -98,7 +98,7 @@ public class Assessment
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
         ScoreBreakdowns = domainEvent.AggregateEvent.ScoreBreakdowns.ToApiContracts();
-
+        RawScore = domainEvent.AggregateEvent.ScoreBreakdowns.TotalRawScore;
         if (domainEvent.AggregateEvent.Feedbacks != null)
         {
             Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
