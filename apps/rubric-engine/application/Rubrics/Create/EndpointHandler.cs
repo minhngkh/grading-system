@@ -10,7 +10,7 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/", CreateRubric)
             .WithName("CreateRubric")
-            .Produces<Rubric>(StatusCodes.Status201Created)
+            .Produces<CreateRubricResponse>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;
@@ -42,6 +42,17 @@ public static class EndpointHandler
         var rubric = await queryProcessor.ProcessAsync(
             new ReadModelByIdQuery<Rubric>(rubricId), cancellationToken);
 
-        return TypedResults.CreatedAtRoute<Rubric>(rubric, "GetRubricById", new { id = rubricId });
+        var response = new CreateRubricResponse
+        {
+            Id = rubric.Id,
+            TeacherId = rubric.TeacherId,
+            RubricName = rubric.RubricName,
+            Tags = rubric.PerformanceTags,
+            Criteria = rubric.Criteria,
+            UpdatedOn = rubric.UpdatedOn,
+            Status = rubric.Status
+        };
+
+        return TypedResults.CreatedAtRoute<CreateRubricResponse>(response, "GetRubricById", new { id = rubricId });
     }
 }
