@@ -406,12 +406,12 @@ function createGradingSystemPrompt(rubric: Rubric) {
     ### Instructions
     - The input you will be given is generated using repomix, it will show you the structure and content of all the files that you will use to grade
     - Here are some more detailed specs of the output:
-      - You must grade all of the criterion that is in the "criteria" array of the rubric
-      - You must grade the criterion by reading the level description then give and choose the one that is the most appropriate for the input
+      - You must grade all of the criteria
+      - You must grade each criterion by reading the level description then give and choose the one that is the most appropriate for the input
       - The score must be exactly the same as the level's weight (or if it contains a max and min value, then the graded score must be both: lower or equal to the max value; higher and *must not* equal to the min value. for example, if "weight": { "max": 100, "min":75 }, the score should be in range 75 < score <= 100).
       - If the score you gave:
-        - is 100, you don't have to provide any detailed feedback in the \`feedback\` field
-        - is less than 100, you should provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the input that you based your decision on, if applicable
+        - is 100, you don't have to provide any detailed feedback in the \`feedback\` field, but at least provide the summary in the \`summary\` field
+        - is less than 100, you **must** (except some cases) provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the input that you based your decision on
   `;
 }
 

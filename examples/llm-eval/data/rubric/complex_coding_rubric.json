@@ -1,0 +1,163 @@
+{
+    "rubricName": "Python Code Grading Rubric for Webpage HTML Download",
+    "tags": [
+        "0",
+        "1",
+        "2",
+        "3"
+    ],
+    "criteria": [
+        {
+            "name": "Correctness",
+            "weight": 40,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 40,
+                        "min": 30
+                    },
+                    "description": "The code correctly downloads the HTML content and saves it to a file without errors."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 30,
+                        "min": 20
+                    },
+                    "description": "The code downloads the HTML content but saves it incorrectly (e.g., wrong format or no file created)."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 20,
+                        "min": 10
+                    },
+                    "description": "The code runs with errors but demonstrates an attempt to download HTML content."
+                },
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 10,
+                        "min": 0
+                    },
+                    "description": "The code is severely incorrect and does not reflect the required functionality."
+                }
+            ]
+        },
+        {
+            "name": "Code Quality",
+            "weight": 30,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 30,
+                        "min": 20
+                    },
+                    "description": "The code is clean, well-organized, uses appropriate naming conventions and is properly documented."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 20,
+                        "min": 10
+                    },
+                    "description": "The code has some organization but lacks proper documentation or naming conventions."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 10,
+                        "min": 5
+                    },
+                    "description": "The code is poorly organized and lacks any documentation."
+                },
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 5,
+                        "min": 0
+                    },
+                    "description": "The code is unorganized and does not follow any programming standards."
+                }
+            ]
+        },
+        {
+            "name": "Error Handling",
+            "weight": 20,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 20,
+                        "min": 15
+                    },
+                    "description": "The code gracefully handles errors (e.g., invalid URLs, file write errors) with appropriate feedback."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 15,
+                        "min": 10
+                    },
+                    "description": "The code provides some error handling but lacks clarity in messaging or does not cover all cases."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 10,
+                        "min": 5
+                    },
+                    "description": "The code has minimal error handling but is insufficient or does not provide useful feedback."
+                },
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 5,
+                        "min": 0
+                    },
+                    "description": "The code does not include error handling and crashes on invalid input."
+                }
+            ]
+        },
+        {
+            "name": "Efficiency",
+            "weight": 10,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 10,
+                        "min": 8
+                    },
+                    "description": "The code is efficient, utilizing appropriate libraries and methods for downloading content."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 8,
+                        "min": 5
+                    },
+                    "description": "The code is functional but uses less efficient methods or excessive resource utilization."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 5,
+                        "min": 3
+                    },
+                    "description": "The code is inefficient and demonstrates poor use of resources."
+                },
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 3,
+                        "min": 0
+                    },
+                    "description": "The code is highly inefficient and does not meet the task requirements."
+                }
+            ]
+        }
+    ]
+}

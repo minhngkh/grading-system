@@ -1,0 +1,201 @@
+{
+    "rubricName": "Housing Data Analysis and Visualization Report Rubric",
+    "tags": [
+        "0",
+        "1",
+        "2",
+        "3"
+    ],
+    "criteria": [
+        {
+            "name": "Data Analysis Completeness",
+            "weight": 30,
+            "levels": [
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 30,
+                        "min": 20
+                    },
+                    "description": "Analysis is comprehensive, exploring all aspects of the housing data with in-depth insights."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 20,
+                        "min": 10
+                    },
+                    "description": "Analysis covers most aspects of the data but lacks depth in some areas."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 10,
+                        "min": 5
+                    },
+                    "description": "Analysis is superficial, missing significant details or insights."
+                },
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 5,
+                        "min": 0
+                    },
+                    "description": "Analysis is incomplete or irrelevant to the data."
+                }
+            ]
+        },
+        {
+            "name": "Data Visualization Quality",
+            "weight": 30,
+            "levels": [
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 30,
+                        "min": 20
+                    },
+                    "description": "Visualizations are clear, relevant, and enhance understanding of the data."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 20,
+                        "min": 10
+                    },
+                    "description": "Most visualizations are good, but some may be unclear or less relevant."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 10,
+                        "min": 5
+                    },
+                    "description": "Visualizations are poorly designed and do not aid in data comprehension."
+                },
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 5,
+                        "min": 0
+                    },
+                    "description": "No visualizations provided or entirely inappropriate."
+                }
+            ]
+        },
+        {
+            "name": "Report Structure and Clarity",
+            "weight": 20,
+            "levels": [
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 20,
+                        "min": 15
+                    },
+                    "description": "Report is well-structured, logically organized, and clearly written."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 15,
+                        "min": 10
+                    },
+                    "description": "Report structure is generally clear, with minor organizational issues."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 10,
+                        "min": 5
+                    },
+                    "description": "Report is poorly structured, making it difficult to follow."
+                },
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 5,
+                        "min": 0
+                    },
+                    "description": "Report lacks any discernible structure."
+                }
+            ]
+        },
+        {
+            "name": "Use of Sources and References",
+            "weight": 10,
+            "levels": [
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 10,
+                        "min": 7
+                    },
+                    "description": "Excellent use of credible sources with proper citations."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 7,
+                        "min": 4
+                    },
+                    "description": "Some sources are used, but citations may be incomplete."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 4,
+                        "min": 2
+                    },
+                    "description": "Few sources are utilized or poorly cited."
+                },
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 2,
+                        "min": 0
+                    },
+                    "description": "No sources or references cited."
+                }
+            ]
+        },
+        {
+            "name": "Conclusion and Recommendations",
+            "weight": 10,
+            "levels": [
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 10,
+                        "min": 7
+                    },
+                    "description": "Conclusion effectively summarizes key findings and offers practical recommendations."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 7,
+                        "min": 4
+                    },
+                    "description": "Conclusion summarizes findings but lacks strong recommendations."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 4,
+                        "min": 2
+                    },
+                    "description": "Conclusion is weak with minimal connection to findings."
+                },
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 2,
+                        "min": 0
+                    },
+                    "description": "No discernible conclusion provided."
+                }
+            ]
+        }
+    ]
+}

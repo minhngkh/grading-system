@@ -2,6 +2,14 @@
   "name": "@grading-system/plugin-service",
   "type": "module",
   "private": true,
+  "exports": {
+    "./*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts",
+      "default": "./src/*.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "dev": "node --import @swc-node/register/esm-register --watch --watch-preserve-output ./src/index.ts"
   },

@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "references": [
+    {
+      "path": "../../libs/utils"
+    },
+    {
+      "path": "../../apps/plugin-service"
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+    "rubricName": "Housing Data Analysis and Visualization Rubric",
+    "tags": [
+        "0",
+        "1",
+        "2",
+        "3"
+    ],
+    "criteria": [
+        {
+            "name": "Data Analysis",
+            "weight": 40,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 40,
+                        "min": 30
+                    },
+                    "description": "Thorough and insightful analysis of housing data with clear findings."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 30,
+                        "min": 20
+                    },
+                    "description": "Good analysis with some insights; findings are mostly clear."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 20,
+                        "min": 10
+                    },
+                    "description": "Basic analysis with few insights; findings lack clarity."
+                },
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 10,
+                        "min": 0
+                    },
+                    "description": "Limited or no analysis provided."
+                }
+            ]
+        },
+        {
+            "name": "Data Visualization",
+            "weight": 30,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 30,
+                        "min": 20
+                    },
+                    "description": "Visualizations are clear, informative, and enhance understanding of data."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 20,
+                        "min": 10
+                    },
+                    "description": "Visualizations are generally clear but may lack some information."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 10,
+                        "min": 5
+                    },
+                    "description": "Visualizations are unclear or do not support the data analysis effectively."
+                },
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 5,
+                        "min": 0
+                    },
+                    "description": "No visualizations provided or they are completely ineffective."
+                }
+            ]
+        },
+        {
+            "name": "Presentation and Clarity",
+            "weight": 30,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 30,
+                        "min": 20
+                    },
+                    "description": "Report is well-organized, clearly written, and free of grammatical errors."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 20,
+                        "min": 10
+                    },
+                    "description": "Report is organized, mostly clear, with minor errors."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 10,
+                        "min": 5
+                    },
+                    "description": "Report has significant clarity issues or several grammatical errors."
+                },
+                {
+                    "tag": "3",
+                    "weight": {
+                        "max": 5,
+                        "min": 0
+                    },
+                    "description": "Report is poorly organized, unclear, or contains numerous errors."
+                }
+            ]
+        }
+    ]
+}

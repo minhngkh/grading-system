@@ -1,0 +1,100 @@
+{
+    "rubricName": "Python Webpage Download Rubric",
+    "tags": [
+        "0",
+        "1",
+        "2"
+    ],
+    "criteria": [
+        {
+            "name": "Correctness",
+            "weight": 50,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 50,
+                        "min": 25
+                    },
+                    "description": "Code correctly downloads HTML and saves it to a file."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 25,
+                        "min": 10
+                    },
+                    "description": "Code has minor issues but attempts to download HTML."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 10,
+                        "min": 0
+                    },
+                    "description": "Code does not correctly download HTML."
+                }
+            ]
+        },
+        {
+            "name": "Code Quality",
+            "weight": 30,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 30,
+                        "min": 15
+                    },
+                    "description": "Code is well-structured, readable, and follows PEP 8 guidelines."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 15,
+                        "min": 5
+                    },
+                    "description": "Code has several readability issues but is understandable."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 5,
+                        "min": 0
+                    },
+                    "description": "Code is poorly structured and difficult to read."
+                }
+            ]
+        },
+        {
+            "name": "Handling Errors",
+            "weight": 20,
+            "levels": [
+                {
+                    "tag": "0",
+                    "weight": {
+                        "max": 20,
+                        "min": 10
+                    },
+                    "description": "Code gracefully handles errors (e.g., network issues)."
+                },
+                {
+                    "tag": "1",
+                    "weight": {
+                        "max": 10,
+                        "min": 5
+                    },
+                    "description": "Code has basic error handling but could be improved."
+                },
+                {
+                    "tag": "2",
+                    "weight": {
+                        "max": 5,
+                        "min": 0
+                    },
+                    "description": "Code lacks error handling."
+                }
+            ]
+        }
+    ]
+}
