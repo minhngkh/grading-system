@@ -4,12 +4,6 @@
   "files": [],
   "references": [
     {
-      "path": "./examples/example-grading-service"
-    },
-    {
-      "path": "./examples/example-next-app"
-    },
-    {
       "path": "./apps/plugin-service"
     },
     {
@@ -17,6 +11,9 @@
     },
     {
       "path": "./libs/typed-moleculer"
+    },
+    {
+      "path": "./apps/grading-service"
     }
   ]
 }
