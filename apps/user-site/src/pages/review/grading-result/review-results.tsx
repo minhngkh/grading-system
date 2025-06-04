@@ -4,7 +4,7 @@ import { RefreshCw, FileSearch } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Assessment } from "@/types/assessment";
 import { createCriteriaColorMap, getCriteriaColorStyle } from "./colors";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 const ResultCardSkeleton = () => (
   <Card className="overflow-hidden py-0">
@@ -49,6 +49,7 @@ export default function ReviewResults({
   const allCriteriaNames =
     assessments[0]?.scoreBreakdowns.map((breakdown) => breakdown.criterionName) || [];
   const criteriaColorMap = createCriteriaColorMap(allCriteriaNames);
+  const navigate = useNavigate();
 
   return (
     <section>
@@ -115,7 +116,12 @@ export default function ReviewResults({
                     Rerun
                   </Button>
                   <Button className="flex items-center gap-2 w-full">
-                    <FileSearch className="h-4 w-4" />
+                    <FileSearch
+                      className="h-4 w-4"
+                      onClick={() =>
+                        navigate({ to: "/assessments/$id", params: { id: item.id } })
+                      }
+                    />
                     Review
                   </Button>
                 </div>

@@ -1,0 +1,107 @@
+code {
+  font-family: monospace;
+  display: grid;
+  font-size: large;
+  position: relative; /* Ensure proper positioning for line numbers */
+  padding-left: 1em; /* Add space between line numbers and content */
+}
+
+.line {
+  counter-increment: count;
+  display: flex;
+  position: relative;
+  height: 1.5em; /* Increase line height for better spacing */
+}
+
+.line::before {
+  content: counter(count);
+  padding-inline: 0.5em;
+  opacity: 0.4;
+  position: absolute;
+  right: 100%; /* Position line numbers to the left of the content */
+  text-align: right;
+}
+
+.annotation-span {
+  position: relative;
+  cursor: pointer;
+  background-color: rgba(255, 0, 0, 0.15); /* Default background */
+}
+
+.annotation-span[data-tag="info"] {
+  background-color: rgba(0, 123, 255, 0.15); /* Blue for info */
+}
+
+.annotation-span[data-tag="notice"] {
+  background-color: rgba(40, 167, 70, 0.233); /* Green for notice */
+}
+
+.annotation-span[data-tag="tip"] {
+  background-color: rgba(255, 193, 7, 0.212); /* Yellow for tip */
+}
+
+.annotation-span[data-tag="caution"] {
+  background-color: rgba(220, 53, 69, 0.15); /* Red for caution */
+}
+
+.annotation-span::after {
+  content: attr(data-comment);
+  position: absolute; /* Position relative to the span */
+  top: 100%; /* Position below the span */
+  left: 0%;
+  background: #333;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+  z-index: 1000; /* Ensure it appears above other elements */
+}
+
+.annotation-span.actived {
+  transition: background-color 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.annotation-span.actived[data-tag="info"] {
+  background-color: rgba(0, 123, 255, 0.3); /* Darker blue for info */
+}
+
+.annotation-span.actived[data-tag="notice"] {
+  background-color: rgba(40, 167, 69, 0.3); /* Darker green for notice */
+}
+
+.annotation-span.actived[data-tag="tip"] {
+  background-color: rgba(255, 193, 7, 0.767); /* Darker yellow for tip */
+}
+
+.annotation-span.actived[data-tag="caution"] {
+  background-color: rgba(220, 53, 69, 0.3); /* Darker red for caution */
+}
+
+.annotation-span-focused[data-tag="info"] {
+  background-color: rgba(0, 123, 255, 0.35) !important;
+}
+.annotation-span-focused[data-tag="notice"] {
+  background-color: rgba(40, 167, 69, 0.35) !important;
+}
+.annotation-span-focused[data-tag="tip"] {
+  background-color: rgba(255, 193, 7, 0.35) !important;
+}
+.annotation-span-focused[data-tag="caution"] {
+  background-color: rgba(220, 53, 69, 0.35) !important;
+}
+
+/* Force shiki/code background to use theme background */
+.react-shiki,
+.react-shiki pre,
+.react-shiki code {
+  background: var(--background) !important;
+  box-shadow: none !important;
+}
+
+/* .annotation-span.actived::after {
+  opacity: 1;
+} */

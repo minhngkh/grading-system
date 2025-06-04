@@ -15,6 +15,7 @@ export const LevelSchema = z.object({
 });
 
 export const CriteriaSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(1, "Criterion name is required"),
   weight: z
     .number()
