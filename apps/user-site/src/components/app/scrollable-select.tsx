@@ -40,7 +40,7 @@ export function RubricSelect({
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
-  const pageSize = 20;
+  const pageSize = 10;
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -49,16 +49,20 @@ export function RubricSelect({
       try {
         const result = await RubricService.getRubrics(currentPage, pageSize, search);
 
-        if (resetItems) {
-          setItems(result.data);
-        } else {
-          setItems((prev) => [...prev, ...result.data]);
-        }
+        setItems((prev) => {
+          const combined = resetItems ? result.data : [...prev, ...result.data];
 
-        setHasMore(
-          result.meta.total >
-            (resetItems ? result.data.length : items.length + result.data.length),
-        );
+          const uniqueMap = new Map<string, Rubric>();
+          for (const item of combined) {
+            uniqueMap.set(item.id, item);
+          }
+
+          const uniqueItems = Array.from(uniqueMap.values());
+
+          setHasMore(result.meta.total > uniqueItems.length);
+
+          return uniqueItems;
+        });
       } catch (error) {
         console.error("Error loading data:", error);
       }
@@ -75,8 +79,8 @@ export function RubricSelect({
       setIsSearching(false);
     }
 
-    LoadData();
-  }, [debouncedSearchTerm, search]);
+    if (open) LoadData();
+  }, [debouncedSearchTerm, search, open]);
 
   useEffect(() => {
     if (!gradingAttempt.rubricId || items.length === 0) return;
@@ -89,6 +93,7 @@ export function RubricSelect({
 
   // Handle search input change
   const handleSearchChange = async (value: string) => {
+    setIsSearching(true);
     setSearchTerm(value);
   };
 
@@ -125,24 +130,21 @@ export function RubricSelect({
           <CommandInput
             placeholder="Search items..."
             value={searchTerm}
-            disabled={isSearching}
             onValueChange={handleSearchChange}
           />
           <CommandEmpty>
-            {isSearching ? (
+            {isSearching ?
               <div className="flex items-center justify-center py-2">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
               </div>
-            ) : (
-              emptyMessage
-            )}
+            : emptyMessage}
           </CommandEmpty>
           <CommandGroup>
             <CommandList
               defaultValue={gradingAttempt.rubricId}
               ref={listRef}
-              className="max-h-[300px] overflow-y-auto"
+              className="max-h-[200px] overflow-y-auto"
               onScroll={handleScroll}
             >
               {items.map((item) => (
