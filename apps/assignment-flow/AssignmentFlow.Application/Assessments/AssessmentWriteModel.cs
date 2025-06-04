@@ -9,6 +9,8 @@ public class AssessmentWriteModel
 
     public GradingId GradingId { get; private set; } = GradingId.Empty;
 
+    public RubricId RubricId { get; private set; } = RubricId.Empty;
+
     public SubmissionReference Reference { get; private set; } = SubmissionReference.Empty;
 
     public ScaleFactor ScaleFactor { get; private set; } = ScaleFactor.TenPoint;
@@ -24,6 +26,7 @@ public class AssessmentWriteModel
         TeacherId = @event.TeacherId;
         GradingId = @event.GradingId;
         Reference = @event.SubmissionReference;
+        RubricId = @event.RubricId;
     }
 
     internal void Apply(AutoGradingStartedEvent _)

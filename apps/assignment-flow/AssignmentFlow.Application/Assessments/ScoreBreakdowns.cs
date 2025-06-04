@@ -18,19 +18,19 @@ public sealed class ScoreBreakdowns : ValueObject
     /// <summary>
     /// Gets the array of score breakdown items.
     /// </summary>
-    public List<ScoreBreakdownItem> Value { get; private set; }
+    public List<ScoreBreakdownItem> BreakdownItems { get; private set; }
 
     /// <summary>
     /// Gets the total percentage score calculated from the breakdown items.
     /// </summary>
-    public Percentage TotalRawScore => Percentage.New(Value.Sum(x => x.RawScore));
+    public Percentage TotalRawScore => Percentage.New(BreakdownItems.Sum(x => x.RawScore));
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ScoreBreakdowns"/> class with the specified breakdown items.
     /// </summary>
     /// <param name="scoreValue">The array of score breakdown items.</param>
     private ScoreBreakdowns(List<ScoreBreakdownItem> scoreValue) =>
-        Value = scoreValue;
+        BreakdownItems = scoreValue;
 
     /// <summary>
     /// Creates a new instance of <see cref="ScoreBreakdowns"/> with the specified breakdown items.
@@ -46,7 +46,7 @@ public sealed class ScoreBreakdowns : ValueObject
     /// <returns>An enumerable list of equality components.</returns>
     protected override IEnumerable<object> GetEqualityComponents()
     {
-        foreach (var item in Value)
+        foreach (var item in BreakdownItems)
         {
             yield return item;
         }
@@ -55,11 +55,11 @@ public sealed class ScoreBreakdowns : ValueObject
     // Plus operator: Combines two lists (summing scores with the same criteria/tags)
     public static ScoreBreakdowns operator +(ScoreBreakdowns a, ScoreBreakdowns b)
     {
-        var dictionary = a.Value.ToDictionary(
+        var dictionary = a.BreakdownItems.ToDictionary(
             item => item.CriterionName,
             item => item);
 
-        foreach (var item in b.Value)
+        foreach (var item in b.BreakdownItems)
         {
             var key = item.CriterionName;
             if (!dictionary.TryAdd(key, item))
@@ -72,11 +72,11 @@ public sealed class ScoreBreakdowns : ValueObject
     // Minus operator: Subtracts matching ScoreBreakdownItems by CriterionName/PerformanceTag
     public static ScoreBreakdowns operator -(ScoreBreakdowns a, ScoreBreakdowns b)
     {
-        var dictionary = a.Value.ToDictionary(
+        var dictionary = a.BreakdownItems.ToDictionary(
             item => item.CriterionName,
             item => item);
 
-        foreach (var item in b.Value)
+        foreach (var item in b.BreakdownItems)
         {
             var key = item.CriterionName;
             if (!dictionary.TryAdd(key, item))
@@ -106,7 +106,7 @@ public static class ScoreBreakdownsExtension
 {
     public static List<ScoreBreakdownApiContract> ToApiContracts(this ScoreBreakdowns scoreBreakdowns)
     {
-        return scoreBreakdowns.Value.ConvertAll(sb => new ScoreBreakdownApiContract
+        return scoreBreakdowns.BreakdownItems.ConvertAll(sb => new ScoreBreakdownApiContract
         {
             CriterionName = sb.CriterionName,
             PerformanceTag = sb.PerformanceTag,

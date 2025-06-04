@@ -12,7 +12,7 @@ public class AIGraderAssessedConsumer(
     public async Task Consume(ConsumeContext<ISubmissionGradingResult> context)
     {
         logger.LogInformation("received: {},", context.Message.AssessmentId);
-        
+
         logger.LogInformation(
             "received: {AssessmentId}, ScoreBreakdowns: {ScoreBreakdowns}, Errors: {Errors}",
             context.Message.AssessmentId,
@@ -20,7 +20,7 @@ public class AIGraderAssessedConsumer(
             context.Message.Errors
         );
 
-        var assessmentId = AssessmentId.NewComb();
+        var assessmentId = AssessmentId.With(context.Message.AssessmentId);
         var (scoreBreakdowns, feedbacks) =
             context.Message.ScoreBreakdowns.ToValueObject();
         await commandBus.PublishAsync(

@@ -8,9 +8,9 @@ namespace AssignmentFlow.Application.Gradings.Start;
 public class GradingStartedEventHandler(
     IPublishEndpoint publishEndpoint,
     GradingRepository repository)
-    : ISubscribeAsynchronousTo<GradingAggregate, GradingId, GradingStartedEvent>
+    : ISubscribeAsynchronousTo<GradingAggregate, GradingId, AutoGradingStartedEvent>
 {
-    public async Task HandleAsync(IDomainEvent<GradingAggregate, GradingId, GradingStartedEvent> domainEvent, CancellationToken cancellationToken)
+    public async Task HandleAsync(IDomainEvent<GradingAggregate, GradingId, AutoGradingStartedEvent> domainEvent, CancellationToken cancellationToken)
     {
         var gradingSummary = await repository.GetGradingSummary(domainEvent.AggregateIdentity.Value, cancellationToken)
             ?? throw new InvalidOperationException($"Grading summary not found for GradingId: {domainEvent.AggregateIdentity.Value}");

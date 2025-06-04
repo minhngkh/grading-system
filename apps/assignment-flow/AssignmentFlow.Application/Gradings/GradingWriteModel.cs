@@ -45,9 +45,14 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
         Submissions.Add(@event.Submission);
     }
 
-    internal void Apply(GradingStartedEvent @event)
+    internal void Apply(AutoGradingStartedEvent @event)
     {
         StateMachine.Fire(GradingTrigger.Start);
+    }
+
+    internal void Apply(AutoGradingFinishedEvent @event)
+    {
+        StateMachine.Fire(GradingTrigger.FinishGrading);
     }
 }
 

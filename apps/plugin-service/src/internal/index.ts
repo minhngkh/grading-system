@@ -32,6 +32,7 @@ export async function init() {
 
       submissionGradedEmitter.emit({
         assessmentId: data.assessmentId,
+        scoreBreakdowns: [],
         errors: response,
       });
       return;
@@ -54,7 +55,7 @@ export async function init() {
         feedbackItems: item.feedback.map((f) => ({
           comment: f.comment,
           fileRef: f.fileRef,
-          tag: item.tag,
+          tag: "info",
           fromCol: f.position.fromColumn,
           toCol: f.position.toColumn,
           fromLine: f.position.fromLine,
@@ -63,10 +64,14 @@ export async function init() {
       });
     });
 
-    submissionGradedEmitter.emit({
+    const res = {
       assessmentId: data.assessmentId,
       scoreBreakdowns: breakdown,
-      errors: errors.length > 0 ? errors : undefined,
-    });
+      errors: errors.length > 0 ? errors : [],
+    };
+
+    logger.debug("Grading result:", res);
+
+    submissionGradedEmitter.emit(res);
   });
 }

@@ -46,8 +46,7 @@ export const submissionGradedEvent = {
             }),
           ),
         }),
-      )
-      .optional(),
-    errors: z.array(z.string()).optional(),
+      ),
+    errors: z.array(z.string()),
   }),
 } satisfies ServiceEvent;
