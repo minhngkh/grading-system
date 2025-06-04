@@ -108,9 +108,7 @@ export default function ManageRubricsPage({
     return 0;
   });
 
-  const startIndex = (page - 1) * perPage;
-  const paginatedData = sortedRubrics.slice(startIndex, startIndex + perPage);
-  const totalPages = Math.ceil(sortedRubrics.length / perPage);
+  const totalPages = Math.ceil(totalCount / perPage);
 
   const requestSort = (key: SortConfig["key"]) => {
     let direction: "asc" | "desc" = "asc";
@@ -236,13 +234,13 @@ export default function ManageRubricsPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length === 0 ?
+            {sortedRubrics.length === 0 ?
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No rubrics found.
                 </TableCell>
               </TableRow>
-            : paginatedData.map((rubric, index) => (
+            : sortedRubrics.map((rubric, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-semibold">{rubric.rubricName}</TableCell>
                   <TableCell>
@@ -290,16 +288,16 @@ export default function ManageRubricsPage({
           <ViewRubricDialog
             open={viewRubricOpen}
             onOpenChange={setViewRubricOpen}
-            initialRubric={paginatedData[selectedRubricIndex]}
+            initialRubric={sortedRubrics[selectedRubricIndex]}
           />
         )}
         {editRubricOpen && selectedRubricIndex !== null && (
           <EditRubric
             open={editRubricOpen}
             onOpenChange={setEditRubricOpen}
-            rubricData={paginatedData[selectedRubricIndex]}
+            rubricData={sortedRubrics[selectedRubricIndex]}
             onUpdate={(updatedRubric) =>
-              onUpdateRubric(paginatedData[selectedRubricIndex].id, updatedRubric)
+              onUpdateRubric(sortedRubrics[selectedRubricIndex].id, updatedRubric)
             }
           />
         )}
@@ -308,9 +306,7 @@ export default function ManageRubricsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            {statusFilter === "All" ?
-              `Showing ${rubrics.length} of ${totalCount} rubrics`
-            : `Showing ${paginatedData.length} of ${sortedRubrics.length} rubrics`}
+            Showing {rubrics.length} of {sortedRubrics.length} rubrics
           </p>
           <Select
             value={perPage.toString()}

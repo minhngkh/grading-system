@@ -1,17 +1,14 @@
 import type { Rubric } from "@/types/rubric";
 import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { RubricService } from "@/services/rubric-service";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { defineStepper } from "@stepperize/react";
 import { useNavigate } from "@tanstack/react-router";
-import { Fragment } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import ChatWindow from "./create-step";
-import { useIsMobile } from "@/hooks/use-mobile";
 import PluginRubricTable from "./plugin-step";
 import FinalRubricTable from "./review-step";
 
@@ -46,7 +43,6 @@ export default function RubricGenerationPage({
   const stepper = useStepper({ initialStep: rubricStep });
   const currentIndex = utils.getIndex(stepper.current.id);
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
 
   const form = useForm<Rubric>({
     resolver: zodResolver(RubricSchema),
@@ -94,6 +90,8 @@ export default function RubricGenerationPage({
         ...updatedRubricData,
       };
 
+      console.log("Updated Rubric Data:", updatedRubric);
+
       const result = RubricSchema.safeParse(updatedRubric);
 
       if (!result.success) {
@@ -110,39 +108,6 @@ export default function RubricGenerationPage({
 
   return (
     <div className="flex flex-col h-full">
-      {!isMobile && (
-        <nav aria-label="Checkout Steps" className="group my-4">
-          <ol
-            className="flex items-center justify-between gap-2"
-            aria-orientation="horizontal"
-          >
-            {stepper.all.map((step, index, array) => (
-              <Fragment key={step.id}>
-                <li className="flex items-center gap-4 flex-shrink-0">
-                  <Button
-                    type="button"
-                    role="tab"
-                    variant={index <= currentIndex ? "default" : "secondary"}
-                    aria-current={stepper.current.id === step.id ? "step" : undefined}
-                    aria-posinset={index + 1}
-                    aria-setsize={steps.length}
-                    aria-selected={stepper.current.id === step.id}
-                    className="flex size-8 items-center justify-center rounded-full"
-                  >
-                    {index + 1}
-                  </Button>
-                  <span className="text-sm font-medium">{step.title}</span>
-                </li>
-                {index < array.length - 1 && (
-                  <Separator
-                    className={`flex-1 ${index < currentIndex ? "bg-primary" : "bg-muted"}`}
-                  />
-                )}
-              </Fragment>
-            ))}
-          </ol>
-        </nav>
-      )}
       <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
         {stepper.switch({
           input: () => <ChatWindow rubric={form.getValues()} onUpdate={onUpdateRubric} />,

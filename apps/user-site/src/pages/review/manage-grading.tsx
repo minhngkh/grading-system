@@ -101,9 +101,7 @@ export default function ManageGradingsPage({
     return 0;
   });
 
-  const startIndex = (page - 1) * perPage;
-  const paginatedData = sortedGradings.slice(startIndex, startIndex + perPage);
-  const totalPages = Math.ceil(sortedGradings.length / perPage);
+  const totalPages = Math.ceil(totalCount / perPage);
 
   const requestSort = (key: SortConfig["key"]) => {
     let direction: "asc" | "desc" = "asc";
@@ -126,11 +124,18 @@ export default function ManageGradingsPage({
   };
 
   const getStatusBadge = (status?: GradingStatus) => {
+    if (!status) {
+      return <Badge variant="destructive">None</Badge>;
+    }
+
+    const statusString = GradingStatus[status];
     switch (status) {
-      case GradingStatus.Completed:
-        return <Badge variant="default">Completed</Badge>;
+      case GradingStatus.Graded:
+        return <Badge variant="default">{statusString}</Badge>;
       case GradingStatus.Created:
-        return <Badge variant="secondary">Created</Badge>;
+        return <Badge variant="secondary">{statusString}</Badge>;
+      case GradingStatus.Failed:
+        return <Badge variant="destructive">{statusString}</Badge>;
       default:
         return <Badge variant="destructive">None</Badge>;
     }
@@ -221,13 +226,13 @@ export default function ManageGradingsPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length === 0 ?
+            {sortedGradings.length === 0 ?
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No gradings found.
                 </TableCell>
               </TableRow>
-            : paginatedData.map((grading) => (
+            : sortedGradings.map((grading) => (
                 <TableRow key={grading.id}>
                   <TableCell className="font-semibold">{grading.id}</TableCell>
                   <TableCell>
@@ -269,9 +274,7 @@ export default function ManageGradingsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            {statusFilter === "All" ?
-              `Showing ${gradings.length} of ${totalCount} gradings`
-            : `Showing ${paginatedData.length} of ${sortedGradings.length} gradings`}
+            Showing {sortedGradings.length} of {gradings.length} gradings
           </p>
           <Select
             value={perPage.toString()}

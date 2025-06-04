@@ -65,7 +65,8 @@ export const SystemTools: Tool[] = [
   },
   {
     name: "Manage Gradings",
-    details: "Tools for managing and reviewing grading sessions.",
+    details:
+      "Track and review student submissions, provide feedback, and manage grading criteria.",
     type: ToolType.Review,
     isFavorite: false,
     navigation: "/gradings",

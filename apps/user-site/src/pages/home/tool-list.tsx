@@ -9,12 +9,15 @@ import {
 } from "@/components/ui/card";
 import { ToolType } from "@/types/tool";
 import { Link } from "@tanstack/react-router";
+import { useSidebar } from "@/components/ui/sidebar";
 
 interface ToolsListProps {
   tools: Tool[];
 }
 
 export function ToolsList({ tools }: ToolsListProps) {
+  const { setOpen } = useSidebar();
+
   if (tools.length === 0) {
     return (
       <div className="text-center py-10">
@@ -29,6 +32,9 @@ export function ToolsList({ tools }: ToolsListProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {tools.map((tool, index) => (
         <Link
+          onClick={() => {
+            setOpen(false);
+          }}
           key={index}
           to={tool.navigation}
           params={tool.params}

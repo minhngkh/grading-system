@@ -45,8 +45,14 @@ export class RubricService {
 
     if (page !== undefined) params.append("page[number]", page.toString());
     if (perPage !== undefined) params.append("page[size]", perPage.toString());
-    if (search && search.length > 0)
-      params.append("filter", `contains(rubricName,'${search}')`);
+    if (search && search.length > 0) {
+      params.append(
+        "filter",
+        `and(contains(rubricName,'${search}'),not(equals(status,'Used')))`,
+      );
+    } else {
+      params.append("filter", "not(equals(status,'Used'))");
+    }
 
     const url = `${RUBRIC_API_URL}?${params.toString()}`;
     const response = await axios.get(url, this.configHeaders);
