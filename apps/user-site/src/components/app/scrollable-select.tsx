@@ -13,8 +13,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useDebounce } from "@/hooks/use-debounce";
 import { RubricService } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { GradingAttempt } from "@/types/grading";
+
+const PAGE_SIZE = 10;
+const SCROLL_THRESHOLD = 50;
+const DEBOUNCE_DELAY = 500;
 
 interface ScrollableSelectProps {
   placeholder?: string;
@@ -40,77 +44,90 @@ export function RubricSelect({
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
-  const pageSize = 10;
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE_DELAY);
+
+  const uniqueItems = useMemo(() => {
+    const uniqueMap = new Map<string, Rubric>();
+    items.forEach((item) => uniqueMap.set(item.id, item));
+    return Array.from(uniqueMap.values());
+  }, [items]);
 
   const search = useCallback(
     async (currentPage: number, search: string, resetItems = false) => {
       try {
-        const result = await RubricService.getRubrics(currentPage, pageSize, search);
+        const result = await RubricService.getRubrics(currentPage, PAGE_SIZE, search);
 
         setItems((prev) => {
           const combined = resetItems ? result.data : [...prev, ...result.data];
-
-          const uniqueMap = new Map<string, Rubric>();
-          for (const item of combined) {
-            uniqueMap.set(item.id, item);
-          }
-
-          const uniqueItems = Array.from(uniqueMap.values());
-
-          setHasMore(result.meta.total > uniqueItems.length);
-
-          return uniqueItems;
+          return combined;
         });
+
+        setHasMore(
+          result.meta.total >
+            (resetItems ? result.data.length : items.length + result.data.length),
+        );
       } catch (error) {
         console.error("Error loading data:", error);
       }
     },
-    [],
+    [items.length],
   );
 
-  // Load data when popover opens
+  // Load data when popover opens or search term changes
   useEffect(() => {
-    async function LoadData() {
+    if (!open) return;
+
+    const loadData = async () => {
       setIsSearching(true);
       setPage(1);
       await search(1, debouncedSearchTerm, true);
       setIsSearching(false);
-    }
+    };
 
-    if (open) LoadData();
+    loadData();
   }, [debouncedSearchTerm, search, open]);
 
+  // Set selected value based on grading attempt
   useEffect(() => {
-    if (!gradingAttempt.rubricId || items.length === 0) return;
+    if (!gradingAttempt.rubricId || uniqueItems.length === 0) return;
 
-    const matchedRubric = items.find((item) => item.id === gradingAttempt.rubricId);
-    if (matchedRubric) {
+    const matchedRubric = uniqueItems.find((item) => item.id === gradingAttempt.rubricId);
+    if (matchedRubric && matchedRubric.id !== selectedValue?.id) {
       setSelectedValue(matchedRubric);
     }
-  }, [gradingAttempt.rubricId, items]);
+  }, [gradingAttempt.rubricId, uniqueItems, selectedValue?.id]);
 
-  // Handle search input change
-  const handleSearchChange = async (value: string) => {
+  const handleSearchChange = useCallback((value: string) => {
     setIsSearching(true);
     setSearchTerm(value);
-  };
+  }, []);
 
-  // Handle scroll event to detect when user has scrolled to the bottom
-  const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
-    if (!hasMore || loading || isSearching) return;
+  const handleScroll = useCallback(
+    async (e: React.UIEvent<HTMLDivElement>) => {
+      if (!hasMore || loading || isSearching) return;
 
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    // If scrolled to bottom (with a small threshold)
-    if (scrollHeight - scrollTop - clientHeight < 50) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      setLoading(true);
-      await search(nextPage, searchTerm);
-      setLoading(false);
-    }
-  };
+      const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+
+      if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        setLoading(true);
+        await search(nextPage, searchTerm);
+        setLoading(false);
+      }
+    },
+    [hasMore, loading, isSearching, page, searchTerm, search],
+  );
+
+  const handleItemSelect = useCallback(
+    (item: Rubric) => {
+      setSelectedValue(item);
+      onRubricChange?.(item);
+      setOpen(false);
+    },
+    [onRubricChange],
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -147,16 +164,12 @@ export function RubricSelect({
               className="max-h-[200px] overflow-y-auto"
               onScroll={handleScroll}
             >
-              {items.map((item) => (
+              {uniqueItems.map((item) => (
                 <CommandItem
                   className="flex justify-between"
                   key={item.id}
                   value={item.id}
-                  onSelect={() => {
-                    setSelectedValue(item);
-                    onRubricChange?.(item);
-                    setOpen(false);
-                  }}
+                  onSelect={() => handleItemSelect(item)}
                 >
                   {item.rubricName}
                   <Check
@@ -167,8 +180,7 @@ export function RubricSelect({
                   />
                 </CommandItem>
               ))}
-              {/* Only show loading indicator here if we have items AND we're not searching */}
-              {loading && !isSearching && items.length > 0 && (
+              {loading && !isSearching && uniqueItems.length > 0 && (
                 <div className="flex items-center justify-center py-2">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   <span className="ml-2 text-sm text-muted-foreground">

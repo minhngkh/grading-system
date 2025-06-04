@@ -134,6 +134,8 @@ export default function ManageGradingsPage({
         return <Badge variant="default">{statusString}</Badge>;
       case GradingStatus.Created:
         return <Badge variant="secondary">{statusString}</Badge>;
+      case GradingStatus.Started:
+        return <Badge variant="outline">{statusString}</Badge>;
       case GradingStatus.Failed:
         return <Badge variant="destructive">{statusString}</Badge>;
       default:

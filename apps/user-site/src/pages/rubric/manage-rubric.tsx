@@ -44,6 +44,8 @@ import EditRubric from "@/components/app/edit-rubric";
 import { toast } from "sonner";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
 import { useRouter } from "@tanstack/react-router";
+import ExportDialog from "@/components/app/export-dialog";
+import { RubricExporter } from "@/lib/exporters";
 
 type SortConfig = {
   key: "rubricName" | "updatedOn" | "status" | null;
@@ -75,6 +77,7 @@ export default function ManageRubricsPage({
   const [viewRubricOpen, setViewRubricOpen] = useState<boolean>(false);
   const [selectedRubricIndex, setSelectedRubricIndex] = useState<number | null>(null);
   const [editRubricOpen, setEditRubricOpen] = useState<boolean>(false);
+  const [exportRubricOpen, setExportRubricOpen] = useState<boolean>(false);
   const router = useRouter();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -276,6 +279,14 @@ export default function ManageRubricsPage({
                         >
                           Edit Rubric
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedRubricIndex(index);
+                            setExportRubricOpen(true);
+                          }}
+                        >
+                          Export Rubric
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -391,6 +402,14 @@ export default function ManageRubricsPage({
           )}
         </div>
       </div>
+      {exportRubricOpen && selectedRubricIndex !== null && (
+        <ExportDialog
+          open={exportRubricOpen}
+          onOpenChange={setExportRubricOpen}
+          exporterClass={RubricExporter}
+          args={[sortedRubrics[selectedRubricIndex]]}
+        />
+      )}
     </div>
   );
 }

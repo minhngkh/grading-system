@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -21,8 +22,8 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, PlusCircle, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle, PlusCircle, Trash2, Save, X } from "lucide-react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 interface EditRubricProps {
@@ -30,127 +31,188 @@ interface EditRubricProps {
   onUpdate?: (rubric: Rubric) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  isLoading?: boolean;
 }
+
+// Custom hook for rubric form logic
+const useRubricForm = (rubricData: Rubric) => {
+  const [errorsState, setErrorState] = useState<string[]>([]);
+  const [isValidating, setIsValidating] = useState(false);
+
+  const form = useForm<Rubric>({
+    resolver: zodResolver(RubricSchema),
+    defaultValues: rubricData,
+    mode: "onChange",
+  });
+
+  const formData = form.watch();
+
+  // Memoize validation state
+  const validationState = useMemo(() => {
+    const hasErrors = errorsState.length > 0;
+    const totalWeight = formData.criteria.reduce(
+      (sum, criterion) => sum + (criterion.weight || 0),
+      0,
+    );
+    const isWeightValid = totalWeight === 100;
+
+    return {
+      hasErrors,
+      isWeightValid,
+      totalWeight,
+    };
+  }, [errorsState.length, formData]);
+
+  const validateForm = useCallback(async () => {
+    setIsValidating(true);
+    const result = RubricSchema.safeParse(form.getValues());
+
+    if (!result.success) {
+      const errors: Set<string> = new Set();
+      result.error.errors.forEach((error) => {
+        errors.add(error.message);
+      });
+      setErrorState(Array.from(errors));
+      setIsValidating(false);
+      return false;
+    }
+
+    setErrorState([]);
+    setIsValidating(false);
+    return true;
+  }, [form]);
+
+  const resetForm = useCallback(() => {
+    setErrorState([]);
+    form.reset(rubricData);
+  }, [form, rubricData]);
+
+  return {
+    form,
+    formData,
+    errorsState,
+    setErrorState,
+    isValidating,
+    validationState,
+    validateForm,
+    resetForm,
+  };
+};
 
 export default function EditRubric({
   rubricData,
   onUpdate,
   open,
   onOpenChange,
+  isLoading = false,
 }: EditRubricProps) {
-  const [errorsState, setErrorState] = useState<string[]>([]);
+  const {
+    form,
+    formData,
+    errorsState,
+    isValidating,
+    validationState,
+    validateForm,
+    resetForm,
+  } = useRubricForm(rubricData);
 
-  const form = useForm<Rubric>({
-    resolver: zodResolver(RubricSchema),
-    defaultValues: rubricData,
-  });
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!open) return;
 
-  // Add this to watch form changes
-  const formData = form.watch();
-  const hasErrors = errorsState.length > 0;
-
-  const handleCriterionChange = (
-    index: number,
-    field: keyof (typeof rubricData.criteria)[0],
-    value: string | number,
-  ) => {
-    const newCriteria = [...formData.criteria];
-    newCriteria[index] = { ...newCriteria[index], [field]: value };
-    form.reset({
-      ...formData,
-      criteria: newCriteria,
-    });
-  };
-
-  const handleLevelDescriptionChange = (
-    criterionIndex: number,
-    tagIndex: number,
-    value: string,
-  ) => {
-    const newCriteria = [...formData.criteria];
-    const performanceTag = formData.tags[tagIndex];
-
-    const levelIndex = newCriteria[criterionIndex].levels.findIndex(
-      (level) => level.tag === performanceTag,
-    );
-
-    if (value.length === 0) {
-      if (levelIndex !== -1) {
-        newCriteria[criterionIndex].levels.splice(levelIndex, 1);
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "s") {
+          e.preventDefault();
+          handleSave();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          onOpenChange?.(false);
+        }
       }
-    } else {
-      if (levelIndex === -1) {
-        const newLevel: Level = {
-          description: value,
-          weight: 0,
-          tag: performanceTag,
-        };
+    };
 
-        newCriteria[criterionIndex].levels.push(newLevel);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
+  // Optimized event handlers with useCallback
+  const handleCriterionChange = useCallback(
+    (
+      index: number,
+      field: keyof (typeof rubricData.criteria)[0],
+      value: string | number,
+    ) => {
+      const newCriteria = [...formData.criteria];
+      newCriteria[index] = { ...newCriteria[index], [field]: value };
+      form.setValue("criteria", newCriteria, { shouldValidate: true });
+    },
+    [formData.criteria, form],
+  );
+
+  const handleLevelDescriptionChange = useCallback(
+    (criterionIndex: number, tagIndex: number, value: string) => {
+      const newCriteria = [...formData.criteria];
+      const performanceTag = formData.tags[tagIndex];
+
+      const levelIndex = newCriteria[criterionIndex].levels.findIndex(
+        (level) => level.tag === performanceTag,
+      );
+
+      if (value.length === 0) {
+        if (levelIndex !== -1) {
+          newCriteria[criterionIndex].levels.splice(levelIndex, 1);
+        }
       } else {
-        newCriteria[criterionIndex].levels[levelIndex].description = value;
+        if (levelIndex === -1) {
+          const newLevel: Level = {
+            description: value,
+            weight: 0,
+            tag: performanceTag,
+          };
+          newCriteria[criterionIndex].levels.push(newLevel);
+        } else {
+          newCriteria[criterionIndex].levels[levelIndex].description = value;
+        }
       }
+
+      form.setValue("criteria", newCriteria, { shouldValidate: true });
+    },
+    [formData.criteria, formData.tags, form],
+  );
+
+  const handleLevelWeightChange = useCallback(
+    (criterionIndex: number, tagIndex: number, points: number) => {
+      const newCriteria = [...formData.criteria];
+      const performanceTag = formData.tags[tagIndex];
+
+      const levelIndex = newCriteria[criterionIndex].levels.findIndex(
+        (level) => level.tag === performanceTag,
+      );
+
+      if (levelIndex !== -1) {
+        newCriteria[criterionIndex].levels[levelIndex].weight = points;
+        form.setValue("criteria", newCriteria, { shouldValidate: true });
+      }
+    },
+    [formData.criteria, formData.tags, form],
+  );
+
+  const handleSave = useCallback(async () => {
+    const isValid = await validateForm();
+    if (isValid) {
+      onUpdate?.(formData);
     }
+  }, [validateForm, onUpdate, formData]);
 
-    form.reset({
-      ...formData,
-      criteria: newCriteria,
-    });
-  };
+  const handleAddLevel = useCallback(() => {
+    if (formData.tags.length >= 6) return;
 
-  const handleLevelWeightChange = (
-    criterionIndex: number,
-    tagIndex: number,
-    points: number,
-  ) => {
-    const newCriteria = [...formData.criteria];
-    const performanceTag = formData.tags[tagIndex];
-
-    const levelIndex = newCriteria[criterionIndex].levels.findIndex(
-      (level) => level.tag === performanceTag,
-    );
-
-    if (levelIndex !== -1) {
-      newCriteria[criterionIndex].levels[levelIndex].weight = points;
-    }
-
-    form.reset({
-      ...formData,
-      criteria: newCriteria,
-    });
-  };
-
-  const handleSave = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    // Validate form data
-    const result = RubricSchema.safeParse(form.getValues());
-
-    // If validation fails, return errors
-    if (!result.success) {
-      const errors: Set<string> = new Set();
-      result.error.errors.forEach((error) => {
-        errors.add(error.message);
-      });
-
-      setErrorState(Array.from(errors));
-
-      e.preventDefault();
-      return;
-    }
-
-    setErrorState([]);
-    onUpdate?.(formData);
-  };
-
-  const handleAddLevel = () => {
     const newHeaders = [...formData.tags, `Level ${formData.tags.length + 1}`];
+    form.setValue("tags", newHeaders, { shouldValidate: true });
+  }, [formData.tags, form]);
 
-    form.reset({
-      ...formData,
-      tags: newHeaders,
-    });
-  };
-
-  const handleAddCriterion = () => {
+  const handleAddCriterion = useCallback(() => {
     const newCriteria: Criteria[] = [
       ...formData.criteria,
       {
@@ -159,43 +221,79 @@ export default function EditRubric({
         levels: [],
       },
     ];
+    form.setValue("criteria", newCriteria, { shouldValidate: true });
+  }, [formData.criteria, form]);
 
-    form.reset({
-      ...formData,
-      criteria: newCriteria,
-    });
-  };
+  const handleDeleteLevel = useCallback(
+    (indexToDelete: number) => {
+      const newHeaders = formData.tags.filter((_, index) => index !== indexToDelete);
+      const newCriteria = formData.criteria.map((criterion) => ({
+        ...criterion,
+        levels: criterion.levels.filter(
+          (level) => level.tag !== formData.tags[indexToDelete],
+        ),
+      }));
 
-  const handleDeleteLevel = (indexToDelete: number) => {
-    const newHeaders = formData.tags.filter((_, index) => index !== indexToDelete);
-    const newCriteria = formData.criteria.map((criterion) => ({
-      ...criterion,
-      levels: criterion.levels.filter(
-        (level) => level.tag !== formData.tags[indexToDelete],
-      ),
-    }));
-    form.reset({
-      ...formData,
-      tags: newHeaders,
-      criteria: newCriteria,
-    });
-  };
+      form.setValue("tags", newHeaders, { shouldValidate: true });
+      form.setValue("criteria", newCriteria, { shouldValidate: true });
+    },
+    [formData.tags, formData.criteria, form],
+  );
 
-  const handleDeleteCriterion = (indexToDelete: number) => {
-    const newCriteria = formData.criteria.filter((_, index) => index !== indexToDelete);
-    form.reset({
-      ...formData,
-      criteria: newCriteria,
-    });
-  };
+  const handleDeleteCriterion = useCallback(
+    (indexToDelete: number) => {
+      const newCriteria = formData.criteria.filter((_, index) => index !== indexToDelete);
+      form.setValue("criteria", newCriteria, { shouldValidate: true });
+    },
+    [formData.criteria, form],
+  );
 
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      setErrorState([]);
-      form.reset(rubricData);
-    }
-    onOpenChange?.(open);
-  };
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        resetForm();
+      }
+      onOpenChange?.(open);
+    },
+    [resetForm, onOpenChange],
+  );
+
+  const handleRubricNameChange = useCallback(
+    (value: string) => {
+      form.setValue("rubricName", value, { shouldValidate: true });
+    },
+    [form],
+  );
+
+  const handleTagChange = useCallback(
+    (index: number, value: string) => {
+      const newHeaders = [...formData.tags];
+      newHeaders[index] = value;
+      form.setValue("tags", newHeaders, { shouldValidate: true });
+    },
+    [formData.tags, form],
+  );
+
+  // Memoized components for better performance
+  const ErrorAlert = useMemo(() => {
+    if (!validationState.hasErrors) return null;
+
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          <div className="font-medium mb-2">Please fix the following errors:</div>
+          <ul className="list-disc pl-5 space-y-1">
+            {errorsState.map((error, index) => (
+              <li key={index} className="text-sm">
+                {error}
+              </li>
+            ))}
+          </ul>
+        </AlertDescription>
+      </Alert>
+    );
+  }, [validationState.hasErrors, errorsState]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -205,36 +303,29 @@ export default function EditRubric({
       >
         <DialogHeader>
           <DialogTitle>Edit Rubric</DialogTitle>
+          <DialogDescription>
+            Modify the rubric details below. Use Ctrl+S to save changes or Escape to
+            cancel.
+          </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col space-y-4">
-          {hasErrors && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <div className="font-medium mb-2">Please fix the following errors:</div>
-                <ul className="list-disc pl-5 space-y-1">
-                  {errorsState.map((error, index) => (
-                    <li key={index} className="text-sm">
-                      {error}
-                    </li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
 
-          <Input
-            id="rubric-name"
-            value={formData.rubricName}
-            onChange={(e) =>
-              form.reset({
-                ...formData,
-                rubricName: e.target.value,
-              })
-            }
-            className="font-bold truncate w-full"
-            placeholder="Rubric Name"
-          />
+        <div className="flex flex-col space-y-4">
+          {ErrorAlert}
+
+          <div className="space-y-2">
+            <Label htmlFor="rubric-name" className="text-sm font-medium">
+              Rubric Name
+            </Label>
+            <Input
+              id="rubric-name"
+              value={formData.rubricName}
+              onChange={(e) => handleRubricNameChange(e.target.value)}
+              className="font-bold"
+              placeholder="Enter rubric name"
+              disabled={isLoading}
+            />
+          </div>
+
           <div className="flex justify-center items-center gap-4">
             <div className="overflow-auto flex-1 max-h-[60vh] rounded-md border">
               <table className="w-full table-fixed text-sm">
@@ -250,7 +341,7 @@ export default function EditRubric({
                     </th>
                     {formData.tags.map((header: string, index: number) => (
                       <th
-                        key={index}
+                        key={`header-${index}`}
                         className={cn(
                           "p-2 w-[150px]",
                           index !== formData.tags.length - 1 && "border-r",
@@ -260,23 +351,19 @@ export default function EditRubric({
                           <Input
                             id={`level-header-${index}`}
                             value={header}
-                            onChange={(e) => {
-                              const newHeaders = [...formData.tags];
-                              newHeaders[index] = e.target.value;
-                              form.reset({
-                                ...formData,
-                                tags: newHeaders,
-                              });
-                            }}
+                            onChange={(e) => handleTagChange(index, e.target.value)}
                             className="font-medium text-center break-words whitespace-normal h-auto min-h-[2.5rem] py-2"
+                            disabled={isLoading}
                           />
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-destructive hover:bg-destructive hover:text-white"
+                            className="text-destructive hover:bg-destructive hover:text-white shrink-0"
                             onClick={() => handleDeleteLevel(index)}
+                            disabled={isLoading || formData.tags.length <= 1}
+                            title="Delete level"
                           >
-                            <Trash2 />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </th>
@@ -286,12 +373,17 @@ export default function EditRubric({
                 <tbody className="divide-y">
                   {formData.criteria.length === 0 ?
                     <tr>
-                      <td colSpan={formData.tags.length + 1} className="text-center p-4">
-                        No criteria available. Please add a criterion.
+                      <td colSpan={formData.tags.length + 1} className="text-center p-8">
+                        <div className="text-muted-foreground">
+                          <p className="mb-2">No criteria available</p>
+                          <p className="text-sm">
+                            Click "Add New Criterion" to get started
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   : formData.criteria.map((criterion, index) => (
-                      <tr key={index} className="border-t">
+                      <tr key={`criterion-${index}`} className="border-t">
                         <td className={cn("p-2", formData.tags.length > 0 && "border-r")}>
                           <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">
                             <Label
@@ -307,6 +399,7 @@ export default function EditRubric({
                                 handleCriterionChange(index, "name", e.target.value)
                               }
                               className="font-medium break-words whitespace-normal h-auto min-h-[2.5rem] py-2"
+                              disabled={isLoading}
                             />
                             <Label
                               className="text-xs font-medium text-muted-foreground"
@@ -319,16 +412,21 @@ export default function EditRubric({
                                 id={`criterion-weight-${index}`}
                                 type="number"
                                 min={0}
+                                max={100}
                                 value={criterion.weight}
                                 onChange={(e) =>
                                   handleCriterionChange(
                                     index,
                                     "weight",
-                                    Number.parseInt(e.target.value) || 0,
+                                    Math.min(
+                                      100,
+                                      Math.max(0, Number.parseInt(e.target.value) || 0),
+                                    ),
                                   )
                                 }
                                 className="max-w-20"
-                                placeholder="Weight"
+                                placeholder="0"
+                                disabled={isLoading}
                               />
                               <span className="text-sm text-muted-foreground whitespace-nowrap">
                                 %
@@ -338,8 +436,10 @@ export default function EditRubric({
                                 size="icon"
                                 className="shrink-0 ml-auto text-destructive hover:bg-destructive hover:text-white"
                                 onClick={() => handleDeleteCriterion(index)}
+                                disabled={isLoading || formData.criteria.length <= 1}
+                                title="Delete criterion"
                               >
-                                <Trash2 />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </div>
@@ -351,14 +451,13 @@ export default function EditRubric({
 
                           return (
                             <td
-                              key={tagIndex}
+                              key={`level-${index}-${tagIndex}`}
                               className={cn(
                                 "p-2 h-full",
                                 tagIndex !== formData.tags.length - 1 && "border-r",
                               )}
                             >
                               <div className="space-y-2">
-                                {/* Add description label above textarea */}
                                 <Label
                                   className="text-xs font-medium text-muted-foreground"
                                   htmlFor={`description-${index}-${tagIndex}`}
@@ -375,11 +474,12 @@ export default function EditRubric({
                                       e.target.value,
                                     )
                                   }
-                                  className="h-full resize-none text-sm"
+                                  className="h-full resize-none text-sm min-h-[80px]"
+                                  placeholder="Describe the performance level..."
+                                  disabled={isLoading}
                                 />
                                 {criterionLevel && (
                                   <div className="flex items-center gap-2">
-                                    {/* Add weight label to the left of weight input */}
                                     <Label
                                       className="text-xs font-medium text-muted-foreground w-12"
                                       htmlFor={`level-weight-${index}-${tagIndex}`}
@@ -390,16 +490,24 @@ export default function EditRubric({
                                       id={`level-weight-${index}-${tagIndex}`}
                                       type="number"
                                       min={0}
+                                      max={100}
                                       value={criterionLevel.weight}
                                       onChange={(e) =>
                                         handleLevelWeightChange(
                                           index,
                                           tagIndex,
-                                          Number.parseInt(e.target.value) || 0,
+                                          Math.min(
+                                            100,
+                                            Math.max(
+                                              0,
+                                              Number.parseInt(e.target.value) || 0,
+                                            ),
+                                          ),
                                         )
                                       }
                                       className="w-full"
-                                      placeholder="Weight"
+                                      placeholder="0"
+                                      disabled={isLoading}
                                     />
                                     <span className="text-sm text-muted-foreground whitespace-nowrap">
                                       %
@@ -416,22 +524,45 @@ export default function EditRubric({
                 </tbody>
               </table>
             </div>
+
             <div className="h-full flex justify-center items-center">
               {formData.tags.length < 6 && (
-                <AddButton onClick={handleAddLevel} title="Add New Level" />
+                <AddButton
+                  onClick={handleAddLevel}
+                  title="Add New Level"
+                  disabled={isLoading}
+                />
               )}
             </div>
           </div>
+
           <div className="h-full flex justify-center items-center">
-            <AddButton onClick={handleAddCriterion} title="Add New Criterion" />
+            <AddButton
+              onClick={handleAddCriterion}
+              title="Add New Criterion"
+              disabled={isLoading}
+            />
           </div>
-          <DialogFooter className="sm:justify-end">
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <DialogClose asChild>
-              <Button onClick={handleSave}>Save Changes</Button>
-            </DialogClose>
+
+          <DialogFooter className="sm:justify-between items-center">
+            <div className="text-xs text-muted-foreground">
+              Tip: Use Ctrl+S to save, Escape to cancel
+            </div>
+            <div className="flex gap-2">
+              <DialogClose asChild>
+                <Button variant="outline" disabled={isLoading}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                onClick={handleSave}
+                disabled={isLoading || isValidating || !validationState.isWeightValid}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {isLoading || isValidating ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
           </DialogFooter>
         </div>
       </DialogContent>
@@ -439,13 +570,27 @@ export default function EditRubric({
   );
 }
 
-const AddButton = ({ onClick, title }: { onClick: () => void; title: string }) => {
+const AddButton = ({
+  onClick,
+  title,
+  disabled = false,
+}: {
+  onClick: () => void;
+  title: string;
+  disabled?: boolean;
+}) => {
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" onClick={onClick}>
-            <PlusCircle />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onClick}
+            disabled={disabled}
+            className="hover:bg-primary hover:text-primary-foreground"
+          >
+            <PlusCircle className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>

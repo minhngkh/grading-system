@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Download, FileText, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,7 @@ const exportTypes = [
     description: "Microsoft Excel format",
     icon: <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />,
   },
-];
+] as const;
 
 interface ExportDialogProps<TArgs extends any[]> {
   exporterClass: new (...args: TArgs) => DataExporter;
@@ -45,12 +45,39 @@ export default function ExportDialog<TArgs extends any[]>({
   const [selectedType, setSelectedType] = useState("pdf");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const handleExport = async () => {
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // Reset state when dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      setSuccess(true);
+      setLoading(false);
+    } else {
+      // Cancel any ongoing export when dialog closes
+      abortControllerRef.current?.abort();
+    }
+  }, [open]);
+
+  // Memoize exporter instance creation to avoid recreation
+  const exporter = useMemo(() => {
+    return new exporterClass(...args);
+  }, [exporterClass, args]);
+
+  const handleExport = useCallback(async () => {
     setLoading(true);
     setSuccess(true);
 
-    const exporter = new exporterClass(...args);
+    // Create new abort controller for this export
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+
     try {
       switch (selectedType) {
         case "pdf":
@@ -63,19 +90,56 @@ export default function ExportDialog<TArgs extends any[]>({
           throw new Error(`Unsupported export type: ${selectedType}`);
       }
 
-      onOpenChange?.(false);
+      if (!abortControllerRef.current.signal.aborted) {
+        await setTimeout(() => {
+          toast.success("Export completed successfully!");
+        }, 1000);
+        onOpenChange?.(false);
+      }
     } catch (error) {
-      toast.error(
-        `Export failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-      setSuccess(false);
+      if (!abortControllerRef.current?.signal.aborted) {
+        toast.error(
+          `Export failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+        setSuccess(false);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedType, exporter, onOpenChange]);
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      onOpenChange?.(open);
+    },
+    [onOpenChange],
+  );
+
+  const handleTypeChange = useCallback((value: string) => {
+    setSelectedType(value);
+  }, []);
+
+  const memoizedExportTypes = useMemo(() => exportTypes, []);
+
+  const buttonState = useMemo(
+    () => ({
+      disabled: loading,
+      content:
+        loading ?
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Exporting...
+          </>
+        : <>
+            <Download className="h-4 w-4" />
+            Export
+          </>,
+    }),
+    [loading],
+  );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Export Data</DialogTitle>
@@ -87,9 +151,9 @@ export default function ExportDialog<TArgs extends any[]>({
           <RadioGroup
             disabled={loading}
             value={selectedType}
-            onValueChange={setSelectedType}
+            onValueChange={handleTypeChange}
           >
-            {exportTypes.map((type) => (
+            {memoizedExportTypes.map((type) => (
               <div key={type.id} className="flex items-center space-x-3">
                 <RadioGroupItem value={type.id} id={type.id} />
                 <Label
@@ -114,22 +178,17 @@ export default function ExportDialog<TArgs extends any[]>({
         <DialogFooter className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => onOpenChange?.(false)}
+            onClick={() => handleOpenChange(false)}
             disabled={loading}
           >
             Cancel
           </Button>
-          <Button onClick={handleExport} disabled={loading} className="gap-2">
-            {loading ?
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Exporting...
-              </>
-            : <>
-                <Download className="h-4 w-4" />
-                Export
-              </>
-            }
+          <Button
+            onClick={handleExport}
+            disabled={buttonState.disabled}
+            className="gap-2"
+          >
+            {buttonState.content}
           </Button>
         </DialogFooter>
       </DialogContent>
