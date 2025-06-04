@@ -12,7 +12,7 @@ namespace AssignmentFlow.Application.Assessments;
 public class ScoreAdjustment : Identifiable<string>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    [MaxLength(ModelConstants.ShortText)]
+    [MaxLength(ModelConstants.ShortMediumText)]
     public override string Id { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
