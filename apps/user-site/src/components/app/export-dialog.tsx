@@ -34,6 +34,7 @@ interface ExportDialogProps<TArgs extends any[]> {
   args: TArgs;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  isLoading?: boolean;
 }
 
 export default function ExportDialog<TArgs extends any[]>({
@@ -41,6 +42,7 @@ export default function ExportDialog<TArgs extends any[]>({
   args,
   open,
   onOpenChange,
+  isLoading,
 }: ExportDialogProps<TArgs>) {
   const [selectedType, setSelectedType] = useState("pdf");
   const [loading, setLoading] = useState(false);
@@ -147,50 +149,58 @@ export default function ExportDialog<TArgs extends any[]>({
             Choose the format you'd like to export your data in.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <RadioGroup
-            disabled={loading}
-            value={selectedType}
-            onValueChange={handleTypeChange}
-          >
-            {memoizedExportTypes.map((type) => (
-              <div key={type.id} className="flex items-center space-x-3">
-                <RadioGroupItem value={type.id} id={type.id} />
-                <Label
-                  htmlFor={type.id}
-                  className="flex items-center gap-3 cursor-pointer flex-1"
-                >
-                  {type.icon}
-                  <div className="grid gap-1">
-                    <div className="font-medium">{type.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {type.description}
-                    </div>
+        {isLoading ?
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="text-muted-foreground">Preparing data for export...</div>
+          </div>
+        : <>
+            <div className="grid gap-4 py-4">
+              <RadioGroup
+                disabled={loading}
+                value={selectedType}
+                onValueChange={handleTypeChange}
+              >
+                {memoizedExportTypes.map((type) => (
+                  <div key={type.id} className="flex items-center space-x-3">
+                    <RadioGroupItem value={type.id} id={type.id} />
+                    <Label
+                      htmlFor={type.id}
+                      className="flex items-center gap-3 cursor-pointer flex-1"
+                    >
+                      {type.icon}
+                      <div className="grid gap-1">
+                        <div className="font-medium">{type.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {type.description}
+                        </div>
+                      </div>
+                    </Label>
                   </div>
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
-        </div>
-        {!success && !loading && (
-          <div className="text-destructive">Export failed. Please try again.</div>
-        )}
-        <DialogFooter className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleExport}
-            disabled={buttonState.disabled}
-            className="gap-2"
-          >
-            {buttonState.content}
-          </Button>
-        </DialogFooter>
+                ))}
+              </RadioGroup>
+            </div>
+            {!success && !loading && (
+              <div className="text-destructive">Export failed. Please try again.</div>
+            )}
+            <DialogFooter className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleExport}
+                disabled={buttonState.disabled}
+                className="gap-2"
+              >
+                {buttonState.content}
+              </Button>
+            </DialogFooter>
+          </>
+        }
       </DialogContent>
     </Dialog>
   );

@@ -41,6 +41,11 @@ import { SearchParams } from "@/types/search-params";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { Link } from "@tanstack/react-router";
 import { GetGradingsResult } from "@/services/grading-service";
+import ExportDialog from "@/components/app/export-dialog";
+import { GradingExporter } from "@/lib/exporters";
+import { Assessment } from "@/types/assessment";
+import { AssessmentService } from "@/services/assessment-service";
+import { toast } from "sonner";
 
 type SortConfig = {
   key: "id" | "lastModified" | "status" | null;
@@ -69,6 +74,35 @@ export default function ManageGradingsPage({
   } = results;
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [exportGradingOpen, setExportGradingOpen] = useState(false);
+  const [selectGradingIndex, setSelectGradingIndex] = useState<number | null>(null);
+  const [gradingAssessments, setGradingAssessments] = useState<Assessment[]>([]);
+  const [isGettingAssessments, setIsGettingAssessments] = useState(false);
+
+  useEffect(() => {
+    async function fetchGradingAssessments() {
+      setIsGettingAssessments(true);
+      try {
+        const assessments = await AssessmentService.getGradingAssessments(
+          sortedGradings[selectGradingIndex!].id,
+        );
+        setGradingAssessments(assessments);
+      } catch {
+        toast.error("Failed to fetch grading assessments");
+        setExportGradingOpen(false);
+      } finally {
+        setIsGettingAssessments(false);
+      }
+    }
+
+    if (
+      exportGradingOpen &&
+      selectGradingIndex !== null &&
+      sortedGradings[selectGradingIndex]
+    ) {
+      fetchGradingAssessments();
+    }
+  }, [selectGradingIndex, exportGradingOpen]);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
@@ -216,7 +250,7 @@ export default function ManageGradingsPage({
               </TableHead>
               <TableHead onClick={() => requestSort("lastModified")} className="w-[20%]">
                 <div className="flex items-center cursor-pointer">
-                  Last Modified {getSortIcon("lastModified")}
+                  Updated On {getSortIcon("lastModified")}
                 </div>
               </TableHead>
               <TableHead onClick={() => requestSort("status")} className="w-[20%]">
@@ -234,8 +268,8 @@ export default function ManageGradingsPage({
                   No gradings found.
                 </TableCell>
               </TableRow>
-            : sortedGradings.map((grading) => (
-                <TableRow key={grading.id}>
+            : sortedGradings.map((grading, index) => (
+                <TableRow key={index}>
                   <TableCell className="font-semibold">{grading.id}</TableCell>
                   <TableCell>
                     {grading.lastModified ?
@@ -261,6 +295,14 @@ export default function ManageGradingsPage({
                           >
                             View Grading
                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectGradingIndex(index);
+                            setExportGradingOpen(true);
+                          }}
+                        >
+                          Export Grading
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -354,6 +396,15 @@ export default function ManageGradingsPage({
           </Button>
         </div>
       </div>
+      {exportGradingOpen && selectGradingIndex !== null && (
+        <ExportDialog
+          open={exportGradingOpen}
+          onOpenChange={setExportGradingOpen}
+          exporterClass={GradingExporter}
+          args={[sortedGradings[selectGradingIndex], gradingAssessments]}
+          isLoading={isGettingAssessments}
+        />
+      )}
     </div>
   );
 }

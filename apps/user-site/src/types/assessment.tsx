@@ -1,19 +1,12 @@
 import { z } from "zod";
 
-//
-// Score Breakdown
-//
 export const ScoreBreakdownSchema = z.object({
-  id: z.string().optional(),
   criterionName: z.string(),
   tag: z.string(),
   rawScore: z.number(),
 });
 
-export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;
-
 const BaseFeedbackSchema = z.object({
-  id: z.string().optional(),
   criterion: z.string(),
   fileRef: z.string(),
   comment: z.string(),
@@ -51,15 +44,9 @@ export const FeedbackItemSchema = z.union([
   PdfFeedbackSchema,
 ]);
 
-export type FeedbackItem = z.infer<typeof FeedbackItemSchema>;
-
-//
-// Assessment
-//
 export const AssessmentSchema = z.object({
   id: z.string(),
   gradingId: z.string(),
-  scaleFactor: z.number(),
   submissionReference: z.string(),
   rawScore: z.number(),
   adjustedCount: z.number().optional(),
@@ -68,3 +55,5 @@ export const AssessmentSchema = z.object({
 });
 
 export type Assessment = z.infer<typeof AssessmentSchema>;
+export type FeedbackItem = z.infer<typeof FeedbackItemSchema>;
+export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;

@@ -11,15 +11,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RubricService } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { AlertCircle, RefreshCw, Loader2, Eye } from "lucide-react";
-import { toast } from "sonner";
+import { AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 
 type RubricDialogProps = {
   rubricId?: string;
   initialRubric?: Rubric;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onRubricLoad?: (rubric: Rubric) => void;
 };
 
 export const ViewRubricDialog = ({
@@ -27,12 +25,10 @@ export const ViewRubricDialog = ({
   initialRubric,
   open,
   onOpenChange,
-  onRubricLoad,
 }: RubricDialogProps) => {
   const [rubric, setRubric] = useState<Rubric | undefined>(initialRubric);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
-
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cleanup on unmount
@@ -94,11 +90,6 @@ export const ViewRubricDialog = ({
       // Check if component is still mounted and request wasn't aborted
       if (!abortControllerRef.current.signal.aborted) {
         setRubric(fetchedRubric);
-        onRubricLoad?.(fetchedRubric);
-
-        toast.success("Rubric loaded successfully", {
-          description: `Loaded "${fetchedRubric.rubricName}"`,
-        });
       }
     } catch (error) {
       // Only handle error if component is still mounted and not aborted
@@ -106,16 +97,11 @@ export const ViewRubricDialog = ({
         const errorMessage =
           error instanceof Error ? error.message : "Failed to load rubric";
         setError(errorMessage);
-        console.error("Error fetching rubric:", error);
-
-        toast.error("Failed to load rubric", {
-          description: errorMessage,
-        });
       }
     } finally {
       setIsLoading(false);
     }
-  }, [rubricId, onRubricLoad]);
+  }, [rubricId]);
 
   // Fetch rubric when needed
   useEffect(() => {
@@ -209,7 +195,6 @@ export const ViewRubricDialog = ({
         <>
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
               {rubric.rubricName}
             </DialogTitle>
             <DialogDescription>
@@ -217,7 +202,7 @@ export const ViewRubricDialog = ({
             </DialogDescription>
           </DialogHeader>
           <div className="w-full h-[60vh] overflow-y-auto flex flex-col mt-4">
-            <RubricView rubricData={rubric} showPlugins />
+            <RubricView rubricData={rubric} />
           </div>
         </>
       );
@@ -237,15 +222,6 @@ export const ViewRubricDialog = ({
         aria-describedby={undefined}
         className="min-w-[80%] max-w-[95%] max-h-[90vh] flex flex-col"
       >
-        <DialogHeader>
-          <DialogTitle>View Rubric</DialogTitle>
-          <DialogDescription>
-            {validationState.hasRubric ?
-              "Review the details of the selected rubric."
-            : "Loading rubric details..."}
-          </DialogDescription>
-        </DialogHeader>
-
         <div className="flex-1 overflow-hidden">{renderContent}</div>
 
         {/* Footer with keyboard shortcuts hint */}
