@@ -13,6 +13,7 @@ interface HighlightableViewerProps {
   onHighlightComplete: () => void;
   activeFeedbackId?: string | null;
   fileUrl?: string;
+  rubricCriteria?: string[]; // Add this prop for criteria options
 }
 
 // Map file extension to shiki language id
@@ -48,6 +49,7 @@ export default function HighlightableViewer({
   onHighlightComplete,
   activeFeedbackId,
   fileUrl,
+  rubricCriteria = [],
 }: HighlightableViewerProps) {
   const { theme = "light" } = useTheme?.() || {};
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -60,7 +62,7 @@ export default function HighlightableViewer({
     to: { line: number; col: number };
   } | null>(null);
   const [fileContent, setFileContent] = useState("");
-
+  const [newCriterion, setNewCriterion] = useState<string>("");
   // Determine language from fileUrl
   let language = "plaintext";
   if (fileUrl) {
@@ -163,7 +165,7 @@ export default function HighlightableViewer({
 
   // --- Add feedback ---
   const addFeedback = () => {
-    if (!selectionRange || !newComment.trim()) return;
+    if (!selectionRange || !newComment.trim() || !newCriterion) return;
     const { from, to } = selectionRange;
     let fileRef = "";
     if (fileUrl) {
@@ -173,7 +175,7 @@ export default function HighlightableViewer({
     const newFeedback: FeedbackItem = {
       id: `${Date.now()}`,
       type: "text",
-      criterion: "",
+      criterion: newCriterion,
       fileRef,
       fromLine: Math.min(from.line, to.line),
       toLine: Math.max(from.line, to.line),
@@ -182,9 +184,10 @@ export default function HighlightableViewer({
       comment: newComment.trim(),
       tag: newFeedbackTag,
     };
-    updateFeedback([...(feedbacks || []), newFeedback]);
+    updateFeedback([newFeedback]);
     setNewComment("");
     setNewFeedbackTag("info");
+    setNewCriterion("");
     setSelectionRange(null);
     setIsDialogOpen(false);
     onHighlightComplete();
@@ -362,6 +365,21 @@ export default function HighlightableViewer({
                 <option value="caution">Caution</option>
               </select>
             </div>
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-2">Select Criterion:</label>
+              <select
+                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                value={newCriterion}
+                onChange={(e) => setNewCriterion(e.target.value)}
+              >
+                <option value="">Select criterion</option>
+                {rubricCriteria.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex justify-end mt-4">
               <Button
                 variant="outline"
@@ -370,12 +388,16 @@ export default function HighlightableViewer({
                   setIsDialogOpen(false);
                   setNewComment("");
                   setNewFeedbackTag("info");
+                  setNewCriterion("");
                   setSelectionRange(null);
                 }}
               >
                 Cancel
               </Button>
-              <Button onClick={addFeedback} disabled={!newComment.trim()}>
+              <Button
+                onClick={addFeedback}
+                disabled={!newComment.trim() || !newCriterion}
+              >
                 Add
               </Button>
             </div>

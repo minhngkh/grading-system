@@ -16,6 +16,7 @@ interface FileViewerProps {
   activeFeedbackId?: string | null;
   imageHighlights?: any[]; // Thêm prop này nếu cần thiết
   onImageHighlightsChange?: (highlights: any[]) => void; // Thêm prop này nếu cần thiết
+  rubricCriteria?: string[]; // Add this prop for criteria options
 }
 
 const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp"];
@@ -52,6 +53,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   isHighlightMode,
   onHighlightComplete,
   activeFeedbackId,
+  rubricCriteria = [],
 }) => {
   if (imageExtensions.includes(fileType)) {
     return (
@@ -68,6 +70,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
           onHighlightComplete={onHighlightComplete}
           activeFeedbackId={activeFeedbackId}
           fileRef={fileUrl ? fileUrl.split("/").pop() : ""}
+          rubricCriteria={rubricCriteria}
         />
       </div>
     );
@@ -89,6 +92,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         isHighlightMode={isHighlightMode}
         onHighlightComplete={onHighlightComplete}
         activeFeedbackId={activeFeedbackId}
+        rubricCriteria={rubricCriteria}
       />
     );
   }

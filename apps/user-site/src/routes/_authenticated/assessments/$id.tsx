@@ -1,6 +1,6 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import ManualAdjustScorePage from "@/pages/review/manual-grade/$id";
+import { RubricAssessmentUI } from "@/pages/review/manual-grade";
 import { AssessmentService } from "@/services/assessment-service";
 import { RubricService } from "@/services/rubric-service";
 import { Assessment } from "@/types/assessment";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/assessments/$id")({
       id: "assess-123",
       gradingId: "grading-456",
       scaleFactor: 1,
-      submissionReference: "grading-d037d853-a0df-08dd-f8af-9afdead85cc4",
+      submissionReference: "grading-f1f3510a-a32b-08dd-a590-5564b6e427ce",
       rawScore: 87,
       adjustedCount: 1,
       scoreBreakdowns: [
@@ -22,25 +22,25 @@ export const Route = createFileRoute("/_authenticated/assessments/$id")({
           id: "sb-1",
           criterionName: "Code Structure",
           tag: "Good",
-          rawScore: 18,
+          rawScore: 70, // 70% of 25 (weight) = 17.5
         },
         {
           id: "sb-2",
           criterionName: "Readability",
           tag: "Excellent",
-          rawScore: 25,
+          rawScore: 100, // 100% of 25 (weight) = 25
         },
         {
           id: "sb-3",
           criterionName: "Correctness",
           tag: "Good",
-          rawScore: 26,
+          rawScore: 70, // 70% of 30 (weight) = 21
         },
         {
           id: "sb-4",
           criterionName: "Documentation",
           tag: "Fair",
-          rawScore: 18,
+          rawScore: 60, // 60% of 20 (weight) = 12
         },
       ],
       feedbacks: [
@@ -94,7 +94,7 @@ export const Route = createFileRoute("/_authenticated/assessments/$id")({
           y: 20,
           width: 80,
           height: 30,
-          comment: "Add more explanation about setup instructions.",
+          comment: "Add more explanation about setup instructions.123",
           tag: "info",
         },
 
@@ -108,7 +108,7 @@ export const Route = createFileRoute("/_authenticated/assessments/$id")({
           toLine: 1,
           fromCol: 0,
           toCol: 3,
-          comment: "Add more explanation about setup instructions.",
+          comment: "Add more explanation about setup instructions.456",
           tag: "info",
         },
         {
@@ -120,7 +120,7 @@ export const Route = createFileRoute("/_authenticated/assessments/$id")({
           toLine: 1,
           fromCol: 0,
           toCol: 3,
-          comment: "Add more explanation about setup instructions.",
+          comment: "Add more explanation about setup instructions.789",
           tag: "info",
         },
       ],
@@ -185,7 +185,5 @@ export const Route = createFileRoute("/_authenticated/assessments/$id")({
 
 function RouteComponent() {
   const { mockAssessment, mockRubric } = Route.useLoaderData();
-  return (
-    <ManualAdjustScorePage initAssessment={mockAssessment} initRubric={mockRubric} />
-  );
+  return <RubricAssessmentUI assessment={mockAssessment} rubric={mockRubric} />;
 }
