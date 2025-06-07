@@ -57,6 +57,14 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         Emit(new UploadSubmission.SubmissionAddedEvent(submission));
     }
 
+    public void RemoveSubmission(RemoveSubmission.Command command)
+    {
+        Emit(new RemoveSubmission.SubmissionRemovedEvent
+        {
+            RemovedSubmission = command.SubmissionReference 
+        });
+    }
+
     public void StartAutoGrading()
     {
         Start.GradingCanBeStartedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);

@@ -19,7 +19,7 @@ public static class EndpointHandler
 
     private static async Task<IResult> UploadSubmission(
         [FromRoute] string id,
-        [FromForm] IFormFile file, //zip only
+        [FromForm] IFormFile file,
         ICommandBus commandBus,
         GradingRepository gradingRepository,
         IQueryProcessor queryProcessor,
@@ -28,7 +28,7 @@ public static class EndpointHandler
     {
         var gradingId = GradingId.With(id);
         var studentId = ExtractStudentId(file.FileName);
-        var reference = SubmissionReference.New($"{gradingId}_{studentId}");
+        var reference = SubmissionReference.New(studentId);
 
         await commandBus.PublishAsync(
             new Command(gradingId)

@@ -40,11 +40,13 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<GradingAg
         BlobContainerClient container,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        var baseBlobName = $"{aggregate.Id}/{command.SubmissionReference}/";
+
         if (!SupportedZipMimeTypes.Contains(command.File.ContentType))
         {
             // Handle single file upload
             await using var stream = command.File.OpenReadStream();
-            var blobName = $"{aggregate.Id}/{command.File.FileName}";
+            var blobName = baseBlobName + command.File.FileName;
             var blob = container.GetBlobClient(blobName);
             await blob.UploadAsync(stream, new BlobUploadOptions(), cancellationToken);
 
@@ -55,11 +57,22 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<GradingAg
             // Handle zip file upload
             await using var stream = command.File.OpenReadStream();
             using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
-            var rootDir = archive.Entries.Count > 0 ? archive.Entries[0].FullName : string.Empty;
+            
+            // Check if the archive is empty
+            if (archive.Entries.Count == 0)
+            {
+                throw new InvalidOperationException("The uploaded zip file is empty.");
+            }
 
             foreach (var entry in archive.Entries)
             {
-                var blobName = $"{aggregate.Id}/{entry.FullName}";
+                // Skip directory entries
+                if (string.IsNullOrEmpty(entry.Name) || entry.FullName.EndsWith("/"))
+                {
+                    continue;
+                }
+
+                var blobName = baseBlobName + entry.FullName;
                 var blob = container.GetBlobClient(blobName);
 
                 await using var entryStream = entry.Open();
