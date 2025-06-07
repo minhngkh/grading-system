@@ -10,7 +10,7 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/{id:required}/submissions", UploadSubmission)
             .WithName("UploadSubmission")
-            .Produces<string>(StatusCodes.Status201Created)
+            .Produces<string>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .DisableAntiforgery(); // Disable for now
 
@@ -37,7 +37,7 @@ public static class EndpointHandler
                 File = file,
             }, cancellationToken);
 
-        return TypedResults.Created(reference);
+        return TypedResults.Ok(reference);
     }
 
     /// <summary>
