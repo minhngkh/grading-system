@@ -1,5 +1,6 @@
 ﻿using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
+using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
 using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
@@ -43,6 +44,11 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
     internal void Apply(SubmissionAddedEvent @event)
     {
         Submissions.Add(@event.Submission);
+    }
+
+    internal void Apply(SubmissionRemovedEvent @event)
+    {
+        Submissions.RemoveAll(s => s.Reference == @event.RemovedSubmission);
     }
 
     internal void Apply(AutoGradingStartedEvent @event)
