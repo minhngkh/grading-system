@@ -1,6 +1,7 @@
 import ChatInterface from "@/components/app/chat-interface";
 import { ChatService } from "@/services/chat-service";
 import { ChatMessage } from "@/types/chat";
+import { useAuth } from "@clerk/clerk-react";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/chat")({
@@ -8,8 +9,14 @@ export const Route = createFileRoute("/_authenticated/chat")({
 });
 
 function RouteComponent() {
+  const auth = useAuth();
   const handleSendMessage = async (messages: ChatMessage[]) => {
-    const agentResponse = await ChatService.sendChatMessage(messages);
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("Unauthorized: No token found");
+    }
+
+    const agentResponse = await ChatService.sendChatMessage(messages, token);
     return agentResponse.message;
   };
 

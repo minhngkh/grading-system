@@ -4,6 +4,7 @@ import { GradingService } from "@/services/grading-service";
 import Spinner from "@/components/app/spinner";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/clerk-react";
 
 interface GradingProgressStepProps {
   gradingAttempt: GradingAttempt;
@@ -14,10 +15,16 @@ export default function GradingProgressStep({
   gradingAttempt,
   onGradingAttemptChange,
 }: GradingProgressStepProps) {
-  const pollingFn = useCallback(
-    async () => GradingService.getGradingStatus(gradingAttempt.id),
-    [gradingAttempt.id],
-  );
+  const auth = useAuth();
+
+  const pollingFn = useCallback(async () => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("Unauthorized: No token found");
+    }
+
+    return GradingService.getGradingStatus(gradingAttempt.id, token);
+  }, [gradingAttempt.id]);
 
   const onSuccess = useCallback(
     (status: GradingStatus) => {

@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { GradingService } from "@/services/grading-service";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/clerk-react";
 
 type StepData = {
   title: string;
@@ -49,8 +50,9 @@ export default function UploadAssignmentPage({
   });
 
   const currentIndex = utils.getIndex(stepper.current.id);
-  const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
+  const auth = useAuth();
+  const navigate = useNavigate();
 
   const gradingAttempt = useForm<GradingAttempt>({
     resolver: zodResolver(GradingSchema),
@@ -62,22 +64,30 @@ export default function UploadAssignmentPage({
     if (!updated) return;
 
     try {
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
+
       if (updated.rubricId)
         await GradingService.updateGradingRubric(
           gradingAttemptValues.id,
           updated.rubricId,
+          token,
         );
 
       if (updated.selectors)
         await GradingService.updateGradingSelectors(
           gradingAttemptValues.id,
           updated.selectors,
+          token,
         );
 
       if (updated.scaleFactor)
         await GradingService.updateGradingScaleFactor(
           gradingAttemptValues.id,
           updated.scaleFactor,
+          token,
         );
 
       gradingAttempt.reset({
@@ -98,8 +108,13 @@ export default function UploadAssignmentPage({
     switch (currentIndex) {
       case 0:
         try {
+          const token = await auth.getToken();
+          if (!token) {
+            throw new Error("You must be logged in to start grading");
+          }
+
           setIsUploading(true);
-          await GradingService.startGrading(gradingAttemptValues.id);
+          await GradingService.startGrading(gradingAttemptValues.id, token);
           handleUpdateGradingAttempt({ status: GradingStatus.Started });
         } catch (err) {
           toast.error("Failed to start grading");
@@ -121,6 +136,7 @@ export default function UploadAssignmentPage({
   };
 
   const isNextButtonDisabled = () => {
+    if (currentIndex === 0 && gradingAttemptValues.submissions.length === 0) return true;
     if (isUploading) return true;
     if (currentIndex === 1) return gradingAttemptValues.status === GradingStatus.Started;
     return false;

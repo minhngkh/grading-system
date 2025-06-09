@@ -15,6 +15,7 @@ import { RubricService } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { GradingAttempt } from "@/types/grading";
+import { useAuth } from "@clerk/clerk-react";
 
 const PAGE_SIZE = 10;
 const SCROLL_THRESHOLD = 50;
@@ -44,7 +45,7 @@ export function RubricSelect({
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
-
+  const auth = useAuth();
   const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE_DELAY);
 
   const uniqueItems = useMemo(() => {
@@ -56,7 +57,16 @@ export function RubricSelect({
   const search = useCallback(
     async (currentPage: number, search: string, resetItems = false) => {
       try {
-        const result = await RubricService.getRubrics(currentPage, PAGE_SIZE, search);
+        const token = await auth.getToken();
+        if (!token) {
+          throw new Error("Unauthorized: No token found");
+        }
+        const params = {
+          page: currentPage,
+          perPage: PAGE_SIZE,
+          search: search.trim(),
+        };
+        const result = await RubricService.getRubrics(params, token);
 
         setItems((prev) => {
           const combined = resetItems ? result.data : [...prev, ...result.data];
@@ -76,8 +86,6 @@ export function RubricSelect({
 
   // Load data when popover opens or search term changes
   useEffect(() => {
-    if (!open) return;
-
     const loadData = async () => {
       setIsSearching(true);
       setPage(1);
@@ -86,7 +94,7 @@ export function RubricSelect({
     };
 
     loadData();
-  }, [debouncedSearchTerm, search, open]);
+  }, [debouncedSearchTerm, search]);
 
   // Set selected value based on grading attempt
   useEffect(() => {
@@ -138,7 +146,7 @@ export function RubricSelect({
           aria-expanded={open}
           className={cn("justify-between", className)}
         >
-          {selectedValue ? selectedValue.rubricName : placeholder}
+          {selectedValue?.rubricName ?? placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

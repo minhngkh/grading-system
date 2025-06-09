@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { InfoToolTip } from "@/components/app/info-tooltip";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useAuth } from "@clerk/clerk-react";
 
 interface UploadStepProps {
   onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
@@ -31,6 +32,7 @@ export default function UploadStep({
   const [scaleFactor, setScaleFactor] = useState<number | undefined>(
     gradingAttempt.scaleFactor,
   );
+  const auth = useAuth();
 
   const debounceScaleFactor = useDebounce(scaleFactor, 500);
 
@@ -64,11 +66,15 @@ export default function UploadStep({
       try {
         setProgress(0);
         setIsUploadDialogOpen(true);
+        const token = await auth.getToken();
+        if (!token) {
+          throw new Error("Unauthorized: No token found");
+        }
 
         await Promise.all(
           newFiles.map(async (file, index) => {
             try {
-              await GradingService.uploadSubmission(gradingAttempt.id, file);
+              await GradingService.uploadSubmission(gradingAttempt.id, file, token);
               const updatedProgress = Math.round(((index + 1) * 100) / newFiles.length);
               setProgress(updatedProgress);
             } catch (error) {
@@ -134,7 +140,7 @@ export default function UploadStep({
           <h2 className="text-lg font-semibold">Select Rubric</h2>
           <InfoToolTip description="Choose a rubric to use for grading. If you don't have a rubric, you can create one." />
         </div>
-        <div className="flex items-center w-full gap-4">
+        <div className="flex items-center w-full gap-2">
           <RubricSelect
             gradingAttempt={gradingAttempt}
             onRubricChange={handleSelectRubric}
@@ -145,13 +151,24 @@ export default function UploadStep({
               Create New Rubric
             </Link>
           </Button>
+          {gradingAttempt.rubricId && (
+            <Button asChild>
+              <Link
+                to="/rubrics/$id"
+                params={{ id: gradingAttempt.rubricId }}
+                search={{ redirect: location.pathname }}
+              >
+                Edit Rubric
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
       <div className="space-y-1">
         <div className="flex items-center space-x-1">
-          <h2 className="text-lg font-semibold">Scale Factor</h2>
-          <InfoToolTip description="Adjust the scale factor for grading. This will affect the overall grading score of each submission." />
+          <h2 className="text-lg font-semibold">Grade Scale</h2>
+          <InfoToolTip description="Adjust the grade scale for grading. This will affect the overall grading score of each submission." />
         </div>
         <Input
           className="max-w-32"

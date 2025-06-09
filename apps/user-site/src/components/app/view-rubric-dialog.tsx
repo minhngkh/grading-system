@@ -12,6 +12,7 @@ import { RubricService } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { AlertCircle, RefreshCw, Loader2 } from "lucide-react";
+import { useAuth } from "@clerk/clerk-react";
 
 type RubricDialogProps = {
   rubricId?: string;
@@ -30,6 +31,7 @@ export const ViewRubricDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const abortControllerRef = useRef<AbortController | null>(null);
+  const auth = useAuth();
 
   // Cleanup on unmount
   useEffect(() => {
@@ -85,7 +87,12 @@ export const ViewRubricDialog = ({
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
 
-      const fetchedRubric = await RubricService.getRubric(rubricId);
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
+
+      const fetchedRubric = await RubricService.getRubric(rubricId, token);
 
       // Check if component is still mounted and request wasn't aborted
       if (!abortControllerRef.current.signal.aborted) {

@@ -243,7 +243,7 @@ export class GradingExporter implements DataExporter {
     // Create grading info worksheet data
     const gradingInfoData = [
       ["Grading ID", this.grading.id],
-      ["Scale Factor", scaleFactor],
+      ["Grade Scale", scaleFactor],
       ["Average Score", this.gradingHelper.getAverageScore().toFixed(2)],
       ["Lowest Score", this.gradingHelper.getLowestScore().toFixed(2)],
       ["Highest Score", this.gradingHelper.getHighestScore().toFixed(2)],

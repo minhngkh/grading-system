@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { GradingAttempt } from "@/types/grading";
+import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { Assessment } from "@/types/assessment";
 import SummarySection from "./summary-section";
 import ReviewResults from "./review-results";
@@ -11,25 +11,50 @@ import { ChangeScaleFactorDialog } from "@/components/app/edit-scale-factor-dial
 import ExportDialog from "@/components/app/export-dialog";
 import { GradingExporter } from "@/lib/exporters";
 import { Eye, Scale, Download, RefreshCw } from "lucide-react";
+import { useAuth } from "@clerk/clerk-react";
+import { useRouter } from "@tanstack/react-router";
 
 interface GradingResultProps {
   gradingAttempt: GradingAttempt;
 }
 
 export default function GradingResult({ gradingAttempt }: GradingResultProps) {
+  const router = useRouter();
+  if (
+    gradingAttempt.status === GradingStatus.Created ||
+    gradingAttempt.status === GradingStatus.Started
+  )
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <p className="text-lg font-semibold">
+          The grading session is under grading or have not started yet.
+        </p>
+        <Button variant="destructive" onClick={() => router.history.back()}>
+          Return
+        </Button>
+      </div>
+    );
+
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [scaleFactor, setScaleFactor] = useState(gradingAttempt.scaleFactor ?? 10);
   const [viewRubricOpen, setViewRubricOpen] = useState(false);
   const [changeScaleFactorOpen, setChangeScaleFactorOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const auth = useAuth();
 
   useEffect(() => {
     const fetchAssessments = async () => {
       setIsLoading(true);
       try {
+        const token = await auth.getToken();
+        if (!token) {
+          throw new Error("Unauthorized: No token found");
+        }
+
         const assessmentsData = await AssessmentService.getGradingAssessments(
           gradingAttempt.id,
+          token,
         );
 
         setAssessments(assessmentsData);
@@ -65,7 +90,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
             onClick={() => setChangeScaleFactorOpen(true)}
           >
             <Scale className="w-4 h-4" />
-            Change Scale Factor
+            Change Grade Scale
           </Button>
           <Button
             variant="outline"

@@ -9,9 +9,13 @@ export const Route = createFileRoute("/_authenticated/gradings/")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
-  loader: ({ deps }) => {
-    const { perPage, page, search } = deps;
-    return GradingService.getGradingAttempts(page, perPage, search);
+  loader: async ({ deps, context: { auth } }) => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("Unauthorized: No token found");
+    }
+
+    return await GradingService.getGradingAttempts(deps, token);
   },
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search"])],

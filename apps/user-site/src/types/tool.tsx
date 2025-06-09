@@ -1,60 +1,61 @@
 import type { LinkProps } from "@tanstack/react-router";
 
-// TODO: This is not a type
-// https://2ality.com/2025/01/typescript-enum-patterns.html#alternative-to-enum%3A-union-of-string-literal-types
 export enum ToolType {
   Rubric = "Rubric",
   Grading = "Grading",
   Review = "Review",
-  Assistant = "Assistant",
+  AI = "AI",
 }
 
 export type Tool = {
   name: string;
   details: string;
-  type: ToolType;
+  types: ToolType[];
   isFavorite: boolean;
   navigation: LinkProps["to"];
   params?: LinkProps["params"];
   preload?: LinkProps["preload"];
+  collapseSidebar?: boolean;
 };
 
 export const SystemTools: Tool[] = [
   {
-    name: "Generate Rubric",
+    name: "Create Rubric",
     details: "Features include code completion, debugging tools, and Git integration.",
-    type: ToolType.Rubric,
+    types: [ToolType.Rubric, ToolType.AI],
     isFavorite: true,
     navigation: "/rubrics/create",
     preload: false,
+    collapseSidebar: true,
   },
   {
-    name: "Manage Rubric",
+    name: "Manage Rubrics",
     details:
       "Includes components, patterns, and guidelines for creating cohesive user interfaces.",
-    type: ToolType.Rubric,
+    types: [ToolType.Rubric, ToolType.Review],
     isFavorite: true,
     navigation: "/rubrics",
   },
   {
     name: "Grade Assignments",
     details: "Create task lists, set deadlines, and monitor progress on your projects.",
-    type: ToolType.Grading,
+    types: [ToolType.Grading, ToolType.AI],
     isFavorite: false,
     navigation: "/gradings/create",
     preload: false,
+    collapseSidebar: true,
   },
   {
-    name: "AI Chat",
+    name: "AI Assistant",
     details: "Channels, direct messages, and file sharing to keep your team connected.",
-    type: ToolType.Assistant,
+    types: [ToolType.AI],
     isFavorite: false,
     navigation: "/chat",
   },
   {
     name: "Analytics Dashboard",
     details: "Interactive charts and reports to help you make data-driven decisions.",
-    type: ToolType.Review,
+    types: [ToolType.Review],
     isFavorite: false,
     navigation: "/analytics",
   },
@@ -62,7 +63,7 @@ export const SystemTools: Tool[] = [
     name: "Manage Gradings",
     details:
       "Track and review student submissions, provide feedback, and manage grading criteria.",
-    type: ToolType.Review,
+    types: [ToolType.Review, ToolType.Grading],
     isFavorite: false,
     navigation: "/gradings",
   },

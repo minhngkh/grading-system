@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { PluginService } from "@/services/plugin-service";
 import { Plugin } from "@/types/plugin";
 import { Criteria } from "@/types/rubric";
+import { useAuth } from "@clerk/clerk-react";
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const abortControllerRef = useRef<AbortController | null>(null);
+  const auth = useAuth();
 
   // Cleanup on unmount
   useEffect(() => {
@@ -41,7 +43,12 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
 
-      const plugins = await PluginService.getAll();
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
+
+      const plugins = await PluginService.getAll(token);
 
       // Check if component is still mounted and request wasn't aborted
       if (!abortControllerRef.current.signal.aborted) {

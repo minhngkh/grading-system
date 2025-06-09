@@ -12,25 +12,34 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@clerk/clerk-react";
 
-interface ChatWindowProps {
+interface EditRubricPageProps {
   rubric: Rubric;
   onUpdate: (rubric: Partial<Rubric>) => void;
 }
 
-export default function ChatWindow({ rubric, onUpdate }: ChatWindowProps) {
+export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
   const [isApplyingEdit, setIsApplyingEdit] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const auth = useAuth();
 
   const handleSendMessage = async (messages: ChatMessage[]) => {
     setIsLoading(true);
     try {
-      const response = await ChatService.sendRubricMessage(messages, {
-        rubricName: rubric.rubricName,
-        tags: rubric.tags,
-        criteria: rubric.criteria,
-        weightInRange: "false",
-      });
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
+
+      const response = await ChatService.sendRubricMessage(
+        messages,
+        {
+          ...rubric,
+          weightInRange: "false",
+        },
+        token,
+      );
 
       if (response.rubric) {
         setIsApplyingEdit(true);

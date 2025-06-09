@@ -102,9 +102,9 @@ export const ChangeScaleFactorDialog = ({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="min-w-[500]">
         <DialogHeader>
-          <DialogTitle>Change Scale Factor</DialogTitle>
+          <DialogTitle>Change Grade Scale</DialogTitle>
           <DialogDescription>
-            Adjust the scale factor to modify the scoring multiplier.
+            Adjust the grade scale to modify the scoring multiplier.
             <br />
             {minValue !== undefined && maxValue !== undefined && (
               <>
@@ -117,17 +117,17 @@ export const ChangeScaleFactorDialog = ({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="scale-factor" className="text-sm font-medium">
-              Scale Factor
+              Grade Scale
             </Label>
             <Input
-              id="scale-factor"
+              id="grade-scale"
               type="number"
               min={minValue}
               max={maxValue}
               step="1"
               value={scaleFactor}
               onChange={(e) => setScaleFactor(parseInt(e.target.value))}
-              placeholder="Enter scale factor"
+              placeholder="Enter grade scale"
               autoFocus
             />
           </div>

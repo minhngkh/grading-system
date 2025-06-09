@@ -2,8 +2,14 @@ import { z } from "zod";
 
 export const searchParams = z.object({
   page: z.number().default(1),
-  search: z.string().optional(),
   perPage: z.number().default(10),
+  search: z.string().optional(),
 });
 
 export type SearchParams = z.infer<typeof searchParams>;
+export type GetAllResult<T> = {
+  data: T[];
+  meta: {
+    total: number;
+  };
+};

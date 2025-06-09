@@ -9,8 +9,14 @@ export const Route = createFileRoute("/_authenticated/rubrics/")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
-  loader: ({ deps: { perPage, page, search } }) =>
-    RubricService.getRubrics(page, perPage, search),
+  loader: async ({ deps, context: { auth } }) => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("Unauthorized: No token found");
+    }
+
+    return RubricService.getRubrics(deps, token);
+  },
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },

@@ -6,28 +6,36 @@ const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api
 const ASSESSMENT_API_URL = `${ASSIGNMENT_FLOW_API_URL}/assessments`;
 
 export class AssessmentService {
-  static configHeaders: AxiosRequestConfig = {
-    headers: {
-      "Content-Type": "application/vnd.api+json",
-    },
-  };
+  private static async buildHeaders(token: string): Promise<AxiosRequestConfig> {
+    return {
+      headers: {
+        "Content-Type": "application/vnd.api+json",
+        Accept: "application/vnd.api+json",
+        Authorization: `Bearer ${token}`,
+      },
+    };
+  }
 
-  static assessmentDeserializer = new Deserializer({
+  private static assessmentDeserializer = new Deserializer({
     keyForAttribute: "camelCase",
   });
 
-  static async getAssessmentById(id: string): Promise<Assessment> {
-    const response = await axios.get(`${ASSESSMENT_API_URL}/${id}`, this.configHeaders);
+  static async getAssessmentById(id: string, token: string): Promise<Assessment> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(`${ASSESSMENT_API_URL}/${id}`, configHeaders);
     return this.assessmentDeserializer.deserialize(response.data);
   }
 
-  static async getGradingAssessments(gradingId: string): Promise<Assessment[]> {
+  static async getGradingAssessments(
+    gradingId: string,
+    token: string,
+  ): Promise<Assessment[]> {
+    const configHeaders = await this.buildHeaders(token);
     const response = await axios.get(
       `${ASSESSMENT_API_URL}?filter=equals(gradingId,'${gradingId}')`,
-      this.configHeaders,
+      configHeaders,
     );
-    const data = await this.assessmentDeserializer.deserialize(response.data);
-    console.log("Deserialized assessments:", data);
-    return data;
+
+    return this.assessmentDeserializer.deserialize(response.data);
   }
 }

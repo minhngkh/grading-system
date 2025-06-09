@@ -5,12 +5,13 @@ import { RubricService } from "@/services/rubric-service";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { defineStepper } from "@stepperize/react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import ChatWindow from "./create-step";
+import ChatWindow from "./edit-rubric";
 import PluginRubricTable from "./plugin-step";
 import FinalRubricTable from "./review-step";
+import { useAuth } from "@clerk/clerk-react";
 
 type StepData = {
   title: string;
@@ -42,8 +43,9 @@ export default function RubricGenerationPage({
 }: RubricGenerationPageProps) {
   const stepper = useStepper({ initialStep: rubricStep });
   const currentIndex = utils.getIndex(stepper.current.id);
+  const { location } = useRouterState();
   const navigate = useNavigate();
-
+  const auth = useAuth();
   const form = useForm<Rubric>({
     resolver: zodResolver(RubricSchema),
     defaultValues: initialRubric,
@@ -65,8 +67,13 @@ export default function RubricGenerationPage({
 
     if (stepper.isLast) {
       try {
-        await RubricService.updateRubric(initialRubric?.id!, form.getValues());
-        navigate({ to: "/rubrics" });
+        const token = await auth.getToken();
+        if (!token) {
+          throw new Error("You must be logged in to save a rubric");
+        }
+
+        await RubricService.updateRubric(initialRubric.id, form.getValues(), token);
+        navigate({ to: location.search?.redirect ?? "/rubrics", replace: true });
       } catch (err) {
         toast.error("Failed to update rubric");
         console.error(err);
@@ -86,15 +93,17 @@ export default function RubricGenerationPage({
         ...updatedRubricData,
       };
 
-      console.log("Updated Rubric Data:", updatedRubric);
-
       const result = RubricSchema.safeParse(updatedRubric);
-
       if (!result.success) {
         throw result.error;
       }
 
-      await RubricService.updateRubric(initialRubric.id, updatedRubricData);
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("You must be logged in to save a rubric");
+      }
+
+      await RubricService.updateRubric(initialRubric.id, updatedRubricData, token);
       form.reset(updatedRubric);
     } catch (err) {
       toast.error("Failed to update rubric");
