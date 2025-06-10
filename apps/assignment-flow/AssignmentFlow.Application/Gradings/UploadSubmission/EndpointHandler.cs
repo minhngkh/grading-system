@@ -10,7 +10,7 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/{id:required}/submissions", UploadSubmission)
             .WithName("UploadSubmission")
-            .Produces<string>(StatusCodes.Status201Created)
+            .Produces<string>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .DisableAntiforgery(); // Disable for now
 
@@ -19,7 +19,7 @@ public static class EndpointHandler
 
     private static async Task<IResult> UploadSubmission(
         [FromRoute] string id,
-        [FromForm] IFormFile file, //zip only
+        [FromForm] IFormFile file,
         ICommandBus commandBus,
         GradingRepository gradingRepository,
         IQueryProcessor queryProcessor,
@@ -28,7 +28,7 @@ public static class EndpointHandler
     {
         var gradingId = GradingId.With(id);
         var studentId = ExtractStudentId(file.FileName);
-        var reference = SubmissionReference.New($"{gradingId}_{studentId}");
+        var reference = SubmissionReference.New(studentId);
 
         await commandBus.PublishAsync(
             new Command(gradingId)
@@ -37,7 +37,7 @@ public static class EndpointHandler
                 File = file,
             }, cancellationToken);
 
-        return TypedResults.Created(reference);
+        return TypedResults.Ok(reference);
     }
 
     /// <summary>
