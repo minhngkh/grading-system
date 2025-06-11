@@ -1,4 +1,9 @@
-import { CriteriaSelector, GradingAttempt, GradingStatus } from "@/types/grading";
+import {
+  CriteriaSelector,
+  GradingAttempt,
+  GradingStatus,
+  Submission,
+} from "@/types/grading";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import axios, { AxiosRequestConfig } from "axios";
 import { Deserializer } from "jsonapi-serializer";
@@ -102,19 +107,33 @@ export class GradingService {
     return this.gradingDeserializer.deserialize(response.data);
   }
 
-  static async uploadSubmission(id: string, file: File, token: string) {
+  static async uploadSubmission(
+    id: string,
+    file: File,
+    token: string,
+  ): Promise<Submission> {
     const configHeaders = await this.buildFileHeaders(token);
-    return await axios.post(
+    const response = await axios.post(
       `${GRADING_API_URL}/${id}/submissions`,
       {
         file,
       },
       configHeaders,
     );
+
+    return { reference: response.data };
   }
 
   static async startGrading(id: string, token: string) {
     const configHeaders = await this.buildHeaders(token);
     return await axios.post(`${GRADING_API_URL}/${id}/start`, null, configHeaders);
+  }
+
+  static async deleteSubmission(id: string, reference: string, token: string) {
+    const configHeaders = await this.buildHeaders(token);
+    return await axios.delete(
+      `${GRADING_API_URL}/${id}/submissions/${reference}`,
+      configHeaders,
+    );
   }
 }

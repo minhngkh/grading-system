@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { Upload, FileWarning } from "lucide-react";
 
 interface FileUploaderProps {
-  onFileUpload: (files: File[], uploadId: string) => void;
+  onFileUpload: (files: File[]) => void;
   accept?: string;
   multiple?: boolean;
   maxSize?: number; // in MB
@@ -62,8 +62,7 @@ export function FileUploader({
 
       const fileArray = Array.from(files);
       if (validateFiles(fileArray)) {
-        const id = crypto.randomUUID();
-        onFileUpload(fileArray, id);
+        onFileUpload(fileArray);
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }

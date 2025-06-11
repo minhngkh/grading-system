@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/gradings/")({
     middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },
   errorComponent: () => ErrorComponent(),
-  pendingComponent: () => PendingComponent("Loading rubrics..."),
+  pendingComponent: () => PendingComponent("Loading gradings..."),
 });
 
 function RouteComponent() {

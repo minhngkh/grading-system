@@ -68,7 +68,8 @@ export default function CriteriaMapper({
     if (type === SelectLocationType.Manual) {
       const file = uploadedFiles.find(
         (file) =>
-          file.name === getSubmissionName(gradingAttempt.submissions[chosenFileIndex]),
+          file.name ===
+          getSubmissionName(gradingAttempt.submissions[chosenFileIndex]) + ".zip",
       );
 
       if (file) {
@@ -112,10 +113,10 @@ export default function CriteriaMapper({
         <div className="my-4 gap-2 flex items-center">
           <span>Using file </span>
           <Select
-            value={getSubmissionName(gradingAttempt.submissions[chosenFileIndex])}
+            value={gradingAttempt.submissions[chosenFileIndex].reference}
             onValueChange={(value) => {
               const index = gradingAttempt.submissions.findIndex(
-                (file) => getSubmissionName(file) === value,
+                (file) => file.reference === value,
               );
               if (index !== -1) {
                 setChosenFileIndex(index);
@@ -128,7 +129,7 @@ export default function CriteriaMapper({
             </SelectTrigger>
             <SelectContent>
               {gradingAttempt.submissions.map((file, index) => (
-                <SelectItem key={index} value={getSubmissionName(file)}>
+                <SelectItem key={index} value={file.reference}>
                   {getSubmissionName(file)}
                 </SelectItem>
               ))}

@@ -1,9 +1,9 @@
 import type { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
-import { FileUploader } from "@/components/ui/file-uploader";
+import { FileUploader } from "@/components/app/file-uploader";
 import { FileList } from "./file-list";
 import { RubricSelect } from "@/components/app/scrollable-select";
-import { GradingAttempt } from "@/types/grading";
+import { GradingAttempt, Submission } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { InfoToolTip } from "@/components/app/info-tooltip";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@clerk/clerk-react";
+import { getSubmissionName } from "@/lib/submission";
 
 interface UploadStepProps {
   onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
@@ -62,59 +63,97 @@ export default function UploadStep({
       (file) => !uploadedFiles.some((existing) => existing.name === file.name),
     );
 
-    if (newFiles.length > 0) {
-      try {
-        setProgress(0);
-        setIsUploadDialogOpen(true);
-        const token = await auth.getToken();
-        if (!token) {
-          throw new Error("Unauthorized: No token found");
-        }
+    if (newFiles.length == 0) return;
 
-        await Promise.all(
-          newFiles.map(async (file, index) => {
-            try {
-              await GradingService.uploadSubmission(gradingAttempt.id, file, token);
-              const updatedProgress = Math.round(((index + 1) * 100) / newFiles.length);
-              setProgress(updatedProgress);
-            } catch (error) {
-              toast.error(`Failed to upload ${file.name}`);
-              console.error("Error uploading file:", error);
-            }
-          }),
-        );
+    try {
+      setProgress(0);
+      setIsUploadDialogOpen(true);
 
-        const updatedFiles = [...uploadedFiles, ...newFiles];
-
-        onGradingAttemptChange({
-          submissions: [
-            ...gradingAttempt.submissions,
-            ...updatedFiles.map((file) => {
-              return {
-                reference: file.name,
-              };
-            }),
-          ],
-        });
-
-        setUploadedFiles(updatedFiles);
-      } catch (error) {
-        console.error("Error uploading files:", error);
-      } finally {
-        setIsUploadDialogOpen(false);
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
       }
+
+      const newSubmissions: Submission[] = [];
+
+      await Promise.all(
+        newFiles.map(async (file, index) => {
+          try {
+            const submission = await GradingService.uploadSubmission(
+              gradingAttempt.id,
+              file,
+              token,
+            );
+            newSubmissions.push(submission);
+            const updatedProgress = Math.round(((index + 1) * 100) / newFiles.length);
+            setProgress(updatedProgress);
+          } catch (error) {
+            toast.error(`Failed to upload ${file.name}`);
+            console.error("Error uploading file:", error);
+          }
+        }),
+      );
+
+      onGradingAttemptChange({
+        submissions: [...gradingAttempt.submissions, ...newSubmissions],
+      });
+
+      setUploadedFiles([...uploadedFiles, ...newFiles]);
+    } catch (error) {
+      console.error("Error uploading files:", error);
+    } finally {
+      setIsUploadDialogOpen(false);
     }
   };
 
-  // TODO: Implement file removal functionality if needed
-  // const handleRemoveFile = (i: number) => {
-  //   const updatedFiles = uploadedFiles.filter((_, index) => index !== i);
-  //   setUploadedFiles(updatedFiles);
-  // };
+  const handleRemoveSubmission = async (submission: Submission) => {
+    try {
+      const updatedFiles = uploadedFiles.filter(
+        (file) => file.name !== getSubmissionName(submission) + ".zip",
+      );
+      setUploadedFiles(updatedFiles);
+      await onGradingAttemptChange({
+        submissions: gradingAttempt.submissions.filter(
+          (sub) => sub.reference !== submission.reference,
+        ),
+      });
 
-  // const handleRemoveAllFiles = () => {
-  //   setUploadedFiles([]);
-  // };
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
+
+      await GradingService.deleteSubmission(
+        gradingAttempt.id,
+        submission.reference,
+        token,
+      );
+    } catch (error) {
+      console.error("Error removing submission:", error);
+      toast.error(`Failed to remove submission: ${submission.reference}`);
+    }
+  };
+
+  const handleRemoveAllSubmissions = async () => {
+    try {
+      setUploadedFiles([]);
+      await onGradingAttemptChange({ submissions: [] });
+
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
+
+      await Promise.all(
+        gradingAttempt.submissions.map((submission) =>
+          GradingService.deleteSubmission(gradingAttempt.id, submission.reference, token),
+        ),
+      );
+    } catch (error) {
+      console.error("Error removing all submissions:", error);
+      toast.error("Failed to remove all submissions");
+    }
+  };
 
   return (
     <div className="size-full space-y-4">
@@ -198,6 +237,7 @@ export default function UploadStep({
           <h2 className="text-lg font-semibold">Uploaded Files</h2>
           {gradingAttempt.submissions.length > 0 && (
             <Button
+              onClick={handleRemoveAllSubmissions}
               variant="ghost"
               size="sm"
               className="text-destructive hover:text-destructive"
@@ -206,7 +246,7 @@ export default function UploadStep({
             </Button>
           )}
         </div>
-        <FileList gradingAttempt={gradingAttempt} />
+        <FileList gradingAttempt={gradingAttempt} onDelete={handleRemoveSubmission} />
         {gradingAttempt.submissions.length > 0 && (
           <CriteriaMapper
             gradingAttempt={gradingAttempt}

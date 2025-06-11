@@ -201,10 +201,6 @@ export default function ChatInterface({
         );
 
         setUploadedFiles((prev) => [...prev, ...newFiles]);
-
-        toast.success("Files uploaded", {
-          description: `${newFiles.length} file(s) ready to send`,
-        });
       } catch (error) {
         toast.error("Upload failed", {
           description: "Could not process the uploaded files",
@@ -335,11 +331,11 @@ export default function ChatInterface({
         <Button
           variant="ghost"
           size="sm"
-          className="absolute bg-destructive/80 size-full right-0 top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity p-0"
+          className="z-10 absolute size-full right-0 top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity p-0 bg-red-500 hover:bg-red-500 text-white hover:text-white"
           onClick={() => removeFile(file.id)}
           aria-label={`Remove ${file.file.name}`}
         >
-          <X className="h-3 w-3 text-white" />
+          <X className="h-3 w-3" />
         </Button>
       </div>
     ));

@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/rubrics/$id")({
     sessionStorage.removeItem("rubricStep");
   },
   errorComponent: () => ErrorComponent(),
-  pendingComponent: () => PendingComponent("Loading grading..."),
+  pendingComponent: () => PendingComponent("Loading rubric..."),
 });
 
 function RouteComponent() {

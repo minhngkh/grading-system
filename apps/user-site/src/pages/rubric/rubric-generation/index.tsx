@@ -51,6 +51,8 @@ export default function RubricGenerationPage({
     defaultValues: initialRubric,
   });
 
+  const formValues = form.watch();
+
   const isNextDisabled = () => {
     return stepper.isFirst && !form.formState.isValid;
   };
@@ -72,7 +74,7 @@ export default function RubricGenerationPage({
           throw new Error("You must be logged in to save a rubric");
         }
 
-        await RubricService.updateRubric(initialRubric.id, form.getValues(), token);
+        await RubricService.updateRubric(initialRubric.id, formValues, token);
         navigate({ to: location.search?.redirect ?? "/rubrics", replace: true });
       } catch (err) {
         toast.error("Failed to update rubric");
@@ -89,7 +91,7 @@ export default function RubricGenerationPage({
   const onUpdateRubric = async (updatedRubricData: Partial<Rubric>) => {
     try {
       const updatedRubric = {
-        ...form.getValues(),
+        ...formValues,
         ...updatedRubricData,
       };
 
@@ -115,11 +117,11 @@ export default function RubricGenerationPage({
     <div className="flex flex-col h-full">
       <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
         {stepper.switch({
-          input: () => <ChatWindow rubric={form.getValues()} onUpdate={onUpdateRubric} />,
+          input: () => <ChatWindow rubric={formValues} onUpdate={onUpdateRubric} />,
           edit: () => (
-            <PluginRubricTable rubricData={form.getValues()} onUpdate={onUpdateRubric} />
+            <PluginRubricTable rubricData={formValues} onUpdate={onUpdateRubric} />
           ),
-          complete: () => <FinalRubricTable rubricData={form.getValues()} />,
+          complete: () => <FinalRubricTable rubricData={formValues} />,
         })}
 
         <div className="flex w-full justify-end gap-4">
