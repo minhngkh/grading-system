@@ -1,4 +1,7 @@
+import type { Buffer } from "node:buffer";
 import { BlobServiceClient } from "@azure/storage-blob";
+import { ResultAsync } from "neverthrow";
+import { wrapError } from "src/error";
 
 export function getBlobName(url: string, containerName: string) {
   const parts = url.split(`${containerName}/`);
@@ -9,35 +12,39 @@ export function getBlobName(url: string, containerName: string) {
 }
 
 export class BlobService {
-  #client: BlobServiceClient;
+  client: BlobServiceClient;
 
   constructor(connectionString: string) {
-    this.#client = BlobServiceClient.fromConnectionString(connectionString);
+    this.client = BlobServiceClient.fromConnectionString(connectionString);
   }
 
   getBlobContainer(containerName: string) {
-    return new BlobContainer(containerName, this.#client);
+    return new BlobContainer(containerName, this.client);
   }
 }
 
 export class BlobContainer {
   containerName: string;
-  #containerClient;
+  client;
 
-  constructor(containerName: string, client: BlobServiceClient) {
+  constructor(containerName: string, ServiceClient: BlobServiceClient) {
     this.containerName = containerName;
-    this.#containerClient = client.getContainerClient(containerName);
+    this.client = ServiceClient.getContainerClient(containerName);
   }
 
-  async downloadToBuffer(blobName: string) {
-    const blobClient = this.#containerClient.getBlobClient(blobName);
-    const blob = await blobClient.downloadToBuffer();
-    return blob;
+  downloadToBuffer(blobName: string): ResultAsync<Buffer<ArrayBufferLike>, Error> {
+    const blobClient = this.client.getBlobClient(blobName);
+
+    return ResultAsync.fromPromise(blobClient.downloadToBuffer(), (err) =>
+      wrapError(err, `Failed to download blob ${blobName} to buffer`),
+    );
   }
 
-  async downloadToFile(blobName: string, filePath: string) {
-    const blobClient = this.#containerClient.getBlobClient(blobName);
-    const blob = await blobClient.downloadToFile(filePath);
-    return blob;
+  downloadToFile(blobName: string, filePath: string): ResultAsync<void, Error> {
+    const blobClient = this.client.getBlobClient(blobName);
+
+    return ResultAsync.fromPromise(blobClient.downloadToFile(filePath), (err) =>
+      wrapError(err, `Failed to download blob ${blobName} to file ${filePath}`),
+    ).map(() => undefined);
   }
 }

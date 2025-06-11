@@ -38,13 +38,6 @@ export function asError(thrown: unknown): Error {
   }
 }
 
-export function wrapError(
-  err: Error,
-  message: string,
-  includeChildMessage: boolean = false,
-): Error {
-  if (includeChildMessage) {
-    return new Error(`${message}: ${err.message}`, { cause: err });
-  }
-  return new Error(message, { cause: err });
+export function wrapError(err: unknown, message: string): Error {
+  return new Error(message, { cause: asError(err) });
 }
