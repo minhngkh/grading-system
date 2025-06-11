@@ -22,7 +22,7 @@ public static class EndpointHandler
     {
         var command = new Command(RubricId.With(rubricId))
         {
-            Name = request.Name?.ToRubricName(),
+            Name = request.RubricName?.ToRubricName(),
             PerformanceTags = request.Tags?.ToPerformanceTags(),
             Criteria = request.Criteria?.ToCriteria()
         };
