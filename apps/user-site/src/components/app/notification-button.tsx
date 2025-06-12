@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -13,7 +13,7 @@ interface Notification {
   read: boolean;
 }
 
-export default function NotificationButton() {
+const NotificationButton = memo(function NotificationButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -64,7 +64,7 @@ export default function NotificationButton() {
           )}
         </div>
 
-        {notifications.length === 0 ? (
+        {notifications.length === 0 ?
           <div className="p-8 text-center">
             <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h4 className="font-medium text-sm mb-2">No notifications</h4>
@@ -72,8 +72,7 @@ export default function NotificationButton() {
               {"You're all caught up! Check back later for new notifications."}
             </p>
           </div>
-        ) : (
-          <ScrollArea className="max-h-96">
+        : <ScrollArea className="max-h-96">
             <div className="p-2">
               {notifications.map((notification) => (
                 <div
@@ -116,8 +115,10 @@ export default function NotificationButton() {
               ))}
             </div>
           </ScrollArea>
-        )}
+        }
       </PopoverContent>
     </Popover>
   );
-}
+});
+
+export { NotificationButton };

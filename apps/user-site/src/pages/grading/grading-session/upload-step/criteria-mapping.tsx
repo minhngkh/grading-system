@@ -28,7 +28,7 @@ enum SelectLocationType {
 interface CriteriaSelectorProps {
   gradingAttempt: GradingAttempt;
   uploadedFiles: File[];
-  onGradingAttemptChange?: (attempt: Partial<GradingAttempt>) => void;
+  onGradingAttemptChange?: (attempt: Partial<GradingAttempt>) => Promise<void>;
 }
 
 export default function CriteriaMapper({
@@ -89,7 +89,7 @@ export default function CriteriaMapper({
     setCriteriaIndex(undefined);
   };
 
-  const selectLocation = (index: number, path: string) => {
+  const selectLocation = async (index: number, path: string) => {
     updateCriterionValue(index, path);
     closeDialog();
   };
@@ -209,7 +209,7 @@ export default function CriteriaMapper({
             open={dialogType === SelectLocationType.Exact}
             onClose={closeDialog}
             criterionMapping={gradingAttempt.selectors[criteriaIndex]}
-            onConfirm={(path) => {
+            onConfirm={async (path) => {
               updateCriterionValue(criteriaIndex, path);
               closeDialog();
             }}

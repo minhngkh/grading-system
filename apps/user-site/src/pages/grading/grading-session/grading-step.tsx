@@ -1,14 +1,14 @@
 import { GradingStatus, GradingAttempt } from "@/types/grading";
 import { usePolling } from "@/hooks/use-polling";
 import { GradingService } from "@/services/grading-service";
-import Spinner from "@/components/app/spinner";
+import { Spinner } from "@/components/app/spinner";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/clerk-react";
 
 interface GradingProgressStepProps {
   gradingAttempt: GradingAttempt;
-  onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
+  onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => Promise<void>;
 }
 
 export default function GradingProgressStep({

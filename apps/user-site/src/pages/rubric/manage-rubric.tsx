@@ -39,7 +39,7 @@ import {
 import { useDebounce } from "@/hooks/use-debounce";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
-import ExportDialog from "@/components/app/export-dialog";
+import { ExportDialog } from "@/components/app/export-dialog";
 import { RubricExporter } from "@/lib/exporters";
 import { useNavigate } from "@tanstack/react-router";
 

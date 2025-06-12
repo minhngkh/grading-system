@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useDebounce } from "@/hooks/use-debounce";
 import { RubricService } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo, memo } from "react";
 import { GradingAttempt } from "@/types/grading";
 import { useAuth } from "@clerk/clerk-react";
 
@@ -29,7 +29,7 @@ interface ScrollableSelectProps {
   gradingAttempt: GradingAttempt;
 }
 
-export function RubricSelect({
+const RubricSelect = memo(function RubricSelect({
   placeholder = "Select an item",
   emptyMessage = "No items found.",
   className,
@@ -202,4 +202,6 @@ export function RubricSelect({
       </PopoverContent>
     </Popover>
   );
-}
+});
+
+export { RubricSelect };

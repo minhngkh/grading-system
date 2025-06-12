@@ -40,7 +40,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { Link } from "@tanstack/react-router";
-import ExportDialog from "@/components/app/export-dialog";
+import { ExportDialog } from "@/components/app/export-dialog";
 import { GradingExporter } from "@/lib/exporters";
 import { Assessment } from "@/types/assessment";
 import { AssessmentService } from "@/services/assessment-service";

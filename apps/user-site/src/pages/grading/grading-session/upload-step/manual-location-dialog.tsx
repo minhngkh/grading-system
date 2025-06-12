@@ -1,6 +1,3 @@
-// TODO: Move this to the global context folder, or if colocation matter, change the file
-// name at least to specify that this is a context
-
 import type { ZipNode } from "@/lib/zip";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,7 +13,7 @@ interface ManualDialogProps {
   gradingAttempt: GradingAttempt;
   criterionIndex: number;
   uploadedFile: File;
-  onSelect: (index: number, path: string) => void;
+  onSelect: (index: number, path: string) => Promise<void>;
 }
 
 interface FileTreeNodeProps {
@@ -61,11 +58,9 @@ const FileTreeNode = memo(
           style={{ marginLeft: `${level * 12}px` }}
           onClick={() => onToggle(currentPath)}
         >
-          {isExpanded ? (
+          {isExpanded ?
             <ChevronDown className="h-4 w-4 mr-1" />
-          ) : (
-            <ChevronRight className="h-4 w-4 mr-1" />
-          )}
+          : <ChevronRight className="h-4 w-4 mr-1" />}
           <Folder className="h-4 w-4 mr-2" />
           <span>{node.name}</span>
           <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
@@ -95,11 +90,10 @@ const FileTreeNode = memo(
 
 // New helper: Normalize the pattern string into an array of selected paths.
 const normalizePattern = (pattern: string): string[] =>
-  pattern === "*"
-    ? ["root"]
-    : pattern.trim() !== ""
-      ? pattern.split(" ").map((token) => (token === "root" ? "root" : "root/" + token))
-      : [];
+  pattern === "*" ? ["root"]
+  : pattern.trim() !== "" ?
+    pattern.split(" ").map((token) => (token === "root" ? "root" : "root/" + token))
+  : [];
 
 export function ManualLocationDialog({
   open,
@@ -211,13 +205,11 @@ export function ManualLocationDialog({
           <DialogTitle>Select File Location for {criterionName}</DialogTitle>
         </DialogHeader>
         <div className="border rounded-md p-4 max-h-[60vh] overflow-y-auto">
-          {error ? (
+          {error ?
             <div>Cannot parse zip file. Please try another one!</div>
-          ) : isLoading ? (
+          : isLoading ?
             <div>Parsing file...</div>
-          ) : (
-            fileSystem && renderFileTree(fileSystem)
-          )}
+          : fileSystem && renderFileTree(fileSystem)}
         </div>
         {/* Confirm Button */}
         <div className="flex justify-end">

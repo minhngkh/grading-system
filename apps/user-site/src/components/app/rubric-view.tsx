@@ -7,10 +7,10 @@ interface RubricViewProps {
   rubricData: Rubric;
   showPlugins?: boolean;
   editPlugin?: boolean;
-  onEditPlugin?: (updatedRubric: Partial<Rubric>) => void;
+  onEditPlugin?: (updatedRubric: Partial<Rubric>) => Promise<void>;
 }
 
-export default function RubricView({
+export function RubricView({
   rubricData,
   showPlugins = false,
   editPlugin = false,

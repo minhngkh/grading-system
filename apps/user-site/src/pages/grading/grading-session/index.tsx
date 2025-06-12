@@ -2,7 +2,7 @@ import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { defineStepper } from "@stepperize/react";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import GradingProgressStep from "./grading-step";
 import GradingResult from "../../review/grading-result";
 import UploadStep from "./upload-step";
@@ -59,45 +59,49 @@ export default function UploadAssignmentPage({
     defaultValues: initialGradingAttempt,
   });
 
-  const gradingAttemptValues = gradingAttempt.getValues();
-  const handleUpdateGradingAttempt = async (updated?: Partial<GradingAttempt>) => {
-    if (!updated) return;
+  const gradingAttemptValues = gradingAttempt.watch();
 
-    try {
-      const token = await auth.getToken();
-      if (!token) {
-        throw new Error("Unauthorized: No token found");
+  const handleUpdateGradingAttempt = useCallback(
+    async (updated?: Partial<GradingAttempt>) => {
+      if (!updated) return;
+
+      try {
+        const token = await auth.getToken();
+        if (!token) {
+          throw new Error("Unauthorized: No token found");
+        }
+
+        if (updated.rubricId)
+          await GradingService.updateGradingRubric(
+            gradingAttemptValues.id,
+            updated.rubricId,
+            token,
+          );
+
+        if (updated.selectors)
+          await GradingService.updateGradingSelectors(
+            gradingAttemptValues.id,
+            updated.selectors,
+            token,
+          );
+
+        if (updated.scaleFactor)
+          await GradingService.updateGradingScaleFactor(
+            gradingAttemptValues.id,
+            updated.scaleFactor,
+            token,
+          );
+
+        gradingAttempt.reset({
+          ...gradingAttemptValues,
+          ...updated,
+        });
+      } catch (err) {
+        toast.error("Failed to update grading attempt");
       }
-
-      if (updated.rubricId)
-        await GradingService.updateGradingRubric(
-          gradingAttemptValues.id,
-          updated.rubricId,
-          token,
-        );
-
-      if (updated.selectors)
-        await GradingService.updateGradingSelectors(
-          gradingAttemptValues.id,
-          updated.selectors,
-          token,
-        );
-
-      if (updated.scaleFactor)
-        await GradingService.updateGradingScaleFactor(
-          gradingAttemptValues.id,
-          updated.scaleFactor,
-          token,
-        );
-
-      gradingAttempt.reset({
-        ...gradingAttemptValues,
-        ...updated,
-      });
-    } catch (err) {
-      toast.error("Failed to update grading attempt");
-    }
-  };
+    },
+    [auth, gradingAttemptValues],
+  );
 
   const handlePrev = () => {
     stepper.prev();

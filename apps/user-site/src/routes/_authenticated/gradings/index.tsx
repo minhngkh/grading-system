@@ -4,6 +4,7 @@ import ManageGradingsPage from "@/pages/review/manage-grading";
 import { GradingService } from "@/services/grading-service";
 import { searchParams, SearchParams } from "@/types/search-params";
 import { createFileRoute, retainSearchParams, useNavigate } from "@tanstack/react-router";
+import { useCallback } from "react";
 
 export const Route = createFileRoute("/_authenticated/gradings/")({
   component: RouteComponent,
@@ -29,7 +30,7 @@ function RouteComponent() {
   const search = Route.useSearch();
   const rubricsData = Route.useLoaderData();
 
-  const setSearchParam = (partial: Partial<SearchParams>) => {
+  const setSearchParam = useCallback((partial: Partial<SearchParams>) => {
     navigate({
       search: (prev) => {
         return {
@@ -41,7 +42,7 @@ function RouteComponent() {
       },
       replace: true,
     });
-  };
+  }, []);
 
   return (
     <ManageGradingsPage

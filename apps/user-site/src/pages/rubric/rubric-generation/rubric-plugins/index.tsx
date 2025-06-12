@@ -1,5 +1,5 @@
 import type { Rubric } from "@/types/rubric";
-import RubricView from "@/components/app/rubric-view";
+import { RubricView } from "@/components/app/rubric-view";
 import {
   Card,
   CardContent,
@@ -10,13 +10,17 @@ import {
 
 interface PluginRubricTableProps {
   rubricData: Rubric;
-  onUpdate?: (updatedRubric: Partial<Rubric>) => void;
+  onUpdate?: (updatedRubric: Partial<Rubric>) => Promise<void>;
 }
 
 export default function PluginRubricTable({
   rubricData,
   onUpdate,
 }: PluginRubricTableProps) {
+  const handleEditPlugin = async (updatedRubric: Partial<Rubric>) => {
+    await onUpdate?.(updatedRubric);
+  };
+
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
@@ -31,7 +35,7 @@ export default function PluginRubricTable({
           rubricData={rubricData}
           showPlugins
           editPlugin
-          onEditPlugin={onUpdate}
+          onEditPlugin={handleEditPlugin}
         />
       </CardContent>
     </Card>

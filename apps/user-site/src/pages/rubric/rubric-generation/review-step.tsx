@@ -1,5 +1,5 @@
 import type { Rubric } from "@/types/rubric";
-import RubricView from "@/components/app/rubric-view";
+import { RubricView } from "@/components/app/rubric-view";
 import {
   Card,
   CardContent,
@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import ExportDialog from "@/components/app/export-dialog";
+import { ExportDialog } from "@/components/app/export-dialog";
 import { RubricExporter } from "@/lib/exporters";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";

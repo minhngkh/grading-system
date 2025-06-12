@@ -4,7 +4,7 @@ import { PluginService } from "@/services/plugin-service";
 import { Plugin } from "@/types/plugin";
 import { Criteria } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
-import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
 interface PluginSelectDialogProps {
@@ -14,7 +14,7 @@ interface PluginSelectDialogProps {
   onSelect: (index: number, plugin: string) => void;
 }
 
-export const PluginSelectDialog = React.memo(function PluginSelectDialog({
+export function PluginSelectDialog({
   open,
   criterion,
   onOpenChange,
@@ -33,13 +33,11 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
     };
   }, []);
 
-  // Memoized fetch function to prevent recreation on every render
   const fetchPlugins = useCallback(async () => {
     try {
       setIsLoading(true);
       setError("");
 
-      // Cancel previous request if still pending
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
 
@@ -50,7 +48,6 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
 
       const plugins = await PluginService.getAll(token);
 
-      // Check if component is still mounted and request wasn't aborted
       if (!abortControllerRef.current.signal.aborted) {
         if (plugins.success) {
           setPlugins(plugins.data);
@@ -59,7 +56,6 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
         }
       }
     } catch (error) {
-      // Only handle error if component is still mounted and not aborted
       if (!abortControllerRef.current?.signal.aborted) {
         const errorMessage = "Failed to fetch plugins. Please try again later.";
         setError(errorMessage);
@@ -75,17 +71,14 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
     if (open) {
       fetchPlugins();
     } else {
-      // Cancel any ongoing requests when dialog closes
       abortControllerRef.current?.abort();
     }
   }, [open, fetchPlugins]);
 
-  // Memoize filtered enabled plugins to prevent unnecessary recalculations
   const enabledPlugins = useMemo(() => {
     return plugins.filter((plugin) => plugin.enabled);
   }, [plugins]);
 
-  // Memoize dialog close handler
   const handleOpenChange = useCallback(
     (open: boolean) => {
       onOpenChange(open);
@@ -93,7 +86,6 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
     [onOpenChange],
   );
 
-  // Memoize plugin selection handler
   const handlePluginSelect = useCallback(
     (index: number, pluginName: string) => {
       onSelect(index, pluginName);
@@ -101,12 +93,10 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
     [onSelect],
   );
 
-  // Memoize retry handler
   const handleRetry = useCallback(() => {
     fetchPlugins();
   }, [fetchPlugins]);
 
-  // Memoize render content to prevent unnecessary re-renders
   const renderContent = useMemo(() => {
     if (isLoading) {
       return (
@@ -185,4 +175,4 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
       </DialogContent>
     </Dialog>
   );
-});
+}

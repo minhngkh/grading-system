@@ -9,9 +9,10 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import ChatWindow from "./edit-rubric";
-import PluginRubricTable from "./plugin-step";
 import FinalRubricTable from "./review-step";
 import { useAuth } from "@clerk/clerk-react";
+import PluginRubricTable from "@/pages/rubric/rubric-generation/rubric-plugins";
+import { useCallback } from "react";
 
 type StepData = {
   title: string;
@@ -88,30 +89,33 @@ export default function RubricGenerationPage({
     sessionStorage.setItem("rubricStep", steps[currentIndex + 1].id);
   };
 
-  const onUpdateRubric = async (updatedRubricData: Partial<Rubric>) => {
-    try {
-      const updatedRubric = {
-        ...formValues,
-        ...updatedRubricData,
-      };
+  const onUpdateRubric = useCallback(
+    async (updatedRubricData: Partial<Rubric>) => {
+      try {
+        const updatedRubric = {
+          ...formValues,
+          ...updatedRubricData,
+        };
 
-      const result = RubricSchema.safeParse(updatedRubric);
-      if (!result.success) {
-        throw result.error;
+        const result = RubricSchema.safeParse(updatedRubric);
+        if (!result.success) {
+          throw result.error;
+        }
+
+        const token = await auth.getToken();
+        if (!token) {
+          throw new Error("You must be logged in to save a rubric");
+        }
+
+        await RubricService.updateRubric(initialRubric.id, updatedRubricData, token);
+        form.reset(updatedRubric);
+      } catch (err) {
+        toast.error("Failed to update rubric");
+        console.error(err);
       }
-
-      const token = await auth.getToken();
-      if (!token) {
-        throw new Error("You must be logged in to save a rubric");
-      }
-
-      await RubricService.updateRubric(initialRubric.id, updatedRubricData, token);
-      form.reset(updatedRubric);
-    } catch (err) {
-      toast.error("Failed to update rubric");
-      console.error(err);
-    }
-  };
+    },
+    [formValues, auth],
+  );
 
   return (
     <div className="flex flex-col h-full">

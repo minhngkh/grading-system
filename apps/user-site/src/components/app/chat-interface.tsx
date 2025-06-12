@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { ChatMessage, UploadedFile } from "@/types/chat";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Send, Upload, X } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { toast } from "sonner";
 
 const FILE_CONFIG = {
@@ -37,7 +37,7 @@ interface AIChatProps {
   placeholder?: string;
 }
 
-export default function ChatInterface({
+const ChatInterface = memo(function ChatInterface({
   sendMessageCallback,
   className,
   maxMessages = Infinity,
@@ -523,4 +523,6 @@ export default function ChatInterface({
       </div>
     </div>
   );
-}
+});
+
+export { ChatInterface };

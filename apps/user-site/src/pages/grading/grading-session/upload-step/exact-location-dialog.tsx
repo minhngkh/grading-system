@@ -15,7 +15,7 @@ interface ExactDialogProps {
   open: boolean;
   onClose: () => void;
   criterionMapping: CriteriaSelector;
-  onConfirm: (path: string) => void;
+  onConfirm: (path: string) => Promise<void>;
 }
 
 export function ExactLocationDialog({

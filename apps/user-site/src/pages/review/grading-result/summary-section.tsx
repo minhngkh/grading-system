@@ -3,7 +3,7 @@ import { BarChart } from "lucide-react";
 import { Assessment } from "@/types/assessment";
 import { Skeleton } from "@/components/ui/skeleton";
 import GradingResultHelper from "@/lib/grading-result";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 
 const SummaryCardSkeleton = () => (
   <>
@@ -32,7 +32,7 @@ interface SummarySectionProps {
   scaleFactor: number;
 }
 
-export default function SummarySection({
+const SummarySection = memo(function SummarySection({
   isLoading,
   assessments,
   scaleFactor,
@@ -117,4 +117,6 @@ export default function SummarySection({
       </Card>
     </section>
   );
-}
+});
+
+export default SummarySection;

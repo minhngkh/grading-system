@@ -6,9 +6,9 @@ import { RubricSelect } from "@/components/app/scrollable-select";
 import { GradingAttempt, Submission } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { GradingService } from "@/services/grading-service";
-import Spinner from "@/components/app/spinner";
+import { Spinner } from "@/components/app/spinner";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,7 +19,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { getSubmissionName } from "@/lib/submission";
 
 interface UploadStepProps {
-  onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
+  onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => Promise<void>;
   gradingAttempt: GradingAttempt;
 }
 
@@ -41,22 +41,25 @@ export default function UploadStep({
     if (debounceScaleFactor !== undefined) {
       onGradingAttemptChange({ scaleFactor: debounceScaleFactor });
     }
-  }, [debounceScaleFactor]);
+  }, [debounceScaleFactor, onGradingAttemptChange]);
 
-  const handleSelectRubric = async (rubric: Rubric | undefined) => {
-    if (!rubric) {
-      return;
-    }
+  const handleSelectRubric = useCallback(
+    (rubric: Rubric | undefined) => {
+      if (!rubric) {
+        return;
+      }
 
-    const selectors = rubric.criteria.map((criterion) => {
-      return { criterion: criterion.name, pattern: "*" };
-    });
+      const selectors = rubric.criteria.map((criterion) => {
+        return { criterion: criterion.name, pattern: "*" };
+      });
 
-    await onGradingAttemptChange({
-      rubricId: rubric.id,
-      selectors: selectors,
-    });
-  };
+      onGradingAttemptChange({
+        rubricId: rubric.id,
+        selectors: selectors,
+      });
+    },
+    [onGradingAttemptChange],
+  );
 
   const handleFileUpload = async (files: File[]) => {
     const newFiles = files.filter(

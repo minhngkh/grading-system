@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { AssessmentService } from "@/services/assessment-service";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
 import { ChangeScaleFactorDialog } from "@/components/app/edit-scale-factor-dialog";
-import ExportDialog from "@/components/app/export-dialog";
+import { ExportDialog } from "@/components/app/export-dialog";
 import { GradingExporter } from "@/lib/exporters";
 import { Eye, Scale, Download, RefreshCw } from "lucide-react";
 import { useAuth } from "@clerk/clerk-react";

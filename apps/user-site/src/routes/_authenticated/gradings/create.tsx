@@ -1,22 +1,41 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
+import UploadAssignmentPage from "@/pages/grading/grading-session";
 import { GradingService } from "@/services/grading-service";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/gradings/create")({
-  component: () => null,
-  loader: async ({ context: { auth } }) => {
+  component: RouteComponent,
+  beforeLoad: () => {
+    const id = sessionStorage.getItem("gradingId");
+    return { id };
+  },
+  loader: async ({ context: { auth, id } }) => {
     const token = await auth.getToken();
     if (!token) {
       throw new Error("Unauthorized: No token found");
     }
 
-    const gradingAttempt = await GradingService.createGradingAttempt(token);
-    throw redirect({
-      to: "/gradings/$gradingId",
-      params: { gradingId: gradingAttempt.id },
-    });
+    if (id) {
+      const gradingAttempt = await GradingService.getGradingAttempt(id, token);
+      sessionStorage.setItem("gradingStep", gradingAttempt.id);
+      return gradingAttempt;
+    }
+
+    return await GradingService.createGradingAttempt(token);
+  },
+  onLeave: () => {
+    sessionStorage.removeItem("gradingStep");
+    sessionStorage.removeItem("gradingId");
   },
   errorComponent: () => ErrorComponent(),
   pendingComponent: () => PendingComponent("Initializing grading..."),
 });
+
+function RouteComponent() {
+  const grading = Route.useLoaderData();
+  const gradingStep = sessionStorage.getItem("gradingStep") || undefined;
+  return (
+    <UploadAssignmentPage initialGradingAttempt={grading} initialStep={gradingStep} />
+  );
+}

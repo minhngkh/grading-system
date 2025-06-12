@@ -1,23 +1,40 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
+import RubricGenerationPage from "@/pages/rubric/rubric-generation";
 import { RubricService } from "@/services/rubric-service";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/rubrics/create")({
   preload: false,
-  component: () => null, // No component to render, just redirect
-  loader: async ({ context: { auth } }) => {
+  component: RouteComponent,
+  beforeLoad: () => {
+    const id = sessionStorage.getItem("rubricId");
+    return { id };
+  },
+  loader: async ({ context: { auth, id } }) => {
     const token = await auth.getToken();
     if (!token) {
       throw new Error("Unauthorized: No token found");
     }
 
-    const rubric = await RubricService.createRubric(token);
-    return redirect({
-      to: "/rubrics/$id",
-      params: { id: rubric.id },
-    });
+    if (id) {
+      const rubric = await RubricService.getRubric(id, token);
+      sessionStorage.setItem("rubricId", rubric.id);
+      return rubric;
+    }
+
+    return await RubricService.createRubric(token);
+  },
+  onLeave: () => {
+    sessionStorage.removeItem("rubricStep");
+    sessionStorage.removeItem("rubricId");
   },
   errorComponent: () => ErrorComponent(),
   pendingComponent: () => PendingComponent("Creating rubric..."),
 });
+
+function RouteComponent() {
+  const rubric = Route.useLoaderData();
+  const rubricStep = sessionStorage.getItem("rubricStep") || undefined;
+  return <RubricGenerationPage initialRubric={rubric} rubricStep={rubricStep} />;
+}

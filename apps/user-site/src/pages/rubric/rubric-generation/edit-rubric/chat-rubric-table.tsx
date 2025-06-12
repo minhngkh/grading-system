@@ -1,5 +1,5 @@
 import type { Rubric } from "@/types/rubric";
-import RubricView from "@/components/app/rubric-view";
+import { RubricView } from "@/components/app/rubric-view";
 import {
   Card,
   CardContent,
@@ -16,8 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import EditRubric from "@/components/app/edit-rubric";
-import Spinner from "@/components/app/spinner";
+import { EditRubric } from "@/components/app/edit-rubric";
+import { Spinner } from "@/components/app/spinner";
 import { useState } from "react";
 import {
   PencilIcon,
@@ -33,7 +33,7 @@ import { FileUploader } from "@/components/app/file-uploader";
 
 interface RubricTableProps {
   rubricData: Rubric;
-  onUpdate?: (updatedRubric: Partial<Rubric>) => void;
+  onUpdate?: (updatedRubric: Partial<Rubric>) => Promise<void>;
   disableEdit?: boolean;
   isApplyingEdit?: boolean;
 }

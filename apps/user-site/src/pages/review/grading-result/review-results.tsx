@@ -6,6 +6,7 @@ import { Assessment } from "@/types/assessment";
 import { createCriteriaColorMap, getCriteriaColorStyle } from "./colors";
 import { Link } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
+import { memo } from "react";
 
 const ResultCardSkeleton = () => (
   <Card className="overflow-hidden py-0">
@@ -41,7 +42,7 @@ interface ReviewResultsProps {
   scaleFactor: number;
 }
 
-export default function ReviewResults({
+const ReviewResults = memo(function ReviewResults({
   isLoading,
   assessments,
   scaleFactor,
@@ -123,4 +124,6 @@ export default function ReviewResults({
       }
     </section>
   );
-}
+});
+
+export default ReviewResults;

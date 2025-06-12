@@ -37,7 +37,7 @@ interface ExportDialogProps<TArgs extends any[]> {
   isLoading?: boolean;
 }
 
-export default function ExportDialog<TArgs extends any[]>({
+export function ExportDialog<TArgs extends any[]>({
   exporterClass,
   args,
   open,
