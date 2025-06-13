@@ -1,14 +1,24 @@
+import type { Result } from "neverthrow";
 import type { Buffer } from "node:buffer";
 import { BlobServiceClient } from "@azure/storage-blob";
-import { ResultAsync } from "neverthrow";
+import { err, ok, ResultAsync } from "neverthrow";
 import { wrapError } from "src/error";
 
-export function getBlobName(url: string, containerName: string) {
+export function getBlobName(url: string, containerName: string): Result<string, Error> {
   const parts = url.split(`${containerName}/`);
   if (parts.length !== 2) {
-    throw new Error(`Invalid URL format: ${url}`);
+    return err(new Error(`Invalid URL format: ${url}`));
   }
-  return parts[1];
+  return ok(parts[1]);
+}
+
+export function getBlobNameParts(blobName: string) {
+  const [root, ...rest] = blobName.split("/");
+
+  return {
+    root,
+    rest: rest.join("/"),
+  };
 }
 
 export class BlobService {

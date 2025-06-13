@@ -1,28 +1,7 @@
 export type CustomErrorInfo = {
-  cause?: unknown;
   message?: string;
-  displayedMessage?: string | null;
+  cause?: unknown;
 };
-
-export class CustomError extends Error {
-  displayedMessage: string | null;
-
-  /**
-   * `displayedMessage` if not provided will default to `message`.
-   */
-  constructor(options?: CustomErrorInfo) {
-    super(options?.message, {
-      cause: options?.cause,
-    });
-
-    this.displayedMessage =
-      typeof options?.displayedMessage !== "undefined" ?
-        options.displayedMessage
-      : (options?.message ?? null);
-
-    this.name = "CustomError";
-  }
-}
 
 export function asError(thrown: unknown): Error {
   if (thrown instanceof Error) {
