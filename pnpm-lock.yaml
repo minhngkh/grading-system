@@ -168,6 +168,9 @@ importers:
       ai:
         specifier: ^4.3.16
         version: 4.3.16(react@19.1.0)(zod@3.25.48)
+      fast-glob:
+        specifier: ^3.3.3
+        version: 3.3.3
       repomix:
         specifier: ^0.3.8
         version: 0.3.8
@@ -426,6 +429,12 @@ importers:
       tailwindcss:
         specifier: 3.4.3
         version: 3.4.3
+
+  examples/neverthrow-exp:
+    devDependencies:
+      '@grading-system/utils':
+        specifier: workspace:*
+        version: link:../../libs/utils
 
   libs/typed-moleculer:
     devDependencies:
