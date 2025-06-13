@@ -4,7 +4,7 @@ import process from "node:process";
 import { createZodValidatedServiceBroker } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
 import { serve } from "@hono/node-server";
-import { init } from "@/internal";
+import { init } from "@/events/schemas";
 import { createApiGateway } from "./api";
 import { syncDB } from "./db/init";
 import { connectMongoDB } from "./db/mongoose";

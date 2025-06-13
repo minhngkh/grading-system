@@ -1,4 +1,4 @@
-import type { ServiceEvent } from "@/types/event";
+import type { ServiceEvent } from "@grading-system/utils/event-transporter/core";
 import z from "zod";
 
 export const submissionStartedEvent = {
@@ -27,26 +27,25 @@ export const submissionGradedEvent = {
   name: "grading.submission.graded",
   schema: z.object({
     assessmentId: z.string(),
-    scoreBreakdowns: z
-      .array(
-        z.object({
-          criterionName: z.string(),
-          tag: z.string(),
-          rawScore: z.number().int().min(0).max(100),
-          summary: z.string().optional(),
-          feedbackItems: z.array(
-            z.object({
-              comment: z.string(),
-              fileRef: z.string(),
-              tag: z.string(),
-              fromCol: z.number().int().optional(),
-              toCol: z.number().int().optional(),
-              fromLine: z.number().int(),
-              toLine: z.number().int(),
-            }),
-          ),
-        }),
-      ),
+    scoreBreakdowns: z.array(
+      z.object({
+        criterionName: z.string(),
+        tag: z.string(),
+        rawScore: z.number().int().min(0).max(100),
+        summary: z.string().optional(),
+        feedbackItems: z.array(
+          z.object({
+            comment: z.string(),
+            fileRef: z.string(),
+            tag: z.string(),
+            fromCol: z.number().int().optional(),
+            toCol: z.number().int().optional(),
+            fromLine: z.number().int(),
+            toLine: z.number().int(),
+          }),
+        ),
+      }),
+    ),
     errors: z.array(z.string()),
   }),
 } satisfies ServiceEvent;
