@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Text;
 using FluentValidation;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
