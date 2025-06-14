@@ -1,22 +1,21 @@
-import { Assessment } from "./assessment";
-import { GradingAttempt } from "./grading";
-import { Rubric } from "./rubric";
+export interface OverallGradingAnalytics {
+  totalGradingCount: number;
+  totalAssessmentCount: number;
+  averageScore: number; // 0 to 1, or multiply by 100 for %
+  gradingDistribution: number[]; // length === 10, representing 0–10%, 10–20%, ..., 90–100%
+}
 
-export interface AnalyticsData {
-  assessments: {
-    total: number;
-    averageScore: number;
-    scoreDistribution: { score: number; count: number }[];
-    recentAssessments: Assessment[];
-  };
-  gradings: {
-    total: number;
-    statusDistribution: { status: string; count: number }[];
-    recentGradings: GradingAttempt[];
-  };
-  rubrics: {
-    total: number;
-    mostUsed: Rubric[];
-    criteriaDistribution: { criteria: string; count: number }[];
-  };
+export interface CriterionScoreDistribution {
+  criterionName: string;
+  totalWeight: number;
+  scoreDistribution: number[]; // length 10: 0-10%, ..., 90-100%
+}
+
+export interface GradingAnalytics {
+  gradingId: string;
+  scaleFactor: number;
+  averageScore: number; // 0 to 1, or multiply by 100 if needed
+  assessmentCount: number;
+  scoreDistribution: number[]; // length 10: 0-10%, ..., 90-100%
+  criterionData: CriterionScoreDistribution[];
 }
