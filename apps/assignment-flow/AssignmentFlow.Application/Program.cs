@@ -60,8 +60,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAll");
 
-//TODO: Add authentication and authorization middleware
-
 // Initialize the database
 using (var scope = app.Services.CreateScope())
 {
@@ -74,11 +72,12 @@ app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAntiforgery();
 
-app.UseJsonApi();
+app.UseAuthentication();
+app.UseAuthorization();
 
+app.UseJsonApi();
 app.MapAssignmentFlowEndpoints();
 
 app.UseHealthChecks("/health");
-
 
 app.Run();

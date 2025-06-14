@@ -1,5 +1,6 @@
 ﻿using EventFlow;
 using EventFlow.Queries;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssignmentFlow.Application.Gradings.UploadSubmission;
@@ -17,6 +18,7 @@ public static class EndpointHandler
         return endpoint;
     }
 
+    [Authorize]
     private static async Task<IResult> UploadSubmission(
         [FromRoute] string id,
         [FromForm] IFormFile file,

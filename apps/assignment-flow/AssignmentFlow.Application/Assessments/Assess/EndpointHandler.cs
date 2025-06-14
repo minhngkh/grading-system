@@ -1,5 +1,6 @@
 ﻿using EventFlow;
 using EventFlow.Queries;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssignmentFlow.Application.Assessments.Assess;
@@ -15,6 +16,7 @@ public static class EndpointHandler
         return endpoint;
     }
 
+    [Authorize]
     private static async Task<IResult> Assess(
         [FromRoute] string id,
         [FromBody] AssessRequest request,
