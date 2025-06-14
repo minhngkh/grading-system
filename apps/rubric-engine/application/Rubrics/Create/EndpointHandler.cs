@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using EventFlow;
 using EventFlow.Queries;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RubricEngine.Application.Rubrics.Create;
 
@@ -16,6 +17,7 @@ public static class EndpointHandler
         return endpoint;
     }
 
+    [Authorize]
     private static async Task<IResult> CreateRubric(
         ICommandBus commandBus,
         IQueryProcessor queryProcessor,

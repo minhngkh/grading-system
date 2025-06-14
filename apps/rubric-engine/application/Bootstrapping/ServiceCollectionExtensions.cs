@@ -1,8 +1,11 @@
 ﻿using System.Reflection;
+using System.Text;
 using FluentValidation;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
 using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using RubricEngine.Application.Models;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 namespace RubricEngine.Application.Bootstrapping;
@@ -15,12 +18,38 @@ public static class ServiceCollectionExtensions
         // Example: services.AddScoped<IMyService, MyService>();
         services
             .AddOpenApi()
+            .AddJwtAuthentication(configuration)
             .AddMessageBus(configuration, typeof(Program).Assembly)
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
             .AddServiceBootstrapping(configuration);
 
         services.AddGrpc();
+
+        return services;
+    }
+
+    private static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+    {
+        services
+            .AddAuthorization()
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(jwtOptions =>
+            {
+                jwtOptions.Authority = configuration["Jwt:Authority"];
+                jwtOptions.MetadataAddress = configuration["Jwt:MetadataAddress"]!;
+                jwtOptions.IncludeErrorDetails = true; // Set to true for development, false in production
+                jwtOptions.RequireHttpsMetadata = false; // Set to false if you are not using HTTPS in development
+                jwtOptions.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = false, // Set to false if you want to allow any audience
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true
+                };
+
+                //jwtOptions.MapInboundClaims = false;
+            });
 
         return services;
     }
@@ -79,23 +108,6 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddServiceBootstrapping(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddTransient<DbInitializer>();
-
-        //services.AddAuthentication()
-        //    .AddJwtBearer("jwt-scheme", jwtOptions =>
-        //    {
-        //        jwtOptions.Authority = configuration["Api:Authority"];
-        //        jwtOptions.Audience = configuration["Api:Audience"];
-        //        jwtOptions.TokenValidationParameters = new TokenValidationParameters
-        //        {
-        //            ValidateIssuer = true,
-        //            ValidateAudience = true,
-        //            ValidateIssuerSigningKey = true,
-        //            ValidAudiences = configuration.GetSection("Api:ValidAudiences").Get<string[]>(),
-        //            ValidIssuers = configuration.GetSection("Api:ValidIssuers").Get<string[]>()
-        //        };
-
-        //        jwtOptions.MapInboundClaims = false;
-        //    });
 
         return services;
     }
