@@ -71,12 +71,13 @@ export default function UploadAssignmentPage({
           throw new Error("Unauthorized: No token found");
         }
 
-        if (updated.rubricId)
+        if (updated.rubricId) {
           await GradingService.updateGradingRubric(
             gradingAttemptValues.id,
             updated.rubricId,
             token,
           );
+        }
 
         if (updated.selectors)
           await GradingService.updateGradingSelectors(

@@ -18,9 +18,7 @@ export const Route = createFileRoute("/_authenticated/rubrics/create")({
     }
 
     if (id) {
-      const rubric = await RubricService.getRubric(id, token);
-      sessionStorage.setItem("rubricId", rubric.id);
-      return rubric;
+      return await RubricService.getRubric(id, token);
     }
 
     return await RubricService.createRubric(token);
@@ -35,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/rubrics/create")({
 
 function RouteComponent() {
   const rubric = Route.useLoaderData();
+  sessionStorage.setItem("rubricId", rubric.id);
   const rubricStep = sessionStorage.getItem("rubricStep") || undefined;
   return <RubricGenerationPage initialRubric={rubric} rubricStep={rubricStep} />;
 }

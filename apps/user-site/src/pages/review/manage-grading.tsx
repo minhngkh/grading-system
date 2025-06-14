@@ -295,14 +295,17 @@ export default function ManageGradingsPage({
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link
-                            to="/gradings/$gradingId/result"
-                            params={{ gradingId: grading.id }}
-                          >
-                            View Grading
-                          </Link>
-                        </DropdownMenuItem>
+
+                        {grading.status !== GradingStatus.Created && (
+                          <DropdownMenuItem asChild>
+                            <Link
+                              to="/gradings/$gradingId/result"
+                              params={{ gradingId: grading.id }}
+                            >
+                              View Grading
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => {
                             setSelectGradingIndex(index);

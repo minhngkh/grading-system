@@ -16,13 +16,11 @@ export const Route = createFileRoute("/_authenticated/gradings/create")({
       throw new Error("Unauthorized: No token found");
     }
 
-    if (id) {
-      const gradingAttempt = await GradingService.getGradingAttempt(id, token);
-      sessionStorage.setItem("gradingStep", gradingAttempt.id);
-      return gradingAttempt;
+    if (!id) {
+      return await GradingService.createGradingAttempt(token);
     }
 
-    return await GradingService.createGradingAttempt(token);
+    return await GradingService.getGradingAttempt(id, token);
   },
   onLeave: () => {
     sessionStorage.removeItem("gradingStep");
@@ -34,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/gradings/create")({
 
 function RouteComponent() {
   const grading = Route.useLoaderData();
+  sessionStorage.setItem("gradingId", grading.id);
   const gradingStep = sessionStorage.getItem("gradingStep") || undefined;
   return (
     <UploadAssignmentPage initialGradingAttempt={grading} initialStep={gradingStep} />

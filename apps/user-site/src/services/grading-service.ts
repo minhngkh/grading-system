@@ -1,6 +1,7 @@
 import {
   CriteriaSelector,
   GradingAttempt,
+  GradingSchema,
   GradingStatus,
   Submission,
 } from "@/types/grading";
@@ -32,14 +33,23 @@ export class GradingService {
     };
   }
 
+  private static ConvertToGrading(record: any): GradingAttempt {
+    return GradingSchema.parse({
+      ...record,
+      lastModified: record.lastModified ? new Date(record.lastModified) : undefined,
+      scaleFactor: !record.scaleFactor ? 10 : record.scaleFactor,
+    });
+  }
+
   private static gradingDeserializer = new Deserializer({
     keyForAttribute: "camelCase",
+    transform: (record: any) => this.ConvertToGrading(record),
   });
 
   static async createGradingAttempt(token: string): Promise<GradingAttempt> {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.post(GRADING_API_URL, {}, configHeaders);
-    return response.data;
+    return this.ConvertToGrading(response.data);
   }
 
   static async getGradingStatus(id: string, token: string): Promise<GradingStatus> {
@@ -49,8 +59,7 @@ export class GradingService {
       configHeaders,
     );
 
-    const data = await this.gradingDeserializer.deserialize(response.data);
-    return data.status;
+    return this.gradingDeserializer.deserialize(response.data);
   }
 
   static async updateGradingRubric(id: string, rubricId: string, token: string) {
@@ -104,7 +113,8 @@ export class GradingService {
   static async getGradingAttempt(id: string, token: string): Promise<GradingAttempt> {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.get(`${GRADING_API_URL}/${id}`, configHeaders);
-    return this.gradingDeserializer.deserialize(response.data);
+    const serializeData = await this.gradingDeserializer.deserialize(response.data);
+    return GradingSchema.parse(serializeData);
   }
 
   static async uploadSubmission(
