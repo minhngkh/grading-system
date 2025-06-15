@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated/gradings/$gradingId/")({
   loader: async ({ params: { gradingId }, context: { auth } }) => {
     const token = await auth.getToken();
     if (!token) {
-      throw new Error("Unauthorized: No token found");
+      throw new Error("You must be logged in to view grading session.");
     }
 
     return await GradingService.getGradingAttempt(gradingId, token);
@@ -17,8 +17,8 @@ export const Route = createFileRoute("/_authenticated/gradings/$gradingId/")({
   onLeave: () => {
     sessionStorage.removeItem("gradingStep");
   },
-  errorComponent: () => ErrorComponent(),
-  pendingComponent: () => PendingComponent("Loading grading result..."),
+  errorComponent: () => ErrorComponent("Failed to load grading session."),
+  pendingComponent: () => PendingComponent("Loading grading session..."),
 });
 
 function RouteComponent() {

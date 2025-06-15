@@ -5,8 +5,6 @@ import {
   ClipboardPlus,
   Home,
   Library,
-  LifeBuoy,
-  Settings,
 } from "lucide-react";
 import type { ReactElement } from "react";
 
@@ -49,18 +47,5 @@ export const NavigationItems: NavigationData[] = [
     title: "AI Assistant",
     icon: <BotMessageSquare className="size-4" />,
     to: "/chat",
-  },
-];
-
-export const settingsItems: NavigationData[] = [
-  {
-    title: "Settings",
-    icon: <Settings className="size-4" />,
-    to: "/",
-  },
-  {
-    title: "Help",
-    icon: <LifeBuoy className="size-4" />,
-    to: "/",
   },
 ];

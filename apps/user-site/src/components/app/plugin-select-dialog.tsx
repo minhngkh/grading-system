@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { PluginService } from "@/services/plugin-service";
@@ -11,7 +12,7 @@ interface PluginSelectDialogProps {
   open: boolean;
   criterion: Criteria;
   onOpenChange: (open: boolean) => void;
-  onSelect: (index: number, plugin: string) => void;
+  onSelect: (plugin: string) => void;
 }
 
 export function PluginSelectDialog({
@@ -87,8 +88,8 @@ export function PluginSelectDialog({
   );
 
   const handlePluginSelect = useCallback(
-    (index: number, pluginName: string) => {
-      onSelect(index, pluginName);
+    (pluginName: string) => {
+      onSelect(pluginName);
     },
     [onSelect],
   );
@@ -110,12 +111,7 @@ export function PluginSelectDialog({
       return (
         <div className="flex flex-col justify-center items-center py-8 gap-4">
           <div className="text-muted-foreground">{error}</div>
-          <button
-            onClick={handleRetry}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-          >
-            Retry
-          </button>
+          <Button onClick={handleRetry}>Retry</Button>
         </div>
       );
     }
@@ -141,7 +137,7 @@ export function PluginSelectDialog({
                   "flex flex-col gap-2 items-center text-center p-4 hover:bg-muted rounded-md border transition-colors",
                   isSelected && "bg-muted ring-2 ring-primary",
                 )}
-                onClick={() => handlePluginSelect(index, plugin.name)}
+                onClick={() => handlePluginSelect(plugin.name)}
               >
                 <div className="font-medium">
                   {plugin.name}

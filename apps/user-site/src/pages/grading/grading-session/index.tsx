@@ -4,15 +4,15 @@ import { Separator } from "@/components/ui/separator";
 import { defineStepper } from "@stepperize/react";
 import React, { useCallback, useState } from "react";
 import GradingProgressStep from "./grading-step";
-import GradingResult from "../../review/grading-result";
+import GradingResult from "../grading-result";
 import UploadStep from "./upload-step";
 import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { GradingService } from "@/services/grading-service";
-import { toast } from "sonner";
 import { useAuth } from "@clerk/clerk-react";
+import { toast } from "sonner";
 
 type StepData = {
   title: string;
@@ -62,44 +62,11 @@ export default function UploadAssignmentPage({
   const gradingAttemptValues = gradingAttempt.watch();
 
   const handleUpdateGradingAttempt = useCallback(
-    async (updated?: Partial<GradingAttempt>) => {
-      if (!updated) return;
-
-      try {
-        const token = await auth.getToken();
-        if (!token) {
-          throw new Error("Unauthorized: No token found");
-        }
-
-        if (updated.rubricId) {
-          await GradingService.updateGradingRubric(
-            gradingAttemptValues.id,
-            updated.rubricId,
-            token,
-          );
-        }
-
-        if (updated.selectors)
-          await GradingService.updateGradingSelectors(
-            gradingAttemptValues.id,
-            updated.selectors,
-            token,
-          );
-
-        if (updated.scaleFactor)
-          await GradingService.updateGradingScaleFactor(
-            gradingAttemptValues.id,
-            updated.scaleFactor,
-            token,
-          );
-
-        gradingAttempt.reset({
-          ...gradingAttemptValues,
-          ...updated,
-        });
-      } catch (err) {
-        toast.error("Failed to update grading attempt");
-      }
+    (updated: Partial<GradingAttempt>) => {
+      gradingAttempt.reset({
+        ...gradingAttemptValues,
+        ...updated,
+      });
     },
     [auth, gradingAttemptValues],
   );
@@ -115,16 +82,15 @@ export default function UploadAssignmentPage({
         try {
           const token = await auth.getToken();
           if (!token) {
-            throw new Error("You must be logged in to start grading");
+            return toast.error("You must be logged in to start grading");
           }
 
           setIsUploading(true);
           await GradingService.startGrading(gradingAttemptValues.id, token);
           handleUpdateGradingAttempt({ status: GradingStatus.Started });
         } catch (err) {
-          toast.error("Failed to start grading");
+          toast.error("Failed to start grading. Please try again.");
           console.error("Error starting grading:", err);
-          return;
         } finally {
           setIsUploading(false);
         }

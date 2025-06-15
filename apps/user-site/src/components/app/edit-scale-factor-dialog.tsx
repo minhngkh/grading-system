@@ -81,7 +81,7 @@ export const ChangeScaleFactorDialog = ({
 
   // Memoized validation state
   const validationState = useMemo(() => {
-    const isValid = scaleFactor !== undefined;
+    const isValid = scaleFactor != undefined;
     const canSave = isValid;
 
     return {
@@ -106,7 +106,7 @@ export const ChangeScaleFactorDialog = ({
           <DialogDescription>
             Adjust the grade scale to modify the scoring multiplier.
             <br />
-            {minValue !== undefined && maxValue !== undefined && (
+            {minValue != undefined && maxValue != undefined && (
               <>
                 Valid range: {minValue} - {maxValue}
               </>

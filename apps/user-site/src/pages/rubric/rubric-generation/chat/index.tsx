@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/clerk-react";
-
+import { toast } from "sonner";
 interface EditRubricPageProps {
   rubric: Rubric;
   onUpdate: (rubric: Partial<Rubric>) => Promise<void>;
@@ -26,13 +26,14 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
 
   const handleSendMessage = useCallback(
     async (messages: ChatMessage[]) => {
-      setIsLoading(true);
-      try {
-        const token = await auth.getToken();
-        if (!token) {
-          throw new Error("Unauthorized: No token found");
-        }
+      const token = await auth.getToken();
+      if (!token) {
+        toast.error("You are not authorized to perform this action.");
+        throw new Error("Unauthorized: No token found");
+      }
 
+      try {
+        setIsLoading(true);
         const response = await ChatService.sendRubricMessage(
           messages,
           {
@@ -45,16 +46,21 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
         if (response.rubric) {
           setIsApplyingEdit(true);
 
-          setTimeout(() => {
+          setTimeout(async () => {
+            try {
+              await onUpdate(response.rubric!);
+            } catch (error) {
+              console.error("Error updating rubric:", error);
+              return "Error updating rubric. Please try again.";
+            }
             setIsApplyingEdit(false);
           }, 1500);
-
-          onUpdate(response.rubric);
         }
 
         return response.message;
       } catch (error) {
-        throw error;
+        console.error("Error sending message:", error);
+        return "An error occurred while processing your request. Please try again.";
       } finally {
         setIsLoading(false);
       }

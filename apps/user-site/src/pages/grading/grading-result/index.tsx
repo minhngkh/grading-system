@@ -45,13 +45,11 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
 
   useEffect(() => {
     const fetchAssessments = async () => {
-      setIsLoading(true);
-      try {
-        const token = await auth.getToken();
-        if (!token) {
-          throw new Error("Unauthorized: No token found");
-        }
+      const token = await auth.getToken();
+      if (!token) return toast.error("Unauthorized: No token found");
 
+      try {
+        setIsLoading(true);
         const assessmentsData = await AssessmentService.getGradingAssessments(
           gradingAttempt.id,
           token,

@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/rubrics/create")({
     sessionStorage.removeItem("rubricStep");
     sessionStorage.removeItem("rubricId");
   },
-  errorComponent: () => ErrorComponent(),
+  errorComponent: () => ErrorComponent("Failed to create rubric."),
   pendingComponent: () => PendingComponent("Creating rubric..."),
 });
 

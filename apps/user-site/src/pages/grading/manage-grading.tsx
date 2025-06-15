@@ -82,13 +82,11 @@ export default function ManageGradingsPage({
 
   useEffect(() => {
     async function fetchGradingAssessments() {
-      setIsGettingAssessments(true);
-      try {
-        const token = await auth.getToken();
-        if (!token) {
-          throw new Error("Unauthorized: No token found");
-        }
+      const token = await auth.getToken();
+      if (!token) return toast.error("You are not authorized to perform this action.");
 
+      try {
+        setIsGettingAssessments(true);
         const assessments = await AssessmentService.getGradingAssessments(
           sortedGradings[selectGradingIndex!].id,
           token,
@@ -102,11 +100,7 @@ export default function ManageGradingsPage({
       }
     }
 
-    if (
-      exportGradingOpen &&
-      selectGradingIndex !== null &&
-      sortedGradings[selectGradingIndex]
-    ) {
+    if (exportGradingOpen && selectGradingIndex != null) {
       fetchGradingAssessments();
     }
   }, [selectGradingIndex, exportGradingOpen]);
@@ -416,7 +410,7 @@ export default function ManageGradingsPage({
           </Button>
         </div>
       </div>
-      {exportGradingOpen && selectGradingIndex !== null && (
+      {exportGradingOpen && selectGradingIndex != null && (
         <ExportDialog
           open={exportGradingOpen}
           onOpenChange={setExportGradingOpen}

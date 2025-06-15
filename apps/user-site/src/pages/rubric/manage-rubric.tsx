@@ -241,7 +241,7 @@ export default function ManageRubricsPage({
             }
           </TableBody>
         </Table>
-        {viewRubricOpen && selectedRubricIndex !== null && (
+        {viewRubricOpen && selectedRubricIndex != null && (
           <ViewRubricDialog
             open={viewRubricOpen}
             onOpenChange={setViewRubricOpen}
@@ -338,7 +338,7 @@ export default function ManageRubricsPage({
           )}
         </div>
       </div>
-      {exportRubricOpen && selectedRubricIndex !== null && (
+      {exportRubricOpen && selectedRubricIndex != null && (
         <ExportDialog
           open={exportRubricOpen}
           onOpenChange={setExportRubricOpen}

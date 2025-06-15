@@ -33,7 +33,7 @@ import { FileUploader } from "@/components/app/file-uploader";
 
 interface RubricTableProps {
   rubricData: Rubric;
-  onUpdate?: (updatedRubric: Partial<Rubric>) => Promise<void>;
+  onUpdate?: (updatedRubric: Partial<Rubric>) => void;
   disableEdit?: boolean;
   isApplyingEdit?: boolean;
 }

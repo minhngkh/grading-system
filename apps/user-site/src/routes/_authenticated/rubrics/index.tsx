@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/rubrics/")({
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },
-  errorComponent: () => ErrorComponent(),
+  errorComponent: () => ErrorComponent("Failed to load rubrics."),
   pendingComponent: () => PendingComponent("Loading rubrics..."),
 });
 

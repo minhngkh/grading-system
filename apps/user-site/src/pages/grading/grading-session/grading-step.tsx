@@ -8,7 +8,7 @@ import { useAuth } from "@clerk/clerk-react";
 
 interface GradingProgressStepProps {
   gradingAttempt: GradingAttempt;
-  onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => Promise<void>;
+  onGradingAttemptChange: (gradingAttempt: Partial<GradingAttempt>) => void;
 }
 
 export default function GradingProgressStep({
@@ -20,15 +20,14 @@ export default function GradingProgressStep({
   const pollingFn = useCallback(async () => {
     const token = await auth.getToken();
     if (!token) {
-      throw new Error("Unauthorized: No token found");
+      throw new Error("You must be logged in to check grading status.");
     }
 
     return GradingService.getGradingStatus(gradingAttempt.id, token);
-  }, [gradingAttempt.id]);
+  }, [gradingAttempt.id, auth]);
 
   const onSuccess = useCallback(
     (status: GradingStatus) => {
-      console.log("Grading status updated:", status);
       onGradingAttemptChange({ status });
     },
     [onGradingAttemptChange],
@@ -38,7 +37,10 @@ export default function GradingProgressStep({
     interval: 5000,
     enabled: gradingAttempt.status === GradingStatus.Started,
     onError: (error) => {
-      toast.error("Failed to fetch grading status");
+      toast.error(
+        error.message ||
+          "An error occurred while grading submission. Please try again later.",
+      );
       console.error("Failed to fetch grading status:", error);
     },
   });

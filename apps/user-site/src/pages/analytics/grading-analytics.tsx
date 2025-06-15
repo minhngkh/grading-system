@@ -7,8 +7,8 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GradingAnalytics } from "@/types/analytics";
-import { AssessmentCriterionChart } from "@/pages/review/analytics/grading-criterion-chart";
-import { AssessmentScoreDistributionChart } from "@/pages/review/analytics/grading-distribution-chart";
+import { AssessmentCriterionChart } from "./grading-criterion-chart";
+import { AssessmentScoreDistributionChart } from "./grading-distribution-chart";
 
 interface GradingAnalyticsPageProps {
   gradingAnalytics: GradingAnalytics;

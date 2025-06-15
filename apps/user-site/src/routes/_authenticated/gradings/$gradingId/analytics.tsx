@@ -1,4 +1,6 @@
-import { GradingAnalyticsPage } from "@/pages/review/analytics/grading-analytics";
+import ErrorComponent from "@/components/app/route-error";
+import PendingComponent from "@/components/app/route-pending";
+import { GradingAnalyticsPage } from "@/pages/analytics/grading-analytics";
 import { GradingAnalytics } from "@/types/analytics";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -31,6 +33,8 @@ export const Route = createFileRoute("/_authenticated/gradings/$gradingId/analyt
     };
     return { gradingAnalytics };
   },
+  errorComponent: () => ErrorComponent("Failed to get grading analytics."),
+  pendingComponent: () => PendingComponent("Loading grading analytics..."),
 });
 
 function RouteComponent() {

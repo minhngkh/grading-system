@@ -26,7 +26,7 @@ import useRubricForm from "@/hooks/use-rubric-form";
 
 interface EditRubricProps {
   rubricData: Rubric;
-  onUpdate?: (rubric: Rubric) => Promise<void>;
+  onUpdate?: (rubric: Rubric) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   isLoading?: boolean;
@@ -135,6 +135,7 @@ const EditRubric = memo(function EditRubric({
     const isValid = await validateForm();
     if (isValid) {
       onUpdate?.(formData);
+      onOpenChange?.(false);
     }
   }, [validateForm, onUpdate, formData]);
 

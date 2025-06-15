@@ -25,7 +25,7 @@ interface ScrollableSelectProps {
   placeholder?: string;
   emptyMessage?: string;
   className?: string;
-  onRubricChange?: (value: Rubric | undefined) => void;
+  onRubricChange?: (value: Rubric) => void;
   gradingAttempt: GradingAttempt;
 }
 

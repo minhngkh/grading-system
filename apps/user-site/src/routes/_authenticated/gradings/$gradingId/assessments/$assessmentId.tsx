@@ -1,6 +1,6 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import ManualAdjustScorePage from "@/pages/review/manual-grade/$id";
+import ManualAdjustScorePage from "@/pages/assessment/edit-assessment/$id";
 import { AssessmentService } from "@/services/assessment-service";
 import { GradingService } from "@/services/grading-service";
 import { RubricService } from "@/services/rubric-service";
@@ -28,7 +28,7 @@ export const Route = createFileRoute(
     const rubric = await RubricService.getRubric(grading.rubricId, token);
     return { assessment, rubric };
   },
-  errorComponent: () => ErrorComponent(),
+  errorComponent: () => ErrorComponent("Failed to load assessment."),
   pendingComponent: () => PendingComponent("Loading assessment..."),
 });
 

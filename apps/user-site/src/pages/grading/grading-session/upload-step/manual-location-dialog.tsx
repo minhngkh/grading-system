@@ -13,7 +13,7 @@ interface ManualDialogProps {
   gradingAttempt: GradingAttempt;
   criterionIndex: number;
   uploadedFile: File;
-  onSelect: (index: number, path: string) => Promise<void>;
+  onSelect: (index: number, path: string) => void;
 }
 
 interface FileTreeNodeProps {

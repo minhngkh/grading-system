@@ -9,5 +9,11 @@ export const PluginSchema = z.object({
 });
 
 export const PluginListSchema = z.array(PluginSchema);
-
 export type Plugin = z.infer<typeof PluginSchema>;
+export type CodeRunnerTestCase = {
+  input: string;
+  expectedOutput: string;
+};
+export type CodeRunnerConfig = {
+  testCases: CodeRunnerTestCase[];
+};

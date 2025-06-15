@@ -7,14 +7,14 @@ interface RubricViewProps {
   rubricData: Rubric;
   showPlugins?: boolean;
   editPlugin?: boolean;
-  onEditPlugin?: (updatedRubric: Partial<Rubric>) => Promise<void>;
+  onPluginSelect?: (plugin: string, criterionIndex: number) => void;
 }
 
 export function RubricView({
   rubricData,
-  showPlugins = false,
-  editPlugin = false,
-  onEditPlugin,
+  showPlugins,
+  editPlugin,
+  onPluginSelect,
 }: RubricViewProps) {
   if (rubricData.criteria.length === 0) {
     return (
@@ -24,24 +24,20 @@ export function RubricView({
     );
   }
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [pluginDialogOpen, setPluginDialogOpen] = useState(false);
   const [selectedCriterionIndex, setSelectedCriterionIndex] = useState<number | null>(
     null,
   );
 
-  const handlePluginSelect = (index: number, plugin: string) => {
-    const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
-      if (idx === index) {
-        return {
-          ...criterion,
-          plugin: criterion.plugin === plugin ? undefined : plugin,
-        };
-      }
-      return criterion;
-    });
+  const handlePluginSelect = (plugin: string) => {
+    if (selectedCriterionIndex == null) return;
+    onPluginSelect?.(plugin, selectedCriterionIndex);
+    setPluginDialogOpen(false);
+  };
 
-    onEditPlugin?.({ criteria: updatedCriteria });
-    setDialogOpen(false);
+  const openPluginDialog = (index: number) => {
+    setSelectedCriterionIndex(index);
+    setPluginDialogOpen(true);
   };
 
   return (
@@ -108,8 +104,7 @@ export function RubricView({
                     )}
                     onClick={() => {
                       if (!editPlugin) return;
-                      setSelectedCriterionIndex(index);
-                      setDialogOpen(true);
+                      openPluginDialog(index);
                     }}
                   >
                     <div
@@ -127,11 +122,11 @@ export function RubricView({
           })}
         </tbody>
       </table>
-      {selectedCriterionIndex !== null && dialogOpen && (
+      {selectedCriterionIndex != null && pluginDialogOpen && (
         <PluginSelectDialog
           criterion={rubricData.criteria[selectedCriterionIndex]}
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
+          open={pluginDialogOpen}
+          onOpenChange={setPluginDialogOpen}
           onSelect={handlePluginSelect}
         />
       )}

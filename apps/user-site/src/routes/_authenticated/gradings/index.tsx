@@ -1,6 +1,6 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import ManageGradingsPage from "@/pages/review/manage-grading";
+import ManageGradingsPage from "@/pages/grading/manage-grading";
 import { GradingService } from "@/services/grading-service";
 import { searchParams, SearchParams } from "@/types/search-params";
 import { createFileRoute, retainSearchParams, useNavigate } from "@tanstack/react-router";
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/gradings/")({
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },
-  errorComponent: () => ErrorComponent(),
+  errorComponent: () => ErrorComponent("Failed to load gradings"),
   pendingComponent: () => PendingComponent("Loading gradings..."),
 });
 

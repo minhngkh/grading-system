@@ -39,6 +39,7 @@ export const CriteriaSchema = z.object({
       },
     ),
   plugin: z.string().optional(),
+  configuration: z.string().optional(),
 });
 
 export const RubricSchema = z

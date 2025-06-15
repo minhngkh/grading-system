@@ -2,7 +2,7 @@ import type { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
 import { FileList } from "./file-list";
 import { RubricSelect } from "@/components/app/scrollable-select";
-import { GradingAttempt, Submission } from "@/types/grading";
+import { CriteriaSelector, GradingAttempt, Submission } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -18,7 +18,7 @@ import { FileUploader } from "@/components/app/file-uploader";
 import { useAuth } from "@clerk/clerk-react";
 
 interface UploadStepProps {
-  onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => Promise<void>;
+  onGradingAttemptChange: (gradingAttempt: Partial<GradingAttempt>) => void;
   gradingAttempt: GradingAttempt;
 }
 
@@ -26,110 +26,154 @@ export default function UploadStep({
   onGradingAttemptChange,
   gradingAttempt,
 }: UploadStepProps) {
+  const auth = useAuth();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isFileDialogOpen, setFileDialogOpen] = useState(false);
+  const [fileDialogAction, setFileDialogAction] = useState("");
   const [scaleFactor, setScaleFactor] = useState<number | undefined>(
     gradingAttempt.scaleFactor,
   );
-  const auth = useAuth();
 
   const debounceScaleFactor = useDebounce(scaleFactor, 500);
 
-  useEffect(() => {
-    if (debounceScaleFactor !== undefined) {
-      onGradingAttemptChange({ scaleFactor: debounceScaleFactor });
+  const handleScaleFactorChange = async (value: number) => {
+    const token = await auth.getToken();
+    if (!token) {
+      console.error("Error updating scale factor: No token found");
+      return toast.error("Unauthorized: You must be logged in to update scale factor");
     }
-  }, [debounceScaleFactor]);
 
-  const handleSelectRubric = async (rubric: Rubric | undefined) => {
-    if (!rubric) {
-      return;
+    try {
+      await GradingService.updateGradingScaleFactor(gradingAttempt.id, value, token);
+      onGradingAttemptChange({ scaleFactor: debounceScaleFactor });
+    } catch (error) {
+      console.error("Error updating scale factor:", error);
+      toast.error("Failed to update scale factor");
+    }
+  };
+
+  useEffect(() => {
+    if (debounceScaleFactor != undefined) {
+      handleScaleFactorChange(debounceScaleFactor);
+    }
+  }, [debounceScaleFactor, handleScaleFactorChange]);
+
+  const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
+    const token = await auth.getToken();
+    if (!token) {
+      console.error("Error updating rubric: No token found");
+      return toast.error("Unauthorized: You must be logged in to update rubric");
+    }
+
+    try {
+      await GradingService.updateGradingSelectors(gradingAttempt.id, selectors, token);
+      onGradingAttemptChange({
+        selectors: selectors,
+      });
+    } catch (error) {
+      console.error("Error generating selectors:", error);
+      return toast.error("Failed to update selectors");
+    }
+  };
+
+  const handleSelectRubric = async (rubric: Rubric) => {
+    if (gradingAttempt.rubricId === rubric.id) return;
+
+    const token = await auth.getToken();
+    if (!token) {
+      console.error("Error updating rubric: No token found");
+      return toast.error("Unauthorized: You must be logged in to update rubric");
+    }
+
+    try {
+      await GradingService.updateGradingRubric(gradingAttempt.id, rubric.id, token);
+      onGradingAttemptChange({
+        rubricId: rubric.id,
+      });
+    } catch (error) {
+      console.error("Error updating rubric:", error);
+      return toast.error("Failed to select rubric");
     }
 
     const selectors = rubric.criteria.map((criterion) => {
       return { criterion: criterion.name, pattern: "*" };
     });
 
-    await onGradingAttemptChange({
-      rubricId: rubric.id,
-      selectors: selectors,
-    });
+    handleSelectorsChange(selectors);
   };
 
   const handleFileUpload = async (files: File[]) => {
+    const token = await auth.getToken();
+    if (!token) {
+      console.error("Error updating rubric: No token found");
+      return toast.error("Unauthorized: You must be logged in to update rubric");
+    }
+
     const newFiles = files.filter(
       (file) => !uploadedFiles.some((existing) => existing.name === file.name),
     );
 
     if (newFiles.length > 0) {
-      try {
-        const token = await auth.getToken();
-        if (!token) {
-          throw new Error("Unauthorized: No token found");
-        }
+      setFileDialogAction("Uploading");
+      setProgress(0);
+      setFileDialogOpen(true);
 
-        setProgress(0);
-        setIsUploadDialogOpen(true);
+      await Promise.all(
+        newFiles.map(async (file, index) => {
+          try {
+            await GradingService.uploadSubmission(gradingAttempt.id, file, token);
+            const updatedFiles = [...uploadedFiles, file];
+            setUploadedFiles(updatedFiles);
+          } catch (error) {
+            toast.error(`Failed to upload ${file.name}`);
+            console.error("Error uploading file:", error);
+          } finally {
+            const updatedProgress = Math.round(((index + 1) * 100) / newFiles.length);
+            setProgress(updatedProgress);
+          }
+        }),
+      );
 
-        await Promise.all(
-          newFiles.map(async (file, index) => {
-            try {
-              await GradingService.uploadSubmission(gradingAttempt.id, file, token);
-              const updatedProgress = Math.round(((index + 1) * 100) / newFiles.length);
-              setProgress(updatedProgress);
-            } catch (error) {
-              toast.error(`Failed to upload ${file.name}`);
-              console.error("Error uploading file:", error);
-            }
+      onGradingAttemptChange({
+        submissions: [
+          ...gradingAttempt.submissions,
+          ...uploadedFiles.map((file) => {
+            return {
+              reference: file.name.replace(/\.[^/.]+$/, ""),
+            };
           }),
-        );
+        ],
+      });
 
-        const updatedFiles = [...uploadedFiles, ...newFiles];
-
-        onGradingAttemptChange({
-          submissions: [
-            ...gradingAttempt.submissions,
-            ...updatedFiles.map((file) => {
-              return {
-                reference: file.name.replace(/\.[^/.]+$/, ""),
-              };
-            }),
-          ],
-        });
-
-        setUploadedFiles(updatedFiles);
-      } catch (error) {
-        console.error("Error uploading files:", error);
-      } finally {
-        setIsUploadDialogOpen(false);
-      }
+      setFileDialogOpen(false);
     }
   };
 
-  const handleRemoveSubmission = async (submission: Submission) => {
+  const handleRemoveSubmission = async (submission: Submission, token?: string) => {
+    const token1 = token || (await auth.getToken());
+    if (!token1) {
+      console.error("Error updating rubric: No token found");
+      return toast.error("Unauthorized: You must be logged in to update rubric");
+    }
+
     try {
+      await GradingService.deleteSubmission(
+        gradingAttempt.id,
+        submission.reference,
+        token1,
+      );
+
       const updatedFiles = uploadedFiles.filter((file) => {
         return file.name !== `${submission.reference}.zip`;
       });
-      setUploadedFiles(updatedFiles);
 
-      await onGradingAttemptChange({
+      setUploadedFiles(updatedFiles);
+      onGradingAttemptChange({
         submissions: gradingAttempt.submissions.filter(
           (sub) => sub.reference !== submission.reference,
         ),
       });
-
-      const token = await auth.getToken();
-      if (!token) {
-        throw new Error("Unauthorized: No token found");
-      }
-
-      await GradingService.deleteSubmission(
-        gradingAttempt.id,
-        submission.reference,
-        token,
-      );
     } catch (error) {
       console.error("Error removing submission:", error);
       toast.error(`Failed to remove submission: ${submission.reference}`);
@@ -137,40 +181,44 @@ export default function UploadStep({
   };
 
   const handleRemoveAllSubmissions = async () => {
-    try {
-      setUploadedFiles([]);
-      await onGradingAttemptChange({ submissions: [] });
-
-      const token = await auth.getToken();
-      if (!token) {
-        throw new Error("Unauthorized: No token found");
-      }
-
-      await Promise.all(
-        gradingAttempt.submissions.map((submission) =>
-          GradingService.deleteSubmission(gradingAttempt.id, submission.reference, token),
-        ),
-      );
-    } catch (error) {
-      console.error("Error removing all submissions:", error);
-      toast.error("Failed to remove all submissions");
+    const token = await auth.getToken();
+    if (!token) {
+      console.error("Error updating rubric: No token found");
+      return toast.error("Unauthorized: You must be logged in to update rubric");
     }
+
+    setFileDialogAction("Removing");
+    setProgress(0);
+    setFileDialogOpen(true);
+
+    await Promise.all(
+      gradingAttempt.submissions.map(async (submission, index) => {
+        await handleRemoveSubmission(submission, token);
+        const updatedProgress = Math.round(
+          ((index + 1) * 100) / gradingAttempt.submissions.length,
+        );
+        setProgress(updatedProgress);
+      }),
+    );
+
+    setFileDialogOpen(false);
   };
 
   return (
     <div className="size-full space-y-4">
       {/* Upload Dialog */}
-      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+      <Dialog open={isFileDialogOpen} onOpenChange={setFileDialogOpen}>
         <DialogContent aria-describedby={undefined} className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Uploading Files</DialogTitle>
+            <DialogTitle>{fileDialogAction} Files</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center gap-4 py-4">
             <Spinner />
             <Progress value={progress} className="w-full" />
             <span className="text-sm text-muted-foreground">{progress}% complete</span>
             <div className="text-sm text-muted-foreground">
-              Uploading {uploadedFiles.length + 1} of {uploadedFiles.length + 1} files...
+              {fileDialogAction} {uploadedFiles.length + 1} of {uploadedFiles.length + 1}{" "}
+              files...
             </div>
           </div>
         </DialogContent>
@@ -250,7 +298,7 @@ export default function UploadStep({
         {gradingAttempt.submissions.length > 0 && (
           <CriteriaMapper
             gradingAttempt={gradingAttempt}
-            onGradingAttemptChange={onGradingAttemptChange}
+            onSelectorsChange={handleSelectorsChange}
             uploadedFiles={uploadedFiles}
           />
         )}

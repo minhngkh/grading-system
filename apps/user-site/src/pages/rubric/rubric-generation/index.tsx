@@ -8,11 +8,11 @@ import { defineStepper } from "@stepperize/react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import ChatWindow from "./edit-rubric";
-import FinalRubricTable from "./review-step";
 import { useAuth } from "@clerk/clerk-react";
-import PluginRubricTable from "@/pages/rubric/rubric-generation/rubric-plugins";
 import { useCallback } from "react";
+import ChatWindow from "./chat";
+import FinalRubricTable from "./review-step";
+import PluginRubricTable from "./edit-plugins";
 
 type StepData = {
   title: string;
@@ -91,28 +91,23 @@ export default function RubricGenerationPage({
 
   const onUpdateRubric = useCallback(
     async (updatedRubricData: Partial<Rubric>) => {
-      try {
-        const updatedRubric = {
-          ...formValues,
-          ...updatedRubricData,
-        };
+      const updatedRubric = {
+        ...formValues,
+        ...updatedRubricData,
+      };
 
-        const result = RubricSchema.safeParse(updatedRubric);
-        if (!result.success) {
-          throw result.error;
-        }
-
-        const token = await auth.getToken();
-        if (!token) {
-          throw new Error("You must be logged in to save a rubric");
-        }
-
-        await RubricService.updateRubric(initialRubric.id, updatedRubricData, token);
-        form.reset(updatedRubric);
-      } catch (err) {
-        toast.error("Failed to update rubric");
-        console.error(err);
+      const result = RubricSchema.safeParse(updatedRubric);
+      if (!result.success) {
+        throw result.error;
       }
+
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("You must be logged in to save a rubric");
+      }
+
+      await RubricService.updateRubric(initialRubric.id, updatedRubricData, token);
+      form.reset(updatedRubric);
     },
     [formValues, auth],
   );

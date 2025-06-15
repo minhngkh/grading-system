@@ -1,4 +1,6 @@
-import { OverallAnalyticsPage } from "@/pages/review/analytics/overall-analytics";
+import ErrorComponent from "@/components/app/route-error";
+import PendingComponent from "@/components/app/route-pending";
+import { OverallAnalyticsPage } from "@/pages/analytics/overall-analytics";
 import { OverallGradingAnalytics } from "@/types/analytics";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -13,6 +15,8 @@ export const Route = createFileRoute("/_authenticated/analytics")({
     };
     return { analytics };
   },
+  errorComponent: () => ErrorComponent("Failed to load analytics."),
+  pendingComponent: () => PendingComponent("Loading analytics..."),
 });
 
 function PageComponent() {

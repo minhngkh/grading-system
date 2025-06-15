@@ -40,8 +40,8 @@ export class RubricService {
   ): Promise<GetAllResult<Rubric>> {
     const { page, perPage, search } = searchParams;
     const params = new URLSearchParams();
-    if (page !== undefined) params.append("page[number]", page.toString());
-    if (perPage !== undefined) params.append("page[size]", perPage.toString());
+    if (page != undefined) params.append("page[number]", page.toString());
+    if (perPage != undefined) params.append("page[size]", perPage.toString());
     if (search && search.length > 0) {
       params.append(
         "filter",

@@ -33,14 +33,12 @@ interface AIChatProps {
   sendMessageCallback: (messages: ChatMessage[]) => Promise<string | undefined>;
   className?: string;
   isRubricChat?: boolean;
-  maxMessages?: number;
   placeholder?: string;
 }
 
 const ChatInterface = memo(function ChatInterface({
   sendMessageCallback,
   className,
-  maxMessages = Infinity,
   placeholder = "Ask anything",
 }: AIChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -99,16 +97,14 @@ const ChatInterface = memo(function ChatInterface({
 
     const newMessages = [...messages, newMessage];
 
-    // Limit message history
-    const limitedMessages = newMessages.slice(-maxMessages);
-    setMessages(limitedMessages);
+    setMessages(newMessages);
 
     // Clear input immediately for better UX
     setInputMessage("");
     setUploadedFiles([]);
 
     try {
-      const agentResponse = await sendMessageCallback(limitedMessages);
+      const agentResponse = await sendMessageCallback(newMessages);
 
       if (controller.signal.aborted) return;
 
@@ -133,23 +129,14 @@ const ChatInterface = memo(function ChatInterface({
         },
       ]);
 
-      toast.error("Message failed", {
-        description: "There was a problem sending your message. Please try again.",
-      });
+      console.error("Error sending message:", error);
     } finally {
       if (!controller.signal.aborted) {
         setIsLoading(false);
         abortControllerRef.current = null;
       }
     }
-  }, [
-    inputMessage,
-    messages,
-    sendMessageCallback,
-    uploadedFiles,
-    maxMessages,
-    isLoading,
-  ]);
+  }, [inputMessage, messages, sendMessageCallback, uploadedFiles, isLoading]);
 
   // Optimized file processing
   const processFiles = useCallback(

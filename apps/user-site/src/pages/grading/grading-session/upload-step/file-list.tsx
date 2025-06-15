@@ -7,7 +7,7 @@ import { FileArchive, FolderOpen, Trash2 } from "lucide-react";
 
 interface FileListProps {
   gradingAttempt: GradingAttempt;
-  onDelete?: (submission: Submission) => Promise<void>;
+  onDelete?: (submission: Submission) => void;
 }
 
 export function FileList({ gradingAttempt, onDelete }: FileListProps) {
