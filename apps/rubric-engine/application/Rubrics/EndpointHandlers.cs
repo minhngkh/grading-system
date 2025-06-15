@@ -1,5 +1,6 @@
 ﻿using RubricEngine.Application.Rubrics.Create;
 using RubricEngine.Application.Rubrics.ProvisionContext;
+using RubricEngine.Application.Rubrics.RemoveAttachment;
 using RubricEngine.Application.Rubrics.Update;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
@@ -15,7 +16,8 @@ internal static class EndpointHandlers
             .WithTags("Rubrics")
             .MapCreateRubric()
             .MapUpdateRubric()
-            .MapProvisionContext();
+            .MapProvisionContext()
+            .MapRemoveAttachment();
             
         return routeBuilder;
     }

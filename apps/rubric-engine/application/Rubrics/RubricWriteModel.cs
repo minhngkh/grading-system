@@ -2,6 +2,7 @@ using EventFlow.Aggregates;
 using RubricEngine.Application.Rubrics.Complete;
 using RubricEngine.Application.Rubrics.Create;
 using RubricEngine.Application.Rubrics.ProvisionContext;
+using RubricEngine.Application.Rubrics.RemoveAttachment;
 using RubricEngine.Application.Rubrics.Update;
 namespace RubricEngine.Application.Rubrics;
 
@@ -52,6 +53,11 @@ public class RubricWriteModel
 
     internal void Apply(AttachmentsProvisionedEvent @event)
     {
-        Attachments = @event.Attachments;
+        Attachments.AddRange(@event.Attachments);
+    }
+
+    internal void Apply(AttachmentRemovedEvent @event)
+    {
+        Attachments.Remove(@event.RemovedAttachment);
     }
 }

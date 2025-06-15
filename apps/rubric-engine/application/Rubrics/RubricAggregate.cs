@@ -2,6 +2,7 @@ using EventFlow.Aggregates;
 using EventFlow.Core;
 using EventFlow.Extensions;
 using RubricEngine.Application.Rubrics.Complete;
+using RubricEngine.Application.Rubrics.RemoveAttachment;
 using RubricEngine.Application.Rubrics.Update;
 
 namespace RubricEngine.Application.Rubrics;
@@ -87,6 +88,16 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
             {
                 MetadataJson = System.Text.Json.JsonSerializer.Serialize(metadata) // Use the static JsonSerializer from System.Text.Json
             });
+    }
+
+    public void RemoveAttachment(string attachment)
+    {
+        RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+
+        Emit(new AttachmentRemovedEvent
+        {
+            RemovedAttachment = attachment
+        });
     }
 
     private void ConditionalEmit(bool condition, Func<AggregateEvent<RubricAggregate, RubricId>> eventPredicate)

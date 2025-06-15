@@ -5,6 +5,7 @@ using JsonApiDotNetCore.Resources.Annotations;
 using RubricEngine.Application.Rubrics.Complete;
 using RubricEngine.Application.Rubrics.Create;
 using RubricEngine.Application.Rubrics.ProvisionContext;
+using RubricEngine.Application.Rubrics.RemoveAttachment;
 using RubricEngine.Application.Rubrics.Update;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -21,7 +22,8 @@ public class Rubric :
     IAmReadModelFor<RubricAggregate, RubricId, PerformanceTagsUpdatedEvent>,
     IAmReadModelFor<RubricAggregate, RubricId, RubricUsedEvent>,
     IAmReadModelFor<RubricAggregate, RubricId, MetadataUpdatedEvent>,
-    IAmReadModelFor<RubricAggregate, RubricId, AttachmentsProvisionedEvent>
+    IAmReadModelFor<RubricAggregate, RubricId, AttachmentsProvisionedEvent>,
+    IAmReadModelFor<RubricAggregate, RubricId, AttachmentRemovedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -125,6 +127,14 @@ public class Rubric :
         Attachments ??= [];
         Attachments.AddRange(domainEvent.AggregateEvent.Attachments);
 
+        UpdatedOn = domainEvent.Timestamp.ToUniversalTime();
+
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<RubricAggregate, RubricId, AttachmentRemovedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        Attachments?.Remove(domainEvent.AggregateEvent.RemovedAttachment);
         UpdatedOn = domainEvent.Timestamp.ToUniversalTime();
 
         return Task.CompletedTask;
