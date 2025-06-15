@@ -4,7 +4,7 @@ export enum ToolType {
   Rubric = "Rubric",
   Grading = "Grading",
   Review = "Review",
-  AI = "AI",
+  AI = "AI Assistant",
 }
 
 export type Tool = {

@@ -1,7 +1,6 @@
 import {
   CriteriaSelector,
   GradingAttempt,
-  GradingSchema,
   GradingStatus,
   Submission,
 } from "@/types/grading";
@@ -34,11 +33,11 @@ export class GradingService {
   }
 
   private static ConvertToGrading(record: any): GradingAttempt {
-    return GradingSchema.parse({
+    return {
       ...record,
       lastModified: record.lastModified ? new Date(record.lastModified) : undefined,
       scaleFactor: !record.scaleFactor ? 10 : record.scaleFactor,
-    });
+    };
   }
 
   private static gradingDeserializer = new Deserializer({
@@ -113,8 +112,7 @@ export class GradingService {
   static async getGradingAttempt(id: string, token: string): Promise<GradingAttempt> {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.get(`${GRADING_API_URL}/${id}`, configHeaders);
-    const serializeData = await this.gradingDeserializer.deserialize(response.data);
-    return GradingSchema.parse(serializeData);
+    return this.gradingDeserializer.deserialize(response.data);
   }
 
   static async uploadSubmission(

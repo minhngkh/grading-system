@@ -10,9 +10,9 @@ import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
 import { ChangeScaleFactorDialog } from "@/components/app/edit-scale-factor-dialog";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { GradingExporter } from "@/lib/exporters";
-import { Eye, Scale, Download, RefreshCw } from "lucide-react";
+import { Eye, Scale, Download, RefreshCw, ChartColumn } from "lucide-react";
 import { useAuth } from "@clerk/clerk-react";
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 
 interface GradingResultProps {
   gradingAttempt: GradingAttempt;
@@ -103,6 +103,15 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
             <RefreshCw className="w-4 h-4" />
             Regrade All
           </Button>
+          <Link
+            to="/gradings/$gradingId/analytics"
+            params={{ gradingId: gradingAttempt.id }}
+          >
+            <Button size="sm" disabled={isLoading}>
+              <ChartColumn className="w-4 h-4" />
+              View Analytics
+            </Button>
+          </Link>
         </div>
       </section>
       <SummarySection

@@ -2,6 +2,7 @@ import type { LinkProps } from "@tanstack/react-router";
 import {
   BookOpenCheck,
   BotMessageSquare,
+  ChartNoAxesCombined,
   ClipboardPlus,
   Home,
   Library,
@@ -47,5 +48,10 @@ export const NavigationItems: NavigationData[] = [
     title: "AI Assistant",
     icon: <BotMessageSquare className="size-4" />,
     to: "/chat",
+  },
+  {
+    title: "Analytics",
+    icon: <ChartNoAxesCombined className="size-4" />,
+    to: "/analytics",
   },
 ];

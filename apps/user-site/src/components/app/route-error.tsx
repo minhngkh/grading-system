@@ -8,7 +8,7 @@ export default function ErrorComponent(message?: string) {
   };
 
   return (
-    <div className="container flex flex-col size-full justify-center items-center">
+    <div className="container flex flex-col size-full justify-center items-center gap-4">
       <p>{`${message ? message : "Service not available"}. Please try again later!`}</p>
       <Button onClick={handleRetry}>Retry</Button>
     </div>

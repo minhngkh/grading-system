@@ -289,8 +289,17 @@ export default function ManageGradingsPage({
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-
-                        {grading.status !== GradingStatus.Created && (
+                        {grading.status === GradingStatus.Graded && (
+                          <DropdownMenuItem asChild>
+                            <Link
+                              to="/gradings/$gradingId/analytics"
+                              params={{ gradingId: grading.id }}
+                            >
+                              View Analytics
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                        {grading.status !== GradingStatus.Created ?
                           <DropdownMenuItem asChild>
                             <Link
                               to="/gradings/$gradingId/result"
@@ -299,7 +308,15 @@ export default function ManageGradingsPage({
                               View Grading
                             </Link>
                           </DropdownMenuItem>
-                        )}
+                        : <DropdownMenuItem asChild>
+                            <Link
+                              to="/gradings/$gradingId"
+                              params={{ gradingId: grading.id }}
+                            >
+                              Resume Grading
+                            </Link>
+                          </DropdownMenuItem>
+                        }
                         <DropdownMenuItem
                           onClick={() => {
                             setSelectGradingIndex(index);
@@ -308,16 +325,6 @@ export default function ManageGradingsPage({
                         >
                           Export Grading
                         </DropdownMenuItem>
-                        {grading.status === GradingStatus.Created && (
-                          <DropdownMenuItem asChild>
-                            <Link
-                              to="/gradings/$gradingId"
-                              params={{ gradingId: grading.id }}
-                            >
-                              Resume Grading
-                            </Link>
-                          </DropdownMenuItem>
-                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

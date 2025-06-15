@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ToolType } from "@/types/tool";
 import { Link } from "@tanstack/react-router";
 import { useSidebar } from "@/components/ui/sidebar";
 
@@ -51,7 +50,7 @@ export function ToolsList({ tools }: ToolsListProps) {
             </CardContent>
             <CardFooter className="flex flex-wrap gap-2">
               {tool.types.map((type, index) => (
-                <Badge key={index}>{ToolType[type]}</Badge>
+                <Badge key={index}>{type}</Badge>
               ))}
             </CardFooter>
           </Card>
