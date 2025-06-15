@@ -5,7 +5,7 @@ import { RubricSelect } from "@/components/app/scrollable-select";
 import { CriteriaSelector, GradingAttempt, Submission } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { GradingService } from "@/services/grading-service";
 import { Spinner } from "@/components/app/spinner";
 import { toast } from "sonner";
@@ -31,33 +31,36 @@ export default function UploadStep({
   const [progress, setProgress] = useState(0);
   const [isFileDialogOpen, setFileDialogOpen] = useState(false);
   const [fileDialogAction, setFileDialogAction] = useState("");
-  const [scaleFactor, setScaleFactor] = useState<number | undefined>(
-    gradingAttempt.scaleFactor,
+  const [scaleFactor, setScaleFactor] = useState<number>(
+    gradingAttempt.scaleFactor ?? 10,
   );
 
   const debounceScaleFactor = useDebounce(scaleFactor, 500);
 
-  const handleScaleFactorChange = async (value: number) => {
-    const token = await auth.getToken();
-    if (!token) {
-      console.error("Error updating scale factor: No token found");
-      return toast.error("Unauthorized: You must be logged in to update scale factor");
-    }
+  const handleScaleFactorChange = useCallback(
+    async (value: number) => {
+      const token = await auth.getToken();
+      if (!token) {
+        console.error("Error updating scale factor: No token found");
+        return toast.error("Unauthorized: You must be logged in to update scale factor");
+      }
 
-    try {
-      await GradingService.updateGradingScaleFactor(gradingAttempt.id, value, token);
-      onGradingAttemptChange({ scaleFactor: debounceScaleFactor });
-    } catch (error) {
-      console.error("Error updating scale factor:", error);
-      toast.error("Failed to update scale factor");
-    }
-  };
+      try {
+        await GradingService.updateGradingScaleFactor(gradingAttempt.id, value, token);
+        onGradingAttemptChange({ scaleFactor: value });
+      } catch (error) {
+        console.error("Error updating scale factor:", error);
+        toast.error("Failed to update scale factor");
+      }
+    },
+    [auth, gradingAttempt.id, onGradingAttemptChange],
+  );
 
   useEffect(() => {
     if (debounceScaleFactor != undefined) {
       handleScaleFactorChange(debounceScaleFactor);
     }
-  }, [debounceScaleFactor, handleScaleFactorChange]);
+  }, [debounceScaleFactor]);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
     const token = await auth.getToken();
@@ -266,8 +269,11 @@ export default function UploadStep({
           value={scaleFactor}
           onChange={(e) => {
             const value = parseFloat(e.target.value);
-            if (!isNaN(value)) setScaleFactor(value);
-            else setScaleFactor(10);
+            if (!isNaN(value)) {
+              setScaleFactor(value);
+            } else {
+              setScaleFactor(10);
+            }
           }}
         />
       </div>
