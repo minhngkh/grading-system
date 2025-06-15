@@ -1,4 +1,5 @@
 ﻿using RubricEngine.Application.Rubrics.Create;
+using RubricEngine.Application.Rubrics.ProvisionContext;
 using RubricEngine.Application.Rubrics.Update;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
 
@@ -13,7 +14,8 @@ internal static class EndpointHandlers
             .AddFluentValidationAutoValidation()
             .WithTags("Rubrics")
             .MapCreateRubric()
-            .MapUpdateRubric();
+            .MapUpdateRubric()
+            .MapProvisionContext();
             
         return routeBuilder;
     }

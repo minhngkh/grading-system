@@ -72,6 +72,23 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
         });
     }
 
+    public void ProvisionContext(List<string> attachments, Dictionary<string, object>? metadata = null)
+    {
+        //TODO: Create new specification
+        RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+
+        Emit(new ProvisionContext.AttachmentsProvisionedEvent
+        {
+            Attachments = attachments,
+        });
+
+        ConditionalEmit(metadata is not null,
+            () => new MetadataUpdatedEvent
+            {
+                MetadataJson = System.Text.Json.JsonSerializer.Serialize(metadata) // Use the static JsonSerializer from System.Text.Json
+            });
+    }
+
     private void ConditionalEmit(bool condition, Func<AggregateEvent<RubricAggregate, RubricId>> eventPredicate)
     {
         if (condition)

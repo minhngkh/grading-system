@@ -1,6 +1,7 @@
 using EventFlow.Aggregates;
 using RubricEngine.Application.Rubrics.Complete;
 using RubricEngine.Application.Rubrics.Create;
+using RubricEngine.Application.Rubrics.ProvisionContext;
 using RubricEngine.Application.Rubrics.Update;
 namespace RubricEngine.Application.Rubrics;
 
@@ -11,6 +12,7 @@ public class RubricWriteModel
     public RubricName Name { get; private set; } = RubricName.Empty;
     public List<PerformanceTag> PerformanceTags { get; private set; } = [];
     public List<Criterion> Criteria { get; private set; } = [];
+    public List<string> Attachments { get; private set; } = [];
     public string MetadataJson { get; private set; } = string.Empty;
 
     public string GradingId = string.Empty;
@@ -46,5 +48,10 @@ public class RubricWriteModel
     internal void Apply(MetadataUpdatedEvent @event)
     {
         MetadataJson = @event.MetadataJson;
+    }
+
+    internal void Apply(AttachmentsProvisionedEvent @event)
+    {
+        Attachments = @event.Attachments;
     }
 }
