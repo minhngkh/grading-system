@@ -12,7 +12,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { useCallback } from "react";
 import ChatWindow from "./chat";
 import FinalRubricTable from "./review-step";
-import PluginRubricTable from "./edit-plugins";
+import PluginRubricTable from "./plugins";
 
 type StepData = {
   title: string;

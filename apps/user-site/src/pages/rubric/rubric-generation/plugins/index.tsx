@@ -8,8 +8,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useState } from "react";
-import { PluginDialogComponent } from "./plugins/type";
-import CodeRunnerConfigDialog from "./plugins/code-runner";
+import { PluginDialogComponent } from "./type";
+import CodeRunnerConfigDialog from "./code-runner";
 import { toast } from "sonner";
 
 const PluginConfigDialogs: Record<string, PluginDialogComponent> = {

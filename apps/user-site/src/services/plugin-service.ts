@@ -1,4 +1,4 @@
-import { CodeRunnerConfig, PluginListSchema } from "@/types/plugin";
+import { CodeRunnerConfig, Plugin } from "@/types/plugin";
 import axios, { AxiosRequestConfig } from "axios";
 
 const API_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/plugins`;
@@ -24,9 +24,9 @@ export class PluginService {
     return response.data;
   }
 
-  static async getAll(token: string) {
+  static async getAll(token: string): Promise<Plugin[]> {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.get(API_URL, configHeaders);
-    return PluginListSchema.safeParse(response.data);
+    return response.data;
   }
 }

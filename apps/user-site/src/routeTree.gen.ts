@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/_auth/route'
 import { Route as IndexImport } from './routes/index'
+import { Route as AuthenticatedTestImport } from './routes/_authenticated/test'
 import { Route as AuthenticatedProfileImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedHomeImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedChatImport } from './routes/_authenticated/chat'
@@ -46,6 +47,12 @@ const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const AuthenticatedTestRoute = AuthenticatedTestImport.update({
+  id: '/test',
+  path: '/test',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 const AuthenticatedProfileRoute = AuthenticatedProfileImport.update({
@@ -214,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileImport
       parentRoute: typeof AuthenticatedRouteImport
     }
+    '/_authenticated/test': {
+      id: '/_authenticated/test'
+      path: '/test'
+      fullPath: '/test'
+      preLoaderRoute: typeof AuthenticatedTestImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
     '/_authenticated/gradings/create': {
       id: '/_authenticated/gradings/create'
       path: '/gradings/create'
@@ -301,6 +315,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedTestRoute: typeof AuthenticatedTestRoute
   AuthenticatedGradingsCreateRoute: typeof AuthenticatedGradingsCreateRoute
   AuthenticatedRubricsIdRoute: typeof AuthenticatedRubricsIdRoute
   AuthenticatedRubricsCreateRoute: typeof AuthenticatedRubricsCreateRoute
@@ -317,6 +332,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedTestRoute: AuthenticatedTestRoute,
   AuthenticatedGradingsCreateRoute: AuthenticatedGradingsCreateRoute,
   AuthenticatedRubricsIdRoute: AuthenticatedRubricsIdRoute,
   AuthenticatedRubricsCreateRoute: AuthenticatedRubricsCreateRoute,
@@ -344,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/test': typeof AuthenticatedTestRoute
   '/gradings/create': typeof AuthenticatedGradingsCreateRoute
   '/rubrics/$id': typeof AuthenticatedRubricsIdRoute
   '/rubrics/create': typeof AuthenticatedRubricsCreateRoute
@@ -364,6 +381,7 @@ export interface FileRoutesByTo {
   '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/test': typeof AuthenticatedTestRoute
   '/gradings/create': typeof AuthenticatedGradingsCreateRoute
   '/rubrics/$id': typeof AuthenticatedRubricsIdRoute
   '/rubrics/create': typeof AuthenticatedRubricsCreateRoute
@@ -386,6 +404,7 @@ export interface FileRoutesById {
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/test': typeof AuthenticatedTestRoute
   '/_authenticated/gradings/create': typeof AuthenticatedGradingsCreateRoute
   '/_authenticated/rubrics/$id': typeof AuthenticatedRubricsIdRoute
   '/_authenticated/rubrics/create': typeof AuthenticatedRubricsCreateRoute
@@ -408,6 +427,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/home'
     | '/profile'
+    | '/test'
     | '/gradings/create'
     | '/rubrics/$id'
     | '/rubrics/create'
@@ -427,6 +447,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/home'
     | '/profile'
+    | '/test'
     | '/gradings/create'
     | '/rubrics/$id'
     | '/rubrics/create'
@@ -447,6 +468,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat'
     | '/_authenticated/home'
     | '/_authenticated/profile'
+    | '/_authenticated/test'
     | '/_authenticated/gradings/create'
     | '/_authenticated/rubrics/$id'
     | '/_authenticated/rubrics/create'
@@ -503,6 +525,7 @@ export const routeTree = rootRoute
         "/_authenticated/chat",
         "/_authenticated/home",
         "/_authenticated/profile",
+        "/_authenticated/test",
         "/_authenticated/gradings/create",
         "/_authenticated/rubrics/$id",
         "/_authenticated/rubrics/create",
@@ -536,6 +559,10 @@ export const routeTree = rootRoute
     },
     "/_authenticated/profile": {
       "filePath": "_authenticated/profile.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/test": {
+      "filePath": "_authenticated/test.tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/gradings/create": {
