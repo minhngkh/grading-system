@@ -24,7 +24,8 @@ public static class EndpointHandler
         {
             Name = request.RubricName?.ToRubricName(),
             PerformanceTags = request.Tags?.ToPerformanceTags(),
-            Criteria = request.Criteria?.ToCriteria()
+            Criteria = request.Criteria?.ToCriteria(),
+            Metadata = request.Metadata
         };
 
         await commandBus.PublishAsync(command, cancellationToken);

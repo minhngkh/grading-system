@@ -55,6 +55,12 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
             {
                 Criteria = command.Criteria!
             });
+
+        ConditionalEmit(command.Metadata is not null,
+            () => new MetadataUpdatedEvent
+            {
+                MetadataJson = System.Text.Json.JsonSerializer.Serialize(command.Metadata!) // Use the static JsonSerializer from System.Text.Json
+            });
     }
 
     public void CompleteRubric(Rubrics.Complete.Command command)

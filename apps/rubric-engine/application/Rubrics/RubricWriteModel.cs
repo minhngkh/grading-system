@@ -11,6 +11,7 @@ public class RubricWriteModel
     public RubricName Name { get; private set; } = RubricName.Empty;
     public List<PerformanceTag> PerformanceTags { get; private set; } = [];
     public List<Criterion> Criteria { get; private set; } = [];
+    public string MetadataJson { get; private set; } = string.Empty;
 
     public string GradingId = string.Empty;
 
@@ -40,5 +41,10 @@ public class RubricWriteModel
     {
         GradingId = @event.GradingId;
         Status = RubricStatus.Used.ToString();
+    }
+
+    internal void Apply(MetadataUpdatedEvent @event)
+    {
+        MetadataJson = @event.MetadataJson;
     }
 }
