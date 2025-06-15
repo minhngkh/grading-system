@@ -1,4 +1,5 @@
 ﻿using EventFlow;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssignmentFlow.Application.Gradings.UpdateScaleFactor;
@@ -15,6 +16,7 @@ public static class EndpointHandler
         return endpoint;
     }
 
+    [Authorize]
     private static async Task<IResult> UpdateScaleFactor(
         [FromRoute] string id,
         [FromBody] UpdateScaleFactorRequest request,
