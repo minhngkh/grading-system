@@ -134,23 +134,6 @@ public static class ServiceCollectionExtensions
         services.AddTransient<DbInitializer>();
         services.AddAntiforgery();
 
-        //services.AddAuthentication()
-        //    .AddJwtBearer("jwt-scheme", jwtOptions =>
-        //    {
-        //        jwtOptions.Authority = configuration["Api:Authority"];
-        //        jwtOptions.Audience = configuration["Api:Audience"];
-        //        jwtOptions.TokenValidationParameters = new TokenValidationParameters
-        //        {
-        //            ValidateIssuer = true,
-        //            ValidateAudience = true,
-        //            ValidateIssuerSigningKey = true,
-        //            ValidAudiences = configuration.GetSection("Api:ValidAudiences").Get<string[]>(),
-        //            ValidIssuers = configuration.GetSection("Api:ValidIssuers").Get<string[]>()
-        //        };
-
-        //        jwtOptions.MapInboundClaims = false;
-        //    });
-
         return services;
     }
 }
