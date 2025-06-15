@@ -11,8 +11,6 @@ public class AIGraderAssessedConsumer(
 {
     public async Task Consume(ConsumeContext<ISubmissionGradingResult> context)
     {
-        logger.LogInformation("received: {},", context.Message.AssessmentId);
-
         logger.LogInformation(
             "received: {AssessmentId}, ScoreBreakdowns: {ScoreBreakdowns}, Errors: {Errors}",
             context.Message.AssessmentId,
