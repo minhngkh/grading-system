@@ -50,7 +50,8 @@ public static class EndpointHandler
             Tags = rubric.PerformanceTags,
             Criteria = rubric.Criteria,
             UpdatedOn = rubric.UpdatedOn,
-            Status = rubric.Status
+            Status = rubric.Status,
+            Metadata = rubric.Metadata
         };
 
         return TypedResults.CreatedAtRoute<CreateRubricResponse>(response, "GetRubricById", new { id = rubricId });
