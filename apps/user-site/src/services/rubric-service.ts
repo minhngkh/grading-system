@@ -18,6 +18,16 @@ export class RubricService {
     };
   }
 
+  private static async buildFileHeaders(token: string): Promise<AxiosRequestConfig> {
+    return {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Accept: "application/vnd.api+json",
+        Authorization: `Bearer ${token}`,
+      },
+    };
+  }
+
   private static rubricDeserializer = new Deserializer({
     keyForAttribute: "camelCase",
     transform: (record: any) => this.ConvertToRubric(record),
@@ -31,6 +41,7 @@ export class RubricService {
       criteria: record.criteria ?? [],
       updatedOn: record.updatedOn ? new Date(record.updatedOn) : undefined,
       status: record.status,
+      attachments: record.attachments ?? [],
     };
   }
 
@@ -81,5 +92,23 @@ export class RubricService {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.patch(`${RUBRIC_API_URL}/${id}`, rubric, configHeaders);
     return this.ConvertToRubric(response.data);
+  }
+
+  static async uploadContext(id: string, files: File[], token: string): Promise<void> {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    const configHeaders = await this.buildFileHeaders(token);
+    return await axios.post(`${RUBRIC_API_URL}/${id}/context`, formData, configHeaders);
+  }
+
+  static async deleteAttachment(id: string, file: string, token: string) {
+    const configHeaders = await this.buildHeaders(token);
+    return await axios.delete(
+      `${RUBRIC_API_URL}/${id}/attachments/${file}`,
+      configHeaders,
+    );
   }
 }

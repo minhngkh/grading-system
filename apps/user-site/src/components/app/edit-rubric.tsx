@@ -26,7 +26,7 @@ import useRubricForm from "@/hooks/use-rubric-form";
 
 interface EditRubricProps {
   rubricData: Rubric;
-  onUpdate?: (rubric: Rubric) => void;
+  onUpdate?: (rubric: Partial<Rubric>) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   isLoading?: boolean;
