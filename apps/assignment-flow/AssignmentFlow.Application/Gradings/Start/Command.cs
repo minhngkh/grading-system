@@ -16,7 +16,7 @@ public class CommandHandler : CommandHandler<GradingAggregate, GradingId, Comman
         if (aggregate.IsNew)
             return Task.CompletedTask;
 
-        aggregate.StartGrading();
+        aggregate.StartAutoGrading();
         return Task.CompletedTask;
     }
 }

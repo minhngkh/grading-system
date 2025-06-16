@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart } from "lucide-react";
 import { Assessment } from "@/types/assessment";
 import { Skeleton } from "@/components/ui/skeleton";
+import GradingResultHelper from "@/lib/grading-result";
+import { useMemo } from "react";
 
 const SummaryCardSkeleton = () => (
   <>
@@ -35,21 +37,13 @@ export default function SummarySection({
   assessments,
   scaleFactor,
 }: SummarySectionProps) {
-  const averageScore =
-    assessments.length ?
-      assessments.reduce((sum, item) => sum + (item.rawScore * scaleFactor) / 100, 0) /
-      assessments.length
-    : 0;
-
-  const highestScore =
-    assessments.length ?
-      Math.max(...assessments.map((item) => (item.rawScore * scaleFactor) / 100))
-    : 0;
-
-  const lowestScore =
-    assessments.length ?
-      Math.min(...assessments.map((item) => (item.rawScore * scaleFactor) / 100))
-    : 0;
+  const gradingHelper = useMemo(
+    () => new GradingResultHelper(assessments, scaleFactor),
+    [assessments, scaleFactor],
+  );
+  const averageScore = gradingHelper.getAverageScore();
+  const highestScore = gradingHelper.getHighestScore();
+  const lowestScore = gradingHelper.getLowestScore();
 
   return (
     <section>

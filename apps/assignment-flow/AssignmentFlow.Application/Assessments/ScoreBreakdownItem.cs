@@ -19,7 +19,12 @@ public sealed class ScoreBreakdownItem : ValueObject
     /// Gets or sets the raw percentage score awarded for this breakdown item.
     /// This represents the assessed percentage for the criterion before aggregation into the final score.
     /// </summary>
-    public required Percentage RawScore { get; init; }
+    public required Percentage RawScore { get; set; }
+
+    public void NormalizeRawScore(decimal factor)
+    {
+        RawScore *= (factor / 100);
+    }
 
     /// <summary>
     /// Gets or sets the performance tag for this breakdown item.

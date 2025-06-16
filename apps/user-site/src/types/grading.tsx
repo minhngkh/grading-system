@@ -4,7 +4,6 @@ export enum GradingStatus {
   Created = "Created",
   Started = "Started",
   Graded = "Graded",
-  Completed = "Completed",
   Failed = "Failed",
 }
 
@@ -13,6 +12,10 @@ export const SelectorSchema = z.object({
   pattern: z
     .string({ required_error: "Pattern is required" })
     .min(1, { message: "Pattern cannot be empty" }),
+});
+
+export const SubmissionSchema = z.object({
+  reference: z.string(),
 });
 
 export const GradingSchema = z.object({
@@ -26,7 +29,9 @@ export const GradingSchema = z.object({
     .min(1, { message: "Selectors cannot be empty" }),
   status: z.nativeEnum(GradingStatus).optional(),
   lastModified: z.date().optional(),
+  submissions: z.array(SubmissionSchema),
 });
 
 export type CriteriaSelector = z.infer<typeof SelectorSchema>;
 export type GradingAttempt = z.infer<typeof GradingSchema>;
+export type Submission = z.infer<typeof SubmissionSchema>;

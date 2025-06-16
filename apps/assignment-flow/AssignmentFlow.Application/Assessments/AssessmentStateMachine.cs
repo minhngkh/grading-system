@@ -18,6 +18,7 @@ public sealed class AssessmentStateMachine : StateMachine<AssessmentState, Asses
     {
         Configure(AssessmentState.Created)
             .Permit(AssessmentTrigger.StartAutoGrading, AssessmentState.AutoGradingStarted);
+
         
         Configure(AssessmentState.AutoGradingStarted)
             .Permit(AssessmentTrigger.FinishAutoGrading, AssessmentState.AutoGradingFinished)

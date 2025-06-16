@@ -6,14 +6,14 @@ import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { useAuth } from "@clerk/clerk-react";
 import { ErrorBoundary } from "@/components/layout/error-boundary";
 import { Toaster } from "@/components/ui/sonner";
-import { NavigationItems, settingsItems } from "@/types/navigation";
+import { NavigationItems } from "@/types/navigation";
 
 interface AppRouterContext {
   auth: ReturnType<typeof useAuth>;
 }
 
 export const Route = createRootRouteWithContext<AppRouterContext>()({
-  component: () => <Root />,
+  component: Root,
   errorComponent: ErrorBoundary,
 });
 
@@ -23,9 +23,7 @@ function Root() {
     <>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <SidebarProvider>
-          {isSignedIn && (
-            <AppSidebar navigationItems={NavigationItems} settingsItems={settingsItems} />
-          )}
+          {isSignedIn && <AppSidebar navigationItems={NavigationItems} />}
           <SidebarInset>
             <main className="flex-1 flex flex-col items-center">
               <AppNavbar />

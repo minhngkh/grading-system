@@ -14,6 +14,7 @@ export type NavigationData = {
   title: string;
   icon: ReactElement;
   to: LinkProps["to"];
+  preload?: LinkProps["preload"];
 };
 
 export const NavigationItems: NavigationData[] = [
@@ -25,7 +26,8 @@ export const NavigationItems: NavigationData[] = [
   {
     title: "Create Rubric",
     icon: <ClipboardPlus className="size-4" />,
-    to: "/rubrics/new",
+    to: "/rubrics/create",
+    preload: false,
   },
   {
     title: "Manage Rubrics",
@@ -35,7 +37,13 @@ export const NavigationItems: NavigationData[] = [
   {
     title: "Grade Assignments",
     icon: <BookOpenCheck className="size-4" />,
-    to: "/gradings/new",
+    to: "/gradings/create",
+    preload: false,
+  },
+  {
+    title: "Manage Gradings",
+    icon: <Library className="size-4" />,
+    to: "/gradings",
   },
   {
     title: "AI Assistant",

@@ -45,7 +45,12 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton tooltip={item.title} asChild>
-                    <Link to={item.to} activeProps={{ className: "bg-secondary" }}>
+                    <Link
+                      to={item.to}
+                      preload={item.preload ?? "intent"}
+                      activeOptions={{ exact: true }}
+                      activeProps={{ className: "bg-secondary" }}
+                    >
                       {item.icon}
                       <span>{item.title}</span>
                     </Link>
@@ -63,7 +68,12 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
                 {settingsItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton tooltip={item.title} asChild>
-                      <Link to={item.to}>
+                      <Link
+                        preload={item.preload ?? "intent"}
+                        to={item.to}
+                        activeOptions={{ exact: true }}
+                        activeProps={{ className: "bg-secondary" }}
+                      >
                         {item.icon}
                         <span>{item.title}</span>
                       </Link>

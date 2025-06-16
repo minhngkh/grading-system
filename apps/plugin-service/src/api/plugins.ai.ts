@@ -8,7 +8,7 @@ import { coreMessageSchema } from "ai";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/zod";
-import { stream } from "hono/streaming";
+import { streamText } from "hono/streaming";
 import z from "zod";
 import zodToJsonSchema from "zod-to-json-schema";
 import { validationErrorResponse } from "@/api/index";
@@ -79,7 +79,7 @@ export function route(broker: ServiceBroker) {
         return c.json(response.result);
       }
 
-      return stream(c, (stream) => {
+      return streamText(c, (stream) => {
         return stream.pipe(response.result.textStream);
       });
       // return response.result.toTextStreamResponse()

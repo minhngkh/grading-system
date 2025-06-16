@@ -18,7 +18,6 @@ public class RubricWriteModel
 
     internal void Apply(RubricCreatedEvent @event)
     {
-        Name = @event.Name;
         TeacherId = @event.TeacherId;
     }
 

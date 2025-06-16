@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import * as XLSX from "xlsx-js-style";
 import { Assessment } from "@/types/assessment";
 
 export class AssessmentExporter {
@@ -22,7 +22,7 @@ export class AssessmentExporter {
           (fb) =>
             (fb.criterion?.trim() || "") === (sb.criterionName?.trim() || "") &&
             fb.fileRef &&
-            fb.fileRef !== "-"
+            fb.fileRef !== "-",
         )
         .map((fb) => fb.fileRef);
       if (!map.has(key)) map.set(key, new Set());
@@ -47,7 +47,14 @@ export class AssessmentExporter {
       const key = `${sb.criterionName}-${sb.tag}`;
       const files = fileRefMap.get(key);
       // LOG để kiểm tra mapping thực tế
-      console.log("DEBUG: key", key, "files", files, "all feedbacks", this.assessment.feedbacks);
+      console.log(
+        "DEBUG: key",
+        key,
+        "files",
+        files,
+        "all feedbacks",
+        this.assessment.feedbacks,
+      );
       return [
         sb.criterionName,
         sb.tag,

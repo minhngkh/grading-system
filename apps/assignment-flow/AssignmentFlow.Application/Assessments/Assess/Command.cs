@@ -9,12 +9,15 @@ public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentI
     public required Grader Grader { get; init; }
 }
 
-public class CommandHandler : CommandHandler<AssessmentAggregate, AssessmentId, Command>
+public class CommandHandler()
+    : CommandHandler<AssessmentAggregate, AssessmentId, Command>
 {
     public override Task ExecuteAsync(AssessmentAggregate aggregate, Command command, CancellationToken cancellationToken)
     {
-        if (!aggregate.IsNew)
-            return Task.CompletedTask;
+        if (aggregate.IsNew)
+        {
+            throw new InvalidOperationException($"Cannot assess assessment {aggregate.Id} because it has not been created yet.");
+        }
 
         aggregate.Assess(command);
 

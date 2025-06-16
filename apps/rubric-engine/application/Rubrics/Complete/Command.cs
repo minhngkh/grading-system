@@ -11,8 +11,9 @@ public class CommandHandler : CommandHandler<RubricAggregate, RubricId, Command>
 {
     public override Task ExecuteAsync(RubricAggregate aggregate, Command command, CancellationToken cancellationToken)
     {
-        if (!aggregate.IsNew)
+        if (aggregate.IsNew)
             return Task.CompletedTask;
+
         aggregate.CompleteRubric(command);
         return Task.CompletedTask;
     }

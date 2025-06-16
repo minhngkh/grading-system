@@ -26,8 +26,8 @@ public sealed class Percentage : SingleValueObject<decimal>
     {
         ArgumentOutOfRangeException.ThrowIfNegative(value, nameof(value));
 
-        if (value > 100m)
-            throw new ArgumentOutOfRangeException(nameof(value), "Percentage value cannot exceed 100%");
+        // if (value > 100m)
+        //     throw new ArgumentOutOfRangeException(nameof(value), "Percentage value cannot exceed 100%");
     }
 
     public static implicit operator decimal(Percentage valueObject) => valueObject.Value;
@@ -41,4 +41,6 @@ public sealed class Percentage : SingleValueObject<decimal>
     
     public static Percentage operator +(Percentage a, Percentage b) => new(a.Value + b.Value);
     public static Percentage operator -(Percentage a, Percentage b) => new(a.Value - b.Value);
+
+    public static Percentage operator *(Percentage a, decimal b) => new(a.Value * b);
 }

@@ -9,6 +9,7 @@ import { Hono } from "hono";
 import { openAPISpecs } from "hono-openapi";
 import { resolver } from "hono-openapi/zod";
 import { logger as honoLogger } from "hono/logger";
+import { cors } from "hono/cors";
 import { Errors } from "moleculer";
 import z from "zod";
 import { route as pluginsRoute } from "@/api/plugins";
@@ -70,6 +71,8 @@ const BASE_PATH = "/api/v1";
 
 export function createApiGateway(broker: ServiceBroker) {
   const api = new Hono().basePath(BASE_PATH);
+
+  api.use("*", cors());
 
   api.onError((err, c) => {
     logger.error("API error:", err);

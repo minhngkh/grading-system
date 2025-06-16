@@ -78,7 +78,7 @@ export default function ExportDialog({ assessmentData }: ExportDialogProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button size="sm" className="gap-2">
           <Download className="h-4 w-4" />
           Export
         </Button>

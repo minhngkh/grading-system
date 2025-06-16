@@ -18,7 +18,7 @@ namespace AssignmentFlow.Application.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.4")
+                .HasAnnotation("ProductVersion", "9.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -53,8 +53,8 @@ namespace AssignmentFlow.Application.Migrations
 
                     b.Property<string>("SubmissionReference")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("TeacherId")
                         .IsRequired()
@@ -72,8 +72,8 @@ namespace AssignmentFlow.Application.Migrations
             modelBuilder.Entity("AssignmentFlow.Application.Assessments.ScoreAdjustment", b =>
                 {
                     b.Property<string>("Id")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("AdjustmentSource")
                         .IsRequired()
@@ -232,7 +232,7 @@ namespace AssignmentFlow.Application.Migrations
                     b.OwnsMany("AssignmentFlow.Application.Assessments.ScoreBreakdownApiContract", "DeltaScoreBreakdowns", b1 =>
                         {
                             b1.Property<string>("ScoreAdjustmentId")
-                                .HasColumnType("character varying(50)");
+                                .HasColumnType("character varying(100)");
 
                             b1.Property<int>("__synthesizedOrdinal")
                                 .ValueGeneratedOnAdd()
@@ -262,7 +262,7 @@ namespace AssignmentFlow.Application.Migrations
                     b.OwnsMany("AssignmentFlow.Application.Assessments.ScoreBreakdownApiContract", "ScoreBreakdowns", b1 =>
                         {
                             b1.Property<string>("ScoreAdjustmentId")
-                                .HasColumnType("character varying(50)");
+                                .HasColumnType("character varying(100)");
 
                             b1.Property<int>("__synthesizedOrdinal")
                                 .ValueGeneratedOnAdd()

@@ -1,19 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.Contracts;
-using System.Text.Json.Serialization;
-using EventFlow.Aggregates;
+﻿using EventFlow.Aggregates;
 using EventFlow.ReadStores;
-using JsonApiDotNetCore.Controllers;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
 using RubricEngine.Application.Rubrics.Complete;
 using RubricEngine.Application.Rubrics.Create;
 using RubricEngine.Application.Rubrics.Update;
+using System.ComponentModel.DataAnnotations;
 using static JsonApiDotNetCore.Resources.Annotations.AttrCapabilities;
 
 namespace RubricEngine.Application.Rubrics;
 
-[Resource(GenerateControllerEndpoints = JsonApiEndpoints.Query)]
 public class Rubric :
     Identifiable<string>,
     IReadModel,
@@ -50,7 +46,6 @@ public class Rubric :
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<RubricAggregate, RubricId, RubricCreatedEvent> domainEvent, CancellationToken cancellationToken)
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId;
-        RubricName = domainEvent.AggregateEvent.Name;
         UpdatedOn = domainEvent.Timestamp.ToUniversalTime();
 
         return Task.CompletedTask;

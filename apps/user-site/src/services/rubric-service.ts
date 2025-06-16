@@ -45,8 +45,14 @@ export class RubricService {
 
     if (page !== undefined) params.append("page[number]", page.toString());
     if (perPage !== undefined) params.append("page[size]", perPage.toString());
-    if (search && search.length > 0)
-      params.append("filter", `contains(rubricName,'${search}')`);
+    if (search && search.length > 0) {
+      params.append(
+        "filter",
+        `and(contains(rubricName,'${search}'),not(equals(status,'Used')))`,
+      );
+    } else {
+      params.append("filter", "not(equals(status,'Used'))");
+    }
 
     const url = `${RUBRIC_API_URL}?${params.toString()}`;
     const response = await axios.get(url, this.configHeaders);
@@ -60,23 +66,26 @@ export class RubricService {
     const response = await axios.get(`${RUBRIC_API_URL}/${id}`, this.configHeaders);
     return this.rubricDeserializer.deserialize(response.data);
   }
-  static async createRubric(): Promise<string> {
-    const response = await axios.post(
-      RUBRIC_API_URL,
-      { name: "New Rubric" },
-      this.configHeaders,
-    );
-    return response.data;
+
+  static async createRubric(): Promise<Rubric> {
+    const response = await axios.post(RUBRIC_API_URL, null, this.configHeaders);
+
+    return {
+      id: response.data.id,
+      rubricName: response.data.rubricName,
+      tags: response.data.tags || [],
+      criteria: response.data.criteria || [],
+    };
   }
   static async updateRubric(id: string, rubric: Partial<Rubric>): Promise<Rubric> {
     const response = await axios.patch(
       `${RUBRIC_API_URL}/${id}`,
-      rubric,
+      {
+        name: rubric.rubricName,
+        ...rubric,
+      },
       this.configHeaders,
     );
     return response.data;
-  }
-  static async deleteRubric(id: string): Promise<void> {
-    await axios.delete(`${RUBRIC_API_URL}/${id}`, this.configHeaders);
   }
 }

@@ -26,6 +26,8 @@ export class AssessmentService {
       `${ASSESSMENT_API_URL}?filter=equals(gradingId,'${gradingId}')`,
       this.configHeaders,
     );
-    return this.assessmentDeserializer.deserialize(response.data);
+    const data = await this.assessmentDeserializer.deserialize(response.data);
+    console.log("Deserialized assessments:", data);
+    return data;
   }
 }

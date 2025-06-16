@@ -66,19 +66,19 @@ code {
 }
 
 .annotation-span.actived[data-tag="info"] {
-  background-color: rgba(0, 123, 255, 0.3); /* Darker blue for info */
+  background-color: rgba(0, 123, 255, 0.479); /* Darker blue for info */
 }
 
 .annotation-span.actived[data-tag="notice"] {
-  background-color: rgba(40, 167, 69, 0.3); /* Darker green for notice */
+  background-color: rgba(40, 167, 70, 0.644); /* Darker green for notice */
 }
 
 .annotation-span.actived[data-tag="tip"] {
-  background-color: rgba(255, 193, 7, 0.767); /* Darker yellow for tip */
+  background-color: rgba(255, 193, 7, 0.788); /* Darker yellow for tip */
 }
 
 .annotation-span.actived[data-tag="caution"] {
-  background-color: rgba(220, 53, 69, 0.3); /* Darker red for caution */
+  background-color: rgba(220, 53, 70, 0.425); /* Darker red for caution */
 }
 
 .annotation-span-focused[data-tag="info"] {

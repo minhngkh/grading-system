@@ -61,9 +61,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         <ImageHighlighter
           imageUrl={fileUrl}
           feedbacks={feedbacks.filter(
-            (fb) =>
-              fb.type === "image" &&
-              fb.fileRef === (fileUrl ? fileUrl.split("/").pop() : ""),
+            (fb) => fb.fileRef === (fileUrl ? fileUrl.split("/").pop() : ""),
           )}
           updateFeedback={updateFeedback}
           isHighlightMode={isHighlightMode}
@@ -80,14 +78,12 @@ const FileViewer: React.FC<FileViewerProps> = ({
   }
   if (textExtensions.includes(fileType)) {
     const viewerType = fileType === "txt" ? "essay" : "code";
-    const fileName = fileUrl ? fileUrl.split("/").pop() || "" : "";
+    // Không filter lại feedbacks ở đây, chỉ truyền nguyên vẹn từ props
     return (
       <HighlightableViewer
         type={viewerType}
         fileUrl={fileUrl}
-        feedbacks={feedbacks.filter(
-          (fb) => fb.type === "text" && fb.fileRef === fileName,
-        )}
+        feedbacks={feedbacks}
         updateFeedback={updateFeedback}
         isHighlightMode={isHighlightMode}
         onHighlightComplete={onHighlightComplete}

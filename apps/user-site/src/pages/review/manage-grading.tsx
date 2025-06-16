@@ -41,6 +41,11 @@ import { SearchParams } from "@/types/search-params";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { Link } from "@tanstack/react-router";
 import { GetGradingsResult } from "@/services/grading-service";
+import ExportDialog from "@/components/app/export-dialog";
+import { GradingExporter } from "@/lib/exporters";
+import { Assessment } from "@/types/assessment";
+import { AssessmentService } from "@/services/assessment-service";
+import { toast } from "sonner";
 
 type SortConfig = {
   key: "id" | "lastModified" | "status" | null;
@@ -69,6 +74,35 @@ export default function ManageGradingsPage({
   } = results;
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [exportGradingOpen, setExportGradingOpen] = useState(false);
+  const [selectGradingIndex, setSelectGradingIndex] = useState<number | null>(null);
+  const [gradingAssessments, setGradingAssessments] = useState<Assessment[]>([]);
+  const [isGettingAssessments, setIsGettingAssessments] = useState(false);
+
+  useEffect(() => {
+    async function fetchGradingAssessments() {
+      setIsGettingAssessments(true);
+      try {
+        const assessments = await AssessmentService.getGradingAssessments(
+          sortedGradings[selectGradingIndex!].id,
+        );
+        setGradingAssessments(assessments);
+      } catch {
+        toast.error("Failed to fetch grading assessments");
+        setExportGradingOpen(false);
+      } finally {
+        setIsGettingAssessments(false);
+      }
+    }
+
+    if (
+      exportGradingOpen &&
+      selectGradingIndex !== null &&
+      sortedGradings[selectGradingIndex]
+    ) {
+      fetchGradingAssessments();
+    }
+  }, [selectGradingIndex, exportGradingOpen]);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
@@ -101,9 +135,7 @@ export default function ManageGradingsPage({
     return 0;
   });
 
-  const startIndex = (page - 1) * perPage;
-  const paginatedData = sortedGradings.slice(startIndex, startIndex + perPage);
-  const totalPages = Math.ceil(sortedGradings.length / perPage);
+  const totalPages = Math.ceil(totalCount / perPage);
 
   const requestSort = (key: SortConfig["key"]) => {
     let direction: "asc" | "desc" = "asc";
@@ -126,11 +158,20 @@ export default function ManageGradingsPage({
   };
 
   const getStatusBadge = (status?: GradingStatus) => {
+    if (!status) {
+      return <Badge variant="destructive">None</Badge>;
+    }
+
+    const statusString = GradingStatus[status];
     switch (status) {
-      case GradingStatus.Completed:
-        return <Badge variant="default">Completed</Badge>;
+      case GradingStatus.Graded:
+        return <Badge variant="default">{statusString}</Badge>;
       case GradingStatus.Created:
-        return <Badge variant="secondary">Created</Badge>;
+        return <Badge variant="secondary">{statusString}</Badge>;
+      case GradingStatus.Started:
+        return <Badge variant="outline">{statusString}</Badge>;
+      case GradingStatus.Failed:
+        return <Badge variant="destructive">{statusString}</Badge>;
       default:
         return <Badge variant="destructive">None</Badge>;
     }
@@ -209,7 +250,7 @@ export default function ManageGradingsPage({
               </TableHead>
               <TableHead onClick={() => requestSort("lastModified")} className="w-[20%]">
                 <div className="flex items-center cursor-pointer">
-                  Last Modified {getSortIcon("lastModified")}
+                  Updated On {getSortIcon("lastModified")}
                 </div>
               </TableHead>
               <TableHead onClick={() => requestSort("status")} className="w-[20%]">
@@ -221,14 +262,14 @@ export default function ManageGradingsPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length === 0 ?
+            {sortedGradings.length === 0 ?
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No gradings found.
                 </TableCell>
               </TableRow>
-            : paginatedData.map((grading) => (
-                <TableRow key={grading.id}>
+            : sortedGradings.map((grading, index) => (
+                <TableRow key={index}>
                   <TableCell className="font-semibold">{grading.id}</TableCell>
                   <TableCell>
                     {grading.lastModified ?
@@ -248,13 +289,20 @@ export default function ManageGradingsPage({
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link to="/gradings/$id" params={{ id: grading.id }}>
+                          <Link
+                            to="/gradings/$gradingId"
+                            params={{ gradingId: grading.id }}
+                          >
                             View Grading
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectGradingIndex(index);
+                            setExportGradingOpen(true);
+                          }}
+                        >
+                          Export Grading
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -269,9 +317,7 @@ export default function ManageGradingsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            {statusFilter === "All" ?
-              `Showing ${gradings.length} of ${totalCount} gradings`
-            : `Showing ${paginatedData.length} of ${sortedGradings.length} gradings`}
+            Showing {sortedGradings.length} of {gradings.length} gradings
           </p>
           <Select
             value={perPage.toString()}
@@ -350,6 +396,15 @@ export default function ManageGradingsPage({
           </Button>
         </div>
       </div>
+      {exportGradingOpen && selectGradingIndex !== null && (
+        <ExportDialog
+          open={exportGradingOpen}
+          onOpenChange={setExportGradingOpen}
+          exporterClass={GradingExporter}
+          args={[sortedGradings[selectGradingIndex], gradingAssessments]}
+          isLoading={isGettingAssessments}
+        />
+      )}
     </div>
   );
 }

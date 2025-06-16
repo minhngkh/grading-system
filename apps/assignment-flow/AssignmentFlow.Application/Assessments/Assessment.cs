@@ -5,7 +5,6 @@ using AssignmentFlow.Application.Assessments.Create;
 using AssignmentFlow.Application.Assessments.StartAutoGrading;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
-using JsonApiDotNetCore.Controllers;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
 
@@ -13,7 +12,6 @@ using static JsonApiDotNetCore.Resources.Annotations.AttrCapabilities;
 
 namespace AssignmentFlow.Application.Assessments;
 
-[Resource(GenerateControllerEndpoints = JsonApiEndpoints.Query)]
 public class Assessment
     : Identifiable<string>,
     IReadModel,
@@ -34,7 +32,7 @@ public class Assessment
     public string GradingId { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    [MaxLength(ModelConstants.ShortText)]
+    [MaxLength(ModelConstants.ShortMediumText)]
     public string SubmissionReference { get; set; } = string.Empty;
 
     /// <summary>
@@ -100,7 +98,7 @@ public class Assessment
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
         ScoreBreakdowns = domainEvent.AggregateEvent.ScoreBreakdowns.ToApiContracts();
-
+        RawScore = domainEvent.AggregateEvent.ScoreBreakdowns.TotalRawScore;
         if (domainEvent.AggregateEvent.Feedbacks != null)
         {
             Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();

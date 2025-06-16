@@ -29,7 +29,7 @@ export class GradingService {
     keyForAttribute: "camelCase",
   });
 
-  static async createGradingAttempt(): Promise<string> {
+  static async createGradingAttempt(): Promise<GradingAttempt> {
     const response = await axios.post(GRADING_API_URL, {}, this.configHeaders);
     return response.data;
   }
@@ -39,11 +39,21 @@ export class GradingService {
       `${GRADING_API_URL}/${id}?fields[gradings]=status`,
       this.configHeaders,
     );
-    return this.gradingDeserializer.deserialize(response.data);
+
+    const data = await this.gradingDeserializer.deserialize(response.data);
+    return data.status;
   }
 
   static async updateGradingRubric(id: string, rubricId: string) {
     return axios.put(`${GRADING_API_URL}/${id}/rubric`, { rubricId }, this.configHeaders);
+  }
+
+  static async updateGradingScaleFactor(id: string, scaleFactor: number) {
+    return axios.put(
+      `${GRADING_API_URL}/${id}/scaleFactor`,
+      { scaleFactor },
+      this.configHeaders,
+    );
   }
 
   static async updateGradingSelectors(id: string, selectors: CriteriaSelector[]) {

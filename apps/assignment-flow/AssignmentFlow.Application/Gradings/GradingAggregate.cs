@@ -57,11 +57,18 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         Emit(new UploadSubmission.SubmissionAddedEvent(submission));
     }
 
-    public void StartGrading()
+    public void StartAutoGrading()
     {
         Start.GradingCanBeStartedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
-        Emit(new Start.GradingStartedEvent());
+        Emit(new Start.AutoGradingStartedEvent());
+    }
+
+    public void CompleteAutoGrading()
+    {
+        Start.AutoGradingCanBeFinishedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+
+        Emit(new Start.AutoGradingFinishedEvent());
     }
 }
 

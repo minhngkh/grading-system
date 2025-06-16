@@ -59,9 +59,9 @@ public sealed class FeedbackConverter : JsonConverter<Feedback>
         var jObject = JObject.Load(reader);
         var criterion = jObject.GetRequired<CriterionName>("Criterion");
         var comment = jObject.GetRequired<Comment>("Comment");
-        var attachment = jObject.GetRequired<Highlight>("Attachment");
+        var highlight = jObject.GetRequired<Highlight>("Highlight");
         var tag = jObject.GetRequired<Tag>("Tag");
-        return Feedback.New(criterion, comment, attachment, tag);
+        return Feedback.New(criterion, comment, highlight, tag);
     }
     public override bool CanWrite => false;
     public override void WriteJson(JsonWriter writer, Feedback? value, JsonSerializer serializer) => throw new NotSupportedException();
@@ -81,30 +81,40 @@ public sealed class Comment : StringValueObject
 public sealed class Tag : StringValueObject
 {
     public static Tag Empty => new();
-    private static Tag Info => new("info");
-    private static Tag Success => new("success");
-    private static Tag Notice => new("notice");
-    private static Tag Tip => new("tip");
-    private static Tag Caution => new("caution");
+    public static Tag Info => new("info");
+    public static Tag Success => new("success");
+    public static Tag Notice => new("notice");
+    public static Tag Tip => new("tip");
+    public static Tag Caution => new("caution");
+
+    private static readonly HashSet<string> ValidTags = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "info", "success", "notice", "tip", "caution"
+    };
+
     private Tag() { }
 
     [JsonConstructor]
-    public Tag(string value) : base(GetPredefinedTagOrThrow(value).Value)
+    public Tag(string value) : base(GetPredefinedTagOrThrow(value))
     {
     }
 
-    private static Tag GetPredefinedTagOrThrow(string value)
-        => value switch
+    private static string GetPredefinedTagOrThrow(string value)
+    {
+        if (string.IsNullOrEmpty(value))
         {
-            "info" => Info,
-            "success" => Success,
-            "notice" => Notice,
-            "tip" => Tip,
-            "caution" => Caution,
-            _ when string.IsNullOrEmpty(value) => Empty,
-            _ => throw new ArgumentException("Invalid tag value", nameof(value)),
-        };
-    
+            return string.Empty;
+        }
+
+        if (ValidTags.Contains(value))
+        {
+            // Return the canonical lowercase version
+            return value.ToLowerInvariant();
+        }
+
+        throw new ArgumentException($"Invalid tag value: '{value}'. Valid values are: 'info', 'success', 'notice', 'tip', 'caution'", nameof(value));
+    }
+
     protected override int? MaxLength => ModelConstants.TinyText;
     public static Tag New(string value) => new(value);
 }

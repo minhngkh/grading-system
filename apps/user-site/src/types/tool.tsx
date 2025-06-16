@@ -16,13 +16,8 @@ export type Tool = {
   isFavorite: boolean;
   navigation: LinkProps["to"];
   params?: LinkProps["params"];
-  preload?: boolean;
+  preload?: LinkProps["preload"];
 };
-
-export interface ToolsFilterProps {
-  currentFilter: ToolType | undefined;
-  filterFunction?: (type: ToolType | undefined) => void;
-}
 
 export const SystemTools: Tool[] = [
   {
@@ -30,7 +25,7 @@ export const SystemTools: Tool[] = [
     details: "Features include code completion, debugging tools, and Git integration.",
     type: ToolType.Rubric,
     isFavorite: true,
-    navigation: "/rubrics/new",
+    navigation: "/rubrics/create",
     preload: false,
   },
   {
@@ -42,19 +37,11 @@ export const SystemTools: Tool[] = [
     navigation: "/rubrics",
   },
   {
-    name: "Manage Gradings",
-    details:
-      "Includes components, patterns, and guidelines for creating cohesive user interfaces.",
-    type: ToolType.Grading,
-    isFavorite: true,
-    navigation: "/gradings",
-  },
-  {
     name: "Grade Assignments",
     details: "Create task lists, set deadlines, and monitor progress on your projects.",
     type: ToolType.Grading,
     isFavorite: false,
-    navigation: "/gradings/new",
+    navigation: "/gradings/create",
     preload: false,
   },
   {
@@ -70,5 +57,13 @@ export const SystemTools: Tool[] = [
     type: ToolType.Review,
     isFavorite: false,
     navigation: "/analytics",
+  },
+  {
+    name: "Manage Gradings",
+    details:
+      "Track and review student submissions, provide feedback, and manage grading criteria.",
+    type: ToolType.Review,
+    isFavorite: false,
+    navigation: "/gradings",
   },
 ];

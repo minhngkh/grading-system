@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import {
   FileText,
@@ -19,180 +17,52 @@ import {
   PlayCircle,
   XCircle,
   Clock,
+  EyeClosed,
 } from "lucide-react";
-import { Assessment, FeedbackItem, ScoreBreakdown } from "@/types/assessment";
+import {
+  Assessment,
+  AssessmentSchema,
+  FeedbackItem,
+  ScoreBreakdown,
+} from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import FileViewer from "./viewer/file-viewer";
 import ExportDialog from "@/pages/review/manual-grade/export-dialog";
-
-// Mock UI Components - tất cả được định nghĩa trong file này
-const Button = ({
-  children,
-  variant = "default",
-  size = "default",
-  className = "",
-  onClick,
-  ...props
-}: {
-  children: React.ReactNode;
-  variant?: "default" | "outline" | "ghost";
-  size?: "default" | "sm" | "lg";
-  className?: string;
-  onClick?: () => void;
-  [key: string]: any;
-}) => {
-  const baseClasses =
-    "inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
-  const variantClasses = {
-    default: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
-    outline:
-      "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500",
-    ghost: "text-gray-700 hover:bg-gray-100 focus:ring-blue-500",
-  };
-  const sizeClasses = {
-    default: "px-4 py-2 text-sm",
-    sm: "px-3 py-1.5 text-xs",
-    lg: "px-6 py-3 text-base",
-  };
-
-  return (
-    <button
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-      onClick={onClick}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Badge = ({
-  children,
-  variant = "default",
-  className = "",
-}: {
-  children: React.ReactNode;
-  variant?: "default" | "outline";
-  className?: string;
-}) => {
-  const baseClasses =
-    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
-  const variantClasses = {
-    default: "bg-blue-100 text-blue-800",
-    outline: "border border-gray-200 text-gray-700",
-  };
-
-  return (
-    <span className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
-      {children}
-    </span>
-  );
-};
-
-const Progress = ({ value, className = "" }: { value: number; className?: string }) => (
-  <div className={`w-full bg-gray-200 rounded-full ${className}`}>
-    <div
-      className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-500 ease-out"
-      style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-    />
-  </div>
-);
-
-const Card = ({
-  children,
-  className = "",
-  onClick,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  onClick?: () => void;
-}) => (
-  <div
-    className={`rounded-xl border bg-white text-gray-950 shadow-sm hover:shadow-md transition-shadow duration-200 ${className}`}
-    onClick={onClick}
-  >
-    {children}
-  </div>
-);
-
-const CardHeader = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`flex flex-col space-y-1.5 p-6 ${className}`}>{children}</div>;
-
-const CardTitle = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => (
-  <h3 className={`text-lg font-semibold leading-none tracking-tight ${className}`}>
-    {children}
-  </h3>
-);
-
-const CardDescription = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <p className={`text-sm text-gray-500 ${className}`}>{children}</p>;
-
-const CardContent = ({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
-
-const Select = ({
-  children,
-  value,
-  onValueChange,
-}: {
-  children: React.ReactNode;
-  value: string;
-  onValueChange: (value: string) => void;
-}) => (
-  <select
-    value={value}
-    onChange={(e) => onValueChange(e.target.value)}
-    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-  >
-    {children}
-  </select>
-);
-
-const SelectItem = ({
-  value,
-  children,
-}: {
-  value: string;
-  children: React.ReactNode;
-}) => <option value={value}>{children}</option>;
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export function RubricAssessmentUI({
   assessment,
+  scaleFactor,
   rubric,
 }: {
   assessment: Assessment;
+  scaleFactor: number;
   rubric: Rubric;
 }) {
+  const form = useForm<Assessment>({
+    resolver: zodResolver(AssessmentSchema),
+    defaultValues: assessment,
+    mode: "onChange",
+  });
+  const formData = form.watch();
   const [blobFiles, setBlobFiles] = useState<string[]>([]);
   const [files, setFiles] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
-  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>(assessment.feedbacks);
-  const [scoreBreakdowns, setScoreBreakdowns] = useState<ScoreBreakdown[]>(
-    assessment.scoreBreakdowns,
-  );
   const [highlightedLines, setHighlightedLines] = useState<number[]>([]);
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
+  const [selectedFeedbackIndex, setSelectedFeedbackIndex] = useState<number | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
     src: true,
     tests: true,
@@ -205,17 +75,27 @@ export function RubricAssessmentUI({
   const [showBottomPanel, setShowBottomPanel] = useState(true);
   // Add highlight/feedback mode state
   const [isHighlightMode, setIsHighlightMode] = useState(false);
+  const [activeScoringTab, setActiveScoringTab] = useState<string>(
+    rubric.criteria[0]?.name || "",
+  );
+  console.log("Assessment data:", formData);
 
   // Fetch blob list
   useEffect(() => {
     async function fetchBlobList() {
       try {
-        const prefix =
-          assessment.submissionReference.endsWith("/") ?
-            assessment.submissionReference
-          : assessment.submissionReference + "/";
+        // Remove everything from the first underscore to the end
+        let prefix = assessment.submissionReference;
+        const underscoreIdx = prefix.indexOf("_");
+        if (underscoreIdx !== -1) {
+          prefix = prefix.substring(0, underscoreIdx);
+        }
+        // Ensure trailing slash
+        if (!prefix.endsWith("/")) {
+          prefix += "/";
+        }
         const response = await fetch(
-          `http://127.0.0.1:51701/devstoreaccount1/submissions-store?restype=container&comp=list&prefix=${prefix}`,
+          `http://127.0.0.1:51157/devstoreaccount1/submissions-store?restype=container&comp=list&prefix=${prefix}`,
         );
         const text = await response.text();
         const parser = new DOMParser();
@@ -224,6 +104,7 @@ export function RubricAssessmentUI({
           .map((blob) => blob.getElementsByTagName("Name")[0]?.textContent || "")
           .filter(Boolean);
         setBlobFiles(blobs);
+        console.log("Fetched blobs:", blobs);
       } catch (error) {
         console.error("Lỗi khi lấy danh sách blobs:", error);
       }
@@ -251,13 +132,14 @@ export function RubricAssessmentUI({
           let content = "";
           if (type === "code" || type === "document") {
             try {
-              const url = `http://127.0.0.1:51701/devstoreaccount1/submissions-store/${blob}`;
+              const url = `http://127.0.0.1:51157/devstoreaccount1/submissions-store/${blob}`;
               const res = await fetch(url);
               content = await res.text();
             } catch {
               content = "// Cannot load file content";
             }
           }
+          console.log("content" + idx + ":", content);
           return {
             id: String(idx + 1),
             name,
@@ -269,6 +151,7 @@ export function RubricAssessmentUI({
         }),
       );
       setFiles(fileList);
+
       if (fileList.length > 0 && !selectedFile) {
         setSelectedFile(fileList[0]);
       }
@@ -276,11 +159,12 @@ export function RubricAssessmentUI({
     if (blobFiles.length > 0) buildFiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blobFiles]);
-
-  const totalScore = scoreBreakdowns.reduce((sum, breakdown) => {
+  // Calculate totalScore using scaleFactor
+  const totalScore = formData.scoreBreakdowns.reduce((sum, breakdown) => {
     const criterion = rubric.criteria.find((c) => c.name === breakdown.criterionName);
     const weight = criterion?.weight || 0;
-    return sum + (breakdown.rawScore * weight) / 100;
+    // Each criterion's score: (rawScore/scaleFactor) * weight
+    return sum + (breakdown.rawScore * ((weight * scaleFactor) / 100)) / 100;
   }, 0);
 
   // Get file icon based on type
@@ -344,46 +228,70 @@ export function RubricAssessmentUI({
   };
 
   // Handle feedback click (only for text feedback)
-  const handleFeedbackClick = (feedback: FeedbackItem) => {
-    if (selectedFeedback?.id === feedback.id) {
-      setSelectedFeedback(null);
+  const handleFeedbackClick = (feedback: FeedbackItem, index: number) => {
+    if (selectedFeedbackIndex === index) {
+      setSelectedFeedbackIndex(null);
       setHighlightedLines([]);
+      setSelectedFeedback(null);
       return;
     }
+    setSelectedFeedbackIndex(index);
     setSelectedFeedback(feedback);
-    if (feedback.type === "text") {
-      const lines = [];
+    const lines = [];
+    if (typeof feedback.fromLine === "number" && typeof feedback.toLine === "number") {
       for (let i = feedback.fromLine; i <= feedback.toLine; i++) {
         lines.push(i);
       }
-      setHighlightedLines(lines);
+    }
+    setHighlightedLines(lines);
 
-      // Switch to the file referenced in feedback
-      const file = files.find(
-        (f) => f.name === feedback.fileRef || f.path === feedback.fileRef,
-      );
-      if (file) {
-        setSelectedFile(file);
+    // Normalize fileRef for comparison
+    const normalizeFileRef = (fileRef: string) => {
+      const lastSlash = fileRef.lastIndexOf("/");
+      if (lastSlash !== -1) {
+        return fileRef.substring(lastSlash + 1);
       }
-    } else {
-      setHighlightedLines([]);
+      return fileRef;
+    };
+    // Switch to the file referenced in feedback
+    const file = files.find(
+      (f) =>
+        f.name === normalizeFileRef(feedback.fileRef) ||
+        f.path === normalizeFileRef(feedback.fileRef),
+    );
+    if (file) {
+      setSelectedFile(file);
     }
   };
 
-  // Update score for criterion
-  const updateScore = (criterionName: string, newTag: string) => {
+  const updateScore1 = (criterionName: string, newScore: number) => {
     const criterion = rubric.criteria.find((c) => c.name === criterionName);
-    const level = criterion?.levels.find((l) => l.tag === newTag);
+    if (!criterion) return;
 
-    if (level) {
-      setScoreBreakdowns((prev) =>
-        prev.map((sb) =>
-          sb.criterionName === criterionName ?
-            { ...sb, tag: newTag, rawScore: level.weight }
-          : sb,
-        ),
+    // Tìm level phù hợp theo newScore
+    let matchedLevel = criterion.levels
+      .filter((l) => l.weight <= newScore)
+      .sort((a, b) => b.weight - a.weight)[0];
+
+    if (!matchedLevel && criterion.levels.length > 0) {
+      matchedLevel = criterion.levels.reduce(
+        (min, l) => (l.weight < min.weight ? l : min),
+        criterion.levels[0],
       );
     }
+
+    // Cập nhật lại scoreBreakdowns bằng form.setValue
+    const updated = formData.scoreBreakdowns.map((sb) =>
+      sb.criterionName === criterionName ?
+        {
+          ...sb,
+          tag: matchedLevel ? matchedLevel.tag : "",
+          rawScore: newScore,
+        }
+      : sb,
+    );
+
+    form.setValue("scoreBreakdowns", updated, { shouldValidate: true });
   };
 
   // Helper to get file extension
@@ -399,31 +307,77 @@ export function RubricAssessmentUI({
     setHighlightedLines([]);
   };
 
-  // Update feedbacks from child viewer
+  // Update feedbacks from child viewer (merged with addFeedback)
   const handleUpdateFeedback = (newFeedbacks: FeedbackItem[]) => {
-    // Chỉ thêm feedback mới chưa có id trùng (hoặc comment trùng) vào feedbacks hiện tại
     if (!selectedFile) return;
     const fileName = selectedFile.name;
-    const filtered = newFeedbacks.filter((fb) => fb.fileRef === fileName);
-
-    setFeedbacks((prev) => {
-      // Loại bỏ feedback đã có id trùng (hoặc comment trùng) với feedback mới
-      const newIds = new Set(filtered.map((fb) => fb.id || fb.comment));
-      const deduped = prev.filter(
-        (fb) => !(fb.fileRef === fileName && newIds.has(fb.id || fb.comment)),
-      );
-      return [...deduped, ...filtered];
-    });
+    const normalizeFileRef = (fileRef: string) => {
+      try {
+        const lastSlash = fileRef.lastIndexOf("/");
+        if (lastSlash !== -1) {
+          return fileRef.substring(lastSlash + 1);
+        }
+        return fileRef;
+      } catch {
+        return fileRef;
+      }
+    };
+    const current = formData.feedbacks;
+    newFeedbacks
+      .map((fb) => ({
+        ...fb,
+        fileRef: normalizeFileRef(fb.fileRef),
+      }))
+      .filter((fb) => fb.fileRef === fileName)
+      .forEach((newFb) => {
+        // Tránh thêm trùng comment cho cùng fileRef, fromLine, toLine, criterion
+        const isDuplicate = current.some(
+          (fb) =>
+            fb.fileRef === newFb.fileRef &&
+            fb.fromLine === newFb.fromLine &&
+            fb.toLine === newFb.toLine &&
+            fb.criterion === newFb.criterion &&
+            fb.comment === newFb.comment,
+        );
+        if (!isDuplicate) {
+          form.setValue("feedbacks", [...formData.feedbacks, newFb], {
+            shouldValidate: true,
+          });
+        }
+      });
   };
 
   // Render file content with line numbers and highlights
   const renderFileContent = () => {
     if (!selectedFile) return <div className="text-gray-400 p-8">No file selected</div>;
     // Chỉ truyền feedbacks của file hiện tại cho FileViewer
-    const fileUrl = `http://127.0.0.1:51701/devstoreaccount1/submissions-store/${selectedFile.blobPath}`;
+    // Build prefix from submissionReference (remove from _ onward, ensure trailing slash)
+    let prefix = assessment.submissionReference;
+    const underscoreIdx = prefix.indexOf("_");
+    if (underscoreIdx !== -1) {
+      prefix = prefix.substring(0, underscoreIdx);
+    }
+    if (!prefix.endsWith("/")) {
+      prefix += "/";
+    }
+    const fileUrl = `http://127.0.0.1:51157/devstoreaccount1/submissions-store/${selectedFile.blobPath}`;
     const ext = getFileExtension(selectedFile.name);
     const fileName = selectedFile.name;
-    const fileFeedbacks = feedbacks.filter((fb) => fb.fileRef === fileName);
+    const normalizeFileRef = (fileRef: string) => {
+      if (!fileRef) return "";
+      try {
+        return fileRef.split("/").pop() || fileRef;
+      } catch {
+        return fileRef;
+      }
+    };
+    // Lấy feedbacks mới nhất từ formData, filter đúng theo file hiện tại
+    const allFeedbacks = formData.feedbacks;
+    const fileFeedbacks = allFeedbacks.filter(
+      (fb) =>
+        normalizeFileRef(fb.fileRef) === fileName ||
+        normalizeFileRef(fb.fileRef) === selectedFile.path,
+    );
     // Lấy danh sách tiêu chí rubric
     const rubricCriteria = rubric.criteria.map((c) => c.name);
     return (
@@ -434,7 +388,9 @@ export function RubricAssessmentUI({
         updateFeedback={handleUpdateFeedback}
         isHighlightMode={isHighlightMode}
         onHighlightComplete={() => setIsHighlightMode(false)}
-        activeFeedbackId={selectedFeedback?.id}
+        activeFeedbackId={
+          selectedFeedbackIndex !== null ? String(selectedFeedbackIndex) : undefined
+        }
         rubricCriteria={rubricCriteria}
       />
     );
@@ -532,9 +488,10 @@ export function RubricAssessmentUI({
   const feedbackOverview = "No overview available.";
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    // Add className to root div to enable dark mode based on html/body class
+    <div className="h-screen flex flex-col dark:bg-background dark:text-foreground">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
+      <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -548,25 +505,20 @@ export function RubricAssessmentUI({
               : <PanelLeftOpen className="h-4 w-4" />}
             </Button>
             <div>
-              <h1 className="text-xl font-bold">Rubric Assessment</h1>
+              <h1 className="text-xl font-bold">Review Assessment</h1>
               <p className="text-sm text-gray-500">
-                {rubric.rubricName} • Total Score: {totalScore.toFixed(1)}/100
+                {rubric.rubricName} • Total Score: {totalScore.toFixed(1)}/{scaleFactor}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowBottomPanel((v) => !v)}
-            >
+            <Button size="sm" onClick={() => setShowBottomPanel((v) => !v)}>
+              {showBottomPanel ?
+                <EyeClosed className="h-4 w-4 mr-2" />
+              : <Eye className="h-4 w-4 mr-2" />}
               {showBottomPanel ? "Hide Scoring" : "Show Scoring"}
             </Button>
-            <Button variant="outline" size="sm">
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
-            <ExportDialog assessmentData={assessment} />
+            <ExportDialog assessmentData={formData} />
             <Button size="sm">
               <Save className="h-4 w-4 mr-2" />
               Save Assessment
@@ -578,9 +530,9 @@ export function RubricAssessmentUI({
       <div className="flex-1 flex overflow-hidden">
         {/* File Explorer */}
         {isFileExplorerOpen && files.length > 0 && (
-          <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto transition-all duration-300">
+          <div className="w-64 overflow-y-auto">
             <div className="p-4">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">Project Files</h3>
+              <h3 className="text-sm font-medium  mb-3">Project Files</h3>
               <div className="space-y-1">
                 {Object.entries(filesByFolder).map(([folder, filesInFolder]) => (
                   <div key={folder}>
@@ -615,12 +567,12 @@ export function RubricAssessmentUI({
                           >
                             {getFileIcon(file)}
                             <span className="text-sm">{file.name}</span>
-                            {feedbacks.some(
+                            {formData.feedbacks.some(
                               (f) => f.fileRef === file.name || f.fileRef === file.path,
                             ) && (
                               <Badge variant="outline" className="ml-auto text-xs">
                                 {
-                                  feedbacks.filter(
+                                  formData.feedbacks.filter(
                                     (f) =>
                                       f.fileRef === file.name || f.fileRef === file.path,
                                   ).length
@@ -647,8 +599,8 @@ export function RubricAssessmentUI({
               height: showBottomPanel ? `calc(100% - ${bottomPanelHeight}px)` : "100%",
             }}
           >
-            <div className="flex-1 bg-white overflow-hidden">
-              <div className="p-4 border-b border-gray-200">
+            <div className="flex-1 overflow-hidden">
+              <div className="p-4 border-b ">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {selectedFile && getFileIcon(selectedFile)}
@@ -678,37 +630,43 @@ export function RubricAssessmentUI({
             </div>
 
             {/* Feedback Panel */}
-            <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
+            <div className="w-80 border-l overflow-y-auto">
               <div className="p-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">
+                <h3 className="text-sm font-medium mb-3">
                   Feedback (
                   {selectedFile ?
-                    feedbacks.filter(
-                      (f) =>
-                        f.fileRef === selectedFile.name ||
-                        f.fileRef === selectedFile.path,
-                    ).length
+                    formData.feedbacks.filter((f) => {
+                      // Normalize fileRef to just the filename
+                      const fileRefName = f.fileRef?.split("/").pop();
+                      return fileRefName === selectedFile.name;
+                    }).length
                   : 0}
                   )
                 </h3>
 
                 <div className="space-y-3">
                   {selectedFile &&
-                    feedbacks
-                      .filter(
-                        (feedback) =>
-                          feedback.fileRef === selectedFile.name ||
-                          feedback.fileRef === selectedFile.path,
-                      )
-                      .map((feedback) => (
+                    formData.feedbacks
+                      .filter((feedback) => {
+                        const fileRefName = feedback.fileRef?.split("/").pop();
+                        return fileRefName === selectedFile.name;
+                      })
+                      .map((feedback, index) => (
                         <Card
-                          key={feedback.id}
-                          className={`cursor-pointer transition-all pt-1 duration-200 ${
-                            selectedFeedback?.id === feedback.id ?
+                          key={index}
+                          className={`cursor-pointer pt-1 text-muted-foreground ${
+                            (
+                              selectedFeedback &&
+                              selectedFeedback.fileRef === feedback.fileRef &&
+                              selectedFeedback.fromLine === feedback.fromLine &&
+                              selectedFeedback.toLine === feedback.toLine &&
+                              selectedFeedback.comment === feedback.comment &&
+                              selectedFeedback.criterion === feedback.criterion
+                            ) ?
                               "ring-2 ring-blue-500 shadow-md"
                             : "hover:shadow-md"
                           }`}
-                          onClick={() => handleFeedbackClick(feedback)}
+                          onClick={() => handleFeedbackClick(feedback, index)}
                         >
                           <CardContent className="p-3">
                             <div className="flex items-start gap-2">
@@ -719,7 +677,6 @@ export function RubricAssessmentUI({
                                     {feedback.criterion}
                                   </span>
                                   <Badge
-                                    variant="outline"
                                     className={`text-xs ${getTagColor(feedback.tag)}`}
                                   >
                                     {feedback.tag}
@@ -727,15 +684,11 @@ export function RubricAssessmentUI({
                                 </div>
 
                                 {/* Only show lines for text feedback */}
-                                {feedback.type === "text" && (
-                                  <div className="text-xs text-gray-500 mb-1">
-                                    Lines {feedback.fromLine}-{feedback.toLine}
-                                  </div>
-                                )}
+                                <div className="text-xs text-gray-500 mb-1">
+                                  Lines {feedback.fromLine}-{feedback.toLine}
+                                </div>
 
-                                <p className="text-sm text-gray-900">
-                                  {feedback.comment}
-                                </p>
+                                <p className="text-sm">{feedback.comment}</p>
                               </div>
                             </div>
                           </CardContent>
@@ -743,7 +696,7 @@ export function RubricAssessmentUI({
                       ))}
 
                   {(!selectedFile ||
-                    feedbacks.filter(
+                    formData.feedbacks.filter(
                       (f) =>
                         f.fileRef === selectedFile.name ||
                         f.fileRef === selectedFile.path,
@@ -762,7 +715,7 @@ export function RubricAssessmentUI({
           {showBottomPanel && (
             <>
               <div
-                className={`h-1 bg-gray-200 hover:bg-blue-400 cursor-ns-resize transition-colors duration-200 ${
+                className={`h-1  hover:bg-blue-400 cursor-ns-resize transition-colors duration-200 ${
                   isResizing ? "bg-blue-500" : ""
                 }`}
                 onMouseDown={handleMouseDown}
@@ -772,223 +725,155 @@ export function RubricAssessmentUI({
                 </div>
               </div>
 
-              {/* Bottom Panel with Tabs */}
+              {/* Bottom Panel with Tabs (shadcn Tabs) */}
               <div
-                className="bg-white border-t border-gray-200 overflow-hidden flex flex-col"
+                className="border-t overflow-hidden flex flex-col"
                 style={{ height: `${bottomPanelHeight}px` }}
               >
-                <div className="p-4 flex-shrink-0">
-                  <div className="inline-flex h-12 items-center justify-center rounded-xl bg-gray-100 p-1 text-gray-500 mb-4">
-                    <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                        activeTab === "scoring" ?
-                          "bg-white text-gray-950 shadow-sm"
-                        : "text-gray-500 hover:text-gray-900"
-                      }`}
-                      onClick={() => setActiveTab("scoring")}
-                    >
-                      Rubric Scoring
-                    </button>
-                    <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                        activeTab === "summary" ?
-                          "bg-white text-gray-950 shadow-sm"
-                        : "text-gray-500 hover:text-gray-900"
-                      }`}
-                      onClick={() => setActiveTab("summary")}
-                    >
-                      Score Summary
-                    </button>
-                    <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                        activeTab === "tests" ?
-                          "bg-white text-gray-950 shadow-sm"
-                        : "text-gray-500 hover:text-gray-900"
-                      }`}
-                      onClick={() => setActiveTab("tests")}
-                    >
-                      Test Results
-                    </button>
-                    <button
-                      className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                        activeTab === "overview" ?
-                          "bg-white text-gray-950 shadow-sm"
-                        : "text-gray-500 hover:text-gray-900"
-                      }`}
-                      onClick={() => setActiveTab("overview")}
-                    >
-                      Feedback Overview
-                    </button>
+                <Tabs
+                  value={activeTab}
+                  onValueChange={(v) => setActiveTab(v || "")}
+                  className="flex-1 flex flex-col"
+                >
+                  <div className="p-4 flex-shrink-0">
+                    <TabsList className="inline-flex w-full h-auto items-center justify-center rounded-xl p-1 text-gray-500">
+                      <TabsTrigger value="scoring">Rubric Scoring</TabsTrigger>
+                      <TabsTrigger value="summary">Score Summary</TabsTrigger>
+                      <TabsTrigger value="tests">Test Results</TabsTrigger>
+                      <TabsTrigger value="overview">Feedback Overview</TabsTrigger>
+                    </TabsList>
                   </div>
-                </div>
-
-                <div className="flex-1 overflow-auto px-4 pb-4">
-                  {activeTab === "scoring" && showScoringTab && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-                      {rubric.criteria.map((criterion) => {
-                        const currentScore = scoreBreakdowns.find(
-                          (sb) => sb.criterionName === criterion.name,
-                        );
-
-                        return (
-                          <Card
-                            key={criterion.id}
-                            className="hover:shadow-lg transition-all duration-300"
-                          >
-                            <CardHeader className="pb-4">
-                              <CardTitle className="text-base">
+                  <TabsContent value="scoring" className="flex-1 overflow-auto px-4 pb-4">
+                    {showScoringTab && (
+                      <Tabs
+                        value={activeScoringTab}
+                        onValueChange={(v) => setActiveScoringTab(v || "")}
+                        className="flex-1 flex flex-col"
+                      >
+                        <div className="px-4 py-2 flex-shrink-0">
+                          <TabsList className="flex flex-wrap gap-1 p-1 rounded-lg">
+                            {rubric.criteria.map((criterion) => (
+                              <TabsTrigger
+                                key={criterion.id}
+                                value={criterion.name}
+                                className="px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
+                              >
                                 {criterion.name}
-                              </CardTitle>
-                              <CardDescription className="text-sm">
-                                Weight: {criterion.weight}%
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                              {/* Quick Level Selection */}
-                              <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600">
-                                  Quick Select Level:
-                                </label>
-                                <Select
-                                  value={currentScore?.tag || ""}
-                                  onValueChange={(value) =>
-                                    updateScore(criterion.name, value)
-                                  }
-                                >
-                                  <option value="">Select level</option>
-                                  {criterion.levels.map((level) => (
-                                    <SelectItem key={level.tag} value={level.tag}>
-                                      {level.tag} ({level.weight}%)
-                                    </SelectItem>
-                                  ))}
-                                </Select>
-                              </div>
-
-                              {/* Score Slider */}
-                              <div className="space-y-2">
-                                <label className="text-xs font-medium text-gray-600">
-                                  Adjust with Slider:
-                                </label>
-                                <input
-                                  type="range"
-                                  min="0"
-                                  max="100"
-                                  value={currentScore?.rawScore || 0}
-                                  onChange={(e) => {
-                                    const newScore = Number.parseInt(e.target.value);
-                                    const matchingLevel = criterion.levels.find(
-                                      (l) => l.weight === newScore,
-                                    );
-                                    const tag =
-                                      matchingLevel ? matchingLevel.tag : "Custom";
-
-                                    setScoreBreakdowns((prev) =>
-                                      prev.map((sb) =>
-                                        sb.criterionName === criterion.name ?
-                                          { ...sb, rawScore: newScore, tag }
-                                        : sb,
-                                      ),
-                                    );
-                                  }}
-                                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                                  style={{
-                                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${currentScore?.rawScore || 0}%, #e5e7eb ${currentScore?.rawScore || 0}%, #e5e7eb 100%)`,
-                                  }}
-                                />
-                                <div className="flex justify-between text-xs text-gray-400">
-                                  <span>0</span>
-                                  <span>25</span>
-                                  <span>50</span>
-                                  <span>75</span>
-                                  <span>100</span>
-                                </div>
-                              </div>
-
-                              {/* Level Indicators */}
-                              <div className="space-y-1">
-                                <label className="text-xs font-medium text-gray-600">
-                                  Level Indicators:
-                                </label>
-                                <div className="grid grid-cols-2 gap-1">
-                                  {criterion.levels.map((level) => (
-                                    <button
-                                      key={level.tag}
-                                      onClick={() =>
-                                        updateScore(criterion.name, level.tag)
-                                      }
-                                      className={`text-xs px-2 py-1 rounded-md border transition-all duration-200 ${
-                                        currentScore?.rawScore === level.weight ?
-                                          "bg-blue-100 border-blue-300 text-blue-800"
-                                        : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
-                                      }`}
-                                    >
-                                      {level.weight}%
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {currentScore && (
-                                <div className="space-y-3 pt-2 border-t border-gray-100">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Final Score</span>
-                                    <span className="font-semibold text-gray-900">
-                                      {(
-                                        (currentScore.rawScore *
-                                          (criterion.weight || 0)) /
-                                        100
-                                      ).toFixed(1)}
-                                      /{criterion.weight}
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
+                        </div>
+                        {rubric.criteria.map((criterion) => {
+                          if (activeScoringTab !== criterion.name) return null;
+                          const currentScore = formData.scoreBreakdowns.find(
+                            (sb) => sb.criterionName === criterion.name,
+                          );
+                          const rawScore = currentScore?.rawScore || 0;
+                          // Max points for this criterion
+                          const criterionMaxPoints =
+                            (scaleFactor * (criterion.weight ?? 0)) / 100;
+                          // Points to display in input (always derive from formData)
+                          const points = rawScore * (criterionMaxPoints / 100);
+                          return (
+                            <TabsContent
+                              key={criterion.id}
+                              value={criterion.name}
+                              className="flex-1"
+                            >
+                              <Card className="flex-1">
+                                <CardHeader className="pb-4">
+                                  <CardTitle className="text-base justify-between flex items-center">
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      {criterion.name} - {criterion.weight}%
                                     </span>
+                                    <span className="text-xs text-gray-500">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-xs text-gray-400">
+                                          Custom Score:
+                                        </span>
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          max={criterionMaxPoints}
+                                          step={0.5}
+                                          value={
+                                            currentScore ? Number(points.toFixed(2)) : ""
+                                          }
+                                          onChange={(e) => {
+                                            console.log("Input changed:", e.target.value);
+                                            const val = parseFloat(e.target.value);
+                                            const maxPoints = criterionMaxPoints;
+                                            if (isNaN(val) || e.target.value === "") {
+                                              updateScore1(criterion.name, 0);
+                                              return;
+                                            }
+                                            const clamped = Math.max(
+                                              0,
+                                              Math.min(val, maxPoints),
+                                            );
+                                            // Convert points to rawScore (0-scaleFactor)
+                                            const newRaw =
+                                              maxPoints > 0 ?
+                                                (clamped / maxPoints) * scaleFactor * 10
+                                              : 0;
+                                            updateScore1(criterion.name, newRaw);
+                                          }}
+                                          className="w-20 rounded border border-gray-600 px-2 py-1 text-sm"
+                                        />
+                                        <span className="text-xs">
+                                          / {criterionMaxPoints} points
+                                        </span>
+                                      </div>
+                                    </span>
+                                  </CardTitle>
+                                  <CardDescription className="text-sm"></CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4 flex-1">
+                                  <div className="flex gap-4">
+                                    {criterion.levels.map((level) => (
+                                      <div key={level.tag} className="flex-1">
+                                        <div className="text-center mb-2">
+                                          <span className="text-xs text-gray-400">
+                                            {level.weight}%
+                                          </span>
+                                        </div>
+                                        <button
+                                          onClick={() =>
+                                            updateScore1(criterion.name, level.weight)
+                                          }
+                                          className={`w-full p-3 rounded text-center ${
+                                            rawScore === level.weight ?
+                                              "border-2 border-blue-400"
+                                            : "border"
+                                          }`}
+                                        >
+                                          <div className="text-xs">
+                                            {level.description}
+                                          </div>
+                                        </button>
+                                      </div>
+                                    ))}
                                   </div>
-                                  <Progress
-                                    value={currentScore.rawScore}
-                                    className="h-2.5"
-                                  />
-
-                                  {/* Current Level Description */}
-                                  <div className="bg-gray-50 rounded-lg p-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <Badge
-                                        variant="outline"
-                                        className={`text-xs ${getTagColor(currentScore.tag)}`}
-                                      >
-                                        {currentScore.tag}
-                                      </Badge>
-                                      <span className="text-xs text-gray-500">
-                                        ({currentScore.rawScore}%)
-                                      </span>
-                                    </div>
-                                    <p className="text-xs text-gray-700 leading-relaxed">
-                                      {currentScore.tag === "Custom" ?
-                                        "Custom score - manually adjusted"
-                                      : criterion.levels.find(
-                                          (l) => l.tag === currentScore.tag,
-                                        )?.description
-                                      }
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  )}
-                  {activeTab === "summary" && (
+                                </CardContent>
+                              </Card>
+                            </TabsContent>
+                          );
+                        })}
+                      </Tabs>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="summary" className="flex-1 overflow-auto px-4 pb-4">
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-gray-900">Score Summary</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Score Summary
+                      </h3>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {rubric.criteria.map((criterion) => {
-                          const currentScore = scoreBreakdowns.find(
+                          const currentScore = formData.scoreBreakdowns.find(
                             (sb) => sb.criterionName === criterion.name,
                           );
                           return (
-                            <div
-                              key={criterion.id}
-                              className="bg-white rounded-lg border p-4"
-                            >
+                            <div key={criterion.id} className="rounded-lg border p-4">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-medium">
@@ -1002,14 +887,26 @@ export function RubricAssessmentUI({
                                   </Badge>
                                 </div>
                                 <span className="text-sm font-medium">
-                                  {((currentScore?.rawScore || 0) *
-                                    (criterion.weight || 0)) /
-                                    100}
-                                  /{criterion.weight}
+                                  {/* Show actual score for this criterion (points) */}
+                                  {currentScore ?
+                                    (
+                                      (currentScore.rawScore / scaleFactor) *
+                                      (criterion.weight || 0)
+                                    ).toFixed(2)
+                                  : "0"}
+                                  /
+                                  {(
+                                    (scaleFactor * (criterion.weight || 0)) /
+                                    100
+                                  ).toFixed(2)}
                                 </span>
                               </div>
                               <Progress
-                                value={currentScore?.rawScore || 0}
+                                value={
+                                  currentScore?.rawScore ?
+                                    (currentScore.rawScore / scaleFactor) * 100
+                                  : 0
+                                }
                                 className="h-2.5"
                               />
                             </div>
@@ -1017,45 +914,50 @@ export function RubricAssessmentUI({
                         })}
                       </div>
                     </div>
-                  )}
-                  {/* {activeTab === "tests" && (
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-gray-900">Test Results</h3>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {assessment.testResults.map((testResult) => (
-                          <div key={testResult.id} className="bg-white rounded-lg border p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">{testResult.name}</span>
-                                {getTestStatusIcon(testResult.status)}
+                  </TabsContent>
+                  <TabsContent value="tests" className="flex-1 overflow-auto px-4 pb-4">
+                    {/* {activeTab === "tests" && (
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-gray-900">Test Results</h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {assessment.testResults.map((testResult) => (
+                            <div key={testResult.id} className="bg-white rounded-lg border p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">{testResult.name}</span>
+                                  {getTestStatusIcon(testResult.status)}
+                                </div>
+                                <span className="text-sm font-medium">
+                                  {testResult.duration.toFixed(3)}s
+                                </span>
                               </div>
-                              <span className="text-sm font-medium">
-                                {testResult.duration.toFixed(3)}s
-                              </span>
+                              {testResult.message && (
+                                <div className="bg-red-100 rounded-lg p-3">
+                                  <p className="text-xs text-red-800 leading-relaxed">
+                                    {testResult.message}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                            {testResult.message && (
-                              <div className="bg-red-100 rounded-lg p-3">
-                                <p className="text-xs text-red-800 leading-relaxed">
-                                  {testResult.message}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )} */}
-                  {activeTab === "overview" && (
+                    )} */}
+                  </TabsContent>
+                  <TabsContent
+                    value="overview"
+                    className="flex-1 overflow-auto px-4 pb-4"
+                  >
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-gray-900">
+                      <h3 className="text-sm font-medium text-muted-foreground">
                         Feedback Overview
                       </h3>
-                      <div className="bg-white rounded-lg border p-4">
+                      <div className="rounded-lg border p-4">
                         <div dangerouslySetInnerHTML={{ __html: feedbackOverview }} />
                       </div>
                     </div>
-                  )}
-                </div>
+                  </TabsContent>
+                </Tabs>
               </div>
             </>
           )}

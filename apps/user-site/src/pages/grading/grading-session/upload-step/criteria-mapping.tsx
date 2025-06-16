@@ -17,8 +17,8 @@ import { useEffect, useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
 import { ManualLocationDialog } from "./manual-location-dialog";
 import { GradingAttempt } from "@/types/grading";
-import { GradingService } from "@/services/grading-service";
 import { toast } from "sonner";
+import { getSubmissionName } from "@/lib/submission";
 
 enum SelectLocationType {
   Manual,
@@ -28,7 +28,7 @@ enum SelectLocationType {
 interface CriteriaSelectorProps {
   gradingAttempt: GradingAttempt;
   uploadedFiles: File[];
-  onGradingAttemptChange?: (attempt: GradingAttempt) => void;
+  onGradingAttemptChange?: (attempt: Partial<GradingAttempt>) => void;
 }
 
 export default function CriteriaMapper({
@@ -40,6 +40,7 @@ export default function CriteriaMapper({
   const [criterionPathType, setCriterionPathType] = useState<Record<number, string>>({});
   const [criteriaIndex, setCriteriaIndex] = useState<number>();
   const [chosenFileIndex, setChosenFileIndex] = useState<number>(0);
+  const [manualFile, setManualFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (chosenFileIndex >= uploadedFiles.length) {
@@ -47,25 +48,37 @@ export default function CriteriaMapper({
       setCriterionPathType({});
     }
   }, [uploadedFiles]);
+
   const updateCriterionValue = async (index: number, value: string) => {
-    const updatedGradingAttempt = { ...gradingAttempt };
-    updatedGradingAttempt.selectors[index].pattern = value;
+    const updatedSelector = [...gradingAttempt.selectors];
+    updatedSelector[index].pattern = value;
 
     try {
-      await GradingService.updateGradingSelectors(
-        gradingAttempt.id,
-        updatedGradingAttempt.selectors,
-      );
-      onGradingAttemptChange?.(updatedGradingAttempt);
+      await onGradingAttemptChange?.({ selectors: updatedSelector });
     } catch (error) {
       toast.error("Failed to update selectors");
-      console.error("Error updating selectors:", error);
     }
   };
 
   const openDialog = (index: number, type: SelectLocationType | undefined) => {
-    if (type !== undefined) {
-      setCriteriaIndex(index);
+    if (type === undefined) return;
+
+    setCriteriaIndex(index);
+
+    if (type === SelectLocationType.Manual) {
+      const file = uploadedFiles.find(
+        (file) =>
+          file.name === getSubmissionName(gradingAttempt.submissions[chosenFileIndex]),
+      );
+
+      if (file) {
+        setDialogType(type);
+        setManualFile(file);
+      } else {
+        setManualFile(null);
+        setDialogType(null);
+      }
+    } else {
       setDialogType(type);
     }
   };
@@ -95,13 +108,15 @@ export default function CriteriaMapper({
           </span>
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="mt-2 text-sm">
         <div className="my-4 gap-2 flex items-center">
           <span>Using file </span>
           <Select
-            value={uploadedFiles[chosenFileIndex]?.name}
+            value={getSubmissionName(gradingAttempt.submissions[chosenFileIndex])}
             onValueChange={(value) => {
-              const index = uploadedFiles.findIndex((file) => file?.name === value);
+              const index = gradingAttempt.submissions.findIndex(
+                (file) => getSubmissionName(file) === value,
+              );
               if (index !== -1) {
                 setChosenFileIndex(index);
                 setCriterionPathType({});
@@ -112,9 +127,9 @@ export default function CriteriaMapper({
               <SelectValue placeholder="Choose file" />
             </SelectTrigger>
             <SelectContent>
-              {uploadedFiles.map((file, index) => (
-                <SelectItem key={index} value={file?.name}>
-                  {file?.name}
+              {gradingAttempt.submissions.map((file, index) => (
+                <SelectItem key={index} value={getSubmissionName(file)}>
+                  {getSubmissionName(file)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -177,13 +192,13 @@ export default function CriteriaMapper({
           ))}
         </div>
 
-        {criteriaIndex !== undefined && (
+        {criteriaIndex !== undefined && manualFile && (
           <ManualLocationDialog
             open={dialogType === SelectLocationType.Manual}
             onClose={closeDialog}
             gradingAttempt={gradingAttempt}
             criterionIndex={criteriaIndex}
-            uploadedFile={uploadedFiles[chosenFileIndex]}
+            uploadedFile={manualFile}
             onSelect={selectLocation}
           />
         )}

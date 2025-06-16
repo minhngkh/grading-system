@@ -7,12 +7,14 @@ interface RubricViewProps {
   rubricData: Rubric;
   showPlugins?: boolean;
   editPlugin?: boolean;
+  onEditPlugin?: (updatedRubric: Partial<Rubric>) => void;
 }
 
 export default function RubricView({
   rubricData,
   showPlugins = false,
   editPlugin = false,
+  onEditPlugin,
 }: RubricViewProps) {
   if (rubricData.criteria.length === 0) {
     return (
@@ -22,18 +24,24 @@ export default function RubricView({
     );
   }
 
-  const [selectedPlugins, setSelectedPlugins] = useState<Record<number, string>>({}); // key is criterion index
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [activeCriterionIndex, setActiveCriterionIndex] = useState<number | null>(null);
+  const [selectedCriterionIndex, setSelectedCriterionIndex] = useState<number | null>(
+    null,
+  );
 
-  const handlePluginSelect = (plugin: string) => {
-    if (activeCriterionIndex !== null) {
-      setSelectedPlugins((prev) => ({
-        ...prev,
-        [activeCriterionIndex]: plugin,
-      }));
-      setDialogOpen(false);
-    }
+  const handlePluginSelect = (index: number, plugin: string) => {
+    const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
+      if (idx === index) {
+        return {
+          ...criterion,
+          plugin: criterion.plugin === plugin ? undefined : plugin,
+        };
+      }
+      return criterion;
+    });
+
+    onEditPlugin?.({ criteria: updatedCriteria });
+    setDialogOpen(false);
   };
 
   return (
@@ -94,10 +102,13 @@ export default function RubricView({
                 })}
                 {showPlugins && (
                   <td
-                    className="p-2 text-sm cursor-pointer hover:bg-muted/50"
+                    className={cn(
+                      "p-2 text-sm",
+                      editPlugin && "cursor-pointer hover:bg-muted/50",
+                    )}
                     onClick={() => {
                       if (!editPlugin) return;
-                      setActiveCriterionIndex(index);
+                      setSelectedCriterionIndex(index);
                       setDialogOpen(true);
                     }}
                   >
@@ -107,7 +118,7 @@ export default function RubricView({
                         editPlugin && "underline cursor-pointer",
                       )}
                     >
-                      {selectedPlugins[index] || "AI"}
+                      {criterion.plugin || "AI (Default)"}
                     </div>
                   </td>
                 )}
@@ -116,11 +127,14 @@ export default function RubricView({
           })}
         </tbody>
       </table>
-      <PluginSelectDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSelect={handlePluginSelect}
-      />
+      {selectedCriterionIndex !== null && dialogOpen && (
+        <PluginSelectDialog
+          criterion={rubricData.criteria[selectedCriterionIndex]}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onSelect={handlePluginSelect}
+        />
+      )}
     </div>
   );
 }
