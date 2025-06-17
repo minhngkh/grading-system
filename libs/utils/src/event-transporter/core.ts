@@ -23,12 +23,18 @@ export abstract class EventTransporter {
   async emit<T extends ZodSchema>(
     event: ServiceEvent<T>,
     data: z.infer<T>,
-    callback: (isError: boolean) => void,
+    callback?: (isError: boolean) => void,
   ): Promise<void> {
     const wrappedData = this.transformer.wrap(event.schema, data);
     await this.doEmit(event, wrappedData, callback);
   }
 
+  /**
+   * Return err in handler to reject the message
+   *
+   * @param event
+   * @param handler
+   */
   async consume<T extends ZodSchema>(
     event: ServiceEvent<T>,
     handler: (
@@ -55,7 +61,7 @@ export abstract class EventTransporter {
   protected abstract doEmit<T extends ZodSchema>(
     event: ServiceEvent<T>,
     data: object,
-    callback: (isError: boolean) => void,
+    callback?: (isError: boolean) => void,
   ): Promise<void>;
 
   /**

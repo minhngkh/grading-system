@@ -3,9 +3,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { getBlobName, getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
 import { Cache } from "@grading-system/utils/cache";
-import { wrapError } from "@grading-system/utils/error";
+import { CustomError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
-import { escapePath } from "fast-glob";
+import fg from "fast-glob";
 import { okAsync, ResultAsync, safeTry } from "neverthrow";
 import { runDefaultAction } from "repomix";
 import { blobContainer, DEFAULT_CONTAINER } from "@/lib/blob-storage";
@@ -178,28 +178,42 @@ function getFiles(
   });
 }
 
-type PackResult =
-  | {
-      success: false;
-      ids: string[];
-      error: string;
-    }
-  | {
-      success: true;
-      ids: string[];
-      data: {
-        packedContent: string;
-        totalTokens: number;
-        allBlobUrls: string[];
-        usedBlobUrls: Set<string>;
-      };
-    };
+// type PackResult =
+//   | {
+//       success: false;
+//       ids: string[];
+//       error: string;
+//     }
+//   | {
+//       success: true;
+//       ids: string[];
+//       data: {
+//         packedContent: string;
+//         totalTokens: number;
+//         allBlobUrls: string[];
+//         usedBlobUrls: Set<string>;
+//       };
+//     };
 
 // type PackFilesSubsetsResult = ({ ids: string[] } & PackResult)[];
 
 export type FilesSubset = {
   id: string;
   blobUrls: string[];
+};
+
+class PackFilesError extends CustomError<{
+  ids: string[];
+}> {}
+
+type PackResult = {
+  ids: string[];
+  data: {
+    packedContent: string;
+    totalTokens: number;
+    allBlobUrls: string[];
+    usedBlobUrls: Set<string>;
+  };
 };
 
 export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?: string) {
@@ -229,7 +243,7 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
     const patternListIdxMap = new Map<string, number>();
     for (const [idx, value] of batches.entries()) {
       const blobs = value.blobUrls
-        .map((url) => escapePath(blobUrlNameMap.get(url)!))
+        .map((url) => fg.escapePath(blobUrlNameMap.get(url)!))
         .sort();
       const includePattern = blobs.join(",");
 
@@ -292,7 +306,6 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
       })
         .map(
           (result): PackResult => ({
-            success: true,
             ids: task.subsetIds,
             data: {
               packedContent: result.packedContent,
@@ -302,11 +315,14 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
             },
           }),
         )
-        .mapErr(() => ({
-          success: false,
-          ids: task.subsetIds,
-          error: "Failed to extract files",
-        })),
+        .mapErr(
+          (error) =>
+            new PackFilesError({
+              data: { ids: task.subsetIds },
+              message: `Failed to pack files for criteria`,
+              options: { cause: error },
+            }),
+        ),
     );
 
     return okAsync(resultList);

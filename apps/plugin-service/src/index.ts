@@ -4,7 +4,7 @@ import process from "node:process";
 import { createZodValidatedServiceBroker } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
 import { serve } from "@hono/node-server";
-import { init } from "@/events/schemas";
+import { initMessaging } from "@/messaging";
 import { createApiGateway } from "./api";
 import { syncDB } from "./db/init";
 import { connectMongoDB } from "./db/mongoose";
@@ -27,7 +27,7 @@ async function start() {
     logger.info("Plugin initialization completed");
 
     // Set up event listeners for interacting with external systems
-    await init();
+    await initMessaging();
 
     // Start Moleculer broker
     await broker.start();

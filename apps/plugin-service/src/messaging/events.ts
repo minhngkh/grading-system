@@ -5,6 +5,8 @@ export const submissionStartedEvent = {
   name: "grading.submission.started",
   schema: z.object({
     assessmentId: z.string(),
+    attachments: z.array(z.string()),
+    metadata: z.record(z.unknown()),
     criteria: z.array(
       z.object({
         criterionName: z.string(),
@@ -32,6 +34,8 @@ export const submissionGradedEvent = {
         criterionName: z.string(),
         tag: z.string(),
         rawScore: z.number().int().min(0).max(100),
+        plugin: z.string(),
+        metadata: z.record(z.unknown()).optional(),
         summary: z.string().optional(),
         feedbackItems: z.array(
           z.object({
@@ -46,6 +50,11 @@ export const submissionGradedEvent = {
         ),
       }),
     ),
-    errors: z.array(z.string()),
+    errors: z.array(
+      z.object({
+        criterionName: z.string(),
+        error: z.string(),
+      }),
+    ),
   }),
 } satisfies ServiceEvent;

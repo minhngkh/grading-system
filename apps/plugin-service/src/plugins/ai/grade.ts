@@ -159,21 +159,15 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
 
     const withMediaResultList = withTextResultList.map((packResult) =>
       packResult
-        .andThen((packValue) => {
-          if (packValue.success) {
-            return okAsync({
-              criterionNames: packValue.ids,
-              textData: packValue.data,
-            });
-          }
-
-          return errAsync(
+        .map((packValue) => ({ criterionNames: packValue.ids, textData: packValue.data }))
+        .mapErr(
+          (error) =>
             new ErrorWithCriteriaInfo({
-              data: { criterionNames: packValue.ids },
-              message: packValue.error,
+              data: { criterionNames: error.data.ids },
+              message: `Failed to pack files for criteria`,
+              options: { cause: error },
             }),
-          );
-        })
+        )
         .andThen((data) => {
           const nonTextBlobUrls = data.textData.allBlobUrls.filter(
             (url) => !data.textData.usedBlobUrls.has(url),
