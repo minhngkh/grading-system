@@ -1,5 +1,5 @@
 syntax = "proto3";
-
+import "google/protobuf/any.proto";
 option csharp_namespace = "RubricEngine.Application.Protos";
 
 package rubric;
@@ -20,6 +20,8 @@ message RubricModel {
   repeated string performance_tags = 4;
   repeated CriterionModel criteria = 5;
   string status = 6; // "Draft" or "Used"
+  repeated string attachments = 7;
+  string metadataJson = 8;
 }
 
 message CriterionModel {
