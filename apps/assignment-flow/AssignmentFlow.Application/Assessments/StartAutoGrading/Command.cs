@@ -8,11 +8,12 @@ namespace AssignmentFlow.Application.Assessments.StartAutoGrading;
 
 public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentId>(id)
 {
-    public required RubricId RubricId { get; init; }
-    public required SubmissionApiContract Submission { get; init; }
+    public RubricId? RubricId { get; set; } = null;
+    public SubmissionApiContract? Submission { get; set; } = null;
 }
 
 public class CommandHandler(
+    GradingRepository repository,
     RubricService rubricService,
     IPublishEndpoint publishEndpoint) : CommandHandler<AssessmentAggregate, AssessmentId, Command>
 {
@@ -23,10 +24,11 @@ public class CommandHandler(
 
         var rubric = await rubricService.GetRubricAsync(new GetRubricRequest
         {
-            RubricId = command.RubricId
+            RubricId = command.RubricId ?? aggregate.State.RubricId
         }, cancellationToken: cancellationToken);
-
         var metadata = !string.IsNullOrWhiteSpace(rubric.MetadataJson) ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(rubric.MetadataJson) : [];
+
+        command.Submission ??= await repository.GetSubmissionAsync(aggregate.State.GradingId, aggregate.State.Reference, cancellationToken);
 
         await publishEndpoint.Publish<ISubmissionGradingStarted>(new
         {
