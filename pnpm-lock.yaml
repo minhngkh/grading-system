@@ -430,12 +430,6 @@ importers:
         specifier: 3.4.3
         version: 3.4.3
 
-  examples/neverthrow-exp:
-    devDependencies:
-      '@grading-system/utils':
-        specifier: workspace:*
-        version: link:../../libs/utils
-
   libs/typed-moleculer:
     devDependencies:
       '@grading-system/utils':

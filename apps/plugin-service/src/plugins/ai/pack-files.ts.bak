@@ -8,7 +8,7 @@ import { asError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { err, ok, ResultAsync } from "neverthrow";
 import { runDefaultAction } from "repomix";
-import { cleanTempDirectory, createTempDirectory } from "@/utils/file";
+import { cleanTempDirectory, createTempDirectory } from "@/lib/file";
 
 const CONNECTION_STRING = process.env["ConnectionStrings__submissions-store"] as string;
 const DEFAULT_CONTAINER = "submissions-store";

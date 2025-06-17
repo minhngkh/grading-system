@@ -60,7 +60,7 @@ var blobs = builder
     .AddAzureStorage("storage")
     .RunAsEmulator(azurite =>
     {
-        azurite.WithDataVolume();
+        azurite.WithDataVolume().WithBlobPort(27000);
     })
     .AddBlobs("submissions-store");
 
@@ -159,7 +159,9 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
                 assignmentFlowEndpoint?.Url ?? "";
-        });
+        })
+        .WithReference(blobs, "test")
+        .WaitFor(blobs);
 }
 
 builder.Build().Run();

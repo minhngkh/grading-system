@@ -1,30 +1,20 @@
 import type { CliOptions } from "repomix";
 import fs from "node:fs/promises";
 import path from "node:path";
-import process from "node:process";
-import {
-  BlobService,
-  getBlobName,
-  getBlobNameParts,
-} from "@grading-system/utils/azure-storage-blob";
+import { getBlobName, getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
 import { Cache } from "@grading-system/utils/cache";
 import { wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { escapePath } from "fast-glob";
 import { okAsync, ResultAsync, safeTry } from "neverthrow";
 import { runDefaultAction } from "repomix";
+import { blobContainer, DEFAULT_CONTAINER } from "@/lib/blob-storage";
 import {
   cleanTempDirectory,
   createDirectoryOnSystemTemp,
   createTempDirectory,
   deleteFile,
-} from "@/utils/file";
-
-const CONNECTION_STRING = process.env["ConnectionStrings__submissions-store"] as string;
-const DEFAULT_CONTAINER = "submissions-store";
-
-const service = new BlobService(CONNECTION_STRING);
-const container = service.getBlobContainer(DEFAULT_CONTAINER);
+} from "@/lib/file";
 
 type DownloadDirectory = {
   path: string;
@@ -56,7 +46,7 @@ function downloadFiles(blobs: string[], directory?: string) {
       ).andTee(() => createdDirs.add(downloadDirPath));
 
       // download the blob
-      yield* container.downloadToFile(blob, downloadPath).orTee(() => {
+      yield* blobContainer.downloadToFile(blob, downloadPath).orTee(() => {
         cleanTempDirectory(downloadDir).orTee(() => {
           logger.error(`Failed to clean temporary download directory ${downloadDir}`);
         });
@@ -112,6 +102,7 @@ function packFiles(options: {
       packedContent,
       style: runOptions.style,
       totalTokens: packingRunResult.packResult.totalTokens,
+      usedBlobs: new Set(packingRunResult.packResult.processedFiles.map((f) => f.path)),
     });
   });
 }
@@ -196,6 +187,8 @@ type PackResult =
       success: true;
       packedContent: string;
       totalTokens: number;
+      allBlobUrls: string[];
+      usedBlobUrls: Set<string>;
     };
 
 type packFilesSubsetsResult = ({ ids: string[] } & PackResult)[];
@@ -226,11 +219,14 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
       outputDirectory: string;
       outputFile: string;
       includePattern: string;
+      allBlobUrls: string[];
     }[] = [];
 
     const patternListIdxMap = new Map<string, number>();
     for (const [idx, value] of batches.entries()) {
-      const blobs = value.blobUrls.map((url) => escapePath(blobUrlNameMap.get(url)!));
+      const blobs = value.blobUrls
+        .map((url) => escapePath(blobUrlNameMap.get(url)!))
+        .sort();
       const includePattern = blobs.join(",");
 
       const listIdx = patternListIdxMap.get(includePattern);
@@ -239,11 +235,14 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
         continue;
       }
 
+      // const blobUrlsSet = new Set(value.blobUrls);
+
       packTasks.push({
         subsetIds: [value.id],
         outputDirectory: outputDir,
         outputFile: `${idx}.xml`,
         includePattern,
+        allBlobUrls: value.blobUrls,
       });
 
       patternListIdxMap.set(includePattern, packTasks.length - 1);
@@ -265,6 +264,8 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
               ids: task.subsetIds,
               packedContent: result.packedContent,
               totalTokens: result.totalTokens,
+              allBlobUrls: task.allBlobUrls,
+              usedBlobUrls: result.usedBlobs,
             });
           },
           () => {

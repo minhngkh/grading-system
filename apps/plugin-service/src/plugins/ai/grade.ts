@@ -1,14 +1,18 @@
-import type { Result } from "neverthrow";
+import type { CustomErrorInfo } from "@grading-system/utils/error";
+import type { FilePart } from "ai";
 import type { LanguageModelWithOptions } from "@/core/llm/types";
-import { asError, wrapError } from "@grading-system/utils/error";
+import type { FilesSubset } from "@/plugins/ai/repomix";
+import { getBlobName, getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
 import logger from "@grading-system/utils/logger";
 import { generateObject } from "ai";
 import dedent from "dedent";
-import { err, ok, ResultAsync } from "neverthrow";
+import { err, ok, okAsync, ResultAsync, safeTry } from "neverthrow";
 import z from "zod";
 import { googleProviderOptions } from "@/core/llm/providers/google";
 import { registry } from "@/core/llm/registry";
-import { packSubmission } from "@/plugins/ai/pack-files";
+import { DEFAULT_CONTAINER } from "@/lib/blob-storage";
+import { createFileAliasManifest, createMediaFileParts } from "@/plugins/ai/media-files";
+import { packFilesSubsets } from "@/plugins/ai/repomix";
 
 const llmOptions: LanguageModelWithOptions = {
   model: registry.languageModel("google:gemini-2.5-flash-preview"),
@@ -50,7 +54,7 @@ export const criterionGradingResultSchema = z.object({
 type CriterionGradingResult = z.infer<typeof criterionGradingResultSchema>;
 
 interface GradingCriterion {
-  criterion: string;
+  criterionName: string;
   levels: {
     tag: string;
     description: string;
@@ -87,83 +91,277 @@ function createGradingSystemPrompt(partOfRubric: GradingCriterion[]) {
   `;
 }
 
-export async function gradeCriteria(options: {
+// export async function gradeCriteria0(options: {
+//   partOfRubric: GradingCriterion[];
+//   prompt: string;
+// }): Promise<Result<CriterionGradingResult[], Error>> {
+//   logger.debug("Grading using LLM");
+
+//   const gradingSystemPrompt = createGradingSystemPrompt(options.partOfRubric);
+
+//   const responseResult = await ResultAsync.fromPromise(
+//     generateObject({
+//       ...llmOptions,
+//       output: "array",
+//       schema: criterionGradingResultSchema,
+//       system: gradingSystemPrompt,
+//       prompt: options.prompt,
+//     }),
+//     asError,
+//   );
+//   if (responseResult.isErr()) {
+//     return err(wrapError(responseResult.error, "Failed to grade"));
+//   }
+
+//   const gradingRes = responseResult.value.object;
+
+//   return ok(gradingRes);
+// }
+
+// export async function gradeSubmission0(data: GradingCriterionData[]) {
+//   const packResult = await packSubmission(
+//     data.map(({ criterion, fileRefs }) => ({ criterion, fileRefs })),
+//   );
+
+//   if (packResult.isErr()) {
+//     return err(
+//       wrapError(packResult.error, "Failed to pack submission files for grading"),
+//     );
+//   }
+
+//   const packData = packResult.value;
+
+//   const ListOfRubricPart = packData.okList.map((item) => {
+//     return item.criteria.map((criterion) => data.find((d) => d.criterion === criterion)!);
+//   });
+
+//   const gradingResults = await Promise.all(
+//     ListOfRubricPart.map((item, idx) => {
+//       return gradeCriteria({
+//         partOfRubric: item,
+//         prompt: packData.okList[idx].content,
+//       });
+//     }),
+//   );
+
+//   const okResults: CriterionGradingResult[] = [];
+//   const errorResults = packData.errorList.flatMap((item) => {
+//     return item.criteria.map((criterion) => ({
+//       criterion,
+//       error: [item.error],
+//     }));
+//   });
+
+//   gradingResults.forEach((result, idx) => {
+//     if (result.isErr()) {
+//       ListOfRubricPart[idx].forEach((item) => {
+//         errorResults.push({
+//           criterion: item.criterion,
+//           error: [result.error.message],
+//         });
+//       });
+
+//       return;
+//     }
+
+//     return okResults.push(...result.value);
+//   });
+
+//   const response = [...okResults, ...errorResults];
+
+//   return ok(response);
+// }
+
+class GradingError extends Error {
+  criterionNames;
+  constructor(info: CustomErrorInfo & { criterionNames: string[] }) {
+    super(info.message, { cause: info.cause });
+    this.criterionNames = info.criterionNames;
+  }
+}
+
+export function gradeCriteria(options: {
   partOfRubric: GradingCriterion[];
   prompt: string;
-}): Promise<Result<CriterionGradingResult[], Error>> {
-  logger.debug("Grading using LLM");
+  fileParts: FilePart[];
+  fileAliasManifest: string;
+}) {
+  const baseSystemPrompt = createGradingSystemPrompt(options.partOfRubric);
+  const systemPrompt = `${baseSystemPrompt}\n${options.fileAliasManifest}`;
 
-  const gradingSystemPrompt = createGradingSystemPrompt(options.partOfRubric);
-
-  const responseResult = await ResultAsync.fromPromise(
+  return ResultAsync.fromPromise(
     generateObject({
       ...llmOptions,
       output: "array",
       schema: criterionGradingResultSchema,
-      system: gradingSystemPrompt,
-      prompt: options.prompt,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content: [
+            ...options.fileParts,
+            {
+              type: "text",
+              text: options.prompt,
+            },
+          ],
+        },
+      ],
     }),
-    asError,
-  );
-  if (responseResult.isErr()) {
-    return err(wrapError(responseResult.error, "Failed to grade"));
-  }
-
-  const gradingRes = responseResult.value.object;
-
-  return ok(gradingRes);
+    (error) =>
+      new GradingError({
+        message: "Failed to grade criteria",
+        cause: error,
+        criterionNames: options.partOfRubric.map((c) => c.criterionName),
+      }),
+  ).map((response) => response.object);
 }
 
-export async function gradeSubmission(data: GradingCriterionData[]) {
-  const packResult = await packSubmission(
-    data.map(({ criterion, fileRefs }) => ({ criterion, fileRefs })),
-  );
+type GradingResult =
+  | { type: "success"; value: CriterionGradingResult }
+  | {
+      type: "failed";
+      value: {
+        criterionName: string;
+        error: string;
+      };
+    };
 
-  if (packResult.isErr()) {
-    return err(
-      wrapError(packResult.error, "Failed to pack submission files for grading"),
-    );
-  }
-
-  const packData = packResult.value;
-
-  const ListOfRubricPart = packData.okList.map((item) => {
-    return item.criteria.map((criterion) => data.find((d) => d.criterion === criterion)!);
-  });
-
-  const gradingResults = await Promise.all(
-    ListOfRubricPart.map((item, idx) => {
-      return gradeCriteria({
-        partOfRubric: item,
-        prompt: packData.okList[idx].content,
-      });
-    }),
-  );
-
-  const okResults: CriterionGradingResult[] = [];
-  const errorResults = packData.errorList.flatMap((item) => {
-    return item.criteria.map((criterion) => ({
-      criterion,
-      error: [item.error],
-    }));
-  });
-
-  gradingResults.forEach((result, idx) => {
-    if (result.isErr()) {
-      ListOfRubricPart[idx].forEach((item) => {
-        errorResults.push({
-          criterion: item.criterion,
-          error: [result.error.message],
-        });
-      });
-
-      return;
+export function gradeSubmission(data: GradingCriterionData[], id?: string) {
+  return safeTry(async function* () {
+    if (data.length === 0) {
+      // return errAsync(new Error("No data provided for grading"));
     }
 
-    return okResults.push(...result.value);
+    const { root: sourceId } = yield* getBlobName(
+      data[0].fileRefs[0],
+      DEFAULT_CONTAINER,
+    ).map((name) => getBlobNameParts(name));
+
+    const filesGroups: FilesSubset[] = data.map((item) => ({
+      id: item.criterionName,
+      blobUrls: item.fileRefs,
+    }));
+
+    const result: GradingResult[] = [];
+
+    const withTextInfo = yield* packFilesSubsets(sourceId, filesGroups, id).map(
+      (packResult) => {
+        const success = [];
+        for (const [idx, value] of packResult.entries()) {
+          if (value.success) {
+            success.push({
+              criterionNames: value.ids,
+              allBlobUrls: value.allBlobUrls,
+              textBlobs: {
+                packedContent: value.packedContent,
+                totalTokens: value.totalTokens,
+                usedBlobUrls: value.usedBlobUrls,
+              },
+            });
+          } else {
+            value.ids.forEach((id) => {
+              result.push({
+                type: "failed",
+                value: {
+                  criterionName: id,
+                  error: value.error,
+                },
+              });
+            });
+          }
+        }
+
+        return success;
+      },
+    );
+
+    const withMediaInfoRequests = [];
+
+    for (const info of withTextInfo) {
+      const otherBlobUrls = info.allBlobUrls.filter(
+        (url) => !info.textBlobs.usedBlobUrls.has(url),
+      );
+
+      const request = createMediaFileParts(otherBlobUrls)
+        .andThen((mediaInfo) => {
+          const manifestInfo = createFileAliasManifest(mediaInfo.urlAliasMap);
+          if (manifestInfo.isErr()) {
+            return err(manifestInfo.error);
+          }
+
+          return ok({
+            ...info,
+            mediaBlobs: {
+              llmMessageParts: mediaInfo.parts,
+              ignoredUrls: mediaInfo.ignoredUrls,
+              manifestInfo: manifestInfo.value,
+            },
+          });
+        })
+        .mapErr((error) => {
+          info.criterionNames.forEach((name) => {
+            logger.error("Failed to process non-text files for criterion", {
+              criterionName: name,
+              error: error.message,
+            });
+            result.push({
+              type: "failed",
+              value: {
+                criterionName: name,
+                error: "Failed to process non-text files",
+              },
+            });
+          });
+        });
+
+      withMediaInfoRequests.push(request);
+    }
+
+    const withMediaInfo = await Promise.all(withMediaInfoRequests);
+
+    const finalInfo = withMediaInfo
+      .filter((item) => item.isOk())
+      .map((item) => item.value);
+
+    const gradeRequests = finalInfo.map((info) => {
+      const criteria = info.criterionNames.map((name) => {
+        return data.find((d) => d.criterionName === name)!;
+      });
+
+      return gradeCriteria({
+        partOfRubric: criteria,
+        prompt: info.textBlobs.packedContent,
+        fileParts: info.mediaBlobs.llmMessageParts,
+        fileAliasManifest: info.mediaBlobs.manifestInfo,
+      });
+    });
+
+    const gradingResults = await Promise.all(gradeRequests);
+
+    result.push(
+      ...gradingResults.flatMap((result) => {
+        if (result.isErr()) {
+          return result.error.criterionNames.map((name): GradingResult => {
+            return {
+              type: "failed",
+              value: {
+                criterionName: name,
+                error: result.error.message,
+              },
+            };
+          });
+        }
+
+        return result.value.map(
+          (item): GradingResult => ({
+            type: "success",
+            value: item,
+          }),
+        );
+      }),
+    );
+
+    return okAsync(result);
   });
-
-  const response = [...okResults, ...errorResults];
-
-  return ok(response);
 }

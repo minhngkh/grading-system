@@ -1,8 +1,8 @@
 import type { Result } from "neverthrow";
 import type { Buffer } from "node:buffer";
-import { BlobServiceClient } from "@azure/storage-blob";
+import { BlobSASPermissions, BlobServiceClient, SASProtocol } from "@azure/storage-blob";
 import { err, ok, ResultAsync } from "neverthrow";
-import { wrapError } from "src/error";
+import { wrapError } from "./error";
 
 export function getBlobName(url: string, containerName: string): Result<string, Error> {
   const parts = url.split(`${containerName}/`);
@@ -56,5 +56,34 @@ export class BlobContainer {
     return ResultAsync.fromPromise(blobClient.downloadToFile(filePath), (err) =>
       wrapError(err, `Failed to download blob ${blobName} to file ${filePath}`),
     ).map(() => undefined);
+  }
+
+  getContentType(blobName: string): ResultAsync<string, Error> {
+    const blobClient = this.client.getBlobClient(blobName);
+
+    return ResultAsync.fromPromise(blobClient.getProperties(), (error) =>
+      wrapError(error, `Failed to get content type for blob ${blobName}`),
+    ).andThen((properties) => {
+      if (!properties.contentType) {
+        return err(new Error(`No content type found for blob ${blobName}`));
+      }
+      return ok(properties.contentType);
+    });
+  }
+
+  generateSasUrlForBlob(blobName: string): ResultAsync<string, Error> {
+    const blobClient = this.client.getBlobClient(blobName);
+
+    return ResultAsync.fromPromise(
+      blobClient.generateSasUrl({
+        permissions: BlobSASPermissions.from({
+          read: true,
+        }),
+        protocol: SASProtocol.Https,
+        startsOn: new Date(),
+        expiresOn: new Date(new Date().valueOf() + 3600 * 1000), // 1 hour from now
+      }),
+      (error) => wrapError(error, `Failed to generate SAS URL for blob ${blobName}`),
+    );
   }
 }
