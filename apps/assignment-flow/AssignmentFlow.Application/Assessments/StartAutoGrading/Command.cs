@@ -26,10 +26,14 @@ public class CommandHandler(
             RubricId = command.RubricId
         }, cancellationToken: cancellationToken);
 
+        var metadata = rubric.MetadataJson is not null ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(rubric.MetadataJson) : [];
+
         await publishEndpoint.Publish<ISubmissionGradingStarted>(new
         {
             AssessmentId = aggregate.Id,
-            Criteria = MapCriteria(command.Submission, rubric)
+            Criteria = MapCriteria(command.Submission, rubric),
+            Metadata = metadata,
+            Attachments = rubric.Attachments.ToArray()
         },
         cancellationToken);
 
