@@ -25,7 +25,7 @@ public sealed class GradingStateMachine : StateMachine<GradingState, GradingTrig
             .Permit(GradingTrigger.FinishGrading, GradingState.Graded);
 
         Configure(GradingState.Graded)
-            .Permit(GradingTrigger.Start, GradingState.Started)
+            //.Permit(GradingTrigger.Start, GradingState.Started)
             .Permit(GradingTrigger.Complete, GradingState.Completed);
     }
 }

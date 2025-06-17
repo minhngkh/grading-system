@@ -4,8 +4,11 @@ using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
 using RubricEngine.Application.Rubrics.Complete;
 using RubricEngine.Application.Rubrics.Create;
+using RubricEngine.Application.Rubrics.ProvisionContext;
+using RubricEngine.Application.Rubrics.RemoveAttachment;
 using RubricEngine.Application.Rubrics.Update;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using static JsonApiDotNetCore.Resources.Annotations.AttrCapabilities;
 
 namespace RubricEngine.Application.Rubrics;
@@ -17,7 +20,10 @@ public class Rubric :
     IAmReadModelFor<RubricAggregate, RubricId, RubricInfoUpdatedEvent>,
     IAmReadModelFor<RubricAggregate, RubricId, CriteriaUpdatedEvent>,
     IAmReadModelFor<RubricAggregate, RubricId, PerformanceTagsUpdatedEvent>,
-    IAmReadModelFor<RubricAggregate, RubricId, RubricUsedEvent>
+    IAmReadModelFor<RubricAggregate, RubricId, RubricUsedEvent>,
+    IAmReadModelFor<RubricAggregate, RubricId, MetadataUpdatedEvent>,
+    IAmReadModelFor<RubricAggregate, RubricId, AttachmentsProvisionedEvent>,
+    IAmReadModelFor<RubricAggregate, RubricId, AttachmentRemovedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -41,7 +47,31 @@ public class Rubric :
     public DateTimeOffset UpdatedOn { get; set; }
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    public string Status { get; set; } = RubricStatus.Draft.ToString();
+    [MaxLength(ModelConstants.ShortText)]
+    public string Status { get; private set; } = nameof(RubricStatus.Draft);
+
+    [Attr(Capabilities = AllowView | AllowFilter)]
+    public List<string>? Attachments { get; private set; } = null;
+
+    [Attr(Capabilities = AllowView | AllowFilter)]
+    [NotMapped]
+    public Dictionary<string, object>? Metadata
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(MetadataJson))
+                return null;
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(MetadataJson);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+    public string? MetadataJson { get; set; } = null;
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<RubricAggregate, RubricId, RubricCreatedEvent> domainEvent, CancellationToken cancellationToken)
     {
@@ -77,7 +107,34 @@ public class Rubric :
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<RubricAggregate, RubricId, RubricUsedEvent> domainEvent, CancellationToken cancellationToken)
     {
-        Status = RubricStatus.Used.ToString();
+        Status = nameof(RubricStatus.Used);
+        UpdatedOn = domainEvent.Timestamp.ToUniversalTime();
+
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<RubricAggregate, RubricId, MetadataUpdatedEvent> domainEvent,
+        CancellationToken cancellationToken)
+    {
+        MetadataJson = domainEvent.AggregateEvent.MetadataJson;
+        UpdatedOn = domainEvent.Timestamp.ToUniversalTime();
+        
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<RubricAggregate, RubricId, AttachmentsProvisionedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        Attachments ??= [];
+        Attachments.AddRange(domainEvent.AggregateEvent.Attachments);
+
+        UpdatedOn = domainEvent.Timestamp.ToUniversalTime();
+
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<RubricAggregate, RubricId, AttachmentRemovedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        Attachments?.Remove(domainEvent.AggregateEvent.RemovedAttachment);
         UpdatedOn = domainEvent.Timestamp.ToUniversalTime();
 
         return Task.CompletedTask;

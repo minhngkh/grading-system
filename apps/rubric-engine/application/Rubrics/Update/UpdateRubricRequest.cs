@@ -10,4 +10,6 @@ public class UpdateRubricRequest
     public List<string>? Tags { get; init; }
 
     public List<CriterionApiContract>? Criteria { get; init; }
+    
+    public Dictionary<string, object>? Metadata { get; init; }
 }
