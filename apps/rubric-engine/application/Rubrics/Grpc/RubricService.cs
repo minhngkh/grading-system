@@ -30,11 +30,11 @@ public class RubricService(RubricDbContext dbContext) : RubricProtoService.Rubri
                     Plugin = c.Plugin,
                     Configuration = c.Configuration
                 }) },
-            MetadataJson = rubric.MetadataJson,
+            MetadataJson = rubric.MetadataJson ?? string.Empty,
         };
 
         rubricModel.PerformanceTags.AddRange(rubric.PerformanceTags);
-        rubricModel.Attachments.AddRange(rubric.Attachments);
+        rubricModel.Attachments.AddRange(rubric.Attachments ?? []);
 
         return rubricModel;
     }
