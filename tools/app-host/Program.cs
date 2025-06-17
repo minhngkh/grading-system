@@ -60,7 +60,7 @@ var blobs = builder
     .AddAzureStorage("storage")
     .RunAsEmulator(azurite =>
     {
-        azurite.WithDataVolume();
+        azurite.WithDataVolume().WithBlobPort(27000);
     })
     .AddBlobs("submissions-store");
 

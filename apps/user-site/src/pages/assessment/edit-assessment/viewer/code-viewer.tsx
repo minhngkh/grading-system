@@ -208,7 +208,7 @@ export default function HighlightableViewer({
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
-          className="h-full"
+          className="h-full overflow-y-auto"
           transformers={[
             {
               preprocess(code, options) {

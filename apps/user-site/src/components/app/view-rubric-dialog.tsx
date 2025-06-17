@@ -1,4 +1,4 @@
-import RubricView from "@/components/app/rubric-view";
+import { RubricView } from "@/components/app/rubric-view";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { RubricService } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { AlertCircle, RefreshCw, Loader2 } from "lucide-react";
+import { useAuth } from "@clerk/clerk-react";
 
 type RubricDialogProps = {
   rubricId?: string;
@@ -20,25 +21,24 @@ type RubricDialogProps = {
   onOpenChange?: (open: boolean) => void;
 };
 
-export const ViewRubricDialog = ({
+export function ViewRubricDialog({
   rubricId,
   initialRubric,
   open,
   onOpenChange,
-}: RubricDialogProps) => {
+}: RubricDialogProps) {
   const [rubric, setRubric] = useState<Rubric | undefined>(initialRubric);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const abortControllerRef = useRef<AbortController | null>(null);
+  const auth = useAuth();
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
     };
   }, []);
 
-  // Reset state when dialog opens/closes or when rubricId/initialRubric changes
   useEffect(() => {
     if (open) {
       setError("");
@@ -48,7 +48,6 @@ export const ViewRubricDialog = ({
         setRubric(undefined);
       }
     } else {
-      // Cancel any ongoing requests when dialog closes
       abortControllerRef.current?.abort();
     }
   }, [open, initialRubric]);
@@ -73,7 +72,6 @@ export const ViewRubricDialog = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, error]);
 
-  // Memoized fetch function to prevent recreation on every render
   const fetchRubric = useCallback(async () => {
     if (!rubricId) return;
 
@@ -81,18 +79,20 @@ export const ViewRubricDialog = ({
       setIsLoading(true);
       setError("");
 
-      // Cancel previous request if still pending
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
 
-      const fetchedRubric = await RubricService.getRubric(rubricId);
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
 
-      // Check if component is still mounted and request wasn't aborted
+      const fetchedRubric = await RubricService.getRubric(rubricId, token);
+
       if (!abortControllerRef.current.signal.aborted) {
         setRubric(fetchedRubric);
       }
     } catch (error) {
-      // Only handle error if component is still mounted and not aborted
       if (!abortControllerRef.current?.signal.aborted) {
         const errorMessage =
           error instanceof Error ? error.message : "Failed to load rubric";
@@ -103,14 +103,12 @@ export const ViewRubricDialog = ({
     }
   }, [rubricId]);
 
-  // Fetch rubric when needed
   useEffect(() => {
     if (open && !rubric && rubricId) {
       fetchRubric();
     }
   }, [open, rubric, rubricId, fetchRubric]);
 
-  // Memoized handlers
   const handleOpenChange = useCallback(
     (open: boolean) => {
       onOpenChange?.(open);
@@ -122,7 +120,6 @@ export const ViewRubricDialog = ({
     fetchRubric();
   }, [fetchRubric]);
 
-  // Memoized validation state
   const validationState = useMemo(() => {
     const hasRubricId = Boolean(rubricId);
     const hasInitialRubric = Boolean(initialRubric);
@@ -141,7 +138,6 @@ export const ViewRubricDialog = ({
     };
   }, [rubricId, initialRubric, rubric, error, isLoading]);
 
-  // Memoized content rendering
   const renderContent = useMemo(() => {
     if (validationState.showLoading) {
       return (
@@ -211,7 +207,6 @@ export const ViewRubricDialog = ({
     return null;
   }, [validationState, error, rubric, rubricId, handleRetry]);
 
-  // Don't render if no rubric source is provided
   if (!validationState.hasRubricId && !validationState.hasInitialRubric) {
     return null;
   }
@@ -224,11 +219,10 @@ export const ViewRubricDialog = ({
       >
         <div className="flex-1 overflow-hidden">{renderContent}</div>
 
-        {/* Footer with keyboard shortcuts hint */}
         <div className="border-t pt-4 text-xs text-muted-foreground text-center">
           Tip: Press Escape to close{error && ", Ctrl+R to retry"}
         </div>
       </DialogContent>
     </Dialog>
   );
-};
+}

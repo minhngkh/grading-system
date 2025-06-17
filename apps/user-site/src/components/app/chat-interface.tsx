@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { ChatMessage, UploadedFile } from "@/types/chat";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, Send, Upload, X } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { toast } from "sonner";
 
 const FILE_CONFIG = {
@@ -33,14 +33,12 @@ interface AIChatProps {
   sendMessageCallback: (messages: ChatMessage[]) => Promise<string | undefined>;
   className?: string;
   isRubricChat?: boolean;
-  maxMessages?: number;
   placeholder?: string;
 }
 
-export default function ChatInterface({
+const ChatInterface = memo(function ChatInterface({
   sendMessageCallback,
   className,
-  maxMessages = Infinity,
   placeholder = "Ask anything",
 }: AIChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -99,16 +97,14 @@ export default function ChatInterface({
 
     const newMessages = [...messages, newMessage];
 
-    // Limit message history
-    const limitedMessages = newMessages.slice(-maxMessages);
-    setMessages(limitedMessages);
+    setMessages(newMessages);
 
     // Clear input immediately for better UX
     setInputMessage("");
     setUploadedFiles([]);
 
     try {
-      const agentResponse = await sendMessageCallback(limitedMessages);
+      const agentResponse = await sendMessageCallback(newMessages);
 
       if (controller.signal.aborted) return;
 
@@ -133,23 +129,14 @@ export default function ChatInterface({
         },
       ]);
 
-      toast.error("Message failed", {
-        description: "There was a problem sending your message. Please try again.",
-      });
+      console.error("Error sending message:", error);
     } finally {
       if (!controller.signal.aborted) {
         setIsLoading(false);
         abortControllerRef.current = null;
       }
     }
-  }, [
-    inputMessage,
-    messages,
-    sendMessageCallback,
-    uploadedFiles,
-    maxMessages,
-    isLoading,
-  ]);
+  }, [inputMessage, messages, sendMessageCallback, uploadedFiles, isLoading]);
 
   // Optimized file processing
   const processFiles = useCallback(
@@ -201,10 +188,6 @@ export default function ChatInterface({
         );
 
         setUploadedFiles((prev) => [...prev, ...newFiles]);
-
-        toast.success("Files uploaded", {
-          description: `${newFiles.length} file(s) ready to send`,
-        });
       } catch (error) {
         toast.error("Upload failed", {
           description: "Could not process the uploaded files",
@@ -335,11 +318,11 @@ export default function ChatInterface({
         <Button
           variant="ghost"
           size="sm"
-          className="absolute bg-destructive/80 size-full right-0 top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity p-0"
+          className="z-10 absolute size-full right-0 top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity p-0 bg-red-500 hover:bg-red-500 text-white hover:text-white"
           onClick={() => removeFile(file.id)}
           aria-label={`Remove ${file.file.name}`}
         >
-          <X className="h-3 w-3 text-white" />
+          <X className="h-3 w-3" />
         </Button>
       </div>
     ));
@@ -527,4 +510,6 @@ export default function ChatInterface({
       </div>
     </div>
   );
-}
+});
+
+export { ChatInterface };

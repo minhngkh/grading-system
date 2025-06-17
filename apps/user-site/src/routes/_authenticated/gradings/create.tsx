@@ -6,35 +6,35 @@ import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/gradings/create")({
   component: RouteComponent,
-  beforeLoad: async () => {
-    let gradingId = sessionStorage.getItem("gradingId") ?? undefined;
-    return { gradingId };
+  beforeLoad: () => {
+    const id = sessionStorage.getItem("gradingId");
+    return { id };
   },
-  loader: async ({ context: { gradingId } }) => {
-    if (!gradingId) {
-      return await GradingService.createGradingAttempt();
+  loader: async ({ context: { auth, id } }) => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("You must be logged in to create a grading session.");
     }
 
-    return await GradingService.getGradingAttempt(gradingId);
+    if (!id) {
+      return await GradingService.createGradingAttempt(token);
+    }
+
+    return await GradingService.getGradingAttempt(id, token);
   },
   onLeave: () => {
     sessionStorage.removeItem("gradingStep");
     sessionStorage.removeItem("gradingId");
   },
-  errorComponent: () => ErrorComponent(),
-  pendingComponent: () => PendingComponent("Loading grading..."),
+  errorComponent: () => ErrorComponent("Failed to initialize grading session."),
+  pendingComponent: () => PendingComponent("Initializing grading session..."),
 });
 
 function RouteComponent() {
-  const gradingStep = sessionStorage.getItem("gradingStep") ?? undefined;
-  const { gradingId } = Route.useRouteContext();
-  const attempt = Route.useLoaderData();
-
-  if (!gradingId) {
-    sessionStorage.setItem("gradingId", attempt.id);
-  }
-
+  const grading = Route.useLoaderData();
+  sessionStorage.setItem("gradingId", grading.id);
+  const gradingStep = sessionStorage.getItem("gradingStep") || undefined;
   return (
-    <UploadAssignmentPage initialStep={gradingStep} initialGradingAttempt={attempt} />
+    <UploadAssignmentPage initialGradingAttempt={grading} initialStep={gradingStep} />
   );
 }

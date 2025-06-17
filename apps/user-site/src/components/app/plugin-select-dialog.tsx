@@ -1,19 +1,21 @@
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { PluginService } from "@/services/plugin-service";
 import { Plugin } from "@/types/plugin";
 import { Criteria } from "@/types/rubric";
-import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useAuth } from "@clerk/clerk-react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
 interface PluginSelectDialogProps {
   open: boolean;
   criterion: Criteria;
   onOpenChange: (open: boolean) => void;
-  onSelect: (index: number, plugin: string) => void;
+  onSelect: (plugin: string) => void;
 }
 
-export const PluginSelectDialog = React.memo(function PluginSelectDialog({
+export function PluginSelectDialog({
   open,
   criterion,
   onOpenChange,
@@ -23,6 +25,7 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const abortControllerRef = useRef<AbortController | null>(null);
+  const auth = useAuth();
 
   // Cleanup on unmount
   useEffect(() => {
@@ -31,19 +34,21 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
     };
   }, []);
 
-  // Memoized fetch function to prevent recreation on every render
   const fetchPlugins = useCallback(async () => {
     try {
       setIsLoading(true);
       setError("");
 
-      // Cancel previous request if still pending
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
 
-      const plugins = await PluginService.getAll();
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("Unauthorized: No token found");
+      }
 
-      // Check if component is still mounted and request wasn't aborted
+      const plugins = await PluginService.getAll(token);
+
       if (!abortControllerRef.current.signal.aborted) {
         if (plugins.success) {
           setPlugins(plugins.data);
@@ -52,7 +57,6 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
         }
       }
     } catch (error) {
-      // Only handle error if component is still mounted and not aborted
       if (!abortControllerRef.current?.signal.aborted) {
         const errorMessage = "Failed to fetch plugins. Please try again later.";
         setError(errorMessage);
@@ -68,17 +72,14 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
     if (open) {
       fetchPlugins();
     } else {
-      // Cancel any ongoing requests when dialog closes
       abortControllerRef.current?.abort();
     }
   }, [open, fetchPlugins]);
 
-  // Memoize filtered enabled plugins to prevent unnecessary recalculations
   const enabledPlugins = useMemo(() => {
     return plugins.filter((plugin) => plugin.enabled);
   }, [plugins]);
 
-  // Memoize dialog close handler
   const handleOpenChange = useCallback(
     (open: boolean) => {
       onOpenChange(open);
@@ -86,20 +87,17 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
     [onOpenChange],
   );
 
-  // Memoize plugin selection handler
   const handlePluginSelect = useCallback(
-    (index: number, pluginName: string) => {
-      onSelect(index, pluginName);
+    (pluginName: string) => {
+      onSelect(pluginName);
     },
     [onSelect],
   );
 
-  // Memoize retry handler
   const handleRetry = useCallback(() => {
     fetchPlugins();
   }, [fetchPlugins]);
 
-  // Memoize render content to prevent unnecessary re-renders
   const renderContent = useMemo(() => {
     if (isLoading) {
       return (
@@ -113,12 +111,7 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
       return (
         <div className="flex flex-col justify-center items-center py-8 gap-4">
           <div className="text-muted-foreground">{error}</div>
-          <button
-            onClick={handleRetry}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-          >
-            Retry
-          </button>
+          <Button onClick={handleRetry}>Retry</Button>
         </div>
       );
     }
@@ -144,7 +137,7 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
                   "flex flex-col gap-2 items-center text-center p-4 hover:bg-muted rounded-md border transition-colors",
                   isSelected && "bg-muted ring-2 ring-primary",
                 )}
-                onClick={() => handlePluginSelect(index, plugin.name)}
+                onClick={() => handlePluginSelect(plugin.name)}
               >
                 <div className="font-medium">
                   {plugin.name}
@@ -178,4 +171,4 @@ export const PluginSelectDialog = React.memo(function PluginSelectDialog({
       </DialogContent>
     </Dialog>
   );
-});
+}

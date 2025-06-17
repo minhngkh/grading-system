@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ToolType } from "@/types/tool";
 import { Link } from "@tanstack/react-router";
 import { useSidebar } from "@/components/ui/sidebar";
 
@@ -33,7 +32,9 @@ export function ToolsList({ tools }: ToolsListProps) {
       {tools.map((tool, index) => (
         <Link
           onClick={() => {
-            setOpen(false);
+            if (tool.collapseSidebar) {
+              setOpen(false);
+            }
           }}
           key={index}
           to={tool.navigation}
@@ -47,8 +48,10 @@ export function ToolsList({ tools }: ToolsListProps) {
             <CardContent className="flex-grow">
               <p className="text-sm text-muted-foreground">{tool.details}</p>
             </CardContent>
-            <CardFooter className="flex justify-between items-center">
-              <Badge>{ToolType[tool.type]}</Badge>
+            <CardFooter className="flex flex-wrap gap-2">
+              {tool.types.map((type, index) => (
+                <Badge key={index}>{type}</Badge>
+              ))}
             </CardFooter>
           </Card>
         </Link>

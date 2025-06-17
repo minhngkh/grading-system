@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Rubric } from "@/types/rubric";
-import { GetRubricsResult, RubricService } from "@/services/rubric-service";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -38,13 +37,11 @@ import {
   X,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
-import { SearchParams } from "@/types/search-params";
-import EditRubric from "@/components/app/edit-rubric";
-import { toast } from "sonner";
+import { GetAllResult, SearchParams } from "@/types/search-params";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
-import { useRouter } from "@tanstack/react-router";
-import ExportDialog from "@/components/app/export-dialog";
+import { ExportDialog } from "@/components/app/export-dialog";
 import { RubricExporter } from "@/lib/exporters";
+import { useNavigate } from "@tanstack/react-router";
 
 type SortConfig = {
   key: "rubricName" | "updatedOn" | null;
@@ -53,7 +50,7 @@ type SortConfig = {
 
 interface ManageRubricsPageProps {
   searchParams: SearchParams;
-  results: GetRubricsResult;
+  results: GetAllResult<Rubric>;
   setSearchParam: (partial: Partial<SearchParams>) => void;
 }
 
@@ -74,9 +71,8 @@ export default function ManageRubricsPage({
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
   const [viewRubricOpen, setViewRubricOpen] = useState<boolean>(false);
   const [selectedRubricIndex, setSelectedRubricIndex] = useState<number | null>(null);
-  const [editRubricOpen, setEditRubricOpen] = useState<boolean>(false);
   const [exportRubricOpen, setExportRubricOpen] = useState<boolean>(false);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
@@ -128,17 +124,6 @@ export default function ManageRubricsPage({
 
   const clearFilters = () => {
     setSearchTerm("");
-  };
-
-  const onUpdateRubric = async (id: string, updatedRubricData: Partial<Rubric>) => {
-    try {
-      await RubricService.updateRubric(id, updatedRubricData);
-      toast.success("Rubric updated successfully");
-      router.invalidate();
-    } catch (err) {
-      toast.error("Failed to update rubric");
-      console.error(err);
-    }
   };
 
   return (
@@ -232,8 +217,10 @@ export default function ManageRubricsPage({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            setEditRubricOpen(true);
-                            setSelectedRubricIndex(index);
+                            navigate({
+                              to: "/rubrics/$id",
+                              params: { id: rubric.id },
+                            });
                           }}
                         >
                           Edit Rubric
@@ -254,21 +241,11 @@ export default function ManageRubricsPage({
             }
           </TableBody>
         </Table>
-        {viewRubricOpen && selectedRubricIndex !== null && (
+        {viewRubricOpen && selectedRubricIndex != null && (
           <ViewRubricDialog
             open={viewRubricOpen}
             onOpenChange={setViewRubricOpen}
             initialRubric={sortedRubrics[selectedRubricIndex]}
-          />
-        )}
-        {editRubricOpen && selectedRubricIndex !== null && (
-          <EditRubric
-            open={editRubricOpen}
-            onOpenChange={setEditRubricOpen}
-            rubricData={sortedRubrics[selectedRubricIndex]}
-            onUpdate={(updatedRubric) =>
-              onUpdateRubric(sortedRubrics[selectedRubricIndex].id, updatedRubric)
-            }
           />
         )}
       </div>
@@ -361,7 +338,7 @@ export default function ManageRubricsPage({
           )}
         </div>
       </div>
-      {exportRubricOpen && selectedRubricIndex !== null && (
+      {exportRubricOpen && selectedRubricIndex != null && (
         <ExportDialog
           open={exportRubricOpen}
           onOpenChange={setExportRubricOpen}

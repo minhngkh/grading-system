@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
+using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
 using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
@@ -22,6 +23,7 @@ public class Grading
     IAmReadModelFor<GradingAggregate, GradingId, ScaleFactorUpdatedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, RubricChangedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionAddedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, SubmissionRemovedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, AutoGradingStartedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, AutoGradingFinishedEvent>
 {
@@ -128,6 +130,14 @@ public class Grading
             Attachments = submission.Attachments.ConvertAll(a => a.Value)
         });
         
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, SubmissionRemovedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        SubmissionPersistences.RemoveAll(s => s.Reference == domainEvent.AggregateEvent.RemovedSubmission);
+
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }

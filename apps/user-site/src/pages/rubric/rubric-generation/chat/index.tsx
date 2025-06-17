@@ -1,8 +1,8 @@
 import type { Rubric } from "@/types/rubric";
 import { ChatService } from "@/services/chat-service";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import ChatRubricTable from "./chat-rubric-table";
-import ChatInterface from "@/components/app/chat-interface";
+import { ChatInterface } from "@/components/app/chat-interface";
 import { ChatMessage } from "@/types/chat";
 import {
   Dialog,
@@ -12,43 +12,61 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-
-interface ChatWindowProps {
+import { useAuth } from "@clerk/clerk-react";
+import { toast } from "sonner";
+interface EditRubricPageProps {
   rubric: Rubric;
-  onUpdate: (rubric: Partial<Rubric>) => void;
+  onUpdate: (rubric: Partial<Rubric>) => Promise<void>;
 }
 
-export default function ChatWindow({ rubric, onUpdate }: ChatWindowProps) {
+export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
   const [isApplyingEdit, setIsApplyingEdit] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const auth = useAuth();
 
-  const handleSendMessage = async (messages: ChatMessage[]) => {
-    setIsLoading(true);
-    try {
-      const response = await ChatService.sendRubricMessage(messages, {
-        rubricName: rubric.rubricName,
-        tags: rubric.tags,
-        criteria: rubric.criteria,
-        weightInRange: "false",
-      });
-
-      if (response.rubric) {
-        setIsApplyingEdit(true);
-
-        setTimeout(() => {
-          setIsApplyingEdit(false);
-        }, 2000);
-
-        onUpdate(response.rubric);
+  const handleSendMessage = useCallback(
+    async (messages: ChatMessage[]) => {
+      const token = await auth.getToken();
+      if (!token) {
+        toast.error("You are not authorized to perform this action.");
+        throw new Error("Unauthorized: No token found");
       }
 
-      return response.message;
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      try {
+        setIsLoading(true);
+        const response = await ChatService.sendRubricMessage(
+          messages,
+          {
+            ...rubric,
+            weightInRange: "false",
+          },
+          token,
+        );
+
+        if (response.rubric) {
+          setIsApplyingEdit(true);
+
+          setTimeout(async () => {
+            try {
+              await onUpdate(response.rubric!);
+            } catch (error) {
+              console.error("Error updating rubric:", error);
+              return "Error updating rubric. Please try again.";
+            }
+            setIsApplyingEdit(false);
+          }, 1500);
+        }
+
+        return response.message;
+      } catch (error) {
+        console.error("Error sending message:", error);
+        return "An error occurred while processing your request. Please try again.";
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [auth, rubric, onUpdate],
+  );
 
   return (
     <div className="lg:grid lg:grid-cols-7 space-y-4 lg:space-y-0 size-full gap-4">

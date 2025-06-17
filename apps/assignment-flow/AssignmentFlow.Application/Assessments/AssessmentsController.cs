@@ -1,10 +1,12 @@
 ﻿using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Controllers;
 using JsonApiDotNetCore.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssignmentFlow.Application.Assessments;
 
+[Authorize]
 [Route("api/v1/[controller]")]
 public class AssessmentsController : BaseJsonApiController<Assessment, string>
 {

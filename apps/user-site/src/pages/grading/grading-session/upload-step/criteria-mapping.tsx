@@ -16,8 +16,7 @@ import {
 import { useEffect, useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
 import { ManualLocationDialog } from "./manual-location-dialog";
-import { GradingAttempt } from "@/types/grading";
-import { toast } from "sonner";
+import { CriteriaSelector, GradingAttempt } from "@/types/grading";
 import { getSubmissionName } from "@/lib/submission";
 
 enum SelectLocationType {
@@ -28,13 +27,13 @@ enum SelectLocationType {
 interface CriteriaSelectorProps {
   gradingAttempt: GradingAttempt;
   uploadedFiles: File[];
-  onGradingAttemptChange?: (attempt: Partial<GradingAttempt>) => void;
+  onSelectorsChange?: (selectors: CriteriaSelector[]) => void;
 }
 
 export default function CriteriaMapper({
   uploadedFiles,
   gradingAttempt,
-  onGradingAttemptChange,
+  onSelectorsChange,
 }: CriteriaSelectorProps) {
   const [dialogType, setDialogType] = useState<SelectLocationType | null>(null);
   const [criterionPathType, setCriterionPathType] = useState<Record<number, string>>({});
@@ -49,15 +48,10 @@ export default function CriteriaMapper({
     }
   }, [uploadedFiles]);
 
-  const updateCriterionValue = async (index: number, value: string) => {
+  const updateCriterionValue = (index: number, value: string) => {
     const updatedSelector = [...gradingAttempt.selectors];
     updatedSelector[index].pattern = value;
-
-    try {
-      await onGradingAttemptChange?.({ selectors: updatedSelector });
-    } catch (error) {
-      toast.error("Failed to update selectors");
-    }
+    onSelectorsChange?.(updatedSelector);
   };
 
   const openDialog = (index: number, type: SelectLocationType | undefined) => {
@@ -68,7 +62,8 @@ export default function CriteriaMapper({
     if (type === SelectLocationType.Manual) {
       const file = uploadedFiles.find(
         (file) =>
-          file.name === getSubmissionName(gradingAttempt.submissions[chosenFileIndex]),
+          file.name ===
+          getSubmissionName(gradingAttempt.submissions[chosenFileIndex]) + ".zip",
       );
 
       if (file) {
@@ -88,7 +83,7 @@ export default function CriteriaMapper({
     setCriteriaIndex(undefined);
   };
 
-  const selectLocation = (index: number, path: string) => {
+  const selectLocation = async (index: number, path: string) => {
     updateCriterionValue(index, path);
     closeDialog();
   };
@@ -112,10 +107,10 @@ export default function CriteriaMapper({
         <div className="my-4 gap-2 flex items-center">
           <span>Using file </span>
           <Select
-            value={getSubmissionName(gradingAttempt.submissions[chosenFileIndex])}
+            value={gradingAttempt.submissions[chosenFileIndex].reference}
             onValueChange={(value) => {
               const index = gradingAttempt.submissions.findIndex(
-                (file) => getSubmissionName(file) === value,
+                (file) => file.reference === value,
               );
               if (index !== -1) {
                 setChosenFileIndex(index);
@@ -128,7 +123,7 @@ export default function CriteriaMapper({
             </SelectTrigger>
             <SelectContent>
               {gradingAttempt.submissions.map((file, index) => (
-                <SelectItem key={index} value={getSubmissionName(file)}>
+                <SelectItem key={index} value={file.reference}>
                   {getSubmissionName(file)}
                 </SelectItem>
               ))}
@@ -192,7 +187,7 @@ export default function CriteriaMapper({
           ))}
         </div>
 
-        {criteriaIndex !== undefined && manualFile && (
+        {criteriaIndex != undefined && manualFile && (
           <ManualLocationDialog
             open={dialogType === SelectLocationType.Manual}
             onClose={closeDialog}
@@ -203,12 +198,12 @@ export default function CriteriaMapper({
           />
         )}
 
-        {criteriaIndex !== undefined && (
+        {criteriaIndex != undefined && (
           <ExactLocationDialog
             open={dialogType === SelectLocationType.Exact}
             onClose={closeDialog}
             criterionMapping={gradingAttempt.selectors[criteriaIndex]}
-            onConfirm={(path) => {
+            onConfirm={async (path) => {
               updateCriterionValue(criteriaIndex, path);
               closeDialog();
             }}

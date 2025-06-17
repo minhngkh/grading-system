@@ -6,34 +6,34 @@ import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/rubrics/create")({
   preload: false,
-  component: RoutePage,
-  beforeLoad: async () => {
-    let rubricId = sessionStorage.getItem("rubricId");
-    return { rubricId };
+  component: RouteComponent,
+  beforeLoad: () => {
+    const id = sessionStorage.getItem("rubricId");
+    return { id };
   },
-  loader: async ({ context: { rubricId } }) => {
-    if (!rubricId) {
-      return await RubricService.createRubric();
+  loader: async ({ context: { auth, id } }) => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("Unauthorized: No token found");
     }
 
-    return await RubricService.getRubric(rubricId);
+    if (id) {
+      return await RubricService.getRubric(id, token);
+    }
+
+    return await RubricService.createRubric(token);
   },
   onLeave: () => {
-    sessionStorage.removeItem("rubricId");
     sessionStorage.removeItem("rubricStep");
+    sessionStorage.removeItem("rubricId");
   },
-  errorComponent: () => ErrorComponent(),
-  pendingComponent: () => PendingComponent("Loading rubric..."),
+  errorComponent: () => ErrorComponent("Failed to create rubric."),
+  pendingComponent: () => PendingComponent("Creating rubric..."),
 });
 
-function RoutePage() {
-  const { rubricId } = Route.useRouteContext();
-  const rubricStep = sessionStorage.getItem("rubricStep") ?? undefined;
+function RouteComponent() {
   const rubric = Route.useLoaderData();
-
-  if (!rubricId) {
-    sessionStorage.setItem("rubricId", rubric.id);
-  }
-
-  return <RubricGenerationPage rubricStep={rubricStep} initialRubric={rubric} />;
+  sessionStorage.setItem("rubricId", rubric.id);
+  const rubricStep = sessionStorage.getItem("rubricStep") || undefined;
+  return <RubricGenerationPage initialRubric={rubric} rubricStep={rubricStep} />;
 }

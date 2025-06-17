@@ -1,5 +1,6 @@
 ﻿using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
+using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
 using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
@@ -20,9 +21,10 @@ internal static class EndpointHandlers
             .MapUpdateCriterionSelectors()
             .MapUpdateScaleFactor()
             .MapUploadSubmission()
+            .MapRemoveSubmission()
             .MapChangeRubric()
             .MapStartGrading();
-            
+
         return routeBuilder;
     }
 }

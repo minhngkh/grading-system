@@ -2,11 +2,10 @@ import type { LinkProps } from "@tanstack/react-router";
 import {
   BookOpenCheck,
   BotMessageSquare,
+  ChartNoAxesCombined,
   ClipboardPlus,
   Home,
   Library,
-  LifeBuoy,
-  Settings,
 } from "lucide-react";
 import type { ReactElement } from "react";
 
@@ -50,17 +49,9 @@ export const NavigationItems: NavigationData[] = [
     icon: <BotMessageSquare className="size-4" />,
     to: "/chat",
   },
-];
-
-export const settingsItems: NavigationData[] = [
   {
-    title: "Settings",
-    icon: <Settings className="size-4" />,
-    to: "/",
-  },
-  {
-    title: "Help",
-    icon: <LifeBuoy className="size-4" />,
-    to: "/",
+    title: "Analytics",
+    icon: <ChartNoAxesCombined className="size-4" />,
+    to: "/analytics",
   },
 ];

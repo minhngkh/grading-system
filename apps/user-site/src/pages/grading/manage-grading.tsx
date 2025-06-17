@@ -37,15 +37,15 @@ import {
   X,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
-import { SearchParams } from "@/types/search-params";
+import { GetAllResult, SearchParams } from "@/types/search-params";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { Link } from "@tanstack/react-router";
-import { GetGradingsResult } from "@/services/grading-service";
-import ExportDialog from "@/components/app/export-dialog";
+import { ExportDialog } from "@/components/app/export-dialog";
 import { GradingExporter } from "@/lib/exporters";
 import { Assessment } from "@/types/assessment";
 import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/clerk-react";
 
 type SortConfig = {
   key: "id" | "lastModified" | "status" | null;
@@ -54,7 +54,7 @@ type SortConfig = {
 
 type ManageGradingsPageProps = {
   searchParams: SearchParams;
-  results: GetGradingsResult;
+  results: GetAllResult<GradingAttempt>;
   setSearchParam: (partial: Partial<SearchParams>) => void;
 };
 
@@ -78,13 +78,18 @@ export default function ManageGradingsPage({
   const [selectGradingIndex, setSelectGradingIndex] = useState<number | null>(null);
   const [gradingAssessments, setGradingAssessments] = useState<Assessment[]>([]);
   const [isGettingAssessments, setIsGettingAssessments] = useState(false);
+  const auth = useAuth();
 
   useEffect(() => {
     async function fetchGradingAssessments() {
-      setIsGettingAssessments(true);
+      const token = await auth.getToken();
+      if (!token) return toast.error("You are not authorized to perform this action.");
+
       try {
+        setIsGettingAssessments(true);
         const assessments = await AssessmentService.getGradingAssessments(
           sortedGradings[selectGradingIndex!].id,
+          token,
         );
         setGradingAssessments(assessments);
       } catch {
@@ -95,11 +100,7 @@ export default function ManageGradingsPage({
       }
     }
 
-    if (
-      exportGradingOpen &&
-      selectGradingIndex !== null &&
-      sortedGradings[selectGradingIndex]
-    ) {
+    if (exportGradingOpen && selectGradingIndex != null) {
       fetchGradingAssessments();
     }
   }, [selectGradingIndex, exportGradingOpen]);
@@ -288,14 +289,34 @@ export default function ManageGradingsPage({
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link
-                            to="/gradings/$gradingId"
-                            params={{ gradingId: grading.id }}
-                          >
-                            View Grading
-                          </Link>
-                        </DropdownMenuItem>
+                        {grading.status === GradingStatus.Graded && (
+                          <DropdownMenuItem asChild>
+                            <Link
+                              to="/gradings/$gradingId/analytics"
+                              params={{ gradingId: grading.id }}
+                            >
+                              View Analytics
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                        {grading.status !== GradingStatus.Created ?
+                          <DropdownMenuItem asChild>
+                            <Link
+                              to="/gradings/$gradingId/result"
+                              params={{ gradingId: grading.id }}
+                            >
+                              View Grading
+                            </Link>
+                          </DropdownMenuItem>
+                        : <DropdownMenuItem asChild>
+                            <Link
+                              to="/gradings/$gradingId"
+                              params={{ gradingId: grading.id }}
+                            >
+                              Resume Grading
+                            </Link>
+                          </DropdownMenuItem>
+                        }
                         <DropdownMenuItem
                           onClick={() => {
                             setSelectGradingIndex(index);
@@ -396,7 +417,7 @@ export default function ManageGradingsPage({
           </Button>
         </div>
       </div>
-      {exportGradingOpen && selectGradingIndex !== null && (
+      {exportGradingOpen && selectGradingIndex != null && (
         <ExportDialog
           open={exportGradingOpen}
           onOpenChange={setExportGradingOpen}

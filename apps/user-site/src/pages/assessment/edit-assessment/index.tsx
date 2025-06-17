@@ -27,7 +27,7 @@ import {
 } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import FileViewer from "./viewer/file-viewer";
-import ExportDialog from "@/pages/review/manual-grade/export-dialog";
+import ExportDialog from "@/pages/assessment/edit-assessment/export-dialog";
 import {
   Card,
   CardContent,
@@ -41,6 +41,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "@clerk/clerk-react";
+import { AssessmentService } from "@/services/assessment-service";
+import { toast } from "sonner";
+import { buildFileItems, fetchBlobNames } from "@/services/file-service";
 
 export function RubricAssessmentUI({
   assessment,
@@ -59,6 +63,7 @@ export function RubricAssessmentUI({
   const formData = form.watch();
   const [blobFiles, setBlobFiles] = useState<string[]>([]);
   const [files, setFiles] = useState<any[]>([]);
+  const auth = useAuth();
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
   const [highlightedLines, setHighlightedLines] = useState<number[]>([]);
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
@@ -78,87 +83,21 @@ export function RubricAssessmentUI({
   const [activeScoringTab, setActiveScoringTab] = useState<string>(
     rubric.criteria[0]?.name || "",
   );
-  console.log("Assessment data:", formData);
-
-  // Fetch blob list
   useEffect(() => {
-    async function fetchBlobList() {
-      try {
-        // Remove everything from the first underscore to the end
-        let prefix = assessment.submissionReference;
-        const underscoreIdx = prefix.indexOf("_");
-        if (underscoreIdx !== -1) {
-          prefix = prefix.substring(0, underscoreIdx);
-        }
-        // Ensure trailing slash
-        if (!prefix.endsWith("/")) {
-          prefix += "/";
-        }
-        const response = await fetch(
-          `http://127.0.0.1:51157/devstoreaccount1/submissions-store?restype=container&comp=list&prefix=${prefix}`,
-        );
-        const text = await response.text();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(text, "application/xml");
-        const blobs = Array.from(xmlDoc.getElementsByTagName("Blob"))
-          .map((blob) => blob.getElementsByTagName("Name")[0]?.textContent || "")
-          .filter(Boolean);
-        setBlobFiles(blobs);
-        console.log("Fetched blobs:", blobs);
-      } catch (error) {
-        console.error("Lỗi khi lấy danh sách blobs:", error);
+    async function loadFiles() {
+      const blobs = await fetchBlobNames(formData.submissionReference);
+      const items = await buildFileItems(blobs);
+      setFiles(items);
+      // Set initial selected file here after files are loaded
+      if (items.length > 0) {
+        setSelectedFile(items[0]);
       }
     }
-    fetchBlobList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assessment.submissionReference]);
 
-  // Convert blobFiles to files for explorer
-  useEffect(() => {
-    async function buildFiles() {
-      const fileList = await Promise.all(
-        blobFiles.map(async (blob, idx) => {
-          // Lấy tên file (sau dấu / cuối)
-          const name = blob.split("/").pop() || blob;
-          // Đoán loại file
-          let type: "code" | "document" | "image" | "pdf" = "code";
-          if (/\.(jpg|jpeg|png|gif)$/i.test(name)) type = "image";
-          else if (/\.pdf$/i.test(name)) type = "pdf";
-          else if (/\.md$/i.test(name)) type = "document";
-          else if (/\.txt$/i.test(name)) type = "code";
-          else if (/\.cpp|\.py|\.js|\.ts|\.java|\.c|\.h$/i.test(name)) type = "code";
-          else type = "code";
-          // Nếu là code/text/document thì fetch nội dung
-          let content = "";
-          if (type === "code" || type === "document") {
-            try {
-              const url = `http://127.0.0.1:51157/devstoreaccount1/submissions-store/${blob}`;
-              const res = await fetch(url);
-              content = await res.text();
-            } catch {
-              content = "// Cannot load file content";
-            }
-          }
-          console.log("content" + idx + ":", content);
-          return {
-            id: String(idx + 1),
-            name,
-            type,
-            path: name, // hoặc blob nếu muốn path đầy đủ
-            blobPath: blob,
-            content,
-          };
-        }),
-      );
-      setFiles(fileList);
-
-      if (fileList.length > 0 && !selectedFile) {
-        setSelectedFile(fileList[0]);
-      }
+    if (formData.submissionReference) {
+      loadFiles();
     }
-    if (blobFiles.length > 0) buildFiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blobFiles]);
+  }, [formData.submissionReference]);
   // Calculate totalScore using scaleFactor
   const totalScore = formData.scoreBreakdowns.reduce((sum, breakdown) => {
     const criterion = rubric.criteria.find((c) => c.name === breakdown.criterionName);
@@ -346,6 +285,23 @@ export function RubricAssessmentUI({
         }
       });
   };
+  const handleSave = async () => {
+    console.log("Saving assessment data:", formData);
+
+    try {
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("You must be logged in to save a rubric");
+      }
+
+      await AssessmentService.updateAssessment(assessment.id, formData, token);
+    } catch (err) {
+      toast.error("Failed to update rubric");
+      console.error(err);
+    }
+
+    return;
+  };
 
   // Render file content with line numbers and highlights
   const renderFileContent = () => {
@@ -360,7 +316,7 @@ export function RubricAssessmentUI({
     if (!prefix.endsWith("/")) {
       prefix += "/";
     }
-    const fileUrl = `http://127.0.0.1:51157/devstoreaccount1/submissions-store/${selectedFile.blobPath}`;
+    const fileUrl = `http://127.0.0.1:27000/devstoreaccount1/submissions-store/${selectedFile.blobPath}`;
     const ext = getFileExtension(selectedFile.name);
     const fileName = selectedFile.name;
     const normalizeFileRef = (fileRef: string) => {
@@ -417,11 +373,22 @@ export function RubricAssessmentUI({
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizing) return;
 
-    const containerHeight = window.innerHeight - 80; // Subtract header height
-    const newHeight = containerHeight - e.clientY + 80;
-    const minHeight = 200;
-    const maxHeight = containerHeight * 0.8;
+    // Lấy vị trí top của panel resize (so với viewport)
+    const mainPanel = document.querySelector(".flex-1.flex.flex-col.overflow-hidden");
+    let panelTop = 0;
+    let windowHeight = window.innerHeight;
+    if (mainPanel) {
+      const rect = (mainPanel as HTMLElement).getBoundingClientRect();
+      panelTop = rect.top;
+      windowHeight = rect.height;
+    }
 
+    const minHeight = 120;
+    const maxHeight = windowHeight * 0.9;
+
+    // Tính chiều cao mới dựa trên vị trí chuột so với top của panel
+    const mouseY = e.clientY - panelTop;
+    const newHeight = windowHeight - mouseY;
     setBottomPanelHeight(Math.min(Math.max(newHeight, minHeight), maxHeight));
   };
 
@@ -489,7 +456,10 @@ export function RubricAssessmentUI({
 
   return (
     // Add className to root div to enable dark mode based on html/body class
-    <div className="h-screen flex flex-col dark:bg-background dark:text-foreground">
+    <div
+      className="flex flex-col dark:bg-background dark:text-foreground"
+      style={{ height: "110dvh", minHeight: "100vh" }} // <-- make the main container always fill viewport height
+    >
       {/* Header */}
       <div className="p-4">
         <div className="flex items-center justify-between">
@@ -519,7 +489,7 @@ export function RubricAssessmentUI({
               {showBottomPanel ? "Hide Scoring" : "Show Scoring"}
             </Button>
             <ExportDialog assessmentData={formData} />
-            <Button size="sm">
+            <Button className="cursor-pointer" size="sm" onClick={handleSave}>
               <Save className="h-4 w-4 mr-2" />
               Save Assessment
             </Button>
@@ -594,12 +564,16 @@ export function RubricAssessmentUI({
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* File Viewer */}
           <div
-            className="flex overflow-hidden"
+            className="flex"
             style={{
-              height: showBottomPanel ? `calc(100% - ${bottomPanelHeight}px)` : "100%",
+              height: 0,
+              flex: "1 1 auto",
+              minHeight: 0,
+              overflowX: "hidden", // prevent horizontal scroll
+              overflowY: "visible", // allow vertical scroll only
             }}
           >
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-0">
               <div className="p-4 border-b ">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -626,12 +600,14 @@ export function RubricAssessmentUI({
                 )}
               </div>
 
-              <div className="p-4 overflow-auto h-full">{renderFileContent()}</div>
+              <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                {renderFileContent()}
+              </div>
             </div>
 
             {/* Feedback Panel */}
-            <div className="w-80 border-l overflow-y-auto">
-              <div className="p-4">
+            <div className="w-80 border-l flex flex-col min-h-0">
+              <div className="p-4 flex-1 overflow-y-auto overflow-x-hidden">
                 <h3 className="text-sm font-medium mb-3">
                   Feedback (
                   {selectedFile ?
@@ -644,7 +620,7 @@ export function RubricAssessmentUI({
                   )
                 </h3>
 
-                <div className="space-y-3">
+                <div className="space-y-3 scroll-smooth">
                   {selectedFile &&
                     formData.feedbacks
                       .filter((feedback) => {
@@ -715,7 +691,7 @@ export function RubricAssessmentUI({
           {showBottomPanel && (
             <>
               <div
-                className={`h-1  hover:bg-blue-400 cursor-ns-resize transition-colors duration-200 ${
+                className={`h-1 hover:bg-blue-400 cursor-ns-resize transition-colors duration-200 ${
                   isResizing ? "bg-blue-500" : ""
                 }`}
                 onMouseDown={handleMouseDown}
@@ -724,11 +700,16 @@ export function RubricAssessmentUI({
                   <div className="w-12 h-0.5 bg-gray-400 rounded-full"></div>
                 </div>
               </div>
-
               {/* Bottom Panel with Tabs (shadcn Tabs) */}
               <div
-                className="border-t overflow-hidden flex flex-col"
-                style={{ height: `${bottomPanelHeight}px` }}
+                className="border-t flex flex-col"
+                style={{
+                  minHeight: 120,
+                  maxHeight: "100vh",
+                  height: bottomPanelHeight,
+                  flex: "0 0 auto",
+                  overflow: "hidden",
+                }}
               >
                 <Tabs
                   value={activeTab}
