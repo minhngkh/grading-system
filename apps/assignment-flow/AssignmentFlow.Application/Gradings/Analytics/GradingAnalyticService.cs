@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using RubricEngine.Application.Protos;
 
 namespace AssignmentFlow.Application.Gradings.Analytics;
 
@@ -8,28 +9,26 @@ public interface IGradingAnalyticService
     Task<GradingAnalytics> GetGradingAnalyticsAsync(string teacherId, string gradingId, CancellationToken cancellationToken);
 }
 
-public class GradingAnalyticService(AssignmentFlowDbContext dbContext) : IGradingAnalyticService
+public class GradingAnalyticService(
+    RubricProtoService.RubricProtoServiceClient rubricProtoService,
+    AssignmentFlowDbContext dbContext) : IGradingAnalyticService
 {
     public async Task<OverallGradingAnalytics> GetOverallGradingAnalyticsAsync(string teacherId, CancellationToken cancellationToken)
     {
         var totalGradings = await dbContext.Gradings
             .CountAsync(g => g.TeacherId == teacherId, cancellationToken);
 
-        var assessmentStats = await dbContext.Assessments
+        var assessmentScores = await dbContext.Assessments
             .Where(a => a.TeacherId == teacherId)
-            .GroupBy(a => a.TeacherId)
-            .Select(g => new
-            {
-                Count = g.Count(),
-                AverageScore = g.Select(a => a.RawScore).Average()
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+            .Select(a => a.RawScore)
+            .ToListAsync(cancellationToken);
 
         return new OverallGradingAnalytics
         {
             TotalGradings = totalGradings,
-            TotalAssessments = assessmentStats?.Count ?? 0,
-            AverageScore = assessmentStats?.AverageScore ?? 0m
+            TotalAssessments = assessmentScores?.Count ?? 0,
+            AverageScore = assessmentScores?.Average() ?? 0m,
+            Scores = assessmentScores ?? []
         };
     }
 
@@ -43,20 +42,27 @@ public class GradingAnalyticService(AssignmentFlowDbContext dbContext) : IGradin
             .Where(a => a.GradingId == gradingId)
             .ToListAsync(cancellationToken);
 
-        // Optimized: Process in-memory assessments list to avoid an additional database query.
-        // Added null-coalescing operator for ScoreBreakdowns for robustness.
+        var rubric = await rubricProtoService.GetRubricAsync(new GetRubricRequest
+        {
+            RubricId = grading.RubricId
+        }, cancellationToken: cancellationToken);
+
+        // Pre-compute criterion weights for O(1) lookup performance
+        var criterionWeights = rubric.Criteria
+            .ToDictionary(c => c.Name, c => (decimal)c.Weight);
+
         var criterionData = assessments
-            .SelectMany(a => a.ScoreBreakdowns)
-            .GroupBy(sb => sb.CriterionName) // Assumes ScoreBreakdownApiContract has CriterionName
+            .SelectMany(a => a.ScoreBreakdowns ?? [])
+            .GroupBy(sb => sb.CriterionName)
             .Select(g => new CriterionAnalytics
             {
                 CriterionName = g.Key,
-                TotalWeight = g.Sum(sb => sb.RawScore), // Assumes ScoreBreakdownApiContract has RawScore
+                TotalWeight = criterionWeights.TryGetValue(g.Key, out var weight) ? weight : 0m,
                 Scores = [.. g.Select(sb => sb.RawScore)]
             })
             .ToList(); // Synchronous LINQ to Objects operation
 
-        var scores = assessments.Select(a => a.RawScore * grading.ScaleFactor).ToList();
+        var scores = assessments.Select(a => a.RawScore).ToList();
         var averageScore = scores.Count != 0 ? scores.Average() : 0m;
         var scaleFactor = grading.ScaleFactor;
 
