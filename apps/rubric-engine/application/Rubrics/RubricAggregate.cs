@@ -2,6 +2,7 @@ using EventFlow.Aggregates;
 using EventFlow.Core;
 using EventFlow.Extensions;
 using RubricEngine.Application.Rubrics.Complete;
+using RubricEngine.Application.Rubrics.RemoveAttachment;
 using RubricEngine.Application.Rubrics.Update;
 
 namespace RubricEngine.Application.Rubrics;
@@ -55,6 +56,12 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
             {
                 Criteria = command.Criteria!
             });
+
+        ConditionalEmit(command.Metadata is not null,
+            () => new MetadataUpdatedEvent
+            {
+                MetadataJson = System.Text.Json.JsonSerializer.Serialize(command.Metadata!) // Use the static JsonSerializer from System.Text.Json
+            });
     }
 
     public void CompleteRubric(Rubrics.Complete.Command command)
@@ -63,6 +70,33 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
         Emit(new Complete.RubricUsedEvent
         {
             GradingId = command.GradingId
+        });
+    }
+
+    public void ProvisionContext(List<string> attachments, Dictionary<string, object>? metadata = null)
+    {
+        //TODO: Create new specification
+        RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+
+        Emit(new ProvisionContext.AttachmentsProvisionedEvent
+        {
+            Attachments = attachments,
+        });
+
+        ConditionalEmit(metadata is not null,
+            () => new MetadataUpdatedEvent
+            {
+                MetadataJson = System.Text.Json.JsonSerializer.Serialize(metadata) // Use the static JsonSerializer from System.Text.Json
+            });
+    }
+
+    public void RemoveAttachment(string attachment)
+    {
+        RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+
+        Emit(new AttachmentRemovedEvent
+        {
+            RemovedAttachment = attachment
         });
     }
 

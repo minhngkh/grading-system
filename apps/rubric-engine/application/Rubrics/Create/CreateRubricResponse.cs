@@ -13,4 +13,8 @@ public class CreateRubricResponse
     public required DateTimeOffset UpdatedOn { get; init; }
 
     public required string Status { get; init; }
+
+    public List<string>? Attachments { get; init; }
+
+    public Dictionary<string, object>? Metadata { get; init; }
 }
