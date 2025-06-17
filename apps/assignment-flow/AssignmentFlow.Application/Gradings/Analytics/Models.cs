@@ -5,6 +5,7 @@ public class OverallGradingAnalytics
     public required int TotalGradings { get; init; }
     public required int TotalAssessments { get; init; }
     public required decimal AverageScore { get; init; }
+    public List<decimal> Scores { get; init; } = [];
 }
 
 public class GradingAnalytics
