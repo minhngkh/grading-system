@@ -3,6 +3,19 @@ export type CustomErrorInfo = {
   cause?: unknown;
 };
 
+export type ErrorInfo = {
+  message?: string;
+  options?: ErrorOptions;
+};
+
+export class CustomError<TData> extends Error {
+  data: TData;
+  constructor(info: ErrorInfo & { data: TData }) {
+    super(info?.message, info?.options);
+    this.data = info.data;
+  }
+}
+
 export function asError(thrown: unknown): Error {
   if (thrown instanceof Error) {
     return thrown;

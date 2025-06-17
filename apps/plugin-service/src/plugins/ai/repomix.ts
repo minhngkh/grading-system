@@ -181,17 +181,21 @@ function getFiles(
 type PackResult =
   | {
       success: false;
+      ids: string[];
       error: string;
     }
   | {
       success: true;
-      packedContent: string;
-      totalTokens: number;
-      allBlobUrls: string[];
-      usedBlobUrls: Set<string>;
+      ids: string[];
+      data: {
+        packedContent: string;
+        totalTokens: number;
+        allBlobUrls: string[];
+        usedBlobUrls: Set<string>;
+      };
     };
 
-type packFilesSubsetsResult = ({ ids: string[] } & PackResult)[];
+// type PackFilesSubsetsResult = ({ ids: string[] } & PackResult)[];
 
 export type FilesSubset = {
   id: string;
@@ -248,37 +252,63 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
       patternListIdxMap.set(includePattern, packTasks.length - 1);
     }
 
-    const packResults: packFilesSubsetsResult = [];
+    // const packResults: PackFilesSubsetsResult = [];
 
-    await Promise.all(
-      packTasks.map((task) =>
-        packFiles({
-          outputDirectory: task.outputDirectory,
-          outputFile: task.outputFile,
-          directory: downloadDir,
-          includePattern: task.includePattern,
-        }).match(
-          (result) => {
-            packResults.push({
-              success: true,
-              ids: task.subsetIds,
+    // await Promise.all(
+    //   packTasks.map((task) =>
+    //     packFiles({
+    //       outputDirectory: task.outputDirectory,
+    //       outputFile: task.outputFile,
+    //       directory: downloadDir,
+    //       includePattern: task.includePattern,
+    //     }).match(
+    //       (result) => {
+    //         packResults.push({
+    //           success: true,
+    //           ids: task.subsetIds,
+    //           packedContent: result.packedContent,
+    //           totalTokens: result.totalTokens,
+    //           allBlobUrls: task.allBlobUrls,
+    //           usedBlobUrls: result.usedBlobs,
+    //         });
+    //       },
+    //       () => {
+    //         packResults.push({
+    //           success: false,
+    //           ids: task.subsetIds,
+    //           error: "Failed to extract files",
+    //         });
+    //       },
+    //     ),
+    //   ),
+    // );
+
+    const resultList = packTasks.map((task) =>
+      packFiles({
+        outputDirectory: task.outputDirectory,
+        outputFile: task.outputFile,
+        directory: downloadDir,
+        includePattern: task.includePattern,
+      })
+        .map(
+          (result): PackResult => ({
+            success: true,
+            ids: task.subsetIds,
+            data: {
               packedContent: result.packedContent,
               totalTokens: result.totalTokens,
               allBlobUrls: task.allBlobUrls,
               usedBlobUrls: result.usedBlobs,
-            });
-          },
-          () => {
-            packResults.push({
-              success: false,
-              ids: task.subsetIds,
-              error: "Failed to extract files",
-            });
-          },
-        ),
-      ),
+            },
+          }),
+        )
+        .mapErr(() => ({
+          success: false,
+          ids: task.subsetIds,
+          error: "Failed to extract files",
+        })),
     );
 
-    return okAsync(packResults);
+    return okAsync(resultList);
   });
 }
