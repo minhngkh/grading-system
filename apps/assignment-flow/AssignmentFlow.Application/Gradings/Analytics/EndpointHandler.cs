@@ -23,7 +23,7 @@ public static class EndpointHandler
 
     [Authorize]
     private static async Task<IResult> GetGradingsSummary(
-        [FromServices] GradingAnalyticService gradingAnalyticService,
+        [FromServices] IGradingAnalyticService gradingAnalyticService,
         ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
@@ -40,7 +40,7 @@ public static class EndpointHandler
     [Authorize]
     private static async Task<IResult> GetGradingSummary(
         [FromRoute] string id,
-        [FromServices] GradingAnalyticService gradingAnalyticService,
+        [FromServices] IGradingAnalyticService gradingAnalyticService,
         ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
