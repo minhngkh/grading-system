@@ -21,7 +21,7 @@ message RubricModel {
   repeated CriterionModel criteria = 5;
   string status = 6; // "Draft" or "Used"
   repeated string attachments = 7;
-  string metadataJson = 8;
+  string metadata_json = 8;
 }
 
 message CriterionModel {

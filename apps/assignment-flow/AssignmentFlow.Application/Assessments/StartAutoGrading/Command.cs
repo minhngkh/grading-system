@@ -26,7 +26,7 @@ public class CommandHandler(
             RubricId = command.RubricId
         }, cancellationToken: cancellationToken);
 
-        var metadata = rubric.MetadataJson is not null ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(rubric.MetadataJson) : [];
+        var metadata = !string.IsNullOrWhiteSpace(rubric.MetadataJson) ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(rubric.MetadataJson) : [];
 
         await publishEndpoint.Publish<ISubmissionGradingStarted>(new
         {
