@@ -16,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CriterionScoreDistribution } from "@/types/analytics";
+import { getScoreDistribution } from "@/lib/analytics";
 
 interface AssessmentCriterionChartProps {
   criterionData: CriterionScoreDistribution[];
@@ -29,7 +30,9 @@ export function AssessmentCriterionChart({
   // Transform criterion data for charts
   const chartData = useMemo(() => {
     return criterionData.map((criterion) => {
-      const chartPoints = criterion.scoreDistribution.map((count, index) => {
+      const scoreDistribution = getScoreDistribution(criterion.scores);
+
+      const chartPoints = scoreDistribution.map((count, index) => {
         const minPercent = index * 10;
         const maxPercent = (index + 1) * 10;
         const minScore = (scaleFactor * minPercent) / 100;
@@ -37,7 +40,7 @@ export function AssessmentCriterionChart({
 
         return {
           bin: `${minPercent}-${maxPercent}%`,
-          range: `${(minScore * criterion.totalWeight).toFixed(1)}-${(maxScore * criterion.totalWeight).toFixed(1)}`,
+          range: `${((minScore * criterion.totalWeight) / 100).toFixed(1)}-${((maxScore * criterion.totalWeight) / 100).toFixed(1)}`,
           count,
         };
       });
@@ -46,7 +49,7 @@ export function AssessmentCriterionChart({
       let totalScore = 0;
       let totalCount = 0;
 
-      criterion.scoreDistribution.forEach((count, index) => {
+      scoreDistribution.forEach((count, index) => {
         const midPercent = (index * 10 + (index + 1) * 10) / 2; // Midpoint of bin
         totalScore += (midPercent / 100) * count;
         totalCount += count;
@@ -82,8 +85,9 @@ export function AssessmentCriterionChart({
   return (
     <div className="space-y-8">
       {chartData.map((criterion, index) => {
+        const scoreDistribution = getScoreDistribution(criterion.scores);
         const uniqueCounts = Array.from(
-          new Set(criterion.scoreDistribution.filter((c) => c > 0)),
+          new Set(scoreDistribution.filter((c) => c > 0)),
         ).sort((a, b) => a - b);
 
         const yTicks = [0, ...uniqueCounts];
@@ -106,14 +110,15 @@ export function AssessmentCriterionChart({
                       style={{ color: chartColors[index % chartColors.length] }}
                     >
                       {(
-                        criterion.averagePercentage *
-                        scaleFactor *
-                        criterion.totalWeight
-                      ).toFixed(2)}
+                        (criterion.averagePercentage *
+                          scaleFactor *
+                          criterion.totalWeight) /
+                        100
+                      ).toFixed(1)}
                     </span>
                     <span className="text-sm text-gray-500">/</span>
                     <span className="text-lg font-semibold text-gray-800">
-                      {scaleFactor * criterion.totalWeight}
+                      {(scaleFactor * criterion.totalWeight) / 100}
                     </span>
                   </div>
                 </div>

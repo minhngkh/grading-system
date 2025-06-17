@@ -7,12 +7,15 @@ import {
 } from "@/components/ui/card";
 import { OverallGradingDistributionChart } from "./overall-distribution-chart";
 import { OverallGradingAnalytics } from "@/types/analytics";
+import { getScoreDistribution } from "@/lib/analytics";
 
 interface OverallAnalyticsPageProps {
   analytics: OverallGradingAnalytics;
 }
 
 export function OverallAnalyticsPage({ analytics }: OverallAnalyticsPageProps) {
+  const scoreDistribution = getScoreDistribution(analytics.scores);
+
   return (
     <div className="space-y-8">
       <div className="space-y-2">
@@ -28,7 +31,7 @@ export function OverallAnalyticsPage({ analytics }: OverallAnalyticsPageProps) {
             <CardTitle className="text-sm font-medium">Total Gradings</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.totalGradingCount}</div>
+            <div className="text-2xl font-bold">{analytics.totalGradings}</div>
             <p className="text-xs text-muted-foreground">
               Different grading scales used for assessments
             </p>
@@ -39,7 +42,7 @@ export function OverallAnalyticsPage({ analytics }: OverallAnalyticsPageProps) {
             <CardTitle className="text-sm font-medium">Total Assessments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.totalAssessmentCount}</div>
+            <div className="text-2xl font-bold">{analytics.totalAssessments}</div>
             <p className="text-xs text-muted-foreground">
               Assessments that have been graded
             </p>
@@ -50,11 +53,9 @@ export function OverallAnalyticsPage({ analytics }: OverallAnalyticsPageProps) {
             <CardTitle className="text-sm font-medium">Average Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {(analytics.averageScore * 100).toFixed(1)}%
-            </div>
+            <div className="text-2xl font-bold">{analytics.averageScore.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
-              Average raw score across all assessments
+              Average percent score across all assessments
             </p>
           </CardContent>
         </Card>
@@ -68,9 +69,7 @@ export function OverallAnalyticsPage({ analytics }: OverallAnalyticsPageProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
-          <OverallGradingDistributionChart
-            gradingDistribution={analytics.gradingDistribution}
-          />
+          <OverallGradingDistributionChart gradingDistribution={scoreDistribution} />
         </CardContent>
       </Card>
     </div>

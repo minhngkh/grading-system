@@ -9,14 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GradingAnalytics } from "@/types/analytics";
 import { AssessmentCriterionChart } from "./grading-criterion-chart";
 import { AssessmentScoreDistributionChart } from "./grading-distribution-chart";
+import { getScoreDistribution } from "@/lib/analytics";
 
 interface GradingAnalyticsPageProps {
   gradingAnalytics: GradingAnalytics;
 }
 
 export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageProps) {
-  const { scaleFactor, averageScore, assessmentCount, scoreDistribution, criterionData } =
+  const { scaleFactor, averageScore, assessmentCount, scores, criterionData } =
     gradingAnalytics;
+
+  const scoreDistribution = getScoreDistribution(scores);
 
   return (
     <div className="space-y-8">
@@ -44,9 +47,9 @@ export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageP
             <CardTitle className="text-sm font-medium">Average Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(averageScore * 100).toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{averageScore.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
-              {(averageScore * scaleFactor).toFixed(2)} out of {scaleFactor}
+              {((averageScore / 100) * scaleFactor).toFixed(2)} out of {scaleFactor}
             </p>
           </CardContent>
         </Card>
