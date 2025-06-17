@@ -31,7 +31,7 @@ export const NavigationItems: NavigationData[] = [
   {
     title: "Manage Rubrics",
     icon: <Library className="size-4" />,
-    to: "/rubrics",
+    to: "/rubrics/view",
   },
   {
     title: "Grade Assignments",
@@ -42,7 +42,7 @@ export const NavigationItems: NavigationData[] = [
   {
     title: "Manage Gradings",
     icon: <Library className="size-4" />,
-    to: "/gradings",
+    to: "/gradings/view",
   },
   {
     title: "AI Assistant",

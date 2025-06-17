@@ -58,7 +58,8 @@ export class GradingService {
       configHeaders,
     );
 
-    return this.gradingDeserializer.deserialize(response.data);
+    const grading = await this.gradingDeserializer.deserialize(response.data);
+    return grading.status;
   }
 
   static async updateGradingRubric(id: string, rubricId: string, token: string) {

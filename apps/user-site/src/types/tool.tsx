@@ -34,7 +34,7 @@ export const SystemTools: Tool[] = [
       "Includes components, patterns, and guidelines for creating cohesive user interfaces.",
     types: [ToolType.Rubric, ToolType.Review],
     isFavorite: true,
-    navigation: "/rubrics",
+    navigation: "/rubrics/view",
   },
   {
     name: "Grade Assignments",
@@ -65,6 +65,6 @@ export const SystemTools: Tool[] = [
       "Track and review student submissions, provide feedback, and manage grading criteria.",
     types: [ToolType.Review, ToolType.Grading],
     isFavorite: false,
-    navigation: "/gradings",
+    navigation: "/gradings/view",
   },
 ];
