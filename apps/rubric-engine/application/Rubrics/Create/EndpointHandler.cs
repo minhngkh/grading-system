@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using EventFlow;
 using EventFlow.Queries;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RubricEngine.Application.Rubrics.Create;
 
@@ -16,19 +17,15 @@ public static class EndpointHandler
         return endpoint;
     }
 
+    [Authorize]
     private static async Task<IResult> CreateRubric(
         ICommandBus commandBus,
         IQueryProcessor queryProcessor,
-        IHttpContextAccessor contextAccessor,
+        ClaimsPrincipal user,
         CancellationToken cancellationToken)
     {
-        var teacherId = contextAccessor.HttpContext?
-            .User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrEmpty(teacherId))
-        {
-            teacherId = "eric.nguyen";
-        }
+        var teacherId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new ArgumentNullException(nameof(user), "Teacher id must have been provided in the claims.");
 
         var rubricId = RubricId.NewComb();
 

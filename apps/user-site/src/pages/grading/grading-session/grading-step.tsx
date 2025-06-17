@@ -1,23 +1,30 @@
 import { GradingStatus, GradingAttempt } from "@/types/grading";
 import { usePolling } from "@/hooks/use-polling";
 import { GradingService } from "@/services/grading-service";
-import Spinner from "@/components/app/spinner";
+import { Spinner } from "@/components/app/spinner";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/clerk-react";
 
 interface GradingProgressStepProps {
   gradingAttempt: GradingAttempt;
-  onGradingAttemptChange: (gradingAttempt?: Partial<GradingAttempt>) => void;
+  onGradingAttemptChange: (gradingAttempt: Partial<GradingAttempt>) => void;
 }
 
 export default function GradingProgressStep({
   gradingAttempt,
   onGradingAttemptChange,
 }: GradingProgressStepProps) {
-  const pollingFn = useCallback(
-    async () => GradingService.getGradingStatus(gradingAttempt.id),
-    [gradingAttempt.id],
-  );
+  const auth = useAuth();
+
+  const pollingFn = useCallback(async () => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("You must be logged in to check grading status.");
+    }
+
+    return GradingService.getGradingStatus(gradingAttempt.id, token);
+  }, [gradingAttempt.id, auth]);
 
   const onSuccess = useCallback(
     (status: GradingStatus) => {
@@ -31,7 +38,10 @@ export default function GradingProgressStep({
     interval: 5000,
     enabled: gradingAttempt.status === GradingStatus.Started,
     onError: (error) => {
-      toast.error("Failed to fetch grading status");
+      toast.error(
+        error.message ||
+          "An error occurred while grading submission. Please try again later.",
+      );
       console.error("Failed to fetch grading status:", error);
     },
   });

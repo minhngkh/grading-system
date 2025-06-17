@@ -1,4 +1,5 @@
 ﻿using EventFlow;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RubricEngine.Application.Rubrics.Update;
 
@@ -13,6 +14,7 @@ public static class EndpointHandler
         return endpoint;
     }
 
+    [Authorize]
     private static async Task<IResult> UpdateRubricHandler(
         string rubricId,
         UpdateRubricRequest request,

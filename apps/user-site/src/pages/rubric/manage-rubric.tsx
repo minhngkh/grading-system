@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import { Rubric, RubricStatus } from "@/types/rubric";
-import { GetRubricsResult, RubricService } from "@/services/rubric-service";
-import { Badge } from "@/components/ui/badge";
+import { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,20 +37,20 @@ import {
   X,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
-import { SearchParams } from "@/types/search-params";
-import EditRubric from "@/components/app/edit-rubric";
-import { toast } from "sonner";
+import { GetAllResult, SearchParams } from "@/types/search-params";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
-import { useRouter } from "@tanstack/react-router";
+import { ExportDialog } from "@/components/app/export-dialog";
+import { RubricExporter } from "@/lib/exporters";
+import { useNavigate } from "@tanstack/react-router";
 
 type SortConfig = {
-  key: "rubricName" | "updatedOn" | "status" | null;
+  key: "rubricName" | "updatedOn" | null;
   direction: "asc" | "desc";
 };
 
 interface ManageRubricsPageProps {
   searchParams: SearchParams;
-  results: GetRubricsResult;
+  results: GetAllResult<Rubric>;
   setSearchParam: (partial: Partial<SearchParams>) => void;
 }
 
@@ -71,11 +69,10 @@ export default function ManageRubricsPage({
     meta: { total: totalCount },
   } = results;
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
-  const [statusFilter, setStatusFilter] = useState<string>("All");
   const [viewRubricOpen, setViewRubricOpen] = useState<boolean>(false);
   const [selectedRubricIndex, setSelectedRubricIndex] = useState<number | null>(null);
-  const [editRubricOpen, setEditRubricOpen] = useState<boolean>(false);
-  const router = useRouter();
+  const [exportRubricOpen, setExportRubricOpen] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
@@ -85,13 +82,8 @@ export default function ManageRubricsPage({
     });
   }, [debouncedSearchTerm]);
 
-  // Apply client filtering for status only
-  const filteredRubrics =
-    statusFilter === "All" ? rubrics : (
-      rubrics.filter((rubric) => rubric.status === statusFilter)
-    );
-
-  const sortedRubrics = [...filteredRubrics].sort((a, b) => {
+  // Remove client filtering - use rubrics directly
+  const sortedRubrics = [...rubrics].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const aKey = a[sortConfig.key];
     const bKey = b[sortConfig.key];
@@ -108,9 +100,7 @@ export default function ManageRubricsPage({
     return 0;
   });
 
-  const startIndex = (page - 1) * perPage;
-  const paginatedData = sortedRubrics.slice(startIndex, startIndex + perPage);
-  const totalPages = Math.ceil(sortedRubrics.length / perPage);
+  const totalPages = Math.ceil(totalCount / perPage);
 
   const requestSort = (key: SortConfig["key"]) => {
     let direction: "asc" | "desc" = "asc";
@@ -132,31 +122,8 @@ export default function ManageRubricsPage({
       : <ArrowDown className="ml-2 h-4 w-4" />;
   };
 
-  const getStatusBadge = (status?: RubricStatus) => {
-    switch (status) {
-      case RubricStatus.Draft:
-        return <Badge variant="default">Drafted</Badge>;
-      case RubricStatus.Used:
-        return <Badge variant="secondary">Used</Badge>;
-      default:
-        return <Badge variant="destructive">None</Badge>;
-    }
-  };
-
   const clearFilters = () => {
     setSearchTerm("");
-    setStatusFilter("All");
-  };
-
-  const onUpdateRubric = async (id: string, updatedRubricData: Partial<Rubric>) => {
-    try {
-      await RubricService.updateRubric(id, updatedRubricData);
-      toast.success("Rubric updated successfully");
-      router.invalidate();
-    } catch (err) {
-      toast.error("Failed to update rubric");
-      console.error(err);
-    }
   };
 
   return (
@@ -190,23 +157,7 @@ export default function ManageRubricsPage({
             </Button>
           )}
         </div>
-        <Select
-          value={statusFilter}
-          onValueChange={(value) => {
-            setStatusFilter(value);
-            setSearchParam({ page: 1 });
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All Statuses</SelectItem>
-            <SelectItem value="Drafted">Drafted</SelectItem>
-            <SelectItem value="Used">Used</SelectItem>
-          </SelectContent>
-        </Select>
-        {statusFilter !== "All" && (
+        {searchTerm.length > 0 && (
           <Button variant="ghost" onClick={clearFilters} className="w-full sm:w-auto">
             Clear Filters
           </Button>
@@ -217,32 +168,27 @@ export default function ManageRubricsPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => requestSort("rubricName")} className="w-[40%]">
+              <TableHead onClick={() => requestSort("rubricName")} className="w-[50%]">
                 <div className="flex items-center cursor-pointer">
                   Rubric Name {getSortIcon("rubricName")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => requestSort("updatedOn")} className="w-[20%]">
+              <TableHead onClick={() => requestSort("updatedOn")} className="w-[30%]">
                 <div className="flex items-center cursor-pointer">
                   Updated On {getSortIcon("updatedOn")}
-                </div>
-              </TableHead>
-              <TableHead onClick={() => requestSort("status")} className="w-[20%]">
-                <div className="flex items-center cursor-pointer">
-                  Status {getSortIcon("status")}
                 </div>
               </TableHead>
               <TableHead className="w-[20%] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length === 0 ?
+            {sortedRubrics.length === 0 ?
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={3} className="h-24 text-center">
                   No rubrics found.
                 </TableCell>
               </TableRow>
-            : paginatedData.map((rubric, index) => (
+            : sortedRubrics.map((rubric, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-semibold">{rubric.rubricName}</TableCell>
                   <TableCell>
@@ -250,7 +196,6 @@ export default function ManageRubricsPage({
                       format(rubric.updatedOn, "MMM d, yyyy")
                     : "Not set"}
                   </TableCell>
-                  <TableCell>{getStatusBadge(rubric.status)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -272,11 +217,21 @@ export default function ManageRubricsPage({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            setEditRubricOpen(true);
-                            setSelectedRubricIndex(index);
+                            navigate({
+                              to: "/rubrics/$id",
+                              params: { id: rubric.id },
+                            });
                           }}
                         >
                           Edit Rubric
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedRubricIndex(index);
+                            setExportRubricOpen(true);
+                          }}
+                        >
+                          Export Rubric
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -286,21 +241,11 @@ export default function ManageRubricsPage({
             }
           </TableBody>
         </Table>
-        {viewRubricOpen && selectedRubricIndex !== null && (
+        {viewRubricOpen && selectedRubricIndex != null && (
           <ViewRubricDialog
             open={viewRubricOpen}
             onOpenChange={setViewRubricOpen}
-            initialRubric={paginatedData[selectedRubricIndex]}
-          />
-        )}
-        {editRubricOpen && selectedRubricIndex !== null && (
-          <EditRubric
-            open={editRubricOpen}
-            onOpenChange={setEditRubricOpen}
-            rubricData={paginatedData[selectedRubricIndex]}
-            onUpdate={(updatedRubric) =>
-              onUpdateRubric(paginatedData[selectedRubricIndex].id, updatedRubric)
-            }
+            initialRubric={sortedRubrics[selectedRubricIndex]}
           />
         )}
       </div>
@@ -308,9 +253,7 @@ export default function ManageRubricsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            {statusFilter === "All" ?
-              `Showing ${rubrics.length} of ${totalCount} rubrics`
-            : `Showing ${paginatedData.length} of ${sortedRubrics.length} rubrics`}
+            Showing {rubrics.length} of {sortedRubrics.length} rubrics
           </p>
           <Select
             value={perPage.toString()}
@@ -395,6 +338,14 @@ export default function ManageRubricsPage({
           )}
         </div>
       </div>
+      {exportRubricOpen && selectedRubricIndex != null && (
+        <ExportDialog
+          open={exportRubricOpen}
+          onOpenChange={setExportRubricOpen}
+          exporterClass={RubricExporter}
+          args={[sortedRubrics[selectedRubricIndex]]}
+        />
+      )}
     </div>
   );
 }

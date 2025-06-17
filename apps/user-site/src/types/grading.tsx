@@ -4,7 +4,6 @@ export enum GradingStatus {
   Created = "Created",
   Started = "Started",
   Graded = "Graded",
-  Completed = "Completed",
   Failed = "Failed",
 }
 

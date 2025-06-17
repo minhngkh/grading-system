@@ -58,8 +58,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAll");
 
-//TODO: Add authentication and authorization middleware
-
 // Initialize the database
 using (var scope = app.Services.CreateScope())
 {
@@ -69,6 +67,9 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseJsonApi();
 app.MapGrpcService<RubricService>();

@@ -2,15 +2,16 @@ import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { defineStepper } from "@stepperize/react";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import GradingProgressStep from "./grading-step";
-import GradingResult from "../../review/grading-result";
+import GradingResult from "../grading-result";
 import UploadStep from "./upload-step";
 import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
 import { GradingService } from "@/services/grading-service";
+import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 
 type StepData = {
@@ -49,45 +50,26 @@ export default function UploadAssignmentPage({
   });
 
   const currentIndex = utils.getIndex(stepper.current.id);
+  const [isStarting, setIsStarting] = useState(false);
+  const auth = useAuth();
   const navigate = useNavigate();
-  const [isUploading, setIsUploading] = useState(false);
 
   const gradingAttempt = useForm<GradingAttempt>({
     resolver: zodResolver(GradingSchema),
     defaultValues: initialGradingAttempt,
   });
 
-  const gradingAttemptValues = gradingAttempt.getValues();
-  const handleUpdateGradingAttempt = async (updated?: Partial<GradingAttempt>) => {
-    if (!updated) return;
+  const gradingAttemptValues = gradingAttempt.watch();
 
-    try {
-      if (updated.rubricId)
-        await GradingService.updateGradingRubric(
-          gradingAttemptValues.id,
-          updated.rubricId,
-        );
-
-      if (updated.selectors)
-        await GradingService.updateGradingSelectors(
-          gradingAttemptValues.id,
-          updated.selectors,
-        );
-
-      if (updated.scaleFactor)
-        await GradingService.updateGradingScaleFactor(
-          gradingAttemptValues.id,
-          updated.scaleFactor,
-        );
-
+  const handleUpdateGradingAttempt = useCallback(
+    (updated: Partial<GradingAttempt>) => {
       gradingAttempt.reset({
-        ...gradingAttemptValues,
+        ...gradingAttempt.getValues(),
         ...updated,
       });
-    } catch (err) {
-      toast.error("Failed to update grading attempt");
-    }
-  };
+    },
+    [auth, gradingAttempt],
+  );
 
   const handlePrev = () => {
     stepper.prev();
@@ -98,15 +80,19 @@ export default function UploadAssignmentPage({
     switch (currentIndex) {
       case 0:
         try {
-          setIsUploading(true);
-          await GradingService.startGrading(gradingAttemptValues.id);
+          const token = await auth.getToken();
+          if (!token) {
+            return toast.error("You must be logged in to start grading");
+          }
+
+          setIsStarting(true);
+          await GradingService.startGrading(gradingAttemptValues.id, token);
           handleUpdateGradingAttempt({ status: GradingStatus.Started });
         } catch (err) {
-          toast.error("Failed to start grading");
+          toast.error("Failed to start grading. Please try again.");
           console.error("Error starting grading:", err);
-          return;
         } finally {
-          setIsUploading(false);
+          setIsStarting(false);
         }
         break;
       case 1:
@@ -120,8 +106,16 @@ export default function UploadAssignmentPage({
     sessionStorage.setItem("gradingStep", steps[currentIndex + 1].id);
   };
 
+  const isBackButtonDisabled = () => {
+    if (currentIndex === 0) return true;
+    if (currentIndex === 1 && gradingAttemptValues.status === GradingStatus.Started)
+      return true;
+    return false;
+  };
+
   const isNextButtonDisabled = () => {
-    if (isUploading) return true;
+    if (currentIndex === 0 && gradingAttemptValues.submissions.length === 0) return true;
+    if (isStarting) return true;
     if (currentIndex === 1) return gradingAttemptValues.status === GradingStatus.Started;
     return false;
   };
@@ -161,12 +155,16 @@ export default function UploadAssignmentPage({
       </nav>
       <div className="mt-8 space-y-4 flex-1">
         {stepper.switch({
-          upload: () => (
-            <UploadStep
-              gradingAttempt={gradingAttemptValues}
-              onGradingAttemptChange={handleUpdateGradingAttempt}
-            />
-          ),
+          upload: () => {
+            return isStarting ?
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-lg font-semibold">Starting grading...</p>
+                </div>
+              : <UploadStep
+                  gradingAttempt={gradingAttemptValues}
+                  onGradingAttemptChange={handleUpdateGradingAttempt}
+                />;
+          },
           grading: () => (
             <GradingProgressStep
               gradingAttempt={gradingAttemptValues}
@@ -177,7 +175,11 @@ export default function UploadAssignmentPage({
         })}
       </div>
       <div className="flex w-full justify-end gap-4">
-        <Button variant="secondary" onClick={handlePrev} disabled={stepper.isFirst}>
+        <Button
+          variant="secondary"
+          onClick={handlePrev}
+          disabled={isBackButtonDisabled()}
+        >
           Back
         </Button>
         <Button disabled={isNextButtonDisabled()} onClick={handleNext}>

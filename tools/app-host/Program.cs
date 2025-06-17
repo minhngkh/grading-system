@@ -72,7 +72,6 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
     rubricEngine = builder
         .AddProject<Projects.RubricEngine_Application>("rubric-engine")
         .WithHttpsEndpoint(
-            name: "rubric-engine-https",
             port: builder.Configuration.GetValue<int?>("RubricEngine:Port"),
             isProxied: toProxy
         )
@@ -87,7 +86,6 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
     assignmentFlow = builder
         .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
         .WithHttpsEndpoint(
-            name: "assignment-flow-https",
             port: builder.Configuration.GetValue<int?>("AssignmentFlow:Port"),
             isProxied: toProxy
         )
@@ -155,7 +153,7 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
                 assignmentFlowEndpoint?.Url ?? "";
-        })
+        });
 }
 
 builder.Build().Run();

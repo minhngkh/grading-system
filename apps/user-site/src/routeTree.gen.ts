@@ -14,18 +14,22 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/_auth/route'
 import { Route as IndexImport } from './routes/index'
+import { Route as AuthenticatedTestImport } from './routes/_authenticated/test'
 import { Route as AuthenticatedProfileImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedHomeImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedChatImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedAnalyticsImport } from './routes/_authenticated/analytics'
 import { Route as AuthSignupImport } from './routes/_auth/signup'
 import { Route as AuthSigninImport } from './routes/_auth/signin'
-import { Route as AuthenticatedRubricsIndexImport } from './routes/_authenticated/rubrics/index'
-import { Route as AuthenticatedGradingsIndexImport } from './routes/_authenticated/gradings/index'
+import { Route as AuthenticatedRubricsViewImport } from './routes/_authenticated/rubrics/view'
 import { Route as AuthenticatedRubricsCreateImport } from './routes/_authenticated/rubrics/create'
+import { Route as AuthenticatedRubricsIdImport } from './routes/_authenticated/rubrics/$id'
+import { Route as AuthenticatedGradingsViewImport } from './routes/_authenticated/gradings/view'
 import { Route as AuthenticatedGradingsCreateImport } from './routes/_authenticated/gradings/create'
-import { Route as AuthenticatedGradingsIdImport } from './routes/_authenticated/gradings/$id'
-import { Route as AuthenticatedAssessmentsIdImport } from './routes/_authenticated/assessments/$id'
-import { Route as AuthenticatedReviewAnalyticsImport } from './routes/_authenticated/_review/analytics'
+import { Route as AuthenticatedGradingsGradingIdIndexImport } from './routes/_authenticated/gradings/$gradingId/index'
+import { Route as AuthenticatedGradingsGradingIdResultImport } from './routes/_authenticated/gradings/$gradingId/result'
+import { Route as AuthenticatedGradingsGradingIdAnalyticsImport } from './routes/_authenticated/gradings/$gradingId/analytics'
+import { Route as AuthenticatedGradingsGradingIdAssessmentsAssessmentIdImport } from './routes/_authenticated/gradings/$gradingId/assessments/$assessmentId'
 
 // Create/Update Routes
 
@@ -43,6 +47,12 @@ const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const AuthenticatedTestRoute = AuthenticatedTestImport.update({
+  id: '/test',
+  path: '/test',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 const AuthenticatedProfileRoute = AuthenticatedProfileImport.update({
@@ -63,6 +73,12 @@ const AuthenticatedChatRoute = AuthenticatedChatImport.update({
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+
 const AuthSignupRoute = AuthSignupImport.update({
   id: '/signup',
   path: '/signup',
@@ -75,19 +91,11 @@ const AuthSigninRoute = AuthSigninImport.update({
   getParentRoute: () => AuthRouteRoute,
 } as any)
 
-const AuthenticatedRubricsIndexRoute = AuthenticatedRubricsIndexImport.update({
-  id: '/rubrics/',
-  path: '/rubrics/',
+const AuthenticatedRubricsViewRoute = AuthenticatedRubricsViewImport.update({
+  id: '/rubrics/view',
+  path: '/rubrics/view',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-
-const AuthenticatedGradingsIndexRoute = AuthenticatedGradingsIndexImport.update(
-  {
-    id: '/gradings/',
-    path: '/gradings/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any,
-)
 
 const AuthenticatedRubricsCreateRoute = AuthenticatedRubricsCreateImport.update(
   {
@@ -97,6 +105,18 @@ const AuthenticatedRubricsCreateRoute = AuthenticatedRubricsCreateImport.update(
   } as any,
 )
 
+const AuthenticatedRubricsIdRoute = AuthenticatedRubricsIdImport.update({
+  id: '/rubrics/$id',
+  path: '/rubrics/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+
+const AuthenticatedGradingsViewRoute = AuthenticatedGradingsViewImport.update({
+  id: '/gradings/view',
+  path: '/gradings/view',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+
 const AuthenticatedGradingsCreateRoute =
   AuthenticatedGradingsCreateImport.update({
     id: '/gradings/create',
@@ -104,24 +124,31 @@ const AuthenticatedGradingsCreateRoute =
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
-const AuthenticatedGradingsIdRoute = AuthenticatedGradingsIdImport.update({
-  id: '/gradings/$id',
-  path: '/gradings/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-
-const AuthenticatedAssessmentsIdRoute = AuthenticatedAssessmentsIdImport.update(
-  {
-    id: '/assessments/$id',
-    path: '/assessments/$id',
+const AuthenticatedGradingsGradingIdIndexRoute =
+  AuthenticatedGradingsGradingIdIndexImport.update({
+    id: '/gradings/$gradingId/',
+    path: '/gradings/$gradingId/',
     getParentRoute: () => AuthenticatedRouteRoute,
-  } as any,
-)
+  } as any)
 
-const AuthenticatedReviewAnalyticsRoute =
-  AuthenticatedReviewAnalyticsImport.update({
-    id: '/_review/analytics',
-    path: '/analytics',
+const AuthenticatedGradingsGradingIdResultRoute =
+  AuthenticatedGradingsGradingIdResultImport.update({
+    id: '/gradings/$gradingId/result',
+    path: '/gradings/$gradingId/result',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+
+const AuthenticatedGradingsGradingIdAnalyticsRoute =
+  AuthenticatedGradingsGradingIdAnalyticsImport.update({
+    id: '/gradings/$gradingId/analytics',
+    path: '/gradings/$gradingId/analytics',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+
+const AuthenticatedGradingsGradingIdAssessmentsAssessmentIdRoute =
+  AuthenticatedGradingsGradingIdAssessmentsAssessmentIdImport.update({
+    id: '/gradings/$gradingId/assessments/$assessmentId',
+    path: '/gradings/$gradingId/assessments/$assessmentId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -164,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignupImport
       parentRoute: typeof AuthRouteImport
     }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
     '/_authenticated/chat': {
       id: '/_authenticated/chat'
       path: '/chat'
@@ -185,25 +219,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileImport
       parentRoute: typeof AuthenticatedRouteImport
     }
-    '/_authenticated/_review/analytics': {
-      id: '/_authenticated/_review/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AuthenticatedReviewAnalyticsImport
-      parentRoute: typeof AuthenticatedRouteImport
-    }
-    '/_authenticated/assessments/$id': {
-      id: '/_authenticated/assessments/$id'
-      path: '/assessments/$id'
-      fullPath: '/assessments/$id'
-      preLoaderRoute: typeof AuthenticatedAssessmentsIdImport
-      parentRoute: typeof AuthenticatedRouteImport
-    }
-    '/_authenticated/gradings/$id': {
-      id: '/_authenticated/gradings/$id'
-      path: '/gradings/$id'
-      fullPath: '/gradings/$id'
-      preLoaderRoute: typeof AuthenticatedGradingsIdImport
+    '/_authenticated/test': {
+      id: '/_authenticated/test'
+      path: '/test'
+      fullPath: '/test'
+      preLoaderRoute: typeof AuthenticatedTestImport
       parentRoute: typeof AuthenticatedRouteImport
     }
     '/_authenticated/gradings/create': {
@@ -213,6 +233,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGradingsCreateImport
       parentRoute: typeof AuthenticatedRouteImport
     }
+    '/_authenticated/gradings/view': {
+      id: '/_authenticated/gradings/view'
+      path: '/gradings/view'
+      fullPath: '/gradings/view'
+      preLoaderRoute: typeof AuthenticatedGradingsViewImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/rubrics/$id': {
+      id: '/_authenticated/rubrics/$id'
+      path: '/rubrics/$id'
+      fullPath: '/rubrics/$id'
+      preLoaderRoute: typeof AuthenticatedRubricsIdImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
     '/_authenticated/rubrics/create': {
       id: '/_authenticated/rubrics/create'
       path: '/rubrics/create'
@@ -220,18 +254,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRubricsCreateImport
       parentRoute: typeof AuthenticatedRouteImport
     }
-    '/_authenticated/gradings/': {
-      id: '/_authenticated/gradings/'
-      path: '/gradings'
-      fullPath: '/gradings'
-      preLoaderRoute: typeof AuthenticatedGradingsIndexImport
+    '/_authenticated/rubrics/view': {
+      id: '/_authenticated/rubrics/view'
+      path: '/rubrics/view'
+      fullPath: '/rubrics/view'
+      preLoaderRoute: typeof AuthenticatedRubricsViewImport
       parentRoute: typeof AuthenticatedRouteImport
     }
-    '/_authenticated/rubrics/': {
-      id: '/_authenticated/rubrics/'
-      path: '/rubrics'
-      fullPath: '/rubrics'
-      preLoaderRoute: typeof AuthenticatedRubricsIndexImport
+    '/_authenticated/gradings/$gradingId/analytics': {
+      id: '/_authenticated/gradings/$gradingId/analytics'
+      path: '/gradings/$gradingId/analytics'
+      fullPath: '/gradings/$gradingId/analytics'
+      preLoaderRoute: typeof AuthenticatedGradingsGradingIdAnalyticsImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/gradings/$gradingId/result': {
+      id: '/_authenticated/gradings/$gradingId/result'
+      path: '/gradings/$gradingId/result'
+      fullPath: '/gradings/$gradingId/result'
+      preLoaderRoute: typeof AuthenticatedGradingsGradingIdResultImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/gradings/$gradingId/': {
+      id: '/_authenticated/gradings/$gradingId/'
+      path: '/gradings/$gradingId'
+      fullPath: '/gradings/$gradingId'
+      preLoaderRoute: typeof AuthenticatedGradingsGradingIdIndexImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
+    '/_authenticated/gradings/$gradingId/assessments/$assessmentId': {
+      id: '/_authenticated/gradings/$gradingId/assessments/$assessmentId'
+      path: '/gradings/$gradingId/assessments/$assessmentId'
+      fullPath: '/gradings/$gradingId/assessments/$assessmentId'
+      preLoaderRoute: typeof AuthenticatedGradingsGradingIdAssessmentsAssessmentIdImport
       parentRoute: typeof AuthenticatedRouteImport
     }
   }
@@ -254,29 +309,41 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedReviewAnalyticsRoute: typeof AuthenticatedReviewAnalyticsRoute
-  AuthenticatedAssessmentsIdRoute: typeof AuthenticatedAssessmentsIdRoute
-  AuthenticatedGradingsIdRoute: typeof AuthenticatedGradingsIdRoute
+  AuthenticatedTestRoute: typeof AuthenticatedTestRoute
   AuthenticatedGradingsCreateRoute: typeof AuthenticatedGradingsCreateRoute
+  AuthenticatedGradingsViewRoute: typeof AuthenticatedGradingsViewRoute
+  AuthenticatedRubricsIdRoute: typeof AuthenticatedRubricsIdRoute
   AuthenticatedRubricsCreateRoute: typeof AuthenticatedRubricsCreateRoute
-  AuthenticatedGradingsIndexRoute: typeof AuthenticatedGradingsIndexRoute
-  AuthenticatedRubricsIndexRoute: typeof AuthenticatedRubricsIndexRoute
+  AuthenticatedRubricsViewRoute: typeof AuthenticatedRubricsViewRoute
+  AuthenticatedGradingsGradingIdAnalyticsRoute: typeof AuthenticatedGradingsGradingIdAnalyticsRoute
+  AuthenticatedGradingsGradingIdResultRoute: typeof AuthenticatedGradingsGradingIdResultRoute
+  AuthenticatedGradingsGradingIdIndexRoute: typeof AuthenticatedGradingsGradingIdIndexRoute
+  AuthenticatedGradingsGradingIdAssessmentsAssessmentIdRoute: typeof AuthenticatedGradingsGradingIdAssessmentsAssessmentIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedReviewAnalyticsRoute: AuthenticatedReviewAnalyticsRoute,
-  AuthenticatedAssessmentsIdRoute: AuthenticatedAssessmentsIdRoute,
-  AuthenticatedGradingsIdRoute: AuthenticatedGradingsIdRoute,
+  AuthenticatedTestRoute: AuthenticatedTestRoute,
   AuthenticatedGradingsCreateRoute: AuthenticatedGradingsCreateRoute,
+  AuthenticatedGradingsViewRoute: AuthenticatedGradingsViewRoute,
+  AuthenticatedRubricsIdRoute: AuthenticatedRubricsIdRoute,
   AuthenticatedRubricsCreateRoute: AuthenticatedRubricsCreateRoute,
-  AuthenticatedGradingsIndexRoute: AuthenticatedGradingsIndexRoute,
-  AuthenticatedRubricsIndexRoute: AuthenticatedRubricsIndexRoute,
+  AuthenticatedRubricsViewRoute: AuthenticatedRubricsViewRoute,
+  AuthenticatedGradingsGradingIdAnalyticsRoute:
+    AuthenticatedGradingsGradingIdAnalyticsRoute,
+  AuthenticatedGradingsGradingIdResultRoute:
+    AuthenticatedGradingsGradingIdResultRoute,
+  AuthenticatedGradingsGradingIdIndexRoute:
+    AuthenticatedGradingsGradingIdIndexRoute,
+  AuthenticatedGradingsGradingIdAssessmentsAssessmentIdRoute:
+    AuthenticatedGradingsGradingIdAssessmentsAssessmentIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -287,16 +354,20 @@ export interface FileRoutesByFullPath {
   '': typeof AuthenticatedRouteRouteWithChildren
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/analytics': typeof AuthenticatedReviewAnalyticsRoute
-  '/assessments/$id': typeof AuthenticatedAssessmentsIdRoute
-  '/gradings/$id': typeof AuthenticatedGradingsIdRoute
+  '/test': typeof AuthenticatedTestRoute
   '/gradings/create': typeof AuthenticatedGradingsCreateRoute
+  '/gradings/view': typeof AuthenticatedGradingsViewRoute
+  '/rubrics/$id': typeof AuthenticatedRubricsIdRoute
   '/rubrics/create': typeof AuthenticatedRubricsCreateRoute
-  '/gradings': typeof AuthenticatedGradingsIndexRoute
-  '/rubrics': typeof AuthenticatedRubricsIndexRoute
+  '/rubrics/view': typeof AuthenticatedRubricsViewRoute
+  '/gradings/$gradingId/analytics': typeof AuthenticatedGradingsGradingIdAnalyticsRoute
+  '/gradings/$gradingId/result': typeof AuthenticatedGradingsGradingIdResultRoute
+  '/gradings/$gradingId': typeof AuthenticatedGradingsGradingIdIndexRoute
+  '/gradings/$gradingId/assessments/$assessmentId': typeof AuthenticatedGradingsGradingIdAssessmentsAssessmentIdRoute
 }
 
 export interface FileRoutesByTo {
@@ -304,16 +375,20 @@ export interface FileRoutesByTo {
   '': typeof AuthenticatedRouteRouteWithChildren
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/analytics': typeof AuthenticatedReviewAnalyticsRoute
-  '/assessments/$id': typeof AuthenticatedAssessmentsIdRoute
-  '/gradings/$id': typeof AuthenticatedGradingsIdRoute
+  '/test': typeof AuthenticatedTestRoute
   '/gradings/create': typeof AuthenticatedGradingsCreateRoute
+  '/gradings/view': typeof AuthenticatedGradingsViewRoute
+  '/rubrics/$id': typeof AuthenticatedRubricsIdRoute
   '/rubrics/create': typeof AuthenticatedRubricsCreateRoute
-  '/gradings': typeof AuthenticatedGradingsIndexRoute
-  '/rubrics': typeof AuthenticatedRubricsIndexRoute
+  '/rubrics/view': typeof AuthenticatedRubricsViewRoute
+  '/gradings/$gradingId/analytics': typeof AuthenticatedGradingsGradingIdAnalyticsRoute
+  '/gradings/$gradingId/result': typeof AuthenticatedGradingsGradingIdResultRoute
+  '/gradings/$gradingId': typeof AuthenticatedGradingsGradingIdIndexRoute
+  '/gradings/$gradingId/assessments/$assessmentId': typeof AuthenticatedGradingsGradingIdAssessmentsAssessmentIdRoute
 }
 
 export interface FileRoutesById {
@@ -323,16 +398,20 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/_review/analytics': typeof AuthenticatedReviewAnalyticsRoute
-  '/_authenticated/assessments/$id': typeof AuthenticatedAssessmentsIdRoute
-  '/_authenticated/gradings/$id': typeof AuthenticatedGradingsIdRoute
+  '/_authenticated/test': typeof AuthenticatedTestRoute
   '/_authenticated/gradings/create': typeof AuthenticatedGradingsCreateRoute
+  '/_authenticated/gradings/view': typeof AuthenticatedGradingsViewRoute
+  '/_authenticated/rubrics/$id': typeof AuthenticatedRubricsIdRoute
   '/_authenticated/rubrics/create': typeof AuthenticatedRubricsCreateRoute
-  '/_authenticated/gradings/': typeof AuthenticatedGradingsIndexRoute
-  '/_authenticated/rubrics/': typeof AuthenticatedRubricsIndexRoute
+  '/_authenticated/rubrics/view': typeof AuthenticatedRubricsViewRoute
+  '/_authenticated/gradings/$gradingId/analytics': typeof AuthenticatedGradingsGradingIdAnalyticsRoute
+  '/_authenticated/gradings/$gradingId/result': typeof AuthenticatedGradingsGradingIdResultRoute
+  '/_authenticated/gradings/$gradingId/': typeof AuthenticatedGradingsGradingIdIndexRoute
+  '/_authenticated/gradings/$gradingId/assessments/$assessmentId': typeof AuthenticatedGradingsGradingIdAssessmentsAssessmentIdRoute
 }
 
 export interface FileRouteTypes {
@@ -342,32 +421,40 @@ export interface FileRouteTypes {
     | ''
     | '/signin'
     | '/signup'
+    | '/analytics'
     | '/chat'
     | '/home'
     | '/profile'
-    | '/analytics'
-    | '/assessments/$id'
-    | '/gradings/$id'
+    | '/test'
     | '/gradings/create'
+    | '/gradings/view'
+    | '/rubrics/$id'
     | '/rubrics/create'
-    | '/gradings'
-    | '/rubrics'
+    | '/rubrics/view'
+    | '/gradings/$gradingId/analytics'
+    | '/gradings/$gradingId/result'
+    | '/gradings/$gradingId'
+    | '/gradings/$gradingId/assessments/$assessmentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | ''
     | '/signin'
     | '/signup'
+    | '/analytics'
     | '/chat'
     | '/home'
     | '/profile'
-    | '/analytics'
-    | '/assessments/$id'
-    | '/gradings/$id'
+    | '/test'
     | '/gradings/create'
+    | '/gradings/view'
+    | '/rubrics/$id'
     | '/rubrics/create'
-    | '/gradings'
-    | '/rubrics'
+    | '/rubrics/view'
+    | '/gradings/$gradingId/analytics'
+    | '/gradings/$gradingId/result'
+    | '/gradings/$gradingId'
+    | '/gradings/$gradingId/assessments/$assessmentId'
   id:
     | '__root__'
     | '/'
@@ -375,16 +462,20 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/_auth/signin'
     | '/_auth/signup'
+    | '/_authenticated/analytics'
     | '/_authenticated/chat'
     | '/_authenticated/home'
     | '/_authenticated/profile'
-    | '/_authenticated/_review/analytics'
-    | '/_authenticated/assessments/$id'
-    | '/_authenticated/gradings/$id'
+    | '/_authenticated/test'
     | '/_authenticated/gradings/create'
+    | '/_authenticated/gradings/view'
+    | '/_authenticated/rubrics/$id'
     | '/_authenticated/rubrics/create'
-    | '/_authenticated/gradings/'
-    | '/_authenticated/rubrics/'
+    | '/_authenticated/rubrics/view'
+    | '/_authenticated/gradings/$gradingId/analytics'
+    | '/_authenticated/gradings/$gradingId/result'
+    | '/_authenticated/gradings/$gradingId/'
+    | '/_authenticated/gradings/$gradingId/assessments/$assessmentId'
   fileRoutesById: FileRoutesById
 }
 
@@ -428,16 +519,20 @@ export const routeTree = rootRoute
     "/_authenticated": {
       "filePath": "_authenticated/route.tsx",
       "children": [
+        "/_authenticated/analytics",
         "/_authenticated/chat",
         "/_authenticated/home",
         "/_authenticated/profile",
-        "/_authenticated/_review/analytics",
-        "/_authenticated/assessments/$id",
-        "/_authenticated/gradings/$id",
+        "/_authenticated/test",
         "/_authenticated/gradings/create",
+        "/_authenticated/gradings/view",
+        "/_authenticated/rubrics/$id",
         "/_authenticated/rubrics/create",
-        "/_authenticated/gradings/",
-        "/_authenticated/rubrics/"
+        "/_authenticated/rubrics/view",
+        "/_authenticated/gradings/$gradingId/analytics",
+        "/_authenticated/gradings/$gradingId/result",
+        "/_authenticated/gradings/$gradingId/",
+        "/_authenticated/gradings/$gradingId/assessments/$assessmentId"
       ]
     },
     "/_auth/signin": {
@@ -447,6 +542,10 @@ export const routeTree = rootRoute
     "/_auth/signup": {
       "filePath": "_auth/signup.tsx",
       "parent": "/_auth"
+    },
+    "/_authenticated/analytics": {
+      "filePath": "_authenticated/analytics.tsx",
+      "parent": "/_authenticated"
     },
     "/_authenticated/chat": {
       "filePath": "_authenticated/chat.tsx",
@@ -460,32 +559,44 @@ export const routeTree = rootRoute
       "filePath": "_authenticated/profile.tsx",
       "parent": "/_authenticated"
     },
-    "/_authenticated/_review/analytics": {
-      "filePath": "_authenticated/_review/analytics.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/assessments/$id": {
-      "filePath": "_authenticated/assessments/$id.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/gradings/$id": {
-      "filePath": "_authenticated/gradings/$id.tsx",
+    "/_authenticated/test": {
+      "filePath": "_authenticated/test.tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/gradings/create": {
       "filePath": "_authenticated/gradings/create.tsx",
       "parent": "/_authenticated"
     },
+    "/_authenticated/gradings/view": {
+      "filePath": "_authenticated/gradings/view.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/rubrics/$id": {
+      "filePath": "_authenticated/rubrics/$id.tsx",
+      "parent": "/_authenticated"
+    },
     "/_authenticated/rubrics/create": {
       "filePath": "_authenticated/rubrics/create.tsx",
       "parent": "/_authenticated"
     },
-    "/_authenticated/gradings/": {
-      "filePath": "_authenticated/gradings/index.tsx",
+    "/_authenticated/rubrics/view": {
+      "filePath": "_authenticated/rubrics/view.tsx",
       "parent": "/_authenticated"
     },
-    "/_authenticated/rubrics/": {
-      "filePath": "_authenticated/rubrics/index.tsx",
+    "/_authenticated/gradings/$gradingId/analytics": {
+      "filePath": "_authenticated/gradings/$gradingId/analytics.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/gradings/$gradingId/result": {
+      "filePath": "_authenticated/gradings/$gradingId/result.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/gradings/$gradingId/": {
+      "filePath": "_authenticated/gradings/$gradingId/index.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/gradings/$gradingId/assessments/$assessmentId": {
+      "filePath": "_authenticated/gradings/$gradingId/assessments/$assessmentId.tsx",
       "parent": "/_authenticated"
     }
   }

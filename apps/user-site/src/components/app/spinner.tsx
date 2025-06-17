@@ -5,7 +5,7 @@ interface SpinnerProps {
   color?: string;
 }
 
-export default function Spinner({ className = "", color = "blue-400" }: SpinnerProps) {
+export function Spinner({ className = "", color = "blue-400" }: SpinnerProps) {
   return (
     <span className={cn("w-3 h-3 mr-1 align-middle", className)}>
       <span

@@ -15,7 +15,7 @@ import { SignedIn, SignedOut, useClerk } from "@clerk/clerk-react";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { Moon, Search, Sun, User } from "lucide-react";
 import { useState } from "react";
-import NotificationButton from "@/components/app/notification-button";
+import { NotificationButton } from "@/components/app/notification-button";
 
 const UnauthenticatedNavBar = () => {
   const navigate = useNavigate();

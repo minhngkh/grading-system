@@ -2,11 +2,10 @@ import type { LinkProps } from "@tanstack/react-router";
 import {
   BookOpenCheck,
   BotMessageSquare,
+  ChartNoAxesCombined,
   ClipboardPlus,
   Home,
   Library,
-  LifeBuoy,
-  Settings,
 } from "lucide-react";
 import type { ReactElement } from "react";
 
@@ -32,7 +31,7 @@ export const NavigationItems: NavigationData[] = [
   {
     title: "Manage Rubrics",
     icon: <Library className="size-4" />,
-    to: "/rubrics",
+    to: "/rubrics/view",
   },
   {
     title: "Grade Assignments",
@@ -41,21 +40,18 @@ export const NavigationItems: NavigationData[] = [
     preload: false,
   },
   {
+    title: "Manage Gradings",
+    icon: <Library className="size-4" />,
+    to: "/gradings/view",
+  },
+  {
     title: "AI Assistant",
     icon: <BotMessageSquare className="size-4" />,
     to: "/chat",
   },
-];
-
-export const settingsItems: NavigationData[] = [
   {
-    title: "Settings",
-    icon: <Settings className="size-4" />,
-    to: "/",
-  },
-  {
-    title: "Help",
-    icon: <LifeBuoy className="size-4" />,
-    to: "/",
+    title: "Analytics",
+    icon: <ChartNoAxesCombined className="size-4" />,
+    to: "/analytics",
   },
 ];
