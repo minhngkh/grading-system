@@ -1,4 +1,5 @@
-﻿using AssignmentFlow.Application.Gradings.ChangeRubric;
+﻿using AssignmentFlow.Application.Gradings.Analytics;
+using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.Start;
@@ -23,7 +24,8 @@ internal static class EndpointHandlers
             .MapUploadSubmission()
             .MapRemoveSubmission()
             .MapChangeRubric()
-            .MapStartGrading();
+            .MapStartGrading()
+            .MapGradingAnalytics();
 
         return routeBuilder;
     }
