@@ -188,24 +188,32 @@ export function ViewRubricDialog({
 
     if (validationState.hasRubric && rubric) {
       return (
-        <>
-          <DialogHeader className="border-b pb-4">
-            <DialogTitle className="flex items-center gap-2">
-              {rubric.rubricName}
-            </DialogTitle>
-            <DialogDescription>
-              Review the criteria, levels, and scoring details for this rubric.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="w-full h-[60vh] overflow-y-auto flex flex-col mt-4">
-            <RubricView rubricData={rubric} />
-          </div>
-        </>
+        <div className="w-full h-[60vh] overflow-y-auto flex flex-col">
+          <RubricView rubricData={rubric} />
+        </div>
       );
     }
 
     return null;
   }, [validationState, error, rubric, rubricId, handleRetry]);
+
+  const getDialogTitle = () => {
+    if (validationState.showLoading) return "Loading Rubric";
+    if (validationState.showError) return "Error Loading Rubric";
+    if (validationState.showNoRubric) return "Rubric Not Found";
+    if (rubric) return rubric.rubricName;
+    return "View Rubric";
+  };
+
+  const getDialogDescription = () => {
+    if (validationState.showLoading)
+      return "Please wait while we load the rubric details.";
+    if (validationState.showError) return "There was an error loading the rubric.";
+    if (validationState.showNoRubric) return "The requested rubric could not be found.";
+    if (rubric)
+      return "Review the criteria, levels, and scoring details for this rubric.";
+    return "Rubric details will be displayed here.";
+  };
 
   if (!validationState.hasRubricId && !validationState.hasInitialRubric) {
     return null;
@@ -217,7 +225,14 @@ export function ViewRubricDialog({
         aria-describedby={undefined}
         className="min-w-[80%] max-w-[95%] max-h-[90vh] flex flex-col"
       >
-        <div className="flex-1 overflow-hidden">{renderContent}</div>
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle className="flex items-center gap-2">
+            {getDialogTitle()}
+          </DialogTitle>
+          <DialogDescription>{getDialogDescription()}</DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-hidden mt-4">{renderContent}</div>
 
         <div className="border-t pt-4 text-xs text-muted-foreground text-center">
           Tip: Press Escape to close{error && ", Ctrl+R to retry"}

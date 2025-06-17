@@ -6,16 +6,13 @@ import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/gradings/create")({
   component: RouteComponent,
-  beforeLoad: () => {
-    const id = sessionStorage.getItem("gradingId");
-    return { id };
-  },
-  loader: async ({ context: { auth, id } }) => {
+  loader: async ({ context: { auth } }) => {
     const token = await auth.getToken();
     if (!token) {
       throw new Error("You must be logged in to create a grading session.");
     }
 
+    const id = sessionStorage.getItem("gradingId");
     if (!id) {
       return await GradingService.createGradingAttempt(token);
     }
@@ -34,6 +31,7 @@ function RouteComponent() {
   const grading = Route.useLoaderData();
   sessionStorage.setItem("gradingId", grading.id);
   const gradingStep = sessionStorage.getItem("gradingStep") || undefined;
+
   return (
     <UploadAssignmentPage initialGradingAttempt={grading} initialStep={gradingStep} />
   );

@@ -99,19 +99,19 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
             <Download className="w-4 h-4" />
             Export
           </Button>
-          <Button size="sm" disabled={isLoading}>
-            <RefreshCw className="w-4 h-4" />
-            Regrade All
-          </Button>
           <Link
             to="/gradings/$gradingId/analytics"
             params={{ gradingId: gradingAttempt.id }}
           >
-            <Button size="sm" disabled={isLoading}>
+            <Button size="sm" variant="outline" disabled={isLoading}>
               <ChartColumn className="w-4 h-4" />
               View Analytics
             </Button>
           </Link>
+          <Button size="sm" disabled={isLoading}>
+            <RefreshCw className="w-4 h-4" />
+            Regrade All
+          </Button>
         </div>
       </section>
       <SummarySection

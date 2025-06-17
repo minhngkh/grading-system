@@ -7,29 +7,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { EditRubric } from "@/components/app/edit-rubric";
 import { Spinner } from "@/components/app/spinner";
-import { useState } from "react";
-import {
-  PencilIcon,
-  Plus,
-  FileArchive,
-  Trash2,
-  FileText,
-  File,
-  Image,
-} from "lucide-react";
+import { useState, useCallback, memo } from "react";
+import { PencilIcon, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FileUploader } from "@/components/app/file-uploader";
+import { RubricContextUploadDialog } from "./context-upload-dialog";
+import { toast } from "sonner";
+import { RubricService } from "@/services/rubric-service";
+import { useAuth } from "@clerk/clerk-react";
 
 interface RubricTableProps {
   rubricData: Rubric;
@@ -38,7 +24,7 @@ interface RubricTableProps {
   isApplyingEdit?: boolean;
 }
 
-export default function ChatRubricTable({
+function ChatRubricTable({
   rubricData,
   onUpdate,
   disableEdit = false,
@@ -46,6 +32,55 @@ export default function ChatRubricTable({
 }: RubricTableProps) {
   const [isEditingDialogOpen, setIsEditingDialogOpen] = useState(false);
   const [isContextDialogOpen, setIsContextDialogOpen] = useState(false);
+  const auth = useAuth();
+
+  const handleUploadContext = useCallback(
+    async (files: File[], newAttachments: string[]) => {
+      const token = await auth.getToken();
+      if (!token) return toast.error("You are not authorized to perform this action.");
+
+      try {
+        let isChanged = false;
+
+        const removedAttachments = rubricData.attachments?.filter(
+          (file) => !newAttachments.includes(file),
+        );
+
+        if (removedAttachments?.length) {
+          await Promise.all(
+            removedAttachments.map((file) =>
+              RubricService.deleteAttachment(rubricData.id, file, token),
+            ),
+          );
+          isChanged = true;
+        }
+
+        if (files.length > 0) {
+          await RubricService.uploadContext(rubricData.id, files, token);
+          isChanged = true;
+        }
+
+        if (isChanged) {
+          const updatedAttachments = [
+            ...newAttachments,
+            ...files.map((file) => file.name),
+          ];
+
+          onUpdate?.({ attachments: updatedAttachments });
+          toast.success("Context files updated successfully.");
+        }
+
+        setIsContextDialogOpen(false);
+      } catch (error) {
+        console.error("Error updating context files:", error);
+        toast.error("Failed to update context files. Please try again.");
+      }
+    },
+    [auth, rubricData.id, rubricData.attachments, onUpdate],
+  );
+
+  const handleOpenContextDialog = useCallback(() => setIsContextDialogOpen(true), []);
+  const handleOpenEditDialog = useCallback(() => setIsEditingDialogOpen(true), []);
 
   return (
     <div className="flex flex-col size-full gap-4">
@@ -54,12 +89,12 @@ export default function ChatRubricTable({
           <div className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setIsContextDialogOpen(true)}>
+              <Button variant="outline" onClick={handleOpenContextDialog}>
                 <Plus className="size-4" /> Context
               </Button>
               <Button
                 disabled={disableEdit || isApplyingEdit}
-                onClick={() => setIsEditingDialogOpen(true)}
+                onClick={handleOpenEditDialog}
               >
                 <PencilIcon className="size-4" /> Edit
               </Button>
@@ -91,8 +126,10 @@ export default function ChatRubricTable({
           )}
           {isContextDialogOpen && (
             <RubricContextUploadDialog
+              attachments={rubricData.attachments}
               open={isContextDialogOpen}
               onOpenChange={setIsContextDialogOpen}
+              onConfirm={handleUploadContext}
             />
           )}
         </CardContent>
@@ -101,116 +138,4 @@ export default function ChatRubricTable({
   );
 }
 
-function RubricContextUploadDialog({
-  open,
-  onOpenChange,
-  onConfirm = () => {},
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm?: (files: File[]) => void;
-}) {
-  const [contextFiles, setContextFiles] = useState<File[]>([]);
-
-  const handleFileUpload = (files: File[]) => {
-    setContextFiles((prev) => [...prev, ...files]);
-  };
-
-  const removeContextFile = (index: number) => {
-    setContextFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Add Context Files</DialogTitle>
-          <DialogDescription>
-            Upload files to provide context for the rubric.
-          </DialogDescription>
-        </DialogHeader>
-        <FileUploader onFileUpload={handleFileUpload} multiple />
-        <div className="space-y-2">
-          {contextFiles.map((file, index) => (
-            <FileComponent
-              key={index}
-              file={file}
-              index={index}
-              onDelete={() => removeContextFile(index)}
-            />
-          ))}
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <DialogClose asChild>
-            <Button onClick={() => onConfirm(contextFiles)}>Confirm</Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-interface FileComponentProps {
-  file: File;
-  index: number;
-  onDelete?: (index: number) => void;
-}
-
-function FileComponent({ file, onDelete, index }: FileComponentProps) {
-  const getFileTypeInfo = (fileName: string) => {
-    const extension = fileName.split(".").pop()?.toLowerCase();
-
-    switch (extension) {
-      case "pdf":
-        return { icon: FileText, color: "text-red-500" };
-      case "doc":
-      case "docx":
-        return { icon: FileText, color: "text-blue-500" };
-      case "txt":
-        return { icon: FileText, color: "text-gray-500" };
-      case "jpg":
-      case "jpeg":
-      case "png":
-      case "gif":
-        return { icon: Image, color: "text-green-500" };
-      case "zip":
-      case "rar":
-      case "7z":
-        return { icon: FileArchive, color: "text-purple-500" };
-      default:
-        return { icon: File, color: "text-gray-400" };
-    }
-  };
-
-  const { icon: IconComponent, color } = getFileTypeInfo(file.name);
-
-  return (
-    <div
-      key={index}
-      className="flex items-center justify-between p-3 bg-muted rounded-md"
-    >
-      <div className="flex items-center space-x-3 min-w-0 flex-1">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-white flex-shrink-0">
-          <IconComponent className={`h-5 w-5 ${color}`} />
-        </div>
-        <span className="font-medium max-w-48 truncate">{file.name}</span>
-      </div>
-      <div className="flex items-center space-x-3 flex-shrink-0">
-        {onDelete && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(index)}
-            className="text-red-500 hover:text-red-600 hover:bg-white dark:hover:text-red-600 dark:hover:bg-red-50 size-8"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Delete</span>
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
+export default memo(ChatRubricTable);

@@ -56,13 +56,15 @@ var rabbitmq = builder
         port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
     );
 
-var blobs = builder
+var storage = builder
     .AddAzureStorage("storage")
     .RunAsEmulator(azurite =>
     {
         azurite.WithDataVolume().WithBlobPort(27000);
-    })
-    .AddBlobs("submissions-store");
+    });
+
+var submissionStore = storage.AddBlobs("submissions-store");
+var rubricContextStore = storage.AddBlobs("rubric-context-store");
 
 IResourceBuilder<ProjectResource>? rubricEngine = null;
 if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
@@ -73,10 +75,9 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
             port: builder.Configuration.GetValue<int?>("RubricEngine:Port"),
             isProxied: toProxy
         )
-        .WithReference(rubricDb)
-        .WaitFor(rubricDb)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq);
+        .WithReference(rubricDb).WaitFor(rubricDb)
+        .WithReference(rubricContextStore).WaitFor(rubricContextStore)
+        .WithReference(rabbitmq).WaitFor(rabbitmq);
 }
 
 IResourceBuilder<ProjectResource>? assignmentFlow = null;
@@ -88,14 +89,10 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
             port: builder.Configuration.GetValue<int?>("AssignmentFlow:Port"),
             isProxied: toProxy
         )
-        .WithReference(assignmentFlowDb)
-        .WaitFor(assignmentFlowDb)
-        .WithReference(blobs)
-        .WaitFor(blobs)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
-        .WithReference(rubricEngine)
-        .WaitFor(rubricEngine);
+        .WithReference(assignmentFlowDb).WaitFor(assignmentFlowDb)
+        .WithReference(submissionStore).WaitFor(submissionStore)
+        .WithReference(rabbitmq).WaitFor(rabbitmq)
+        .WithReference(rubricEngine).WaitFor(rubricEngine);
 }
 
 var nx = builder.AddNxMonorepo("nx", rootPath, JsPackageManager.Pnpm);
@@ -111,12 +108,10 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
-        .WithReference(pluginDb)
-        .WaitFor(pluginDb)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
-        .WithReference(blobs)
-        .WaitFor(blobs);
+        .WithReference(pluginDb).WaitFor(pluginDb)
+        .WithReference(rabbitmq).WaitFor(rabbitmq)
+        .WithReference(submissionStore).WaitFor(submissionStore)
+        .WithReference(rubricContextStore).WaitFor(rubricContextStore);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? gradingService = null;
@@ -128,10 +123,9 @@ if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
-        .WithReference(blobs)
-        .WaitFor(blobs);
+        .WithReference(rabbitmq).WaitFor(rabbitmq)
+        .WithReference(submissionStore).WaitFor(submissionStore)
+        .WithReference(rubricContextStore).WaitFor(rubricContextStore);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;

@@ -16,6 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddNpgsqlDbContext<RubricDbContext>(connectionName: "rubricdb");
 builder.AddRabbitMQClient(connectionName: "messaging");
+builder.AddAzureBlobClient("rubric-context-store");
 
 builder.Services.AddBootstrapping(builder.Configuration, builder.Environment);
 builder.Services.AddShared(builder.Configuration, builder.Environment);

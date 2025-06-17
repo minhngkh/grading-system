@@ -1,3 +1,4 @@
+import { GradingAnalytics, OverallGradingAnalytics } from "@/types/analytics";
 import {
   CriteriaSelector,
   GradingAttempt,
@@ -58,7 +59,8 @@ export class GradingService {
       configHeaders,
     );
 
-    return this.gradingDeserializer.deserialize(response.data);
+    const grading = await this.gradingDeserializer.deserialize(response.data);
+    return grading.status;
   }
 
   static async updateGradingRubric(id: string, rubricId: string, token: string) {
@@ -106,6 +108,7 @@ export class GradingService {
     );
 
     const data = await this.gradingDeserializer.deserialize(response.data);
+    console.log("Grading attempts data:", data);
     return { data, meta: response.data.meta };
   }
 
@@ -143,5 +146,17 @@ export class GradingService {
       `${GRADING_API_URL}/${id}/submissions/${reference}`,
       configHeaders,
     );
+  }
+
+  static async getAllGradingsSummary(token: string): Promise<OverallGradingAnalytics> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(`${GRADING_API_URL}/summary`, configHeaders);
+    return response.data;
+  }
+
+  static async getGradingSummary(id: string, token: string): Promise<GradingAnalytics> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(`${GRADING_API_URL}/${id}/summary`, configHeaders);
+    return response.data;
   }
 }

@@ -28,6 +28,7 @@ export default function GradingProgressStep({
 
   const onSuccess = useCallback(
     (status: GradingStatus) => {
+      console.log("Grading status updated:", status);
       onGradingAttemptChange({ status });
     },
     [onGradingAttemptChange],

@@ -81,7 +81,8 @@ export default function UploadStep({
   };
 
   const handleSelectRubric = async (rubric: Rubric) => {
-    if (gradingAttempt.rubricId === rubric.id) return;
+    if (gradingAttempt.rubricId != undefined && gradingAttempt.rubricId === rubric.id)
+      return;
 
     const token = await auth.getToken();
     if (!token) {
@@ -90,6 +91,7 @@ export default function UploadStep({
     }
 
     try {
+      console.log("Updating rubric:", rubric);
       await GradingService.updateGradingRubric(gradingAttempt.id, rubric.id, token);
       onGradingAttemptChange({
         rubricId: rubric.id,
@@ -138,24 +140,32 @@ export default function UploadStep({
         }),
       );
 
+      const newSubmissions = [
+        ...gradingAttempt.submissions,
+        ...newFiles.map((file) => {
+          return {
+            reference: file.name.replace(/\.[^/.]+$/, ""),
+          };
+        }),
+      ];
+
       onGradingAttemptChange({
-        submissions: [
-          ...gradingAttempt.submissions,
-          ...uploadedFiles.map((file) => {
-            return {
-              reference: file.name.replace(/\.[^/.]+$/, ""),
-            };
-          }),
-        ],
+        submissions: newSubmissions,
       });
 
       setFileDialogOpen(false);
     }
   };
 
-  const handleRemoveSubmission = async (submission: Submission, token?: string) => {
-    const token1 = token || (await auth.getToken());
-    if (!token1) {
+  const handleRemoveSubmission = async (
+    submission: Submission,
+    token?: string | null,
+  ) => {
+    if (!token) {
+      token = await auth.getToken();
+    }
+
+    if (!token) {
       console.error("Error updating rubric: No token found");
       return toast.error("Unauthorized: You must be logged in to update rubric");
     }
@@ -164,7 +174,7 @@ export default function UploadStep({
       await GradingService.deleteSubmission(
         gradingAttempt.id,
         submission.reference,
-        token1,
+        token,
       );
 
       const updatedFiles = uploadedFiles.filter((file) => {
@@ -263,6 +273,7 @@ export default function UploadStep({
           <InfoToolTip description="Adjust the grade scale for grading. This will affect the overall grading score of each submission." />
         </div>
         <Input
+          name="scaleFactor"
           className="max-w-32"
           type="number"
           min={1}

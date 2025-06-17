@@ -52,7 +52,7 @@ function FileComponent({ submission, onDelete, index }: FileComponentProps) {
       className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
     >
       <div className="flex items-center space-x-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-background">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-accent">
           <FileArchive className="h-5 w-5 text-purple-500" />
         </div>
         <span className="font-medium">{getSubmissionName(submission)}</span>

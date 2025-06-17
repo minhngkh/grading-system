@@ -7,16 +7,13 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/_authenticated/rubrics/create")({
   preload: false,
   component: RouteComponent,
-  beforeLoad: () => {
-    const id = sessionStorage.getItem("rubricId");
-    return { id };
-  },
-  loader: async ({ context: { auth, id } }) => {
+  loader: async ({ context: { auth } }) => {
     const token = await auth.getToken();
     if (!token) {
       throw new Error("Unauthorized: No token found");
     }
 
+    const id = sessionStorage.getItem("rubricId");
     if (id) {
       return await RubricService.getRubric(id, token);
     }

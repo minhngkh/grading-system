@@ -1,12 +1,12 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import ManageGradingsPage from "@/pages/grading/manage-grading";
-import { GradingService } from "@/services/grading-service";
-import { searchParams, SearchParams } from "@/types/search-params";
+import ManageRubricsPage from "@/pages/rubric/manage-rubric";
+import { RubricService } from "@/services/rubric-service";
+import { SearchParams, searchParams } from "@/types/search-params";
 import { createFileRoute, retainSearchParams, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 
-export const Route = createFileRoute("/_authenticated/gradings/")({
+export const Route = createFileRoute("/_authenticated/rubrics/view")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
@@ -16,13 +16,13 @@ export const Route = createFileRoute("/_authenticated/gradings/")({
       throw new Error("Unauthorized: No token found");
     }
 
-    return await GradingService.getGradingAttempts(deps, token);
+    return RubricService.getRubrics(deps, token);
   },
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },
-  errorComponent: () => ErrorComponent("Failed to load gradings"),
-  pendingComponent: () => PendingComponent("Loading gradings..."),
+  errorComponent: () => ErrorComponent("Failed to load rubrics."),
+  pendingComponent: () => PendingComponent("Loading rubrics..."),
 });
 
 function RouteComponent() {
@@ -45,7 +45,7 @@ function RouteComponent() {
   }, []);
 
   return (
-    <ManageGradingsPage
+    <ManageRubricsPage
       results={rubricsData}
       searchParams={search}
       setSearchParam={setSearchParam}
