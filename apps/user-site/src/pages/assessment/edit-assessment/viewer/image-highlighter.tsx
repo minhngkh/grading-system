@@ -11,6 +11,7 @@ type ImageHighlighterProps = {
   onHighlightComplete: () => void;
   activeFeedbackId?: string | null;
   fileRef?: string;
+  rubricCriteria?: string[]; // Add this prop for criteria options
 };
 
 const HIGHLIGHT_TAGS = ["info", "notice", "tip", "caution"] as const;
@@ -23,6 +24,7 @@ export function ImageHighlighter({
   onHighlightComplete,
   activeFeedbackId,
   fileRef,
+  rubricCriteria = [],
 }: ImageHighlighterProps) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(null);
@@ -37,6 +39,7 @@ export function ImageHighlighter({
   const [newTag, setNewTag] = useState<(typeof HIGHLIGHT_TAGS)[number]>("info");
   const [selectedHighlight, setSelectedHighlight] = useState<string | null>(null);
   const [hoveredHighlight, setHoveredHighlight] = useState<string | null>(null);
+  const [newCriterion, setNewCriterion] = useState<string>("");
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
 
@@ -107,12 +110,12 @@ export function ImageHighlighter({
   // Add new feedback highlight
   const handleAddHighlight = () => {
     if (!modalRect) return;
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !newCriterion) return;
     const fileName = fileRef || (imageUrl ? imageUrl.split("/").pop() || "" : "");
     const newFeedback: FeedbackItem = {
       id: `highlight-${Date.now()}`,
       type: "image",
-      criterion: "",
+      criterion: newCriterion,
       fileRef: fileName,
       x: modalRect.x,
       y: modalRect.y,
@@ -121,7 +124,6 @@ export function ImageHighlighter({
       comment: newComment.trim(),
       tag: newTag,
     };
-    // Chỉ truyền feedback mới, không truyền toàn bộ feedbacks cũ
     updateFeedback([newFeedback]);
     setCurrentRect(null);
     setStartPoint(null);
@@ -129,6 +131,7 @@ export function ImageHighlighter({
     setNewComment("");
     setShowCommentForm(false);
     setNewTag("info");
+    setNewCriterion("");
     onHighlightComplete();
   };
 
@@ -340,6 +343,21 @@ export function ImageHighlighter({
                 <option value="caution">Caution</option>
               </select>
             </div>
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-2">Select Criterion:</label>
+              <select
+                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                value={newCriterion}
+                onChange={(e) => setNewCriterion(e.target.value)}
+              >
+                <option value="">Select criterion</option>
+                {rubricCriteria.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex justify-end mt-4 gap-2">
               <button
                 onClick={handleCancelDrawing}
@@ -350,7 +368,7 @@ export function ImageHighlighter({
               </button>
               <button
                 onClick={handleAddHighlight}
-                disabled={!newComment.trim()}
+                disabled={!newComment.trim() || !newCriterion}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 type="button"
               >

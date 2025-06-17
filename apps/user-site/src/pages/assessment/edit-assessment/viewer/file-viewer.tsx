@@ -16,6 +16,7 @@ interface FileViewerProps {
   activeFeedbackId?: string | null;
   imageHighlights?: any[]; // Thêm prop này nếu cần thiết
   onImageHighlightsChange?: (highlights: any[]) => void; // Thêm prop này nếu cần thiết
+  rubricCriteria?: string[]; // Add this prop for criteria options
 }
 
 const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp"];
@@ -52,6 +53,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   isHighlightMode,
   onHighlightComplete,
   activeFeedbackId,
+  rubricCriteria = [],
 }) => {
   if (imageExtensions.includes(fileType)) {
     return (
@@ -59,15 +61,14 @@ const FileViewer: React.FC<FileViewerProps> = ({
         <ImageHighlighter
           imageUrl={fileUrl}
           feedbacks={feedbacks.filter(
-            (fb) =>
-              fb.type === "image" &&
-              fb.fileRef === (fileUrl ? fileUrl.split("/").pop() : ""),
+            (fb) => fb.fileRef === (fileUrl ? fileUrl.split("/").pop() : ""),
           )}
           updateFeedback={updateFeedback}
           isHighlightMode={isHighlightMode}
           onHighlightComplete={onHighlightComplete}
           activeFeedbackId={activeFeedbackId}
           fileRef={fileUrl ? fileUrl.split("/").pop() : ""}
+          rubricCriteria={rubricCriteria}
         />
       </div>
     );
@@ -77,18 +78,17 @@ const FileViewer: React.FC<FileViewerProps> = ({
   }
   if (textExtensions.includes(fileType)) {
     const viewerType = fileType === "txt" ? "essay" : "code";
-    const fileName = fileUrl ? fileUrl.split("/").pop() || "" : "";
+    // Không filter lại feedbacks ở đây, chỉ truyền nguyên vẹn từ props
     return (
       <HighlightableViewer
         type={viewerType}
         fileUrl={fileUrl}
-        feedbacks={feedbacks.filter(
-          (fb) => fb.type === "text" && fb.fileRef === fileName,
-        )}
+        feedbacks={feedbacks}
         updateFeedback={updateFeedback}
         isHighlightMode={isHighlightMode}
         onHighlightComplete={onHighlightComplete}
         activeFeedbackId={activeFeedbackId}
+        rubricCriteria={rubricCriteria}
       />
     );
   }

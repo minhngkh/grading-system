@@ -1,9 +1,11 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import ManualAdjustScorePage from "@/pages/assessment/edit-assessment/$id";
+import { RubricAssessmentUI } from "@/pages/assessment/edit-assessment";
 import { AssessmentService } from "@/services/assessment-service";
 import { GradingService } from "@/services/grading-service";
 import { RubricService } from "@/services/rubric-service";
+import { Assessment } from "@/types/assessment";
+import { Rubric, RubricStatus } from "@/types/rubric";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
@@ -20,19 +22,24 @@ export const Route = createFileRoute(
       GradingService.getGradingAttempt(gradingId, token),
       AssessmentService.getAssessmentById(assessmentId, token),
     ]);
-
+    const scaleFactor = grading.scaleFactor || 10;
     if (grading.rubricId === undefined) {
       throw new Error("This assessment does not have a rubric associated with it.");
     }
-
     const rubric = await RubricService.getRubric(grading.rubricId, token);
-    return { assessment, rubric };
+    return { assessment, scaleFactor, rubric };
   },
   errorComponent: () => ErrorComponent("Failed to load assessment."),
   pendingComponent: () => PendingComponent("Loading assessment..."),
 });
 
 function RouteComponent() {
-  const { assessment, rubric } = Route.useLoaderData();
-  return <ManualAdjustScorePage initAssessment={assessment} initRubric={rubric} />;
+  const { assessment, scaleFactor, rubric } = Route.useLoaderData();
+  return (
+    <RubricAssessmentUI
+      assessment={assessment}
+      scaleFactor={scaleFactor}
+      rubric={rubric}
+    />
+  );
 }
