@@ -1,14 +1,4 @@
-import {
-  FileText,
-  Code,
-  CheckCircle,
-  Info,
-  AlertCircle,
-  MessageSquare,
-  PlayCircle,
-  XCircle,
-  Clock,
-} from "lucide-react";
+import { FileText, Code, CheckCircle, PlayCircle, XCircle, Clock } from "lucide-react";
 
 export function getFileIcon(file: { type: string; name: string }) {
   switch (file.type) {

@@ -3,34 +3,48 @@ using System.Runtime.CompilerServices;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using EventFlow.Commands;
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace AssignmentFlow.Application.Gradings.UploadSubmission;
 
-public class Command(GradingId aggregateId) : Command<GradingAggregate, GradingId>(aggregateId)
+public class Command(GradingId aggregateId)
+    : Command<GradingAggregate, GradingId>(aggregateId)
 {
     public required SubmissionReference SubmissionReference { get; init; }
     public required IFormFile File { get; init; }
 }
 
-public class CommandHandler(BlobServiceClient client) : CommandHandler<GradingAggregate, GradingId, Command>
+public class CommandHandler(BlobServiceClient client)
+    : CommandHandler<GradingAggregate, GradingId, Command>
 {
-    private static readonly string[] SupportedZipMimeTypes = ["application/zip", "application/x-zip-compressed"];
+    private static readonly string[] SupportedZipMimeTypes =
+    [
+        "application/zip",
+        "application/x-zip-compressed",
+    ];
 
-    public override async Task ExecuteAsync(GradingAggregate aggregate, Command command,
-        CancellationToken cancellationToken)
+    public override async Task ExecuteAsync(
+        GradingAggregate aggregate,
+        Command command,
+        CancellationToken cancellationToken
+    )
     {
         if (aggregate.IsNew)
             throw new InvalidOperationException(
-                $"Cannot upload submission for grading {aggregate.Id} because it has not been created yet.");
+                $"Cannot upload submission for grading {aggregate.Id} because it has not been created yet."
+            );
 
         var container = client.GetBlobContainerClient("submissions-store");
 
-        var blobEntries = await ProcessAttachments(aggregate, command, container, cancellationToken)
+        var blobEntries = await ProcessAttachments(
+                aggregate,
+                command,
+                container,
+                cancellationToken
+            )
             .ToListAsync(cancellationToken: cancellationToken);
 
-        var submission = Submission.New(
-            command.SubmissionReference,
-            blobEntries);
+        var submission = Submission.New(command.SubmissionReference, blobEntries);
         aggregate.AddSubmission(submission);
     }
 
@@ -38,7 +52,8 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<GradingAg
         GradingAggregate aggregate,
         Command command,
         BlobContainerClient container,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
     {
         var baseBlobName = $"{aggregate.Id}/{command.SubmissionReference}/";
 
@@ -57,7 +72,10 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<GradingAg
             // Handle zip file upload
             await using var stream = command.File.OpenReadStream();
             using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
-            
+
+            // TODO: change this
+            var provider = new FileExtensionContentTypeProvider();
+
             // Check if the archive is empty
             if (archive.Entries.Count == 0)
             {
@@ -76,7 +94,22 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<GradingAg
                 var blob = container.GetBlobClient(blobName);
 
                 await using var entryStream = entry.Open();
-                await blob.UploadAsync(entryStream, new BlobUploadOptions(), cancellationToken);
+
+                if (!provider.TryGetContentType(blobName, out var contentType))
+                {
+                    contentType = "application/octet-stream";
+                }
+
+                var uploadOptions = new BlobUploadOptions
+                {
+                    HttpHeaders = new BlobHttpHeaders { ContentType = contentType },
+                };
+
+                await blob.UploadAsync(
+                    entryStream,
+                    uploadOptions,
+                    cancellationToken
+                );
 
                 yield return Attachment.New(blob.Uri.AbsoluteUri);
             }
