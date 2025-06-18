@@ -351,7 +351,7 @@ export class AssessmentExporter implements DataExporter {
   private getFileRefsByCriterion() {
     const map = new Map<string, Set<string>>();
     this.assessment.scoreBreakdowns.forEach((sb) => {
-      const key = `${sb.criterionName}-${sb.tag}`;
+      const key = `${sb.criterionName}-${sb.performanceTag}`;
       const feedbackRefs = this.assessment.feedbacks
         .filter(
           (fb) =>
@@ -383,7 +383,7 @@ export class AssessmentExporter implements DataExporter {
     const fileRefMap = this.getFileRefsByCriterion();
 
     const body = this.assessment.scoreBreakdowns.map((sb) => {
-      const key = `${sb.criterionName}-${sb.tag}`;
+      const key = `${sb.criterionName}-${sb.performanceTag}`;
       const files = fileRefMap.get(key);
       // LOG để kiểm tra mapping thực tế
       console.log(
@@ -396,14 +396,14 @@ export class AssessmentExporter implements DataExporter {
       );
       return [
         sb.criterionName,
-        sb.tag,
+        sb.performanceTag,
         sb.rawScore.toString(),
         files && files.size > 0 ? [...files].join(", ") : "-",
       ];
     });
 
     // Table
-    const head = [["Criterion", "Tag", "Score", "File(s)"]];
+    const head = [["Criterion", "performanceTag", "Score", "File(s)"]];
 
     autoTable(doc, {
       startY: 60,
@@ -430,13 +430,13 @@ export class AssessmentExporter implements DataExporter {
       [`Total Score: ${this.assessment.rawScore}`],
       [`Adjusted Count: ${this.assessment.adjustedCount ?? 0}`],
       [],
-      ["Criterion", "Tag", "Score", "File(s)"],
+      ["Criterion", "performanceTag", "Score", "File(s)"],
       ...this.assessment.scoreBreakdowns.map((sb) => {
-        const key = `${sb.criterionName}-${sb.tag}`;
+        const key = `${sb.criterionName}-${sb.performanceTag}`;
         const files = fileRefMap.get(key);
         return [
           sb.criterionName,
-          sb.tag,
+          sb.performanceTag,
           sb.rawScore,
           files && files.size > 0 ? [...files].join(", ") : "-",
         ];

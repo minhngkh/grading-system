@@ -44,6 +44,7 @@ export function EditAssessmentUI({
   });
   const formData = form.watch();
   const [files, setFiles] = useState<any[]>([]);
+  const [open, setOpen] = useState(false);
   const auth = useAuth();
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
@@ -396,7 +397,16 @@ export function EditAssessmentUI({
               : <Eye className="h-4 w-4 mr-2" />}
               {showBottomPanel ? "Hide Scoring" : "Show Scoring"}
             </Button>
-            <ExportDialog exporterClass={AssessmentExporter} args={[formData]} />
+            <Button onClick={() => setOpen(true)} size="sm">
+              <Save className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <ExportDialog
+              open={open}
+              onOpenChange={setOpen}
+              exporterClass={AssessmentExporter}
+              args={[formData]}
+            />
             <Button className="cursor-pointer" size="sm" onClick={handleSave}>
               <Save className="h-4 w-4 mr-2" />
               Save Assessment

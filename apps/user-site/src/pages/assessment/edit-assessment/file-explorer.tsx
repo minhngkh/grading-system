@@ -19,7 +19,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   setExpandedFolders,
   feedbacks,
 }) => (
-  <div className="w-64 overflow-y-auto">
+  <div className="w-55 overflow-y-auto">
     <div className="p-4">
       <h3 className="text-sm font-medium mb-3">Project Files</h3>
       <div className="space-y-1">
