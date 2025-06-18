@@ -1,22 +1,20 @@
-import React, { useState } from "react";
+import React from "react";
 import HighlightableViewer from "./code-viewer";
 import PDFViewer from "./pdf-view";
 import { FeedbackItem } from "@/types/assessment";
 
-// Import ImageHighlighter
-import { ImageHighlighter } from "./image-highlighter";
-
 interface FileViewerProps {
   fileType: string;
   fileUrl: string;
+  content?: string; // Thêm content
   feedbacks: FeedbackItem[];
   updateFeedback: (newFeedbacks: FeedbackItem[]) => void;
   isHighlightMode: boolean;
   onHighlightComplete: () => void;
   activeFeedbackId?: string | null;
-  imageHighlights?: any[]; // Thêm prop này nếu cần thiết
-  onImageHighlightsChange?: (highlights: any[]) => void; // Thêm prop này nếu cần thiết
-  rubricCriteria?: string[]; // Add this prop for criteria options
+  imageHighlights?: any[];
+  onImageHighlightsChange?: (highlights: any[]) => void;
+  rubricCriteria?: string[];
 }
 
 const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp"];
@@ -43,11 +41,13 @@ const textExtensions = [
   "cs",
   "swift",
   "kt",
+  "h",
 ];
 
 const FileViewer: React.FC<FileViewerProps> = ({
   fileType,
   fileUrl,
+  content,
   feedbacks,
   updateFeedback,
   isHighlightMode,
@@ -56,20 +56,14 @@ const FileViewer: React.FC<FileViewerProps> = ({
   rubricCriteria = [],
 }) => {
   if (imageExtensions.includes(fileType)) {
+    // Xây dựng URL đầy đủ cho blob image
+    const fullImageUrl =
+      fileUrl.startsWith("http") ? fileUrl : (
+        `http://127.0.0.1:27000/devstoreaccount1/submissions-store/${fileUrl}`
+      );
     return (
       <div className="flex justify-center items-center h-full">
-        <ImageHighlighter
-          imageUrl={fileUrl}
-          feedbacks={feedbacks.filter(
-            (fb) => fb.fileRef === (fileUrl ? fileUrl.split("/").pop() : ""),
-          )}
-          updateFeedback={updateFeedback}
-          isHighlightMode={isHighlightMode}
-          onHighlightComplete={onHighlightComplete}
-          activeFeedbackId={activeFeedbackId}
-          fileRef={fileUrl ? fileUrl.split("/").pop() : ""}
-          rubricCriteria={rubricCriteria}
-        />
+        <img src={fullImageUrl} alt={fileUrl} />
       </div>
     );
   }
@@ -78,11 +72,11 @@ const FileViewer: React.FC<FileViewerProps> = ({
   }
   if (textExtensions.includes(fileType)) {
     const viewerType = fileType === "txt" ? "essay" : "code";
-    // Không filter lại feedbacks ở đây, chỉ truyền nguyên vẹn từ props
     return (
       <HighlightableViewer
         type={viewerType}
         fileUrl={fileUrl}
+        content={content ?? ""}
         feedbacks={feedbacks}
         updateFeedback={updateFeedback}
         isHighlightMode={isHighlightMode}

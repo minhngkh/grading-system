@@ -1,4 +1,4 @@
-import { Assessment } from "@/types/assessment";
+import { Assessment, FeedbackItem, ScoreBreakdown } from "@/types/assessment";
 import axios, { AxiosRequestConfig } from "axios";
 import { Deserializer } from "jsonapi-serializer";
 
@@ -52,17 +52,33 @@ export class AssessmentService {
     return this.assessmentDeserializer.deserialize(response.data);
   }
 
-  static async updateAssessment(
+  static async updateFeedback(
     id: string,
-    assessment: Partial<Assessment>,
+    feedbacks: Partial<FeedbackItem>[],
     token: string,
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.put(
       `${ASSESSMENT_API_URL}/${id}/feedbacks`,
-      { feedbacks: assessment.feedbacks },
+      { feedbacks: feedbacks },
       configHeaders,
     );
+    return this.ConvertToAssessment(response.data);
+  }
+
+  static async updateScore(
+    id: string,
+    scoreBreakdowns: Partial<ScoreBreakdown>[],
+    token: string,
+  ): Promise<Assessment> {
+    const configHeaders = await this.buildHeaders(token);
+    console.log("Updating score for assessment:", id, scoreBreakdowns);
+    const response = await axios.post(
+      `${ASSESSMENT_API_URL}/${id}/scores`,
+      { scoreBreakdowns: scoreBreakdowns },
+      configHeaders,
+    );
+    console.log("Score update response:", response.data);
     return this.ConvertToAssessment(response.data);
   }
 }
