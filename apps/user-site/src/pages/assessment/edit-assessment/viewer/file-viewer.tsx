@@ -2,7 +2,6 @@ import React from "react";
 import HighlightableViewer from "./code-viewer";
 import PDFViewer from "./pdf-view";
 import { FeedbackItem } from "@/types/assessment";
-import { ImageHighlighter } from "./image-highlighter";
 
 interface FileViewerProps {
   fileType: string;
@@ -57,20 +56,14 @@ const FileViewer: React.FC<FileViewerProps> = ({
   rubricCriteria = [],
 }) => {
   if (imageExtensions.includes(fileType)) {
+    // Xây dựng URL đầy đủ cho blob image
+    const fullImageUrl =
+      fileUrl.startsWith("http") ? fileUrl : (
+        `http://127.0.0.1:27000/devstoreaccount1/submissions-store/${fileUrl}`
+      );
     return (
       <div className="flex justify-center items-center h-full">
-        <ImageHighlighter
-          imageUrl={fileUrl}
-          feedbacks={feedbacks.filter(
-            (fb) => fb.fileRef === (fileUrl ? fileUrl.split("/").pop() : ""),
-          )}
-          updateFeedback={updateFeedback}
-          isHighlightMode={isHighlightMode}
-          onHighlightComplete={onHighlightComplete}
-          activeFeedbackId={activeFeedbackId}
-          fileRef={fileUrl ? fileUrl.split("/").pop() : ""}
-          rubricCriteria={rubricCriteria}
-        />
+        <img src={fullImageUrl} alt={fileUrl} />
       </div>
     );
   }
