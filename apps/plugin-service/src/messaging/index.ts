@@ -1,5 +1,6 @@
 import type z from "zod";
-import { okAsync, safeTry } from "neverthrow";
+import logger from "@grading-system/utils/logger";
+import { errAsync, okAsync, safeTry } from "neverthrow";
 import { getTransporter } from "@/lib/transporter";
 import { submissionGradedEvent, submissionStartedEvent } from "@/messaging/events";
 import { gradeSubmission } from "@/plugins/ai/grade";
@@ -10,13 +11,27 @@ export async function initMessaging() {
 
   transporter.consume(submissionStartedEvent, (data) =>
     safeTry(async function* () {
-      const resultList = yield* gradeSubmission(data.criteria);
+      const resultList = await gradeSubmission(data.criteria);
+      if (resultList.isErr()) {
+        transporter.emit(submissionGradedEvent, {
+          assessmentId: data.assessmentId,
+          scoreBreakdowns: [],
+          errors: [
+            {
+              criterionName: "",
+              error: resultList.error.message,
+            },
+          ],
+        });
+        return errAsync();
+      }
 
-      const gradeResults = await Promise.all(resultList);
+      const gradeResults = await Promise.all(resultList.value);
 
       const message = gradeResults.reduce(
         (acc, result) => {
           if (result.isErr()) {
+            logger.error("Error response", result.error);
             result.error.data.criterionNames.forEach((c) =>
               acc.errors.push({
                 criterionName: c,

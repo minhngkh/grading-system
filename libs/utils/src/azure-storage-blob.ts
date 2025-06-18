@@ -2,6 +2,7 @@ import type { Result } from "neverthrow";
 import type { Buffer } from "node:buffer";
 import { BlobSASPermissions, BlobServiceClient, SASProtocol } from "@azure/storage-blob";
 import { err, ok, ResultAsync } from "neverthrow";
+import logger from "@/logger";
 import { wrapError } from "./error";
 
 export function getBlobName(url: string, containerName: string): Result<string, Error> {

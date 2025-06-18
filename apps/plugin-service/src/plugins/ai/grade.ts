@@ -3,6 +3,7 @@ import type { LanguageModelWithOptions } from "@/core/llm/types";
 import type { FilesSubset } from "@/plugins/ai/repomix";
 import { getBlobName, getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
 import { CustomError } from "@grading-system/utils/error";
+import logger from "@grading-system/utils/logger";
 import { generateObject } from "ai";
 import dedent from "dedent";
 import { errAsync, okAsync, ResultAsync, safeTry } from "neverthrow";
@@ -100,8 +101,8 @@ export function gradeCriteria(options: {
   fileParts: FilePart[];
   fileAliasManifest: string;
 }) {
-  const baseSystemPrompt = createGradingSystemPrompt(options.partOfRubric);
-  const systemPrompt = `${baseSystemPrompt}\n${options.fileAliasManifest}`;
+  const systemPrompt = createGradingSystemPrompt(options.partOfRubric);
+  const prompt = `${options.prompt}\n${options.fileAliasManifest}`;
 
   return ResultAsync.fromPromise(
     generateObject({
@@ -116,7 +117,7 @@ export function gradeCriteria(options: {
             ...options.fileParts,
             {
               type: "text",
-              text: options.prompt,
+              text: prompt,
             },
           ],
         },
@@ -139,10 +140,15 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
       return errAsync(new Error("No data provided for grading"));
     }
 
-    const { root: blobRoot } = yield* getBlobName(
+    // TODO: change This
+    const sourceId = yield* getBlobName(
       criterionDataList[0].fileRefs[0],
       DEFAULT_CONTAINER,
-    ).map((name) => getBlobNameParts(name));
+    ).map((name) => {
+      const { root, rest } = getBlobNameParts(name);
+      const { root: dir } = getBlobNameParts(rest);
+      return `${root}-${dir}`;
+    });
 
     const criterionFiles = criterionDataList.map(
       (item): FilesSubset => ({
@@ -152,14 +158,20 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
     );
 
     const withTextResultList = yield* packFilesSubsets(
-      blobRoot,
+      sourceId,
       criterionFiles,
       attemptId,
     );
 
     const withMediaResultList = withTextResultList.map((packResult) =>
       packResult
-        .map((packValue) => ({ criterionNames: packValue.ids, textData: packValue.data }))
+        .map((packValue) => ({
+          criterionNames: packValue.ids,
+          blobUrlNameMap: packValue.blobUrlNameMap,
+          blobPathUrlMap: packValue.blobPathUrlMap,
+          downloadDir: packValue.downloadDir,
+          textData: packValue.data,
+        }))
         .mapErr(
           (error) =>
             new ErrorWithCriteriaInfo({
@@ -169,11 +181,18 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
             }),
         )
         .andThen((data) => {
-          const nonTextBlobUrls = data.textData.allBlobUrls.filter(
-            (url) => !data.textData.usedBlobUrls.has(url),
-          );
+          const nonTextBlobs = [];
+          for (const url of data.textData.allBlobUrls) {
+            if (data.textData.usedBlobUrls.has(url)) {
+              continue;
+            }
 
-          return createMediaFileParts(nonTextBlobUrls)
+            const { rest: path } = getBlobNameParts(data.blobUrlNameMap.get(url)!);
+
+            nonTextBlobs.push(path);
+          }
+
+          return createMediaFileParts(data.downloadDir, nonTextBlobs)
             .mapErr(
               (error) =>
                 new ErrorWithCriteriaInfo({
@@ -207,23 +226,40 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
     const gradeResultList = withMediaResultList.map((result) =>
       result.andThen((data) => {
         // Normal search instead of map since the number of criteria is usually small
-        const criteriaData = data.criterionNames.map(
-          (name) => criterionDataList.find((c) => c.criterionName === name)!,
-        );
+        const criteriaData: Criterion[] = data.criterionNames.map((name) => {
+          const obj = criterionDataList.find((c) => c.criterionName === name)!;
+          return {
+            criterionName: obj.criterionName,
+            levels: obj.levels,
+          };
+        });
 
+        logger.debug("files ignore", {
+          ignoreUrls: data.mediaData.ignoredUrls,
+        });
         return gradeCriteria({
           partOfRubric: criteriaData,
           prompt: data.textData.packedContent,
           fileParts: data.mediaData.llmMessageParts,
           fileAliasManifest: data.mediaData.manifestInfo,
-        }).mapErr(
-          (error) =>
-            new ErrorWithCriteriaInfo({
-              data: { criterionNames: data.criterionNames },
-              message: `Failed to grade criteria`,
-              options: { cause: error },
-            }),
-        );
+        })
+          .mapErr(
+            (error) =>
+              new ErrorWithCriteriaInfo({
+                data: { criterionNames: data.criterionNames },
+                message: `Failed to grade criteria`,
+                options: { cause: error },
+              }),
+          )
+          .map((results) =>
+            results.map((r) => ({
+              ...r,
+              feedback: r.feedback.map((fb) => ({
+                ...fb,
+                fileRef: data.blobPathUrlMap.get(fb.fileRef),
+              })),
+            })),
+          );
       }),
     );
 

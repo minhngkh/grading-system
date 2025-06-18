@@ -34,16 +34,14 @@ function downloadFiles(blobs: string[], directory?: string) {
       const downloadPath = path.join(downloadDir, blobFileName);
       const downloadDirPath = path.dirname(downloadPath);
 
-      if (createdDirs.has(downloadDirPath)) {
-        continue;
+      if (!createdDirs.has(downloadDirPath)) {
+        // create folder to prepare for downloading
+        yield* ResultAsync.fromPromise(
+          fs.mkdir(downloadDirPath, { recursive: true }),
+          (error) =>
+            wrapError(error, `Failed to create directory for downloading blob: ${blob}`),
+        ).andTee(() => createdDirs.add(downloadDirPath));
       }
-
-      // create folder to prepare for downloading
-      yield* ResultAsync.fromPromise(
-        fs.mkdir(downloadDirPath, { recursive: true }),
-        (error) =>
-          wrapError(error, `Failed to create directory for downloading blob: ${blob}`),
-      ).andTee(() => createdDirs.add(downloadDirPath));
 
       // download the blob
       yield* blobContainer.downloadToFile(blob, downloadPath).orTee(() => {
@@ -68,6 +66,9 @@ function packFiles(options: {
   includePattern?: string;
 }) {
   return safeTry(async function* () {
+    console.log(options);
+    logger.debug("includePattern:", options);
+
     const runOptions = {
       output: options.outputFile,
       style: "xml",
@@ -75,6 +76,8 @@ function packFiles(options: {
       directoryStructure: true,
       securityCheck: false,
       include: options.includePattern,
+      quiet: true,
+      verbose: false,
     } as CliOptions;
 
     const packingRunResult = yield* ResultAsync.fromPromise(
@@ -96,6 +99,10 @@ function packFiles(options: {
           logger.error(`Failed to delete packed file ${outputFilePath}:`, error);
         });
       }
+    });
+
+    logger.debug("packFiles:", {
+      usedBlobs: packingRunResult.packResult.processedFiles.map((f) => f.path),
     });
 
     return okAsync({
@@ -121,16 +128,19 @@ function getFiles(
   {
     path: string;
     urlNameMap: Map<string, string>;
+    pathUrlMap: Map<string, string>;
   },
   Error
 > {
   return safeTry(async function* () {
-    const allBlobNames: string[] = [];
     const blobUrlNameMap = new Map<string, string>();
+    const blobPathUrlMap = new Map<string, string>();
     for (const blobUrl of urls) {
       const blobName = yield* getBlobName(blobUrl, DEFAULT_CONTAINER);
-      allBlobNames.push(blobName);
       blobUrlNameMap.set(blobUrl, blobName);
+
+      const { rest: blobPath } = getBlobNameParts(blobName);
+      blobPathUrlMap.set(blobPath, blobUrl);
     }
 
     const downloadTag = `pack-download-${cacheKey}`;
@@ -160,11 +170,12 @@ function getFiles(
       return okAsync({
         path: dir.path,
         urlNameMap: blobUrlNameMap,
+        pathUrlMap: blobPathUrlMap,
       });
     }
 
     const downloadDir = yield* createDirectoryOnSystemTemp(downloadTag);
-    yield* downloadFiles(allBlobNames, downloadDir).andTee(() => {
+    yield* downloadFiles(Array.from(blobUrlNameMap.values()), downloadDir).andTee(() => {
       downloadCache.set(downloadTag, {
         path: downloadDir,
         downloadedUrl: new Set(urls),
@@ -174,6 +185,7 @@ function getFiles(
     return okAsync({
       path: downloadDir,
       urlNameMap: blobUrlNameMap,
+      pathUrlMap: blobPathUrlMap,
     });
   });
 }
@@ -208,6 +220,9 @@ class PackFilesError extends CustomError<{
 
 type PackResult = {
   ids: string[];
+  blobUrlNameMap: Map<string, string>;
+  blobPathUrlMap: Map<string, string>;
+  downloadDir: string;
   data: {
     packedContent: string;
     totalTokens: number;
@@ -227,10 +242,11 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
 
     const allBlobUrls = batches.flatMap((batch) => batch.blobUrls);
 
-    const { path: downloadDir, urlNameMap: blobUrlNameMap } = yield* getFiles(
-      allBlobUrls,
-      sourceId,
-    );
+    const {
+      path: downloadDir,
+      urlNameMap: blobUrlNameMap,
+      pathUrlMap: blobPathUrlMap,
+    } = yield* getFiles(allBlobUrls, sourceId);
 
     const packTasks: {
       subsetIds: string[];
@@ -242,9 +258,11 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
 
     const patternListIdxMap = new Map<string, number>();
     for (const [idx, value] of batches.entries()) {
-      const blobs = value.blobUrls
-        .map((url) => fg.escapePath(blobUrlNameMap.get(url)!))
-        .sort();
+      const blobs = value.blobUrls.sort().map((url) => {
+        const { rest: path } = getBlobNameParts(blobUrlNameMap.get(url)!);
+        return fg.escapePath(path);
+      });
+
       const includePattern = blobs.join(",");
 
       const listIdx = patternListIdxMap.get(includePattern);
@@ -266,37 +284,6 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
       patternListIdxMap.set(includePattern, packTasks.length - 1);
     }
 
-    // const packResults: PackFilesSubsetsResult = [];
-
-    // await Promise.all(
-    //   packTasks.map((task) =>
-    //     packFiles({
-    //       outputDirectory: task.outputDirectory,
-    //       outputFile: task.outputFile,
-    //       directory: downloadDir,
-    //       includePattern: task.includePattern,
-    //     }).match(
-    //       (result) => {
-    //         packResults.push({
-    //           success: true,
-    //           ids: task.subsetIds,
-    //           packedContent: result.packedContent,
-    //           totalTokens: result.totalTokens,
-    //           allBlobUrls: task.allBlobUrls,
-    //           usedBlobUrls: result.usedBlobs,
-    //         });
-    //       },
-    //       () => {
-    //         packResults.push({
-    //           success: false,
-    //           ids: task.subsetIds,
-    //           error: "Failed to extract files",
-    //         });
-    //       },
-    //     ),
-    //   ),
-    // );
-
     const resultList = packTasks.map((task) =>
       packFiles({
         outputDirectory: task.outputDirectory,
@@ -307,6 +294,9 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
         .map(
           (result): PackResult => ({
             ids: task.subsetIds,
+            blobUrlNameMap,
+            blobPathUrlMap,
+            downloadDir,
             data: {
               packedContent: result.packedContent,
               totalTokens: result.totalTokens,

@@ -99,10 +99,13 @@ export class RabbitMQTransporter extends EventTransporter {
         return;
       }
 
+      logger.debug(`Message received: ${event.name}`);
+
       const content = msg.content.toString();
 
       handler(content).match(
         () => {
+          logger.debug(`Message processed successfully: ${event.name}`);
           this.channel.ack(msg);
         },
         (error) => {
