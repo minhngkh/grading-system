@@ -4,8 +4,6 @@ import { EditAssessmentUI } from "@/pages/assessment/edit-assessment";
 import { AssessmentService } from "@/services/assessment-service";
 import { GradingService } from "@/services/grading-service";
 import { RubricService } from "@/services/rubric-service";
-import { Assessment } from "@/types/assessment";
-import { Rubric, RubricStatus } from "@/types/rubric";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
