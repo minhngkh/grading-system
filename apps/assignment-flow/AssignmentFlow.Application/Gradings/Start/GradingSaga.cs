@@ -104,15 +104,27 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
 
     public Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
     {
+        var assessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value);
+
+        // AI Grading should always be the first to assess an assessment
         if (domainEvent.AggregateEvent.Grader.IsAIGrader)
         {
+            // If this assessment was already graded, we can skip processing it again in the saga
+            if (aggregateState.GradedAssessmentIds.Contains(assessmentId))
+            {
+                return Task.CompletedTask;
+            }
+            
+            // Emit event to mark this assessment as auto-graded
             Emit(new GradingSagaAssessmentAutoGradingFinishedEvent
             {
-                AssessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value)
+                AssessmentId = assessmentId
             });
+            
+            // Check if all assessments are now graded
+            HandleAutoGradingCompletion();
         }
 
-        HandleAutoGradingCompletion();
         return Task.CompletedTask;
     }
 
@@ -126,6 +138,11 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         }
 
         if (aggregateState.PendingAssessmentIds.Count > 0)
+        {
+            return;
+        }
+
+        if (aggregateState.UnderAutoGradingAssessmentIds.Count > 0)
         {
             return;
         }
