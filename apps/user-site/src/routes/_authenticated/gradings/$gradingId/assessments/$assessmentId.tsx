@@ -1,6 +1,6 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import { RubricAssessmentUI } from "@/pages/assessment/edit-assessment";
+import { EditAssessmentUI } from "@/pages/assessment/edit-assessment";
 import { AssessmentService } from "@/services/assessment-service";
 import { GradingService } from "@/services/grading-service";
 import { RubricService } from "@/services/rubric-service";
@@ -34,5 +34,5 @@ export const Route = createFileRoute(
 
 function RouteComponent() {
   const { assessment, grading, rubric } = Route.useLoaderData();
-  return <RubricAssessmentUI assessment={assessment} grading={grading} rubric={rubric} />;
+  return <EditAssessmentUI assessment={assessment} grading={grading} rubric={rubric} />;
 }

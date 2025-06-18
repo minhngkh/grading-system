@@ -28,7 +28,7 @@ import { getFileIcon, getTestStatusIcon, getTagColor } from "./icon-utils";
 import { FileExplorer } from "./file-explorer";
 import { ScoringPanel } from "./scoring-panel";
 
-export function RubricAssessmentUI({
+export function EditAssessmentUI({
   assessment,
   grading,
   rubric,
