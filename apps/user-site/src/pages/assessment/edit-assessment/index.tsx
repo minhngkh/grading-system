@@ -13,20 +13,20 @@ import { Assessment, AssessmentSchema, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
 import FileViewer from "./viewer/file-viewer";
-import ExportDialog from "@/pages/assessment/edit-assessment/export-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@clerk/clerk-react";
 import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
 import { loadFileItems } from "@/services/file-service";
-import { getFileIcon, getTestStatusIcon, getTagColor } from "./icon-utils";
+import { getFileIcon, getTagColor } from "./icon-utils";
 import { FileExplorer } from "./file-explorer";
 import { ScoringPanel } from "./scoring-panel";
+import { ExportDialog } from "@/components/app/export-dialog";
+import { AssessmentExporter } from "@/lib/exporters";
 
 export function EditAssessmentUI({
   assessment,
@@ -396,7 +396,7 @@ export function EditAssessmentUI({
               : <Eye className="h-4 w-4 mr-2" />}
               {showBottomPanel ? "Hide Scoring" : "Show Scoring"}
             </Button>
-            <ExportDialog assessmentData={formData} />
+            <ExportDialog exporterClass={AssessmentExporter} args={[formData]} />
             <Button className="cursor-pointer" size="sm" onClick={handleSave}>
               <Save className="h-4 w-4 mr-2" />
               Save Assessment

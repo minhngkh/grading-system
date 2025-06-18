@@ -1,6 +1,6 @@
 import type React from "react";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Trash2, MessageSquare, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { FeedbackItem } from "@/types/assessment";
 import "./viewer.css";
 type ImageHighlighterProps = {
