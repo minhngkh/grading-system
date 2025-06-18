@@ -22,24 +22,17 @@ export const Route = createFileRoute(
       GradingService.getGradingAttempt(gradingId, token),
       AssessmentService.getAssessmentById(assessmentId, token),
     ]);
-    const scaleFactor = grading.scaleFactor || 10;
     if (grading.rubricId === undefined) {
       throw new Error("This assessment does not have a rubric associated with it.");
     }
     const rubric = await RubricService.getRubric(grading.rubricId, token);
-    return { assessment, scaleFactor, rubric };
+    return { assessment, grading, rubric };
   },
   errorComponent: () => ErrorComponent("Failed to load assessment."),
   pendingComponent: () => PendingComponent("Loading assessment..."),
 });
 
 function RouteComponent() {
-  const { assessment, scaleFactor, rubric } = Route.useLoaderData();
-  return (
-    <RubricAssessmentUI
-      assessment={assessment}
-      scaleFactor={scaleFactor}
-      rubric={rubric}
-    />
-  );
+  const { assessment, grading, rubric } = Route.useLoaderData();
+  return <RubricAssessmentUI assessment={assessment} grading={grading} rubric={rubric} />;
 }

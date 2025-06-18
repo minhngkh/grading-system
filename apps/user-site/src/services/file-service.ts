@@ -1,67 +1,54 @@
+import { BlobServiceClient } from "@azure/storage-blob";
 import { FileItem } from "@/types/file";
 
-// Xác định loại file dựa vào đuôi file
-const BLOB_URL = "http://127.0.0.1:27000";
-function inferFileType(fileName: string): FileItem["type"] {
-  if (/\.(jpg|jpeg|png|gif)$/i.test(fileName)) return "image";
-  if (/\.pdf$/i.test(fileName)) return "pdf";
-  if (/\.md$/i.test(fileName)) return "document";
-  if (/\.txt|\.cpp|\.py|\.js|\.ts|\.java|\.c|\.h$/i.test(fileName)) return "code";
+const BLOB_ENDPOINT = "http://127.0.0.1:27000/devstoreaccount1";
+//http://127.0.0.1:56774/devstoreaccount1/submissions-store/grading-489a0d9a-adce-08dd-4450-8c914eb8a0c8/duy/main.cpp
+const SAS_TOKEN =
+  "sv=2023-01-03&ss=btqf&srt=sco&st=2025-06-17T19%3A46%3A22Z&se=2025-06-18T19%3A46%3A22Z&sp=rl&sig=IleZCQAnIcefUvUaNeF4PTDG2rYvm5e9Hz%2BkcPyPmPM%3D";
+// const SAS_TOKEN = "sv=2023-01-03&ss=btqf&srt=sco&st=2025-06-17T19%3A46%3A22Z&se=2025-06-18T19%3A46%3A22Z&sp=rl&sig=IleZCQAnIcefUvUaNeF4PTDG2rYvm5e9Hz%2BkcPyPmPM%3D"; // Replace with your actual SAS token
+const blobServiceClient = new BlobServiceClient(`${BLOB_ENDPOINT}?${SAS_TOKEN}`);
+const containerClient = blobServiceClient.getContainerClient("submissions-store");
+
+function inferFileType(name: string): FileItem["type"] {
+  if (/\.(jpg|jpeg|png|gif)$/i.test(name)) return "image";
+  if (/\.pdf$/i.test(name)) return "pdf";
+  if (/\.md$/i.test(name)) return "document";
   return "code";
 }
 
-// Parse XML để lấy danh sách blob từ Azure Storage
-export async function fetchBlobNames(prefix: string): Promise<string[]> {
-  try {
-    const urlPrefix = prefix.includes("_") ? prefix.split("_")[0] + "/" : prefix + "/";
-    const res = await fetch(
-      `${BLOB_URL}/devstoreaccount1/submissions-store?restype=container&comp=list&prefix=${urlPrefix}`,
-    );
-    const text = await res.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(text, "application/xml");
-    const blobs = Array.from(xmlDoc.getElementsByTagName("Blob"))
-      .map((blob) => blob.getElementsByTagName("Name")[0]?.textContent || "")
-      .filter(Boolean);
-    return blobs;
-  } catch (error) {
-    console.error("Lỗi khi fetch blob list:", error);
-    return [];
-  }
-}
+// Hàm duy nhất trả về FileItem[]
+export async function loadFileItems(prefix: string): Promise<FileItem[]> {
+  const dir =
+    prefix ?
+      prefix.endsWith("/") ?
+        prefix
+      : prefix + "/"
+    : "";
 
-// Tải nội dung file nếu là code hoặc document
-async function fetchFileContent(
-  blobPath: string,
-  type: FileItem["type"],
-): Promise<string> {
-  if (type === "code" || type === "document") {
-    try {
-      const url = `${BLOB_URL}/devstoreaccount1/submissions-store/${blobPath}`;
-      const res = await fetch(url);
-      return await res.text();
-    } catch {
-      return "// Cannot load file content";
+  const items: FileItem[] = [];
+  let idx = 1;
+
+  for await (const blob of containerClient.listBlobsFlat({ prefix: dir })) {
+    const name = blob.name.split("/").pop() || blob.name;
+    const type = inferFileType(name);
+
+    let content = "";
+    if (type === "code" || type === "document") {
+      const blobClient = containerClient.getBlobClient(blob.name);
+      const res = await blobClient.download();
+      const browserBlob = await res.blobBody;
+      content = (await browserBlob?.text()) ?? "";
     }
-  }
-  return "";
-}
 
-// Build list FileItem từ blob paths
-export async function buildFileItems(blobPaths: string[]): Promise<FileItem[]> {
-  return Promise.all(
-    blobPaths.map(async (blob, idx) => {
-      const name = blob.split("/").pop() || blob;
-      const type = inferFileType(name);
-      const content = await fetchFileContent(blob, type);
-      return {
-        id: String(idx + 1),
-        name,
-        type,
-        content,
-        path: name,
-        blobPath: blob,
-      };
-    }),
-  );
+    items.push({
+      id: String(idx++),
+      name,
+      type,
+      content,
+      path: name,
+      blobPath: blob.name,
+    });
+  }
+
+  return items;
 }
