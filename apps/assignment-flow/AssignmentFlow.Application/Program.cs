@@ -35,6 +35,7 @@ builder.Services.AddEventFlow(ef => ef
     .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
     .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
     .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
+    .ConfigureOptimisticConcurrencyRetry(retries: 5, delayBeforeRetry: TimeSpan.FromMilliseconds(200))
 );
 
 builder.Services.AddCors(options =>
