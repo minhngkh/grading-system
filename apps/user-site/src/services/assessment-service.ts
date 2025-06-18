@@ -75,9 +75,10 @@ export class AssessmentService {
     console.log("Updating score for assessment:", id, scoreBreakdowns);
     const response = await axios.post(
       `${ASSESSMENT_API_URL}/${id}/scores`,
-      { scoreBreakdown: scoreBreakdowns },
+      { scoreBreakdowns: scoreBreakdowns },
       configHeaders,
     );
+    console.log("Score update response:", response.data);
     return this.ConvertToAssessment(response.data);
   }
 }
