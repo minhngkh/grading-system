@@ -13,6 +13,7 @@ import { registry } from "@/core/llm/registry";
 import { DEFAULT_CONTAINER } from "@/lib/blob-storage";
 import { createFileAliasManifest, createMediaFileParts } from "@/plugins/ai/media-files";
 import { packFilesSubsets } from "@/plugins/ai/repomix";
+import { generateRubricContext } from "@/plugins/ai/rubric-metadata";
 
 const llmOptions: LanguageModelWithOptions = {
   model: registry.languageModel("google:gemini-2.5-flash-preview"),
@@ -68,6 +69,8 @@ interface CriterionData extends Criterion {
   configuration: string;
 }
 
+// - The score must be exactly the same as the level's weight (or if it contains a max and min value, then the graded score must be both: lower or equal to the max value; higher and *must not* equal to the min value. for example, if "weight": { "max": 100, "min":75 }, the score should be in range 75 < score <= 100).
+
 function createGradingSystemPrompt(partOfRubric: Criterion[]) {
   return dedent`
     - You are a helpful AI assistant that grades the input using the provided rubric bellow
@@ -83,11 +86,14 @@ function createGradingSystemPrompt(partOfRubric: Criterion[]) {
     - The input you will be given is generated using repomix, it will show you the structure and content of all the files that you will use to grade
     - Here are some more detailed specs of the output:
       - You must grade all of the criteria
-      - You must grade each criterion by reading the level description then give and choose the one that is the most appropriate for the input
-      - The score must be exactly the same as the level's weight (or if it contains a max and min value, then the graded score must be both: lower or equal to the max value; higher and *must not* equal to the min value. for example, if "weight": { "max": 100, "min":75 }, the score should be in range 75 < score <= 100).
+      - You must grade each criterion by reading each level description then choose the level (its tag) that satisfies it based on the input
+      - After selecting the level, you must provide the score in the range from "the current level's weight" to less than (not equal to) "the next higher level's weight. If it is the highest level, then the score must be equal to the level's weight
+        - For example, you choose level with tag "1" that have weight 50, and the next level is "2" with weight 75, then the score must be in range 50 < score <= 75
+        - If you choose the highest level with tag "5" that have weight 100, then the score must be exactly 100
       - If the score you gave:
         - is 100, you don't have to provide any detailed feedback in the \`feedback\` field, but at least provide the summary in the \`summary\` field
-        - is less than 100, you should provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the input that you based your decision on, if applicable
+        - is less than 100, you should provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the input that you based your decision on, and on which file, if applicable
+          - Note that the \`fileRef\` must be the original file path if you are referring to uploaded files that you can get by using the file manifest below (if present)
   `;
 }
 
@@ -99,10 +105,14 @@ export function gradeCriteria(options: {
   partOfRubric: Criterion[];
   prompt: string;
   fileParts: FilePart[];
-  fileAliasManifest: string;
+  header?: string;
+  footer?: string;
 }) {
   const systemPrompt = createGradingSystemPrompt(options.partOfRubric);
-  const prompt = `${options.prompt}\n${options.fileAliasManifest}`;
+  const prompt = `${options.header || ""}\n${options.prompt}\n${options.footer || ""}`;
+
+  console.log(options.header)
+  console.log(options.fileParts)
 
   return ResultAsync.fromPromise(
     generateObject({
@@ -134,15 +144,25 @@ export function gradeCriteria(options: {
   ).map((response) => response.object);
 }
 
-export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: string) {
+export function gradeSubmission(data: {
+  attachments: string[];
+  metadata: Record<string, unknown>;
+  criterionDataList: CriterionData[];
+  attemptId?: string;
+}) {
   return safeTry(async function* () {
-    if (criterionDataList.length === 0) {
+    if (data.criterionDataList.length === 0) {
       return errAsync(new Error("No data provided for grading"));
     }
 
+    const rubricContext = yield* generateRubricContext({
+      blobUrls: data.attachments,
+      metadata: data.metadata,
+    });
+
     // TODO: change This
     const sourceId = yield* getBlobName(
-      criterionDataList[0].fileRefs[0],
+      data.criterionDataList[0].fileRefs[0],
       DEFAULT_CONTAINER,
     ).map((name) => {
       const { root, rest } = getBlobNameParts(name);
@@ -150,7 +170,7 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
       return `${root}-${dir}`;
     });
 
-    const criterionFiles = criterionDataList.map(
+    const criterionFiles = data.criterionDataList.map(
       (item): FilesSubset => ({
         id: item.criterionName,
         blobUrls: item.fileRefs,
@@ -160,7 +180,7 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
     const withTextResultList = yield* packFilesSubsets(
       sourceId,
       criterionFiles,
-      attemptId,
+      data.attemptId,
     );
 
     const withMediaResultList = withTextResultList.map((packResult) =>
@@ -180,42 +200,44 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
               options: { cause: error },
             }),
         )
-        .andThen((data) => {
+        .andThen((value) => {
           const nonTextBlobs = [];
-          for (const url of data.textData.allBlobUrls) {
-            if (data.textData.usedBlobUrls.has(url)) {
+          for (const url of value.textData.allBlobUrls) {
+            const { rest: path } = getBlobNameParts(value.blobUrlNameMap.get(url)!);
+
+            if (value.textData.usedBlobUrls.has(path)) {
               continue;
             }
 
-            const { rest: path } = getBlobNameParts(data.blobUrlNameMap.get(url)!);
+            // const { rest: path } = getBlobNameParts(value.blobUrlNameMap.get(url)!);
 
             nonTextBlobs.push(path);
           }
 
-          return createMediaFileParts(data.downloadDir, nonTextBlobs)
+          return createMediaFileParts(value.downloadDir, nonTextBlobs)
             .mapErr(
               (error) =>
                 new ErrorWithCriteriaInfo({
-                  data: { criterionNames: data.criterionNames },
+                  data: { criterionNames: value.criterionNames },
                   message: `Failed to process non-text files for criteria`,
                   options: { cause: error },
                 }),
             )
-            .andThen((mediaData) =>
-              createFileAliasManifest(mediaData.urlAliasMap)
+            .andThen((mediaValue) =>
+              createFileAliasManifest(mediaValue.urlAliasMap)
                 .mapErr(
                   (error) =>
                     new ErrorWithCriteriaInfo({
-                      data: { criterionNames: data.criterionNames },
+                      data: { criterionNames: value.criterionNames },
                       message: `Failed to create manifest info for media files`,
                       options: { cause: error },
                     }),
                 )
                 .map((manifest) => ({
-                  ...data,
+                  ...value,
                   mediaData: {
-                    llmMessageParts: mediaData.parts,
-                    ignoredUrls: mediaData.ignoredUrls,
+                    llmMessageParts: mediaValue.parts,
+                    ignoredUrls: mediaValue.ignoredUrls,
                     manifestInfo: manifest,
                   },
                 })),
@@ -224,10 +246,10 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
     );
 
     const gradeResultList = withMediaResultList.map((result) =>
-      result.andThen((data) => {
+      result.andThen((value) => {
         // Normal search instead of map since the number of criteria is usually small
-        const criteriaData: Criterion[] = data.criterionNames.map((name) => {
-          const obj = criterionDataList.find((c) => c.criterionName === name)!;
+        const criteriaData: Criterion[] = value.criterionNames.map((name) => {
+          const obj = data.criterionDataList.find((c) => c.criterionName === name)!;
           return {
             criterionName: obj.criterionName,
             levels: obj.levels,
@@ -235,18 +257,21 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
         });
 
         logger.debug("files ignore", {
-          ignoreUrls: data.mediaData.ignoredUrls,
+          ignoreUrls: value.mediaData.ignoredUrls,
         });
         return gradeCriteria({
           partOfRubric: criteriaData,
-          prompt: data.textData.packedContent,
-          fileParts: data.mediaData.llmMessageParts,
-          fileAliasManifest: data.mediaData.manifestInfo,
+          prompt: value.textData.packedContent,
+          fileParts: rubricContext.llmMessageParts.concat(
+            value.mediaData.llmMessageParts,
+          ),
+          header: rubricContext.manifest,
+          footer: value.mediaData.manifestInfo,
         })
           .mapErr(
             (error) =>
               new ErrorWithCriteriaInfo({
-                data: { criterionNames: data.criterionNames },
+                data: { criterionNames: value.criterionNames },
                 message: `Failed to grade criteria`,
                 options: { cause: error },
               }),
@@ -256,7 +281,8 @@ export function gradeSubmission(criterionDataList: CriterionData[], attemptId?: 
               ...r,
               feedback: r.feedback.map((fb) => ({
                 ...fb,
-                fileRef: data.blobPathUrlMap.get(fb.fileRef),
+                // FIXME: handle this case
+                fileRef: value.blobPathUrlMap.get(fb.fileRef) || fb.fileRef,
               })),
             })),
           );

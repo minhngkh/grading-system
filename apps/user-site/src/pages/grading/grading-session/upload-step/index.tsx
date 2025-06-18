@@ -1,21 +1,36 @@
+import type { CriteriaSelector, GradingAttempt, Submission } from "@/types/grading";
 import type { Rubric } from "@/types/rubric";
-import { Button } from "@/components/ui/button";
-import { FileList } from "./file-list";
-import { RubricSelect } from "@/components/app/scrollable-select";
-import { CriteriaSelector, GradingAttempt, Submission } from "@/types/grading";
-import CriteriaMapper from "./criteria-mapping";
+import { useAuth } from "@clerk/clerk-react";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { GradingService } from "@/services/grading-service";
-import { Spinner } from "@/components/app/spinner";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
+import { FileUploader } from "@/components/app/file-uploader";
+import { InfoToolTip } from "@/components/app/info-tooltip";
+import { RubricSelect } from "@/components/app/scrollable-select";
+import { Spinner } from "@/components/app/spinner";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { InfoToolTip } from "@/components/app/info-tooltip";
+import { Progress } from "@/components/ui/progress";
 import { useDebounce } from "@/hooks/use-debounce";
-import { FileUploader } from "@/components/app/file-uploader";
-import { useAuth } from "@clerk/clerk-react";
+import { GradingService } from "@/services/grading-service";
+import CriteriaMapper from "./criteria-mapping";
+import { FileList } from "./file-list";
+
+// FIXME: remove this, just a quick fix
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function allWithDelay(
+  tasks: Array<(...args: any[]) => Promise<any>>,
+  delayMs: number,
+) {
+  const running = [];
+  for (const task of tasks) {
+    running.push(task());
+    await sleep(delayMs);
+  }
+  return Promise.all(running);
+}
 
 interface UploadStepProps {
   onGradingAttemptChange: (gradingAttempt: Partial<GradingAttempt>) => void;
@@ -72,7 +87,7 @@ export default function UploadStep({
     try {
       await GradingService.updateGradingSelectors(gradingAttempt.id, selectors, token);
       onGradingAttemptChange({
-        selectors: selectors,
+        selectors,
       });
     } catch (error) {
       console.error("Error generating selectors:", error);
@@ -124,21 +139,26 @@ export default function UploadStep({
       setProgress(0);
       setFileDialogOpen(true);
 
-      await Promise.all(
-        newFiles.map(async (file, index) => {
-          try {
-            await GradingService.uploadSubmission(gradingAttempt.id, file, token);
-            const updatedFiles = [...uploadedFiles, file];
-            setUploadedFiles(updatedFiles);
-          } catch (error) {
-            toast.error(`Failed to upload ${file.name}`);
-            console.error("Error uploading file:", error);
-          } finally {
-            const updatedProgress = Math.round(((index + 1) * 100) / newFiles.length);
-            setProgress(updatedProgress);
-          }
+      // await Promise.all(
+      await allWithDelay(
+        newFiles.map((file, index) => {
+          return async () => {
+            try {
+              await GradingService.uploadSubmission(gradingAttempt.id, file, token);
+              const updatedFiles = [...uploadedFiles, file];
+              setUploadedFiles(updatedFiles);
+            } catch (error) {
+              toast.error(`Failed to upload ${file.name}`);
+              console.error("Error uploading file:", error);
+            } finally {
+              const updatedProgress = Math.round(((index + 1) * 100) / newFiles.length);
+              setProgress(updatedProgress);
+            }
+          };
         }),
+        300,
       );
+      // );
 
       const newSubmissions = [
         ...gradingAttempt.submissions,
@@ -279,7 +299,7 @@ export default function UploadStep({
           min={1}
           value={scaleFactor}
           onChange={(e) => {
-            const value = parseFloat(e.target.value);
+            const value = Number.parseFloat(e.target.value);
             if (!isNaN(value)) {
               setScaleFactor(value);
             } else {

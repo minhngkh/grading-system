@@ -11,8 +11,15 @@ export async function initMessaging() {
 
   transporter.consume(submissionStartedEvent, (data) =>
     safeTry(async function* () {
-      const resultList = await gradeSubmission(data.criteria);
+      const resultList = await gradeSubmission({
+        attemptId: data.assessmentId,
+        criterionDataList: data.criteria,
+        attachments: data.attachments,
+        metadata: data.metadata,
+      });
       if (resultList.isErr()) {
+        console.error("Error grading submission", resultList.error);
+
         transporter.emit(submissionGradedEvent, {
           assessmentId: data.assessmentId,
           scoreBreakdowns: [],

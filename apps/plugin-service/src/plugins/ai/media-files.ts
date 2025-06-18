@@ -24,9 +24,10 @@ const SUPPORTED_CONTENT_TYPES = [
   "image/heic",
   "image/heif",
   "application/pdf",
+  "text/plain",
 ];
 
-// FIXME: it's not bloburls but blob names
+// FIXME: it's not blob urls but blob names
 function signBlobUrls(blobUrls: string[]) {
   return safeTry(async function* () {
     // const withContentType = yield* ResultAsync.combine(
@@ -70,13 +71,17 @@ function signBlobUrls(blobUrls: string[]) {
   });
 }
 
-export function createMediaFileParts(downloadDirectory: string, blobNames: string[]) {
+export function createMediaFileParts(
+  downloadDirectory: string,
+  blobNames: string[],
+  prefix = "file",
+) {
   const urlAliasMap = new Map<string, string>();
 
   if (process.env.NODE_ENV === "production") {
     return signBlobUrls(blobNames).map((info) => {
       const parts = info.signedUrls.map((item, idx): FilePart => {
-        const fileName = `file_${idx}`;
+        const fileName = `${prefix}_${idx}`;
         urlAliasMap.set(item.originalUrl, fileName);
 
         return {
@@ -97,6 +102,9 @@ export function createMediaFileParts(downloadDirectory: string, blobNames: strin
 
   const resultList = blobNames.map((name, idx) => {
     const filePath = path.join(downloadDirectory, name);
+
+    console.log(filePath);
+    
     return fromPromise(fs.readFile(filePath), asError)
       .map((content): FilePart => {
         const fileName = `file_${idx}`;
@@ -141,14 +149,18 @@ export function createMediaFileParts(downloadDirectory: string, blobNames: strin
   });
 }
 
-export function createFileAliasManifest(urlAliasMap: Map<string, string>) {
+export const GRADING_FILES_HEADER = dedent`
+  ### MULTIMODAL FILE MANIFEST ###
+  Addition to all of the text files listed above, this prompt includes the following non-text files, which have been uploaded separately. Please use this manifest to correlate the files with their original paths in the directory.
+`;
+
+const SEPARATOR = "\n---\n";
+
+export function createFileAliasManifest(
+  urlAliasMap: Map<string, string>,
+  header = GRADING_FILES_HEADER,
+) {
   return safeTry(function* () {
-    const header = dedent`
-      ### MULTIMODAL FILE MANIFEST ###
-      This prompt includes the following non-text files, which have been uploaded separately. Please use this manifest to correlate the files with their original paths in the directory.
-  
-      ---
-    `;
     // yield* getBlobName(url, DEFAULT_CONTAINER)
     const entries: string[] = [];
     for (const [url, alias] of urlAliasMap) {
@@ -158,10 +170,7 @@ export function createFileAliasManifest(urlAliasMap: Map<string, string>) {
   
       `);
     }
-    const footer = dedent`
-      ---
-    `;
 
-    return ok(`${header}\n${entries.join("\n")}${footer}\n`);
+    return ok(`${header}${SEPARATOR}${entries.join("\n")}${SEPARATOR}`);
   });
 }
