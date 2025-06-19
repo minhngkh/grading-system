@@ -18,7 +18,6 @@ import { Route as AuthenticatedTestImport } from './routes/_authenticated/test'
 import { Route as AuthenticatedProfileImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedHomeImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedChatImport } from './routes/_authenticated/chat'
-import { Route as AuthenticatedAnalyticsImport } from './routes/_authenticated/analytics'
 import { Route as AuthSignupImport } from './routes/_auth/signup'
 import { Route as AuthSigninImport } from './routes/_auth/signin'
 import { Route as AuthenticatedRubricsViewImport } from './routes/_authenticated/rubrics/view'
@@ -70,12 +69,6 @@ const AuthenticatedHomeRoute = AuthenticatedHomeImport.update({
 const AuthenticatedChatRoute = AuthenticatedChatImport.update({
   id: '/chat',
   path: '/chat',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-
-const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsImport.update({
-  id: '/analytics',
-  path: '/analytics',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
@@ -191,13 +184,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignupImport
       parentRoute: typeof AuthRouteImport
     }
-    '/_authenticated/analytics': {
-      id: '/_authenticated/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AuthenticatedAnalyticsImport
-      parentRoute: typeof AuthenticatedRouteImport
-    }
     '/_authenticated/chat': {
       id: '/_authenticated/chat'
       path: '/chat'
@@ -309,7 +295,6 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 )
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -326,7 +311,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
@@ -354,7 +338,6 @@ export interface FileRoutesByFullPath {
   '': typeof AuthenticatedRouteRouteWithChildren
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -375,7 +358,6 @@ export interface FileRoutesByTo {
   '': typeof AuthenticatedRouteRouteWithChildren
   '/signin': typeof AuthSigninRoute
   '/signup': typeof AuthSignupRoute
-  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/chat': typeof AuthenticatedChatRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -398,7 +380,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/_auth/signin': typeof AuthSigninRoute
   '/_auth/signup': typeof AuthSignupRoute
-  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -421,7 +402,6 @@ export interface FileRouteTypes {
     | ''
     | '/signin'
     | '/signup'
-    | '/analytics'
     | '/chat'
     | '/home'
     | '/profile'
@@ -441,7 +421,6 @@ export interface FileRouteTypes {
     | ''
     | '/signin'
     | '/signup'
-    | '/analytics'
     | '/chat'
     | '/home'
     | '/profile'
@@ -462,7 +441,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/_auth/signin'
     | '/_auth/signup'
-    | '/_authenticated/analytics'
     | '/_authenticated/chat'
     | '/_authenticated/home'
     | '/_authenticated/profile'
@@ -519,7 +497,6 @@ export const routeTree = rootRoute
     "/_authenticated": {
       "filePath": "_authenticated/route.tsx",
       "children": [
-        "/_authenticated/analytics",
         "/_authenticated/chat",
         "/_authenticated/home",
         "/_authenticated/profile",
@@ -542,10 +519,6 @@ export const routeTree = rootRoute
     "/_auth/signup": {
       "filePath": "_auth/signup.tsx",
       "parent": "/_auth"
-    },
-    "/_authenticated/analytics": {
-      "filePath": "_authenticated/analytics.tsx",
-      "parent": "/_authenticated"
     },
     "/_authenticated/chat": {
       "filePath": "_authenticated/chat.tsx",

@@ -50,6 +50,14 @@ const FeedbackSchema = z.object({
   tag: z.string(),
 });
 
+export enum AssessmentState {
+  Created,
+  AutoGradingStarted,
+  AutoGradingFinished,
+  AutoGradingFailed,
+  Completed,
+}
+
 export const AssessmentSchema = z.object({
   id: z.string(),
   gradingId: z.string(),
@@ -58,6 +66,7 @@ export const AssessmentSchema = z.object({
   adjustedCount: z.number().optional(),
   scoreBreakdowns: z.array(ScoreBreakdownSchema),
   feedbacks: z.array(FeedbackSchema),
+  status: z.nativeEnum(AssessmentState),
 });
 
 export type Assessment = z.infer<typeof AssessmentSchema>;
