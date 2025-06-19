@@ -22,8 +22,6 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddBootstrapping(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
-        // Add application services here
-        // Example: services.AddScoped<IMyService, MyService>();
         services
             .AddOpenApi()
             .AddJwtAuthentication(configuration)
@@ -32,11 +30,15 @@ public static class ServiceCollectionExtensions
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
             .AddGrpcClients(configuration)
-            .AddServiceBootstrapping(configuration)
-            .Configure<FormOptions>(options =>
-            {
-                options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB;
-            });
+            .AddServiceBootstrapping(configuration);
+
+        services.AddAntiforgery();
+        services.AddSignalR();
+
+        services.Configure<FormOptions>(options =>
+        {
+            options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB;
+        });
 
         return services;
     }
@@ -162,8 +164,6 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddServiceBootstrapping(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddTransient<DbInitializer>();
-        services.AddAntiforgery();
-
         return services;
     }
 }
