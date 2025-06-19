@@ -1,5 +1,6 @@
 using AssignmentFlow.Application.Bootstrapping;
 using AssignmentFlow.Application.Gradings;
+using AssignmentFlow.Application.Gradings.Hub;
 using JsonApiDotNetCore.Configuration;
 using Scalar.AspNetCore;
 
@@ -53,6 +54,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseJsonApi();
+app.MapHub<GradingsHub>("/gradings");
 app.MapAssignmentFlowEndpoints();
 
 app.UseHealthChecks("/health");
