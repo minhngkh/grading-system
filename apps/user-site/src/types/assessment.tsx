@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ScoreBreakdownSchema = z.object({
   criterionName: z.string(),
-  tag: z.string(),
+  performanceTag: z.string(),
   rawScore: z.number(),
 });
 

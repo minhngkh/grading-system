@@ -79,9 +79,10 @@ export class AssessmentService {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.post(
       `${ASSESSMENT_API_URL}/${id}/scores`,
-      { scoreBreakdown: scoreBreakdowns },
+      { scoreBreakdowns: scoreBreakdowns },
       configHeaders,
     );
+    console.log("Score update response:", response.data);
     return this.ConvertToAssessment(response.data);
   }
 

@@ -195,6 +195,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                   const weight = criterion.weight ?? 0;
                   const score =
                     currentScore ? calcScore(currentScore.rawScore, weight) : 0;
+                  console.log(currentScore);
                   return (
                     <div key={criterion.id} className="rounded-lg border p-4">
                       <div className="flex items-center justify-between mb-2">
@@ -202,9 +203,9 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                           <span className="text-sm font-medium">{criterion.name}</span>
                           <Badge
                             variant="outline"
-                            className={`text-xs ${getTagColor(currentScore?.tag || "")}`}
+                            className={`text-xs ${getTagColor(currentScore?.performanceTag || "")}`}
                           >
-                            {currentScore?.tag || "N/A"}
+                            {currentScore?.performanceTag || "N/A"}
                           </Badge>
                         </div>
                         <span className="text-sm font-medium">
@@ -218,7 +219,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                       <Progress
                         value={
                           currentScore?.rawScore ?
-                            (currentScore.rawScore / (grading.scaleFactor ?? 10)) * 100
+                            (currentScore.rawScore / (criterion.weight ?? 1)) * 100
                           : 0
                         }
                         className="h-2.5"
