@@ -47,10 +47,10 @@ export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageP
             <CardTitle className="text-sm font-medium">Average Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{averageScore.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">
-              {((averageScore / 100) * scaleFactor).toFixed(2)} out of {scaleFactor}
-            </p>
+            <div className="text-2xl font-bold">
+              {((averageScore / 100) * scaleFactor).toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">out of {scaleFactor}</p>
           </CardContent>
         </Card>
         <Card className="gap-0">
@@ -92,6 +92,7 @@ export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageP
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Criterion Score Distributions</h3>
             <AssessmentCriterionChart
+              assessmentCount={assessmentCount}
               criterionData={criterionData}
               scaleFactor={scaleFactor}
             />

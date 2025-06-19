@@ -29,8 +29,7 @@ export function AssessmentScoreDistributionChart({
       const maxScore = (scaleFactor * maxPercent) / 100;
 
       return {
-        bin: `${minPercent}-${maxPercent}%`,
-        range: `${minScore.toFixed(1)}-${maxScore.toFixed(1)}`,
+        bin: `${minScore.toFixed(1)}-${maxScore.toFixed(1)}`,
         count,
         minScore,
         maxScore,
@@ -60,7 +59,7 @@ export function AssessmentScoreDistributionChart({
           <XAxis
             dataKey="bin"
             label={{
-              value: "Score Range (Percentage)",
+              value: "Score Range",
               position: "insideBottom",
               offset: -40,
             }}
@@ -82,8 +81,9 @@ export function AssessmentScoreDistributionChart({
             labelFormatter={(label, payload) => {
               if (payload && payload[0]) {
                 const data = payload[0].payload;
-                return `${label} (${data.range} out of ${scaleFactor})`;
+                return `${data.count} out of ${assessmentCount} assessments in range ${data.bin}`;
               }
+
               return label;
             }}
           />

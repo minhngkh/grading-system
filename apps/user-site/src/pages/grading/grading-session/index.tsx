@@ -2,7 +2,7 @@ import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { defineStepper } from "@stepperize/react";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import GradingProgressStep from "./grading-step";
 import GradingResult from "../grading-result";
 import UploadStep from "./upload-step";
@@ -45,10 +45,7 @@ export default function UploadAssignmentPage({
   initialGradingAttempt,
   initialStep,
 }: UploadAssignmentPageProps) {
-  const stepper = useStepper({
-    initialStep: initialStep,
-  });
-
+  const stepper = useStepper({ initialStep: initialStep });
   const currentIndex = utils.getIndex(stepper.current.id);
   const [isStarting, setIsStarting] = useState(false);
   const auth = useAuth();
@@ -60,6 +57,13 @@ export default function UploadAssignmentPage({
   });
 
   const gradingAttemptValues = gradingAttempt.watch();
+
+  useEffect(() => {
+    if (currentIndex === 0 && gradingAttemptValues.status !== GradingStatus.Created) {
+      stepper.next();
+      sessionStorage.setItem("gradingStep", steps[1].id);
+    }
+  }, [currentIndex]);
 
   const handleUpdateGradingAttempt = useCallback(
     (updated: Partial<GradingAttempt>) => {
@@ -99,7 +103,7 @@ export default function UploadAssignmentPage({
         if (gradingAttemptValues.status === GradingStatus.Started) return;
         break;
       case 2:
-        return navigate({ to: "/home" });
+        return navigate({ to: "/gradings/view" });
     }
 
     stepper.next();

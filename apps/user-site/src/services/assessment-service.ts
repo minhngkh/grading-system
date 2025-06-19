@@ -1,10 +1,14 @@
-import { Assessment, FeedbackItem, ScoreBreakdown } from "@/types/assessment";
+import {
+  Assessment,
+  AssessmentState,
+  FeedbackItem,
+  ScoreBreakdown,
+} from "@/types/assessment";
 import axios, { AxiosRequestConfig } from "axios";
 import { Deserializer } from "jsonapi-serializer";
 
 const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
 const ASSESSMENT_API_URL = `${ASSIGNMENT_FLOW_API_URL}/assessments`;
-const BLOB_STORAGE_URL = `${import.meta.env.SUBMISSION_STORAGE_URL}`;
 
 export class AssessmentService {
   private static async buildHeaders(token: string): Promise<AxiosRequestConfig> {
@@ -30,6 +34,7 @@ export class AssessmentService {
       adjustedCount: record.adjustedCount,
       scoreBreakdowns: record.scoreBreakdowns ?? [],
       feedbacks: record.feedbacks ?? [],
+      status: record.status,
     };
   }
 
@@ -72,7 +77,6 @@ export class AssessmentService {
     token: string,
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
-    console.log("Updating score for assessment:", id, scoreBreakdowns);
     const response = await axios.post(
       `${ASSESSMENT_API_URL}/${id}/scores`,
       { scoreBreakdowns: scoreBreakdowns },
@@ -80,5 +84,25 @@ export class AssessmentService {
     );
     console.log("Score update response:", response.data);
     return this.ConvertToAssessment(response.data);
+  }
+
+  static async rerunAssessment(id: string, token: string) {
+    const configHeaders = await this.buildHeaders(token);
+    return await axios.post(
+      `${ASSESSMENT_API_URL}/${id}/startAutoGrading`,
+      null,
+      configHeaders,
+    );
+  }
+
+  static async getAssessmentStatus(id: string, token: string): Promise<AssessmentState> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(
+      `${ASSESSMENT_API_URL}/${id}?fields[gradings]=status`,
+      configHeaders,
+    );
+
+    const assessment = await this.assessmentDeserializer.deserialize(response.data);
+    return assessment.status;
   }
 }

@@ -76,7 +76,7 @@ export default function RubricGenerationPage({
         }
 
         await RubricService.updateRubric(initialRubric.id, formValues, token);
-        navigate({ to: location.search?.redirect ?? "/rubrics", replace: true });
+        navigate({ to: location.search?.redirect ?? "/rubrics/view", replace: true });
       } catch (err) {
         toast.error("Failed to update rubric");
         console.error(err);

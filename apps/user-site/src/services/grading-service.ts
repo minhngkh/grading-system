@@ -108,7 +108,6 @@ export class GradingService {
     );
 
     const data = await this.gradingDeserializer.deserialize(response.data);
-    console.log("Grading attempts data:", data);
     return { data, meta: response.data.meta };
   }
 
