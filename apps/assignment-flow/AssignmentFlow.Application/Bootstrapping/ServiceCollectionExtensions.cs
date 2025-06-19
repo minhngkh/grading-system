@@ -1,4 +1,12 @@
-﻿using FluentValidation;
+﻿using AssignmentFlow.Application.Assessments;
+using AssignmentFlow.Application.Gradings;
+using EventFlow.EntityFramework;
+using EventFlow.EntityFramework.Extensions;
+using EventFlow.Extensions;
+using EventFlow.PostgreSql.Connections;
+using EventFlow.PostgreSql.EventStores;
+using EventFlow.PostgreSql.Extensions;
+using FluentValidation;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
 using MassTransit;
@@ -20,6 +28,7 @@ public static class ServiceCollectionExtensions
             .AddOpenApi()
             .AddJwtAuthentication(configuration)
             .AddMessageBus(configuration, typeof(Program).Assembly)
+            .AddProjectEventFlow(configuration, typeof(Program).Assembly)
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
             .AddGrpcClients(configuration)
@@ -106,6 +115,27 @@ public static class ServiceCollectionExtensions
         services
             .AddValidatorsFromAssemblyContaining<Program>()
             .AddFluentValidationAutoValidation();
+        return services;
+    }
+
+    private static IServiceCollection AddProjectEventFlow(this IServiceCollection services, IConfiguration configuration, Assembly? assembly)
+    {
+        services.AddEventFlow(ef => ef
+            .Configure(o =>
+            {
+                o.IsAsynchronousSubscribersEnabled = true;
+                o.ThrowSubscriberExceptions = true;
+            })
+            .ConfigurePostgreSql(PostgreSqlConfiguration.New
+                .SetConnectionString(configuration.GetConnectionString("assignmentflowdb")))
+            .UseEventPersistence<PostgreSqlEventPersistence>()
+            .AddDefaults(typeof(Program).Assembly)
+            .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
+            .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
+            .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
+            .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
+        );
+
         return services;
     }
 
