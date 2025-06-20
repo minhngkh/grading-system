@@ -1,7 +1,7 @@
 import type { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
 import { FileList } from "./file-list";
-import { RubricSelect } from "@/components/app/scrollable-select";
+import { ScrollableSelectMemo } from "@/components/app/scrollable-select";
 import { CriteriaSelector, GradingAttempt, Submission } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
@@ -16,6 +16,7 @@ import { InfoToolTip } from "@/components/app/info-tooltip";
 import { useDebounce } from "@/hooks/use-debounce";
 import { FileUploader } from "@/components/app/file-uploader";
 import { useAuth } from "@clerk/clerk-react";
+import { RubricService } from "@/services/rubric-service";
 
 interface UploadStepProps {
   onGradingAttemptChange: (gradingAttempt: Partial<GradingAttempt>) => void;
@@ -66,7 +67,8 @@ export default function UploadStep({
     const token = await auth.getToken();
     if (!token) {
       console.error("Error updating rubric: No token found");
-      return toast.error("Unauthorized: You must be logged in to update rubric");
+      toast.error("Unauthorized: You must be logged in to update rubric");
+      return;
     }
 
     try {
@@ -76,7 +78,7 @@ export default function UploadStep({
       });
     } catch (error) {
       console.error("Error generating selectors:", error);
-      return toast.error("Failed to update selectors");
+      toast.error("Failed to update selectors");
     }
   };
 
@@ -87,18 +89,19 @@ export default function UploadStep({
     const token = await auth.getToken();
     if (!token) {
       console.error("Error updating rubric: No token found");
-      return toast.error("Unauthorized: You must be logged in to update rubric");
+      toast.error("Unauthorized: You must be logged in to update rubric");
+      return;
     }
 
     try {
-      console.log("Updating rubric:", rubric);
       await GradingService.updateGradingRubric(gradingAttempt.id, rubric.id, token);
       onGradingAttemptChange({
         rubricId: rubric.id,
       });
     } catch (error) {
       console.error("Error updating rubric:", error);
-      return toast.error("Failed to select rubric");
+      toast.error("Failed to select rubric");
+      return;
     }
 
     const selectors = rubric.criteria.map((criterion) => {
@@ -243,9 +246,11 @@ export default function UploadStep({
           <InfoToolTip description="Choose a rubric to use for grading. If you don't have a rubric, you can create one." />
         </div>
         <div className="flex items-center w-full gap-4">
-          <RubricSelect
-            gradingAttempt={gradingAttempt}
-            onRubricChange={handleSelectRubric}
+          <ScrollableSelectMemo<Rubric>
+            value={gradingAttempt.rubricId}
+            onValueChange={handleSelectRubric}
+            searchFn={(params, token) => RubricService.getRubrics(params, token)}
+            selectFn={(rubric) => rubric.rubricName}
           />
           <span>or</span>
           <Button variant="outline" asChild>

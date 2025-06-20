@@ -18,19 +18,10 @@ interface GradingAnalyticsPageProps {
 export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageProps) {
   const { scaleFactor, averageScore, assessmentCount, scores, criterionData } =
     gradingAnalytics;
-
   const scoreDistribution = getScoreDistribution(scores);
 
   return (
-    <div className="space-y-8">
-      {/* Page Title */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Grading Analytics</h1>
-        <p className="text-muted-foreground">
-          Detailed analysis of assessment scores and criterion performance
-        </p>
-      </div>
-
+    <div className="space-y-6">
       {/* Grading Summary Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="gap-0">
@@ -71,7 +62,7 @@ export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageP
           <TabsTrigger value="overall">Overall Scores</TabsTrigger>
           <TabsTrigger value="criteria">Criteria Scores</TabsTrigger>
         </TabsList>
-        <TabsContent value="overall" className="mt-4">
+        <TabsContent value="overall">
           <Card>
             <CardHeader>
               <CardTitle>Assessment Score Distribution</CardTitle>
