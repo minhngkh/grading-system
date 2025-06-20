@@ -1,4 +1,12 @@
-﻿using FluentValidation;
+﻿using AssignmentFlow.Application.Assessments;
+using AssignmentFlow.Application.Gradings;
+using EventFlow.EntityFramework;
+using EventFlow.EntityFramework.Extensions;
+using EventFlow.Extensions;
+using EventFlow.PostgreSql.Connections;
+using EventFlow.PostgreSql.EventStores;
+using EventFlow.PostgreSql.Extensions;
+using FluentValidation;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
 using MassTransit;
@@ -14,20 +22,23 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddBootstrapping(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
-        // Add application services here
-        // Example: services.AddScoped<IMyService, MyService>();
         services
             .AddOpenApi()
             .AddJwtAuthentication(configuration)
             .AddMessageBus(configuration, typeof(Program).Assembly)
+            .AddProjectEventFlow(configuration, typeof(Program).Assembly)
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
             .AddGrpcClients(configuration)
-            .AddServiceBootstrapping(configuration)
-            .Configure<FormOptions>(options =>
-            {
-                options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB;
-            });
+            .AddServiceBootstrapping(configuration);
+
+        services.AddAntiforgery();
+        services.AddSignalR();
+
+        services.Configure<FormOptions>(options =>
+        {
+            options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB;
+        });
 
         return services;
     }
@@ -109,6 +120,27 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    private static IServiceCollection AddProjectEventFlow(this IServiceCollection services, IConfiguration configuration, Assembly? assembly)
+    {
+        services.AddEventFlow(ef => ef
+            .Configure(o =>
+            {
+                o.IsAsynchronousSubscribersEnabled = true;
+                o.ThrowSubscriberExceptions = true;
+            })
+            .ConfigurePostgreSql(PostgreSqlConfiguration.New
+                .SetConnectionString(configuration.GetConnectionString("assignmentflowdb")))
+            .UseEventPersistence<PostgreSqlEventPersistence>()
+            .AddDefaults(typeof(Program).Assembly)
+            .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
+            .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
+            .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
+            .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
+        );
+
+        return services;
+    }
+
     private static IServiceCollection AddGrpcClients(this IServiceCollection services, IConfiguration configuration)
     {
         //Grpc Services
@@ -132,8 +164,6 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddServiceBootstrapping(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddTransient<DbInitializer>();
-        services.AddAntiforgery();
-
         return services;
     }
 }

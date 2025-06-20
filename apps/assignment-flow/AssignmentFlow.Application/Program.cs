@@ -1,12 +1,6 @@
-using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Bootstrapping;
 using AssignmentFlow.Application.Gradings;
-using EventFlow.EntityFramework;
-using EventFlow.EntityFramework.Extensions;
-using EventFlow.Extensions;
-using EventFlow.PostgreSql.Connections;
-using EventFlow.PostgreSql.EventStores;
-using EventFlow.PostgreSql.Extensions;
+using AssignmentFlow.Application.Gradings.Hub;
 using JsonApiDotNetCore.Configuration;
 using Scalar.AspNetCore;
 
@@ -20,22 +14,6 @@ builder.Services
     .AddBootstrapping(builder.Configuration, builder.Environment)
     .AddShared(builder.Configuration, builder.Environment)
     .AddGradings();
-
-builder.Services.AddEventFlow(ef => ef
-    .Configure(o =>
-    {
-        o.IsAsynchronousSubscribersEnabled = true;
-        o.ThrowSubscriberExceptions = true;
-    })
-    .ConfigurePostgreSql(PostgreSqlConfiguration.New
-        .SetConnectionString(builder.Configuration.GetConnectionString("assignmentflowdb")))
-    .UseEventPersistence<PostgreSqlEventPersistence>()
-    .AddDefaults(typeof(Program).Assembly)
-    .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
-    .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
-    .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
-    .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
-);
 
 builder.Services.AddCors(options =>
 {
@@ -76,6 +54,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseJsonApi();
+app.MapHub<GradingsHub>("/gradings");
 app.MapAssignmentFlowEndpoints();
 
 app.UseHealthChecks("/health");
