@@ -16,8 +16,10 @@ export const Route = createFileRoute("/_authenticated/gradings/$gradingId/result
 
     return await GradingService.getGradingAttempt(gradingId, token);
   },
-  errorComponent: () => ErrorComponent("Failed to load grading result."),
-  pendingComponent: () => PendingComponent("Loading grading result..."),
+  errorComponent: () => (
+    <ErrorComponent message="Failed to load grading result. Please try again later." />
+  ),
+  pendingComponent: () => <PendingComponent message="Loading grading result..." />,
 });
 
 function RouteComponent() {

@@ -83,6 +83,10 @@ export default function UploadAssignmentPage({
   const handleNext = async () => {
     switch (currentIndex) {
       case 0:
+        // Validate form before starting grading
+        if (!(await gradingAttempt.trigger())) {
+          return;
+        }
         try {
           const token = await auth.getToken();
           if (!token) {
@@ -118,7 +122,6 @@ export default function UploadAssignmentPage({
   };
 
   const isNextButtonDisabled = () => {
-    if (currentIndex === 0 && gradingAttemptValues.submissions.length === 0) return true;
     if (isStarting) return true;
     if (currentIndex === 1) return gradingAttemptValues.status === GradingStatus.Started;
     return false;
@@ -165,16 +168,11 @@ export default function UploadAssignmentPage({
                   <p className="text-lg font-semibold">Starting grading...</p>
                 </div>
               : <UploadStep
+                  form={gradingAttempt}
                   gradingAttempt={gradingAttemptValues}
-                  onGradingAttemptChange={handleUpdateGradingAttempt}
                 />;
           },
-          grading: () => (
-            <GradingProgressStep
-              gradingAttempt={gradingAttemptValues}
-              onGradingAttemptChange={handleUpdateGradingAttempt}
-            />
-          ),
+          grading: () => <GradingProgressStep form={gradingAttempt} />,
           review: () => <GradingResult gradingAttempt={gradingAttemptValues} />,
         })}
       </div>

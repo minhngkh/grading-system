@@ -26,8 +26,10 @@ export const Route = createFileRoute("/_authenticated/analytics/")({
     if (!id) return null;
     return GradingService.getGradingSummary(id, token);
   },
-  errorComponent: () => ErrorComponent("Failed to load grading analytics"),
-  pendingComponent: () => PendingComponent("Loading grading analytics..."),
+  errorComponent: () => (
+    <ErrorComponent message="Failed to load grading analytics. Please try again later." />
+  ),
+  pendingComponent: () => <PendingComponent message="Loading grading analytics..." />,
 });
 
 function RouteComponent() {

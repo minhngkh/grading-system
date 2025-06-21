@@ -154,11 +154,7 @@ function ScrollableSelect<T extends Item>({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn(
-            "justify-between",
-            value == undefined && "text-muted-foreground",
-            className,
-          )}
+          className={cn("justify-between", className)}
         >
           {selectedValue ? selectFn?.(selectedValue) : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

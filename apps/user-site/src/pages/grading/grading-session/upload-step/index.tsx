@@ -5,7 +5,7 @@ import { ScrollableSelectMemo } from "@/components/app/scrollable-select";
 import { CriteriaSelector, GradingAttempt, Submission } from "@/types/grading";
 import CriteriaMapper from "./criteria-mapping";
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { GradingService } from "@/services/grading-service";
 import { Spinner } from "@/components/app/spinner";
 import { toast } from "sonner";
@@ -13,59 +13,82 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { InfoToolTip } from "@/components/app/info-tooltip";
-import { useDebounce } from "@/hooks/use-debounce";
 import { FileUploader } from "@/components/app/file-uploader";
 import { useAuth } from "@clerk/clerk-react";
 import { RubricService } from "@/services/rubric-service";
 import { Label } from "@/components/ui/label";
+import type { UseFormReturn } from "react-hook-form";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Controller } from "react-hook-form";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UploadStepProps {
-  onGradingAttemptChange: (gradingAttempt: Partial<GradingAttempt>) => void;
   gradingAttempt: GradingAttempt;
+  form: UseFormReturn<GradingAttempt>;
 }
 
-export default function UploadStep({
-  onGradingAttemptChange,
-  gradingAttempt,
-}: UploadStepProps) {
+export default function UploadStep({ gradingAttempt, form }: UploadStepProps) {
   const auth = useAuth();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
   const [isFileDialogOpen, setFileDialogOpen] = useState(false);
   const [fileDialogAction, setFileDialogAction] = useState("");
-  const [scaleFactor, setScaleFactor] = useState<number>(
-    gradingAttempt.scaleFactor ?? 10,
-  );
-  const [name, setName] = useState<string>(gradingAttempt.name ?? "");
-
-  const debounceScaleFactor = useDebounce(scaleFactor, 500);
-  const debounceName = useDebounce(name, 500);
-
-  const handleScaleFactorChange = useCallback(
-    async (value: number) => {
-      console.log(1);
-      const token = await auth.getToken();
-      if (!token) {
-        console.error("Error updating scale factor: No token found");
-        return toast.error("Unauthorized: You must be logged in to update scale factor");
-      }
-
-      try {
-        await GradingService.updateGradingScaleFactor(gradingAttempt.id, value, token);
-        onGradingAttemptChange({ scaleFactor: value });
-      } catch (error) {
-        console.error("Error updating scale factor:", error);
-        toast.error("Failed to update scale factor");
-      }
-    },
-    [auth, gradingAttempt.id, onGradingAttemptChange],
-  );
+  const {
+    register,
+    watch,
+    setValue,
+    setFocus,
+    formState: { errors },
+  } = form;
+  // Focus first field with an error
+  useEffect(() => {
+    const fields = Object.keys(errors);
+    if (fields.length > 0) {
+      setFocus(fields[0] as any);
+    }
+  }, [errors]);
+  const name = watch("name", gradingAttempt.name);
+  const debouncedName = useDebounce(name, 500);
+  const scaleFactor = watch("scaleFactor", gradingAttempt.scaleFactor ?? 10);
+  const debouncedScaleFactor = useDebounce(scaleFactor, 500);
 
   useEffect(() => {
-    if (debounceScaleFactor != undefined) {
-      handleScaleFactorChange(debounceScaleFactor);
+    if (debouncedName !== undefined) {
+      // (async () => {
+      //   const token = await auth.getToken();
+      //   if (!token)
+      //     return toast.error(
+      //       "Unauthorized: You must be logged in to update grading name",
+      //     );
+      //   try {
+      //     await GradingService.updateGradingName(gradingAttempt.id, debouncedName, token);
+      //   } catch {
+      //     toast.error("Failed to update grading name");
+      //   }
+      // })();
     }
-  }, [debounceScaleFactor]);
+  }, [debouncedName]);
+
+  useEffect(() => {
+    if (debouncedScaleFactor !== undefined) {
+      (async () => {
+        const token = await auth.getToken();
+        if (!token)
+          return toast.error(
+            "Unauthorized: You must be logged in to update scale factor",
+          );
+        try {
+          await GradingService.updateGradingScaleFactor(
+            gradingAttempt.id,
+            debouncedScaleFactor,
+            token,
+          );
+        } catch {
+          toast.error("Failed to update scale factor");
+        }
+      })();
+    }
+  }, [debouncedScaleFactor]);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
     const token = await auth.getToken();
@@ -77,42 +100,12 @@ export default function UploadStep({
 
     try {
       await GradingService.updateGradingSelectors(gradingAttempt.id, selectors, token);
-      onGradingAttemptChange({
-        selectors: selectors,
-      });
+      setValue("selectors", selectors);
     } catch (error) {
       console.error("Error generating selectors:", error);
       toast.error("Failed to update selectors");
     }
   };
-
-  const handleNameChange = useCallback(
-    async (name: string) => {
-      console.log(2);
-      const token = await auth.getToken();
-      if (!token) {
-        console.error("Error updating grading name: No token found");
-        return toast.error("Unauthorized: You must be logged in to update grading name");
-      }
-
-      try {
-        await GradingService.updateGradingName(gradingAttempt.id, name, token);
-        onGradingAttemptChange({
-          name: name,
-        });
-      } catch (error) {
-        console.error("Error updating grading name:", error);
-        toast.error("Failed to update grading name");
-      }
-    },
-    [auth, gradingAttempt.id, onGradingAttemptChange],
-  );
-
-  useEffect(() => {
-    if (debounceName != undefined) {
-      handleNameChange(debounceName);
-    }
-  }, [debounceName]);
 
   const handleSelectRubric = async (rubric: Rubric) => {
     if (gradingAttempt.rubricId != undefined && gradingAttempt.rubricId === rubric.id)
@@ -127,9 +120,7 @@ export default function UploadStep({
 
     try {
       await GradingService.updateGradingRubric(gradingAttempt.id, rubric.id, token);
-      onGradingAttemptChange({
-        rubricId: rubric.id,
-      });
+      setValue("rubricId", rubric.id);
     } catch (error) {
       console.error("Error updating rubric:", error);
       toast.error("Failed to select rubric");
@@ -184,9 +175,7 @@ export default function UploadStep({
         }),
       ];
 
-      onGradingAttemptChange({
-        submissions: newSubmissions,
-      });
+      setValue("submissions", newSubmissions);
 
       setFileDialogOpen(false);
     }
@@ -217,11 +206,12 @@ export default function UploadStep({
       });
 
       setUploadedFiles(updatedFiles);
-      onGradingAttemptChange({
-        submissions: gradingAttempt.submissions.filter(
+      setValue(
+        "submissions",
+        gradingAttempt.submissions.filter(
           (sub) => sub.reference !== submission.reference,
         ),
-      });
+      );
     } catch (error) {
       console.error("Error removing submission:", error);
       toast.error(`Failed to remove submission: ${submission.reference}`);
@@ -240,7 +230,7 @@ export default function UploadStep({
     setFileDialogOpen(true);
 
     await Promise.all(
-      gradingAttempt.submissions.map(async (submission, index) => {
+      form.getValues("submissions").map(async (submission: Submission, index: number) => {
         await handleRemoveSubmission(submission, token);
         const updatedProgress = Math.round(
           ((index + 1) * 100) / gradingAttempt.submissions.length,
@@ -275,12 +265,14 @@ export default function UploadStep({
       <div className="space-y-1">
         <Label className="text-lg">Session Name</Label>
         <Input
-          value={gradingAttempt.name}
-          onChange={(e) => setName(e.target.value)}
-          name="sessionName"
+          defaultValue={gradingAttempt.name}
+          {...register("name")}
           className="max-w-md"
           placeholder="Enter session name"
         />
+        {errors.name?.message && (
+          <p className="text-sm text-destructive">{errors.name.message}</p>
+        )}
       </div>
 
       <div className="space-y-1">
@@ -312,35 +304,49 @@ export default function UploadStep({
               </Link>
             </Button>
           )}
+          {errors.rubricId?.message && (
+            <p className="text-sm text-destructive">{errors.rubricId.message}</p>
+          )}
         </div>
       </div>
 
       <div className="space-y-1">
-        <div className="flex items-center space-x-1">
-          <Label className="text-lg">Grade Scale</Label>
-          <InfoToolTip description="Adjust the grade scale for grading. This will affect the overall grading score of each submission." />
-        </div>
+        <Label className="text-lg">Grade Scale</Label>
         <Input
-          name="scaleFactor"
-          className="max-w-32"
+          className="w-24"
           type="number"
           min={1}
-          value={scaleFactor}
-          onChange={(e) => {
-            const value = parseFloat(e.target.value);
-            if (!isNaN(value)) {
-              setScaleFactor(value);
-            } else {
-              setScaleFactor(10);
-            }
-          }}
+          defaultValue={gradingAttempt.scaleFactor ?? 10}
+          {...register("scaleFactor", { valueAsNumber: true, min: 1 })}
         />
+        {errors.scaleFactor?.message && (
+          <p className="text-sm text-destructive">{errors.scaleFactor.message}</p>
+        )}
       </div>
 
       <div className="space-y-1">
         <div className="flex items-center space-x-1">
-          <Label className="text-lg font-semibold">Upload Files</Label>
-          <InfoToolTip description="Choose files to upload for grading. Only .zip files are accepted." />
+          <div className="flex justify-between items-center w-full">
+            <div className="flex items-center space-x-2">
+              <Label className="text-lg font-semibold">Upload Files</Label>
+              <InfoToolTip description="Choose files to upload for grading. Only .zip files are accepted." />
+            </div>
+            <Controller
+              control={form.control}
+              name="moodleMode"
+              render={({ field }) => (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="moodleMode"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                  <Label htmlFor="moodleMode">Using Moodle Format</Label>
+                  <InfoToolTip description="Allow to upload files in Moodle format" />
+                </div>
+              )}
+            />
+          </div>
         </div>
         <FileUploader onFileUpload={handleFileUpload} accept=".zip" multiple />
       </div>
@@ -366,6 +372,12 @@ export default function UploadStep({
             onSelectorsChange={handleSelectorsChange}
             uploadedFiles={uploadedFiles}
           />
+        )}
+        {errors.selectors?.message && (
+          <p className="text-sm text-destructive">{errors.selectors.message}</p>
+        )}
+        {errors.submissions?.message && (
+          <p className="text-sm text-destructive">{errors.submissions.message}</p>
         )}
       </div>
     </div>

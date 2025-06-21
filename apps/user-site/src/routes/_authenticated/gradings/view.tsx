@@ -21,8 +21,10 @@ export const Route = createFileRoute("/_authenticated/gradings/view")({
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search", "status"])],
   },
-  errorComponent: () => ErrorComponent("Failed to load gradings"),
-  pendingComponent: () => PendingComponent("Loading gradings..."),
+  errorComponent: () => (
+    <ErrorComponent message="Failed to load gradings. Please try again later." />
+  ),
+  pendingComponent: () => <PendingComponent message="Loading gradings..." />,
 });
 
 function RouteComponent() {

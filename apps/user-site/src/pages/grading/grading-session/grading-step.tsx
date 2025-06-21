@@ -5,17 +5,15 @@ import { Spinner } from "@/components/app/spinner";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/clerk-react";
+import { UseFormReturn } from "react-hook-form";
 
 interface GradingProgressStepProps {
-  gradingAttempt: GradingAttempt;
-  onGradingAttemptChange: (gradingAttempt: Partial<GradingAttempt>) => void;
+  form: UseFormReturn<GradingAttempt>;
 }
 
-export default function GradingProgressStep({
-  gradingAttempt,
-  onGradingAttemptChange,
-}: GradingProgressStepProps) {
+export default function GradingProgressStep({ form }: GradingProgressStepProps) {
   const auth = useAuth();
+  const gradingAttempt = form.getValues();
 
   const pollingFn = useCallback(async () => {
     const token = await auth.getToken();
@@ -28,10 +26,9 @@ export default function GradingProgressStep({
 
   const onSuccess = useCallback(
     (status: GradingStatus) => {
-      console.log("Grading status updated:", status);
-      onGradingAttemptChange({ status });
+      form.setValue("status", status);
     },
-    [onGradingAttemptChange],
+    [form],
   );
 
   usePolling(pollingFn, onSuccess, {
