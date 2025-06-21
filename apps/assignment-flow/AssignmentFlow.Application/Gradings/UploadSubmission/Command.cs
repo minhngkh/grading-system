@@ -55,7 +55,7 @@ public class CommandHandler(BlobServiceClient client)
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
-        var baseBlobName = command.SubmissionReference;
+        var baseBlobName = $"{command.SubmissionReference}/";
 
         if (!SupportedZipMimeTypes.Contains(command.File.ContentType))
         {
