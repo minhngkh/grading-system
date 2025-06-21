@@ -37,19 +37,6 @@ export const CriteriaSchema = z.object({
       {
         message: "Max weight of criterion levels must equal 100",
       },
-    )
-    .refine(
-      (levels) => {
-        for (let i = 1; i < levels.length; i++) {
-          if (levels[i].weight < levels[i - 1].weight) {
-            return false;
-          }
-        }
-        return true;
-      },
-      {
-        message: "Levels must be sorted in ascending order of weight",
-      },
     ),
   plugin: z.string().optional(),
   configuration: z.string().optional(),

@@ -3,7 +3,7 @@ import PendingComponent from "@/components/app/route-pending";
 import ManageRubricsPage from "@/pages/rubric/manage-rubric";
 import { RubricService } from "@/services/rubric-service";
 import { SearchParams, searchParams } from "@/types/search-params";
-import { createFileRoute, retainSearchParams, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, retainSearchParams } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 export const Route = createFileRoute("/_authenticated/rubrics/view")({
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/rubrics/view")({
 });
 
 function RouteComponent() {
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const rubricsData = Route.useLoaderData();
 
@@ -35,9 +35,7 @@ function RouteComponent() {
       search: (prev) => {
         return {
           ...prev,
-          search: partial.search?.trim() || undefined,
-          page: partial.page || prev.page,
-          perPage: partial.perPage || prev.perPage,
+          ...partial,
         };
       },
       replace: true,

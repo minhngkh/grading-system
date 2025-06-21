@@ -460,13 +460,11 @@ const EditRubric = memo(function EditRubric({
             </div>
 
             <div className="h-full flex justify-center items-center">
-              {formData.tags.length < 6 && (
-                <AddButton
-                  onClick={handleAddLevel}
-                  title="Add New Level"
-                  disabled={isLoading}
-                />
-              )}
+              <AddButton
+                onClick={handleAddLevel}
+                title="Add New Level"
+                disabled={isLoading}
+              />
             </div>
           </div>
 

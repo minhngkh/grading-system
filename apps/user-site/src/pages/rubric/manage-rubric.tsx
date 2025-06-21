@@ -41,7 +41,11 @@ import { GetAllResult, SearchParams } from "@/types/search-params";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { RubricExporter } from "@/lib/exporters";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
+import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
+import { RubricService } from "@/services/rubric-service";
+import { useAuth } from "@clerk/clerk-react";
+import { toast } from "sonner";
 
 type SortConfig = {
   key: "rubricName" | "updatedOn" | null;
@@ -72,7 +76,9 @@ export default function ManageRubricsPage({
   const [viewRubricOpen, setViewRubricOpen] = useState<boolean>(false);
   const [selectedRubricIndex, setSelectedRubricIndex] = useState<number | null>(null);
   const [exportRubricOpen, setExportRubricOpen] = useState<boolean>(false);
-  const navigate = useNavigate();
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState<boolean>(false);
+  const auth = useAuth();
+  const router = useRouter();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
@@ -124,6 +130,29 @@ export default function ManageRubricsPage({
 
   const clearFilters = () => {
     setSearchTerm("");
+  };
+
+  const handleDeleteRubric = async () => {
+    if (selectedRubricIndex == null) {
+      toast.error("No rubric selected for deletion.");
+      return;
+    }
+
+    const token = await auth.getToken();
+    if (!token) {
+      toast.error("You must be logged in to delete a rubric.");
+      return;
+    }
+
+    try {
+      await RubricService.deleteRubric(sortedRubrics[selectedRubricIndex].id, token);
+      toast.success("Rubric deleted successfully.");
+      setConfirmDeleteOpen(false);
+      router.invalidate();
+    } catch (error) {
+      console.error("Failed to delete rubric:", error);
+      toast.error("Failed to delete rubric. Please try again.");
+    }
   };
 
   return (
@@ -217,7 +246,7 @@ export default function ManageRubricsPage({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            navigate({
+                            router.navigate({
                               to: "/rubrics/$id",
                               params: { id: rubric.id },
                             });
@@ -232,6 +261,15 @@ export default function ManageRubricsPage({
                           }}
                         >
                           Export Rubric
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => {
+                            setSelectedRubricIndex(index);
+                            setConfirmDeleteOpen(true);
+                          }}
+                        >
+                          Delete Rubric
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -344,6 +382,13 @@ export default function ManageRubricsPage({
           onOpenChange={setExportRubricOpen}
           exporterClass={RubricExporter}
           args={[sortedRubrics[selectedRubricIndex]]}
+        />
+      )}
+      {confirmDeleteOpen && selectedRubricIndex != null && (
+        <ConfirmDeleteDialog
+          open={confirmDeleteOpen}
+          onOpenChange={setConfirmDeleteOpen}
+          onConfirm={handleDeleteRubric}
         />
       )}
     </div>

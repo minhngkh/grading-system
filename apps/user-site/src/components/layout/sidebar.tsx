@@ -50,6 +50,7 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
                       preload={item.preload ?? "intent"}
                       activeOptions={{ exact: true }}
                       activeProps={{ className: "bg-secondary" }}
+                      search={undefined}
                     >
                       {item.icon}
                       <span>{item.title}</span>

@@ -40,12 +40,11 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
 
       try {
         setIsLoading(true);
-        const assessmentsData = await AssessmentService.getGradingAssessments(
+        const assessmentsData = await AssessmentService.getAllGradingAssessments(
           gradingAttempt.id,
           token,
         );
-
-        setAssessments(assessmentsData);
+        setAssessments([...assessments, ...assessmentsData]);
       } catch (error) {
         toast.error("Failed to fetch assessments");
         console.error("Error fetching assessments:", error);
@@ -54,7 +53,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
       }
     };
 
-    fetchAssessments();
+    if (!isLoading) fetchAssessments();
   }, [gradingAttempt.id]);
 
   return (

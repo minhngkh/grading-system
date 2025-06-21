@@ -1,10 +1,10 @@
 import { Label } from "@/components/ui/label";
 import { GradingAnalyticsPage } from "@/pages/analytics/grading-analytics";
 import { GradingService } from "@/services/grading-service";
-import { createFileRoute, retainSearchParams } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 import { ScrollableSelectMemo } from "@/components/app/scrollable-select";
-import { GradingAttempt } from "@/types/grading";
+import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { useCallback } from "react";
 import PendingComponent from "@/components/app/route-pending";
 import ErrorComponent from "@/components/app/route-error";
@@ -16,9 +16,6 @@ const searchParams = z.object({
 export const Route = createFileRoute("/_authenticated/analytics/")({
   component: RouteComponent,
   validateSearch: searchParams,
-  search: {
-    middlewares: [retainSearchParams(["id"])],
-  },
   loaderDeps: ({ search }) => search,
   loader: async ({ deps: { id }, context: { auth } }) => {
     const token = await auth.getToken();
@@ -66,7 +63,10 @@ function RouteComponent() {
             value={gradingAnalytics?.gradingId}
             onValueChange={(grading) => setSearchParam(grading.id)}
             searchFn={(params, token) =>
-              GradingService.getGradedGradingAttempts(params, token)
+              GradingService.getGradingAttempts(
+                { ...params, status: GradingStatus.Graded },
+                token,
+              )
             }
             selectFn={(grading) => grading.id}
           />

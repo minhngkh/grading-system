@@ -1,10 +1,12 @@
+import { eq } from "@/lib/json-api-query";
 import {
   Assessment,
   AssessmentState,
   FeedbackItem,
   ScoreBreakdown,
 } from "@/types/assessment";
-import axios, { AxiosRequestConfig } from "axios";
+import { GetAllResult, SearchParams } from "@/types/search-params";
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { Deserializer } from "jsonapi-serializer";
 
 const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
@@ -45,16 +47,41 @@ export class AssessmentService {
   }
 
   static async getGradingAssessments(
+    params: SearchParams,
     gradingId: string,
     token: string,
-  ): Promise<Assessment[]> {
+  ): Promise<GetAllResult<Assessment>> {
+    const { page, perPage } = params;
+
     const configHeaders = await this.buildHeaders(token);
+    const filter = eq("gradingId", gradingId);
     const response = await axios.get(
-      `${ASSESSMENT_API_URL}?filter=equals(gradingId,'${gradingId}')`,
+      `${ASSESSMENT_API_URL}?filter=${filter}&page[number]=${page}&page[size]=${perPage}`,
       configHeaders,
     );
 
-    return this.assessmentDeserializer.deserialize(response.data);
+    const data = await this.assessmentDeserializer.deserialize(response.data);
+    return { data, meta: response.data.meta };
+  }
+
+  static async getAllGradingAssessments(
+    gradingId: string,
+    token: string,
+  ): Promise<Assessment[]> {
+    let allData: Assessment[] = [];
+
+    const filter = eq("gradingId", gradingId);
+    const configHeaders = await this.buildHeaders(token);
+    let nextUrl: string | null = `${ASSESSMENT_API_URL}?filter=${filter}`;
+
+    while (nextUrl) {
+      const response: AxiosResponse = await axios.get(nextUrl, configHeaders);
+      const data = await this.assessmentDeserializer.deserialize(response.data);
+      allData.push(...data);
+      nextUrl = data.links?.next ?? null;
+    }
+
+    return allData;
   }
 
   static async updateFeedback(

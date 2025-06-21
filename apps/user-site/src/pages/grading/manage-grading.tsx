@@ -39,13 +39,15 @@ import {
 import { useDebounce } from "@/hooks/use-debounce";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { GradingExporter } from "@/lib/exporters";
 import { Assessment } from "@/types/assessment";
 import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/clerk-react";
+import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
+import { GradingService } from "@/services/grading-service";
 
 type SortConfig = {
   key: "id" | "lastModified" | "status" | null;
@@ -67,18 +69,19 @@ export default function ManageGradingsPage({
     key: "id",
     direction: "desc",
   });
-  const { page, perPage } = searchParams;
+  const { page, perPage, status } = searchParams;
   const {
     data: gradings,
     meta: { total: totalCount },
   } = results;
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
-  const [statusFilter, setStatusFilter] = useState<string>("All");
   const [exportGradingOpen, setExportGradingOpen] = useState(false);
   const [selectGradingIndex, setSelectGradingIndex] = useState<number | null>(null);
   const [gradingAssessments, setGradingAssessments] = useState<Assessment[]>([]);
   const [isGettingAssessments, setIsGettingAssessments] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const auth = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchGradingAssessments() {
@@ -87,11 +90,11 @@ export default function ManageGradingsPage({
 
       try {
         setIsGettingAssessments(true);
-        const assessments = await AssessmentService.getGradingAssessments(
+        const data = await AssessmentService.getAllGradingAssessments(
           sortedGradings[selectGradingIndex!].id,
           token,
         );
-        setGradingAssessments(assessments);
+        setGradingAssessments(data);
       } catch {
         toast.error("Failed to fetch grading assessments");
         setExportGradingOpen(false);
@@ -102,6 +105,8 @@ export default function ManageGradingsPage({
 
     if (exportGradingOpen && selectGradingIndex != null) {
       fetchGradingAssessments();
+    } else {
+      setGradingAssessments([]);
     }
   }, [selectGradingIndex, exportGradingOpen]);
 
@@ -113,13 +118,7 @@ export default function ManageGradingsPage({
     });
   }, [debouncedSearchTerm]);
 
-  // Apply client filtering for status only
-  const filteredGradings =
-    statusFilter === "All" ? gradings : (
-      gradings.filter((grading) => grading.status === statusFilter)
-    );
-
-  const sortedGradings = [...filteredGradings].sort((a, b) => {
+  const sortedGradings = [...gradings].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const aKey = a[sortConfig.key];
     const bKey = b[sortConfig.key];
@@ -180,7 +179,31 @@ export default function ManageGradingsPage({
 
   const clearFilters = () => {
     setSearchTerm("");
-    setStatusFilter("All");
+  };
+
+  const handleDeleteGrading = async () => {
+    if (selectGradingIndex == null) {
+      toast.error("No grading selected for deletion.");
+      return;
+    }
+
+    const token = await auth.getToken();
+    if (!token) {
+      toast.error("You are not authorized to perform this action.");
+      return;
+    }
+
+    try {
+      await GradingService.deleteGradingAttempt(
+        sortedGradings[selectGradingIndex].id,
+        token,
+      );
+      toast.success("Grading deleted successfully");
+      setConfirmDeleteOpen(false);
+      router.invalidate();
+    } catch (error) {
+      toast.error("Failed to delete grading");
+    }
   };
 
   return (
@@ -215,10 +238,9 @@ export default function ManageGradingsPage({
           )}
         </div>
         <Select
-          value={statusFilter}
+          value={status}
           onValueChange={(value) => {
-            setStatusFilter(value);
-            setSearchParam({ page: 1 });
+            setSearchParam({ status: value, page: 1 });
           }}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
@@ -233,7 +255,7 @@ export default function ManageGradingsPage({
             ))}
           </SelectContent>
         </Select>
-        {statusFilter !== "All" && (
+        {status != undefined && (
           <Button variant="ghost" onClick={clearFilters} className="w-full sm:w-auto">
             Clear Filters
           </Button>
@@ -324,6 +346,15 @@ export default function ManageGradingsPage({
                           }}
                         >
                           Export Grading
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => {
+                            setSelectGradingIndex(index);
+                            setConfirmDeleteOpen(true);
+                          }}
+                        >
+                          Delete Grading
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -424,6 +455,13 @@ export default function ManageGradingsPage({
           exporterClass={GradingExporter}
           args={[sortedGradings[selectGradingIndex], gradingAssessments]}
           isLoading={isGettingAssessments}
+        />
+      )}
+      {confirmDeleteOpen && selectGradingIndex != null && (
+        <ConfirmDeleteDialog
+          open={confirmDeleteOpen}
+          onOpenChange={setConfirmDeleteOpen}
+          onConfirm={handleDeleteGrading}
         />
       )}
     </div>

@@ -1,3 +1,4 @@
+import { buildFilterExpr, contains, eq } from "@/lib/json-api-query";
 import { GradingAnalytics, OverallGradingAnalytics } from "@/types/analytics";
 import {
   CriteriaSelector,
@@ -95,35 +96,20 @@ export class GradingService {
     searchParams: SearchParams,
     token: string,
   ): Promise<GetAllResult<GradingAttempt>> {
-    const { page, perPage, search } = searchParams;
+    const { page, perPage, search, status } = searchParams;
     const params = new URLSearchParams();
 
     if (page != undefined) params.append("page[number]", page.toString());
     if (perPage != undefined) params.append("page[size]", perPage.toString());
-    if (search && search.length > 0) params.append("filter", `contains(id,'${search}')`);
 
-    const configHeaders = this.buildHeaders(token);
-    const response = await axios.get(
-      `${GRADING_API_URL}?${params.toString()}`,
-      configHeaders,
-    );
+    const filterExpr = buildFilterExpr([
+      search ? contains("id", search) : undefined,
+      status ? eq("status", status) : undefined,
+    ]);
 
-    const data = await this.gradingDeserializer.deserialize(response.data);
-    return { data, meta: response.data.meta };
-  }
-
-  static async getGradedGradingAttempts(
-    searchParams: SearchParams,
-    token: string,
-  ): Promise<GetAllResult<GradingAttempt>> {
-    const { page, perPage, search } = searchParams;
-    const params = new URLSearchParams();
-
-    if (page != undefined) params.append("page[number]", page.toString());
-    if (perPage != undefined) params.append("page[size]", perPage.toString());
-    if (search && search.length > 0)
-      params.append("filter", `and(contains(id,'${search}'),equals(status,'Graded'))`);
-    else params.append("filter", "equals(status,'Graded')");
+    if (filterExpr) {
+      params.append("filter", filterExpr);
+    }
 
     const configHeaders = this.buildHeaders(token);
     const response = await axios.get(
@@ -181,5 +167,10 @@ export class GradingService {
     const configHeaders = this.buildHeaders(token);
     const response = await axios.get(`${GRADING_API_URL}/${id}/summary`, configHeaders);
     return response.data;
+  }
+
+  static async deleteGradingAttempt(id: string, token: string): Promise<void> {
+    const configHeaders = this.buildHeaders(token);
+    return axios.delete(`${GRADING_API_URL}/${id}`, configHeaders);
   }
 }

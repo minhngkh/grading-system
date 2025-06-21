@@ -16,7 +16,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 
 const PAGE_SIZE = 10;
-const SCROLL_THRESHOLD = 50;
+const SCROLL_THRESHOLD = 10;
 const DEBOUNCE_DELAY = 500;
 
 interface Item {
@@ -69,30 +69,32 @@ function ScrollableSelect<T extends Item>({
         if (!token) {
           throw new Error("Unauthorized: No token found");
         }
+
         const params = {
           page: currentPage,
           perPage: PAGE_SIZE,
           search: search.trim(),
         };
+
         const result = await searchFn(params, token);
 
         setItems((prev) => {
           const combined = resetItems ? result.data : [...prev, ...result.data];
+
+          setHasMore(
+            result.meta.total >
+              (resetItems ? result.data.length : prev.length + result.data.length),
+          );
+
           return combined;
         });
-
-        setHasMore(
-          result.meta.total >
-            (resetItems ? result.data.length : items.length + result.data.length),
-        );
       } catch (error) {
         console.error("Error loading data:", error);
       }
     },
-    [items.length],
+    [searchFn],
   );
 
-  // Load data when popover opens or search term changes
   useEffect(() => {
     const loadData = async () => {
       setIsSearching(true);
