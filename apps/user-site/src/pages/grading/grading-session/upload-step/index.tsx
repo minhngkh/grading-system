@@ -17,6 +17,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { FileUploader } from "@/components/app/file-uploader";
 import { useAuth } from "@clerk/clerk-react";
 import { RubricService } from "@/services/rubric-service";
+import { Label } from "@/components/ui/label";
 
 interface UploadStepProps {
   onGradingAttemptChange: (gradingAttempt: Partial<GradingAttempt>) => void;
@@ -35,11 +36,14 @@ export default function UploadStep({
   const [scaleFactor, setScaleFactor] = useState<number>(
     gradingAttempt.scaleFactor ?? 10,
   );
+  const [name, setName] = useState<string>(gradingAttempt.name ?? "");
 
   const debounceScaleFactor = useDebounce(scaleFactor, 500);
+  const debounceName = useDebounce(name, 500);
 
   const handleScaleFactorChange = useCallback(
     async (value: number) => {
+      console.log(1);
       const token = await auth.getToken();
       if (!token) {
         console.error("Error updating scale factor: No token found");
@@ -81,6 +85,34 @@ export default function UploadStep({
       toast.error("Failed to update selectors");
     }
   };
+
+  const handleNameChange = useCallback(
+    async (name: string) => {
+      console.log(2);
+      const token = await auth.getToken();
+      if (!token) {
+        console.error("Error updating grading name: No token found");
+        return toast.error("Unauthorized: You must be logged in to update grading name");
+      }
+
+      try {
+        await GradingService.updateGradingName(gradingAttempt.id, name, token);
+        onGradingAttemptChange({
+          name: name,
+        });
+      } catch (error) {
+        console.error("Error updating grading name:", error);
+        toast.error("Failed to update grading name");
+      }
+    },
+    [auth, gradingAttempt.id, onGradingAttemptChange],
+  );
+
+  useEffect(() => {
+    if (debounceName != undefined) {
+      handleNameChange(debounceName);
+    }
+  }, [debounceName]);
 
   const handleSelectRubric = async (rubric: Rubric) => {
     if (gradingAttempt.rubricId != undefined && gradingAttempt.rubricId === rubric.id)
@@ -241,8 +273,19 @@ export default function UploadStep({
       </Dialog>
 
       <div className="space-y-1">
+        <Label className="text-lg">Session Name</Label>
+        <Input
+          value={gradingAttempt.name}
+          onChange={(e) => setName(e.target.value)}
+          name="sessionName"
+          className="max-w-md"
+          placeholder="Enter session name"
+        />
+      </div>
+
+      <div className="space-y-1">
         <div className="flex items-center space-x-1">
-          <h2 className="text-lg font-semibold">Select Rubric</h2>
+          <Label className="text-lg">Select Rubric</Label>
           <InfoToolTip description="Choose a rubric to use for grading. If you don't have a rubric, you can create one." />
         </div>
         <div className="flex items-center w-full gap-4">
@@ -274,7 +317,7 @@ export default function UploadStep({
 
       <div className="space-y-1">
         <div className="flex items-center space-x-1">
-          <h2 className="text-lg font-semibold">Grade Scale</h2>
+          <Label className="text-lg">Grade Scale</Label>
           <InfoToolTip description="Adjust the grade scale for grading. This will affect the overall grading score of each submission." />
         </div>
         <Input
@@ -296,7 +339,7 @@ export default function UploadStep({
 
       <div className="space-y-1">
         <div className="flex items-center space-x-1">
-          <h2 className="text-lg font-semibold">Upload Files</h2>
+          <Label className="text-lg font-semibold">Upload Files</Label>
           <InfoToolTip description="Choose files to upload for grading. Only .zip files are accepted." />
         </div>
         <FileUploader onFileUpload={handleFileUpload} accept=".zip" multiple />
@@ -304,7 +347,7 @@ export default function UploadStep({
 
       <div className="space-y-1">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Uploaded Files</h2>
+          <Label className="text-lg font-semibold">Uploaded Files</Label>
           {gradingAttempt.submissions.length > 0 && (
             <Button
               onClick={handleRemoveAllSubmissions}
