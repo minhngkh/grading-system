@@ -41,8 +41,7 @@ public sealed class GradingRepository(AssignmentFlowDbContext dbContext)
                 Criterion = selector.Criterion,
                 Files = [.. grading.Submission.Attachments.Where(attachment => {
                     //"<submission-reference>/**"
-                    var path = attachment[attachment.IndexOf(gradingId)..];
-                    return Pattern.New(selector.Pattern).Match(gradingId, path);
+                    return Pattern.New(selector.Pattern).Match("", attachment);
                 })]
             })
         };
