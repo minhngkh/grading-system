@@ -57,6 +57,12 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
                 Criteria = command.Criteria!
             });
 
+        ConditionalEmit(command.Attachments is not null && command.Attachments.Count > 0,
+            () => new ProvisionContext.AttachmentsProvisionedEvent
+            {
+                Attachments = command.Attachments!
+            });
+
         ConditionalEmit(command.Metadata is not null,
             () => new MetadataUpdatedEvent
             {
