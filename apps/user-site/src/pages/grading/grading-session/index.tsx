@@ -13,6 +13,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { GradingService } from "@/services/grading-service";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
+import PendingComponent from "@/components/app/route-pending";
 
 type StepData = {
   title: string;
@@ -45,11 +46,11 @@ export default function UploadAssignmentPage({
   initialGradingAttempt,
   initialStep,
 }: UploadAssignmentPageProps) {
+  const auth = useAuth();
+  const navigate = useNavigate();
   const stepper = useStepper({ initialStep: initialStep });
   const currentIndex = utils.getIndex(stepper.current.id);
   const [isStarting, setIsStarting] = useState(false);
-  const auth = useAuth();
-  const navigate = useNavigate();
 
   const gradingAttempt = useForm<GradingAttempt>({
     resolver: zodResolver(GradingSchema),
@@ -59,11 +60,14 @@ export default function UploadAssignmentPage({
   const gradingAttemptValues = gradingAttempt.watch();
 
   useEffect(() => {
-    if (currentIndex === 0 && gradingAttemptValues.status !== GradingStatus.Created) {
+    if (
+      initialStep === "upload" &&
+      initialGradingAttempt.status !== GradingStatus.Created
+    ) {
       stepper.next();
       sessionStorage.setItem("gradingStep", steps[1].id);
     }
-  }, [currentIndex]);
+  }, []);
 
   const handleUpdateGradingAttempt = useCallback(
     (updated: Partial<GradingAttempt>) => {
@@ -80,28 +84,35 @@ export default function UploadAssignmentPage({
     sessionStorage.setItem("gradingStep", steps[currentIndex - 1].id);
   };
 
+  const handleStartGrading = async () => {
+    const isValid = await gradingAttempt.trigger();
+    if (!isValid) return;
+
+    const token = await auth.getToken();
+    if (!token) {
+      return toast.error("You must be logged in to start grading");
+    }
+
+    await GradingService.startGrading(gradingAttemptValues.id, token);
+    handleUpdateGradingAttempt({ status: GradingStatus.Started });
+  };
+
   const handleNext = async () => {
     switch (currentIndex) {
       case 0:
-        // Validate form before starting grading
-        if (!(await gradingAttempt.trigger())) {
-          return;
-        }
-        try {
-          const token = await auth.getToken();
-          if (!token) {
-            return toast.error("You must be logged in to start grading");
-          }
+        const isValid = await gradingAttempt.trigger();
+        if (!isValid) return;
 
+        try {
           setIsStarting(true);
-          await GradingService.startGrading(gradingAttemptValues.id, token);
-          handleUpdateGradingAttempt({ status: GradingStatus.Started });
+          await handleStartGrading();
         } catch (err) {
-          toast.error("Failed to start grading. Please try again.");
           console.error("Error starting grading:", err);
+          return toast.error("Failed to start grading. Please try again.");
         } finally {
           setIsStarting(false);
         }
+
         break;
       case 1:
         if (gradingAttemptValues.status === GradingStatus.Started) return;
@@ -164,9 +175,7 @@ export default function UploadAssignmentPage({
         {stepper.switch({
           upload: () => {
             return isStarting ?
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-lg font-semibold">Starting grading...</p>
-                </div>
+                <PendingComponent message="Starting grading session..." />
               : <UploadStep
                   form={gradingAttempt}
                   gradingAttempt={gradingAttemptValues}

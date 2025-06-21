@@ -72,12 +72,13 @@ export default function ManageGradingsPage({
     data: gradings,
     meta: { total: totalCount },
   } = results;
+  const auth = useAuth();
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
   const [exportGradingOpen, setExportGradingOpen] = useState(false);
   const [selectGradingIndex, setSelectGradingIndex] = useState<number | null>(null);
   const [gradingAssessments, setGradingAssessments] = useState<Assessment[]>([]);
   const [isGettingAssessments, setIsGettingAssessments] = useState(false);
-  const auth = useAuth();
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   useEffect(() => {
     async function fetchGradingAssessments() {
@@ -106,7 +107,6 @@ export default function ManageGradingsPage({
     }
   }, [selectGradingIndex, exportGradingOpen]);
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
     setSearchParam({
       search: debouncedSearchTerm,

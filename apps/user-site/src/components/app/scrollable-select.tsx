@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/use-debounce";
-import { useCallback, useEffect, useRef, useState, useMemo, memo } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 
@@ -54,14 +54,9 @@ function ScrollableSelect<T extends Item>({
   const auth = useAuth();
   const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE_DELAY);
 
-  const uniqueItems = useMemo(() => {
-    const uniqueMap = new Map<string, T>();
-    items.forEach((item) => uniqueMap.set(item.id, item));
-    return Array.from(uniqueMap.values());
-  }, [items]);
-
-  const search = useCallback(
-    async (currentPage: number, search: string, resetItems = false) => {
+  const fetchItems = useCallback(
+    async (currentPage: number, term: string, resetItems = false) => {
+      setIsSearching(true);
       try {
         if (!searchFn) return;
 
@@ -73,7 +68,7 @@ function ScrollableSelect<T extends Item>({
         const params = {
           page: currentPage,
           perPage: PAGE_SIZE,
-          search: search.trim(),
+          search: term.trim(),
         };
 
         const result = await searchFn(params, token);
@@ -90,6 +85,8 @@ function ScrollableSelect<T extends Item>({
         });
       } catch (error) {
         console.error("Error loading data:", error);
+      } finally {
+        setIsSearching(false);
       }
     },
     [searchFn],
@@ -97,27 +94,23 @@ function ScrollableSelect<T extends Item>({
 
   useEffect(() => {
     const loadData = async () => {
-      setIsSearching(true);
       setPage(1);
-      await search(1, debouncedSearchTerm, true);
-      setIsSearching(false);
+      await fetchItems(1, debouncedSearchTerm, true);
     };
 
-    loadData();
-  }, [debouncedSearchTerm, search]);
+    if (!isSearching) loadData();
+  }, [debouncedSearchTerm, fetchItems]);
 
-  // Set selected value based on grading attempt
   useEffect(() => {
-    if (!value || uniqueItems.length === 0) return;
+    if (!value || items.length === 0) return;
 
-    const matchedRubric = uniqueItems.find((item) => item.id === value);
-    if (matchedRubric && matchedRubric.id !== selectedValue?.id) {
-      setSelectedValue(matchedRubric);
+    const matchedItem = items.find((item) => item.id === value);
+    if (matchedItem && matchedItem.id !== selectedValue?.id) {
+      setSelectedValue(matchedItem);
     }
-  }, [value, uniqueItems, selectedValue?.id]);
+  }, [value, items.length, selectedValue?.id]);
 
   const handleSearchChange = useCallback((value: string) => {
-    setIsSearching(true);
     setSearchTerm(value);
   }, []);
 
@@ -131,11 +124,11 @@ function ScrollableSelect<T extends Item>({
         const nextPage = page + 1;
         setPage(nextPage);
         setLoading(true);
-        await search(nextPage, searchTerm);
+        await fetchItems(nextPage, searchTerm);
         setLoading(false);
       }
     },
-    [hasMore, loading, isSearching, page, searchTerm, search],
+    [hasMore, loading, isSearching, page, searchTerm, fetchItems],
   );
 
   const handleItemSelect = useCallback(
@@ -179,10 +172,10 @@ function ScrollableSelect<T extends Item>({
             <CommandList
               defaultValue={value}
               ref={listRef}
-              className="max-h-[200px] overflow-y-auto"
+              className="max-h-[150px] overflow-y-auto"
               onScroll={handleScroll}
             >
-              {uniqueItems.map((item) => (
+              {items.map((item) => (
                 <CommandItem
                   className="flex justify-between"
                   key={item.id}
@@ -198,7 +191,7 @@ function ScrollableSelect<T extends Item>({
                   />
                 </CommandItem>
               ))}
-              {loading && !isSearching && uniqueItems.length > 0 && (
+              {loading && !isSearching && items.length > 0 && (
                 <div className="flex items-center justify-center py-2">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   <span className="ml-2 text-sm text-muted-foreground">
