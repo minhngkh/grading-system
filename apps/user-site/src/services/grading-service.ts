@@ -173,4 +173,9 @@ export class GradingService {
     const configHeaders = this.buildHeaders(token);
     return axios.delete(`${GRADING_API_URL}/${id}`, configHeaders);
   }
+
+  static async updateGradingName(id: string, name: string, token: string): Promise<void> {
+    const configHeaders = this.buildHeaders(token);
+    return axios.put(`${GRADING_API_URL}/${id}/name`, { name }, configHeaders);
+  }
 }

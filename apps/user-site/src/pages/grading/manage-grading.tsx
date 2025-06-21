@@ -39,15 +39,13 @@ import {
 import { useDebounce } from "@/hooks/use-debounce";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { GradingExporter } from "@/lib/exporters";
 import { Assessment } from "@/types/assessment";
 import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
 import { useAuth } from "@clerk/clerk-react";
-import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
-import { GradingService } from "@/services/grading-service";
 
 type SortConfig = {
   key: "id" | "lastModified" | "status" | null;
@@ -79,9 +77,7 @@ export default function ManageGradingsPage({
   const [selectGradingIndex, setSelectGradingIndex] = useState<number | null>(null);
   const [gradingAssessments, setGradingAssessments] = useState<Assessment[]>([]);
   const [isGettingAssessments, setIsGettingAssessments] = useState(false);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const auth = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     async function fetchGradingAssessments() {
@@ -179,31 +175,6 @@ export default function ManageGradingsPage({
 
   const clearFilters = () => {
     setSearchTerm("");
-  };
-
-  const handleDeleteGrading = async () => {
-    if (selectGradingIndex == null) {
-      toast.error("No grading selected for deletion.");
-      return;
-    }
-
-    const token = await auth.getToken();
-    if (!token) {
-      toast.error("You are not authorized to perform this action.");
-      return;
-    }
-
-    try {
-      await GradingService.deleteGradingAttempt(
-        sortedGradings[selectGradingIndex].id,
-        token,
-      );
-      toast.success("Grading deleted successfully");
-      setConfirmDeleteOpen(false);
-      router.invalidate();
-    } catch (error) {
-      toast.error("Failed to delete grading");
-    }
   };
 
   return (
@@ -347,15 +318,6 @@ export default function ManageGradingsPage({
                         >
                           Export Grading
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => {
-                            setSelectGradingIndex(index);
-                            setConfirmDeleteOpen(true);
-                          }}
-                        >
-                          Delete Grading
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -455,13 +417,6 @@ export default function ManageGradingsPage({
           exporterClass={GradingExporter}
           args={[sortedGradings[selectGradingIndex], gradingAssessments]}
           isLoading={isGettingAssessments}
-        />
-      )}
-      {confirmDeleteOpen && selectGradingIndex != null && (
-        <ConfirmDeleteDialog
-          open={confirmDeleteOpen}
-          onOpenChange={setConfirmDeleteOpen}
-          onConfirm={handleDeleteGrading}
         />
       )}
     </div>
