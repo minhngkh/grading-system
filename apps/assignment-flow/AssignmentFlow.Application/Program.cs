@@ -15,14 +15,20 @@ builder.Services
     .AddShared(builder.Configuration, builder.Environment)
     .AddGradings();
 
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins")
+    .Get<string[]>()
+    ?? ["http://localhost:5173"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.AllowAnyOrigin()
+        builder.WithOrigins(allowedOrigins)
                .AllowAnyMethod()
-               .AllowAnyHeader();
-    }); 
+               .AllowAnyHeader()
+               .AllowCredentials();
+    });
 });
 
 builder.AddServiceDefaults();
@@ -34,17 +40,16 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
-
-
-    var webSocketOptions = new WebSocketOptions
-    {
-        KeepAliveInterval = TimeSpan.FromMinutes(2)
-    };
-
-    app.UseWebSockets(webSocketOptions);
 }
 
 app.UseCors("AllowAll");
+
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(2)
+};
+
+app.UseWebSockets(webSocketOptions);
 
 // Initialize the database
 using (var scope = app.Services.CreateScope())
