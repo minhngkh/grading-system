@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useRef } from "react";
 import { useEffect, useState } from "react";
 import { GradingAttempt } from "@/types/grading";
 import { Assessment } from "@/types/assessment";
@@ -16,6 +16,8 @@ import {
   ResultCardSkeleton,
   SummaryCardSkeleton,
 } from "@/pages/grading/grading-result/skeletons";
+import { SignalRService } from "@/services/realtime-service";
+import { AssessmentGradingStatus } from "@/types/grading-progress";
 
 const SummarySection = lazy(() => import("./summary-section"));
 const ReviewResults = lazy(() => import("./review-results"));
@@ -32,6 +34,76 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
   const [changeScaleFactorOpen, setChangeScaleFactorOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const auth = useAuth();
+
+  const hubRef = useRef<SignalRService | null>(null);
+
+  const handleStatusChange = (isActive: boolean, newStatus: AssessmentGradingStatus) => {
+    if (!isActive) return;
+
+    setAssessments((prev) => {
+      return prev.map((item) => {
+        if (item.id === newStatus.id) {
+          return {
+            ...item,
+            status: newStatus.status,
+          };
+        }
+
+        return item;
+      });
+    });
+  };
+
+  const handleRegister = (
+    isActive: boolean,
+    initialStatus: AssessmentGradingStatus[],
+  ) => {
+    if (!isActive) return;
+
+    const updatedAssessments = assessments.map((assessment) => {
+      const status = initialStatus.find((s) => s.id === assessment.id);
+      return {
+        ...assessment,
+        status: status ? status.status : assessment.status,
+      };
+    });
+    setAssessments(updatedAssessments);
+  };
+
+  useEffect(() => {
+    let isActive = true;
+
+    (async () => {
+      if (hubRef.current) return;
+
+      const token = await auth.getToken();
+      if (!token) return;
+
+      try {
+        const hub = new SignalRService(() => token);
+        hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
+          handleStatusChange(isActive, assessmentStatus),
+        );
+
+        await hub.start();
+        hubRef.current = hub;
+
+        const initialState = await hub.invoke("Register", gradingAttempt.id);
+        handleRegister(isActive, initialState);
+      } catch (error) {
+        console.error("Error starting SignalR hub:", error);
+        toast.error("Failed to regrade assessments. Please try again later.");
+      }
+    })();
+
+    return () => {
+      isActive = false;
+      if (hubRef.current) {
+        hubRef.current.off("ReceiveAssessmentProgress");
+        hubRef.current.stop();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const fetchAssessments = async () => {
@@ -55,6 +127,8 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
 
     if (!isLoading) fetchAssessments();
   }, [gradingAttempt.id]);
+
+  const handleRegradeAll = () => {};
 
   return (
     <div className="space-y-6">
@@ -97,7 +171,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
               View Analytics
             </Button>
           </Link>
-          <Button size="sm" disabled={isLoading}>
+          <Button size="sm" disabled={isLoading} onClick={handleRegradeAll}>
             <RefreshCw className="w-4 h-4" />
             Regrade All
           </Button>

@@ -1,10 +1,8 @@
 import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { defineStepper } from "@stepperize/react";
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import GradingProgressStep from "./grading-step";
-import GradingResult from "../grading-result";
 import UploadStep from "./upload-step";
 import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
 import { useForm } from "react-hook-form";
@@ -30,11 +28,6 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
     title: "Grade Files",
     nextButtonTitle: "View Results",
   },
-  {
-    id: "review",
-    title: "Review Results",
-    nextButtonTitle: "Finish",
-  },
 );
 
 interface UploadAssignmentPageProps {
@@ -56,12 +49,11 @@ export default function UploadAssignmentPage({
     resolver: zodResolver(GradingSchema),
     defaultValues: initialGradingAttempt,
   });
-
   const gradingAttemptValues = gradingAttempt.watch();
 
   useEffect(() => {
     if (
-      initialStep === "upload" &&
+      (!initialStep || initialStep === "upload") &&
       initialGradingAttempt.status !== GradingStatus.Created
     ) {
       stepper.next();
@@ -116,7 +108,10 @@ export default function UploadAssignmentPage({
         break;
       case 1:
         if (gradingAttemptValues.status === GradingStatus.Started) return;
-        break;
+        return navigate({
+          to: "/gradings/$gradingId/result",
+          params: { gradingId: gradingAttemptValues.id },
+        });
       case 2:
         return navigate({ to: "/gradings/view" });
     }
@@ -127,8 +122,15 @@ export default function UploadAssignmentPage({
 
   const isBackButtonDisabled = () => {
     if (currentIndex === 0) return true;
-    if (currentIndex === 1 && gradingAttemptValues.status === GradingStatus.Started)
-      return true;
+    if (currentIndex === 1) {
+      if (gradingAttemptValues.status === GradingStatus.Started) {
+        return true;
+      }
+
+      if (gradingAttemptValues.status === GradingStatus.Graded) {
+        return true;
+      }
+    }
     return false;
   };
 
@@ -140,37 +142,6 @@ export default function UploadAssignmentPage({
 
   return (
     <div className="flex flex-col h-full">
-      <nav aria-label="Checkout Steps" className="group my-4">
-        <ol
-          className="flex items-center justify-between gap-2"
-          aria-orientation="horizontal"
-        >
-          {stepper.all.map((step, index, array) => (
-            <React.Fragment key={step.id}>
-              <li className="flex items-center gap-4 flex-shrink-0">
-                <Button
-                  type="button"
-                  role="tab"
-                  variant={index <= currentIndex ? "default" : "secondary"}
-                  aria-current={stepper.current.id === step.id ? "step" : undefined}
-                  aria-posinset={index + 1}
-                  aria-setsize={steps.length}
-                  aria-selected={stepper.current.id === step.id}
-                  className="flex size-8 items-center justify-center rounded-full"
-                >
-                  {index + 1}
-                </Button>
-                <span className="text-sm font-medium">{step.title}</span>
-              </li>
-              {index < array.length - 1 && (
-                <Separator
-                  className={`flex-1 ${index < currentIndex ? "bg-primary" : "bg-muted"}`}
-                />
-              )}
-            </React.Fragment>
-          ))}
-        </ol>
-      </nav>
       <div className="mt-8 space-y-4 flex-1">
         {stepper.switch({
           upload: () => {
@@ -179,7 +150,6 @@ export default function UploadAssignmentPage({
               : <UploadStep form={gradingAttempt} />;
           },
           grading: () => <GradingProgressStep gradingAttempt={gradingAttempt} />,
-          review: () => <GradingResult gradingAttempt={gradingAttemptValues} />,
         })}
       </div>
       <div className="flex w-full justify-end gap-4">

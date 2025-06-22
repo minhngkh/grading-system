@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { AssessmentState } from "@/types/assessment";
@@ -41,7 +42,10 @@ export const AssessmentStatusCard = ({ status }: AssessmentStatusCardProps) => {
   function getCurrentStatuses(current: AssessmentState): AssessmentState[] {
     const states: AssessmentState[] = [AssessmentState.Created];
 
-    if (current > AssessmentState.AutoGradingStarted) {
+    if (
+      current !== AssessmentState.AutoGradingStarted &&
+      current !== AssessmentState.Created
+    ) {
       states.push(AssessmentState.AutoGradingStarted);
     }
 
@@ -51,18 +55,23 @@ export const AssessmentStatusCard = ({ status }: AssessmentStatusCardProps) => {
   }
 
   const currentStatuses = getCurrentStatuses(status.status);
+  const isUndergoingGrading =
+    status.status === AssessmentState.AutoGradingStarted ||
+    status.status === AssessmentState.Created;
 
   return (
     <Card className="gap-2">
       <CardHeader>
         <CardTitle className="text-lg">{status.submissionReference}</CardTitle>
+        {status.errorMessage && (
+          <p className="text-sm text-red-500">
+            Error: {status.errorMessage}. Please try again!
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           {currentStatuses.map((status, index) => {
-            const isSpinning =
-              status <= AssessmentState.AutoGradingStarted &&
-              index === currentStatuses.length - 1;
             const { color, icon, label } = assessmentStateStyles[status] || {
               color: "text-gray-500",
               label: "Unknown State",
@@ -70,7 +79,7 @@ export const AssessmentStatusCard = ({ status }: AssessmentStatusCardProps) => {
             };
             return (
               <div className="flex items-center gap-4" key={index}>
-                {isSpinning ?
+                {index === currentStatuses.length - 1 && isUndergoingGrading ?
                   <Loader2 className={cn("size-4 animate-spin", color)} />
                 : icon}
                 <span className={cn(`text-sm font-medium`, color)}>{label}</span>
@@ -78,11 +87,7 @@ export const AssessmentStatusCard = ({ status }: AssessmentStatusCardProps) => {
             );
           })}
         </div>
-        {status.errorMessage && (
-          <p className="text-sm text-red-500">
-            Error: {status.errorMessage}. Please try again!
-          </p>
-        )}
+        {!isUndergoingGrading && <Button>Re-grade</Button>}
       </CardContent>
     </Card>
   );

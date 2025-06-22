@@ -5,11 +5,9 @@ import { Assessment, AssessmentState } from "@/types/assessment";
 import { getCriteriaColorStyle } from "./colors";
 import { Link } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
-import { useCallback, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { AssessmentService } from "@/services/assessment-service";
-import { usePolling } from "@/hooks/use-polling";
 import { ResultCardSkeleton } from "@/pages/grading/grading-result/skeletons";
 
 interface AssessmentResultCardProps {
@@ -23,38 +21,7 @@ export function AssessmentResultCard({
   scaleFactor,
   criteriaColorMap,
 }: AssessmentResultCardProps) {
-  const [isRerunning, setIsRerunning] = useState(false);
   const auth = useAuth();
-
-  const pollingFn = useCallback(async () => {
-    const token = await auth.getToken();
-    if (!token) {
-      throw new Error("You must be logged in to check grading status.");
-    }
-
-    return AssessmentService.getAssessmentStatus(item.id, token);
-  }, [item.id, auth]);
-
-  const onSuccess = useCallback(
-    (status: AssessmentState) => {
-      if (status > AssessmentState.AutoGradingStarted) {
-        setIsRerunning(false);
-      }
-    },
-    [setIsRerunning],
-  );
-
-  usePolling(pollingFn, onSuccess, {
-    interval: 5000,
-    enabled: isRerunning && !!item.id,
-    onError: (error) => {
-      toast.error(
-        error.message ||
-          "An error occurred while grading submission. Please try again later.",
-      );
-      console.error("Failed to fetch grading status:", error);
-    },
-  });
 
   const handleRerun = async () => {
     const token = await auth.getToken();
@@ -65,7 +32,6 @@ export function AssessmentResultCard({
 
     try {
       await AssessmentService.rerunAssessment(item.id, token);
-      setIsRerunning(true);
     } catch (error) {
       console.error("Failed to rerun assessment:", error);
       toast.error(
@@ -74,7 +40,9 @@ export function AssessmentResultCard({
     }
   };
 
-  if (isRerunning) {
+  const isUnderGrading = item.status === AssessmentState.AutoGradingStarted;
+
+  if (isUnderGrading) {
     return <ResultCardSkeleton />;
   }
 
@@ -120,12 +88,13 @@ export function AssessmentResultCard({
             onClick={handleRerun}
             variant="outline"
             className="flex items-center gap-2 mb-2 w-full"
-            disabled={isRerunning}
+            disabled={isUnderGrading}
           >
             <RefreshCw className="h-4 w-4" />
             Rerun
           </Button>
           <Link
+            disabled={isUnderGrading}
             to="/gradings/$gradingId/assessments/$assessmentId"
             params={{ gradingId: item.gradingId, assessmentId: item.id }}
           >

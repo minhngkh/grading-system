@@ -12,8 +12,8 @@ function RouteComponent() {
       status={{
         id: "123",
         submissionReference: "Test Assessment",
-        errorMessage: "An error occurred",
-        status: AssessmentState.AutoGradingFailed,
+        errorMessage: undefined,
+        status: AssessmentState.AutoGradingStarted,
       }}
     />
   );

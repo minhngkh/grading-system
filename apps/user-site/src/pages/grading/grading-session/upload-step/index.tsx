@@ -32,6 +32,7 @@ export default function UploadStep({ form }: UploadStepProps) {
   const [progress, setProgress] = useState(0);
   const [isFileDialogOpen, setFileDialogOpen] = useState(false);
   const [fileDialogAction, setFileDialogAction] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const {
     register,
     watch,
@@ -136,6 +137,9 @@ export default function UploadStep({ form }: UploadStepProps) {
   };
 
   const handleFileUpload = async (files: File[]) => {
+    if (isUploading) return;
+    setIsUploading(true);
+
     const token = await auth.getToken();
     if (!token) {
       console.error("Error updating rubric: No token found");
@@ -178,6 +182,7 @@ export default function UploadStep({ form }: UploadStepProps) {
 
       setValue("submissions", newSubmissions);
 
+      setIsUploading(false);
       setFileDialogOpen(false);
     }
   };

@@ -2,12 +2,11 @@ import {
   HubConnection,
   HubConnectionBuilder,
   HubConnectionState,
-  LogLevel,
 } from "@microsoft/signalr";
 
 type SignalREventCallback = (...args: any[]) => void;
 
-const HUB_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/gradings`;
+const HUB_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/hubs/gradings`;
 
 export class SignalRService {
   private connection: HubConnection;
@@ -18,7 +17,6 @@ export class SignalRService {
         accessTokenFactory: this.accessTokenFactory,
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 10000])
-      .configureLogging(LogLevel.Information)
       .build();
   }
 
