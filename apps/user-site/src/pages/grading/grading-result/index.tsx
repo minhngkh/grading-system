@@ -34,6 +34,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
   const [viewRubricOpen, setViewRubricOpen] = useState(false);
   const [changeScaleFactorOpen, setChangeScaleFactorOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const auth = useAuth();
 
   const hubRef = useRef<SignalRService | null>(null);
@@ -77,18 +78,44 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
     if (
       !initialStatus.some(
         (status) => status.status === AssessmentState.AutoGradingStarted,
-      )
+      ) &&
+      isLoading
     ) {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    const fetchAssessments = async () => {
+      const token = await auth.getToken();
+      if (!token) return;
+
+      try {
+        setIsLoading(true);
+        const assessmentsData = await AssessmentService.getAllGradingAssessments(
+          gradingAttempt.id,
+          token,
+        );
+        setAssessments([...assessments, ...assessmentsData]);
+      } catch (error) {
+        toast.error("Failed to fetch assessments");
+        console.error("Error fetching assessments:", error);
+      } finally {
+        setIsLoading(false);
+        setInitialLoadComplete(true);
+      }
+    };
+
+    if (!isLoading) fetchAssessments();
+  }, [gradingAttempt.id]);
+
+  useEffect(() => {
+    if (!initialLoadComplete) return;
+    if (hubRef.current) return;
+
     let isActive = true;
 
     (async () => {
-      if (hubRef.current) return;
-
       const token = await auth.getToken();
       if (!token) return;
 
@@ -97,7 +124,10 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
         hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
           handleStatusChange(isActive, assessmentStatus),
         );
-        hub.on("Complete", () => setIsLoading(false));
+        hub.on("Complete", () => {
+          console.log("Grading complete");
+          setIsLoading(false);
+        });
 
         await hub.start();
         hubRef.current = hub;
@@ -118,30 +148,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
         hubRef.current.stop();
       }
     };
-  }, []);
-
-  useEffect(() => {
-    const fetchAssessments = async () => {
-      const token = await auth.getToken();
-      if (!token) return toast.error("Unauthorized: No token found");
-
-      try {
-        setIsLoading(true);
-        const assessmentsData = await AssessmentService.getAllGradingAssessments(
-          gradingAttempt.id,
-          token,
-        );
-        setAssessments([...assessments, ...assessmentsData]);
-      } catch (error) {
-        toast.error("Failed to fetch assessments");
-        console.error("Error fetching assessments:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (!isLoading) fetchAssessments();
-  }, [gradingAttempt.id]);
+  }, [initialLoadComplete]);
 
   const handleRegradeAll = async () => {
     try {

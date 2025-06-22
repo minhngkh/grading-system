@@ -9,6 +9,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { AssessmentService } from "@/services/assessment-service";
 import { ResultCardSkeleton } from "@/pages/grading/grading-result/skeletons";
+import { useState } from "react";
 
 interface AssessmentResultCardProps {
   item: Assessment;
@@ -23,6 +24,8 @@ export function AssessmentResultCard({
 }: AssessmentResultCardProps) {
   const auth = useAuth();
 
+  const [isRerunning, setIsRerunning] = useState(false);
+
   const handleRerun = async () => {
     const token = await auth.getToken();
     if (!token) {
@@ -31,16 +34,20 @@ export function AssessmentResultCard({
     }
 
     try {
+      setIsRerunning(true);
       await AssessmentService.rerunAssessment(item.id, token);
     } catch (error) {
       console.error("Failed to rerun assessment:", error);
       toast.error(
         `Failed to rerun assessment: ${item.submissionReference}. Please try again.`,
       );
+    } finally {
+      setIsRerunning(false);
     }
   };
 
-  const isUnderGrading = item.status === AssessmentState.AutoGradingStarted;
+  const isUnderGrading =
+    item.status === AssessmentState.AutoGradingStarted || isRerunning;
 
   if (isUnderGrading) {
     return <ResultCardSkeleton />;
