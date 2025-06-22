@@ -55,7 +55,7 @@ export const AssessmentStatusCard = ({ status }: AssessmentStatusCardProps) => {
   return (
     <Card className="gap-2">
       <CardHeader>
-        <CardTitle className="text-lg">{status.name}</CardTitle>
+        <CardTitle className="text-lg">{status.submissionReference}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">

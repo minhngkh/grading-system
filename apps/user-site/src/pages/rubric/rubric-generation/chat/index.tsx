@@ -43,6 +43,8 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
           token,
         );
 
+        console.log("Response from chat service:", response);
+
         if (response.rubric) {
           setIsApplyingEdit(true);
 

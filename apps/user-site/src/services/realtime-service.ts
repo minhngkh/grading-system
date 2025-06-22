@@ -7,7 +7,7 @@ import {
 
 type SignalREventCallback = (...args: any[]) => void;
 
-const HUB_URL = `${process.env.VITE_ASSIGNMENT_FLOW_URL}/gradings`;
+const HUB_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/gradings`;
 
 export class SignalRService {
   private connection: HubConnection;
@@ -17,7 +17,7 @@ export class SignalRService {
       .withUrl(HUB_URL, {
         accessTokenFactory: this.accessTokenFactory,
       })
-      .withAutomaticReconnect()
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 10000])
       .configureLogging(LogLevel.Information)
       .build();
   }
@@ -34,7 +34,6 @@ export class SignalRService {
       await this.connection.start();
     } catch (error) {
       console.error("SignalR start error:", error);
-      setTimeout(() => this.start(), 5000);
     }
   }
 

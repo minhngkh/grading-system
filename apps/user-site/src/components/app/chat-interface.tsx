@@ -105,6 +105,7 @@ const ChatInterface = memo(function ChatInterface({
 
     try {
       const agentResponse = await sendMessageCallback(newMessages);
+      console.log("Agent response:", agentResponse);
 
       if (controller.signal.aborted) return;
 
@@ -465,7 +466,6 @@ const ChatInterface = memo(function ChatInterface({
             onChange={(e) => setInputMessage(e.target.value)}
             onPaste={handlePaste}
             onKeyDown={handleKeyDown}
-            disabled={isLoading}
             rows={TEXTAREA_CONFIG.ROWS}
             className="max-h-48 overflow-y-auto dark:bg-transparent resize-none transition-all shadow-none focus-visible:ring-0 border-0 focus-visible:ring-offset-0 p-4"
             aria-label="Chat input"

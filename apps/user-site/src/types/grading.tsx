@@ -20,9 +20,7 @@ export const SubmissionSchema = z.object({
 
 export const GradingSchema = z.object({
   id: z.string({ required_error: "Grading ID is required" }),
-  name: z.string().min(1, {
-    message: "Grading name cannot be empty",
-  }),
+  name: z.string().optional(),
   rubricId: z.string().nonempty({
     message: "Rubric is required",
   }),

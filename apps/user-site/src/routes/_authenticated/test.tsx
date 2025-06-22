@@ -11,7 +11,7 @@ function RouteComponent() {
     <AssessmentStatusCard
       status={{
         id: "123",
-        name: "Test Assessment",
+        submissionReference: "Test Assessment",
         errorMessage: "An error occurred",
         status: AssessmentState.AutoGradingFailed,
       }}

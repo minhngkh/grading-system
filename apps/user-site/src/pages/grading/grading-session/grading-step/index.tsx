@@ -16,6 +16,7 @@ export default function GradingProgressStep({
 }: GradingProgressStepProps) {
   const auth = useAuth();
   const gradingId = gradingAttempt.watch("id");
+  const gradingStatus = gradingAttempt.watch("status");
 
   const [assessmentStatus, setAssessmentStatus] = useState<
     AssessmentGradingStatus[] | null
@@ -24,6 +25,7 @@ export default function GradingProgressStep({
 
   const handleGradingStatusChange = (isActive: boolean, newStatus: GradingStatus) => {
     if (!isActive) return;
+    console.log("Received grading status update:", newStatus);
     gradingAttempt.setValue("status", newStatus);
   };
 
@@ -32,7 +34,18 @@ export default function GradingProgressStep({
     newStatus: AssessmentGradingStatus[],
   ) => {
     if (!isActive) return;
-    setAssessmentStatus(newStatus);
+    console.log("Received assessment status update:", newStatus);
+
+    setAssessmentStatus((prev) => {
+      if (!prev) return newStatus;
+
+      const merged = prev.map((item) => {
+        const updated = newStatus.find((u) => u.id === item.id);
+        return updated || item;
+      });
+
+      return merged;
+    });
   };
 
   const handleRegister = (
@@ -40,6 +53,7 @@ export default function GradingProgressStep({
     initialStatus: AssessmentGradingStatus[],
   ) => {
     if (!isActive) return;
+    console.log("Received initial assessment status:", initialStatus);
     setAssessmentStatus(initialStatus);
   };
 
@@ -52,19 +66,22 @@ export default function GradingProgressStep({
       const token = await auth.getToken();
       if (!token) return;
 
-      const hub = new SignalRService(() => token);
-      hub.on("Register", (initialStatus) => handleRegister(isActive, initialStatus));
-      hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
-        handleStatusChange(isActive, assessmentStatus),
-      );
-      hub.on("ReceiveGradingStatusProgress", (status) =>
-        handleGradingStatusChange(isActive, status),
-      );
+      try {
+        const hub = new SignalRService(() => token);
+        hub.on("Register", (initialStatus) => handleRegister(isActive, initialStatus));
+        hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
+          handleStatusChange(isActive, assessmentStatus),
+        );
+        hub.on("Complete", () =>
+          handleGradingStatusChange(isActive, GradingStatus.Graded),
+        );
 
-      await hub.start();
-      await hub.invoke("Register", gradingId);
-
-      hubRef.current = hub;
+        await hub.start();
+        await hub.invoke("Register", gradingId);
+        hubRef.current = hub;
+      } catch (error) {
+        gradingAttempt.setValue("status", GradingStatus.Failed);
+      }
     })();
 
     return () => {
@@ -76,10 +93,22 @@ export default function GradingProgressStep({
     };
   }, []);
 
-  if (assessmentStatus === null)
+  if (gradingStatus === GradingStatus.Failed) {
     return (
       <div className="size-full text-semibold">
         <div className="flex items-center justify-center h-full">
+          <span className="text-destructive">
+            Grading attempt failed. Please try again.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  if (assessmentStatus === null)
+    return (
+      <div className="size-full text-semibold">
+        <div className="flex flex-col items-center justify-center h-full">
           <Spinner />
           <span>Loading assessment status...</span>
         </div>
