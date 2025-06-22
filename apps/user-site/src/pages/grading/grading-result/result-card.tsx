@@ -5,7 +5,7 @@ import { Assessment, AssessmentState } from "@/types/assessment";
 import { getCriteriaColorStyle } from "./colors";
 import { Link } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { AssessmentService } from "@/services/assessment-service";
@@ -16,14 +16,12 @@ interface AssessmentResultCardProps {
   item: Assessment;
   scaleFactor: number;
   criteriaColorMap: Record<string, { text: string; bg: string }>;
-  key: React.Key;
 }
 
 export function AssessmentResultCard({
   item,
   scaleFactor,
   criteriaColorMap,
-  key,
 }: AssessmentResultCardProps) {
   const [isRerunning, setIsRerunning] = useState(false);
   const auth = useAuth();
@@ -81,7 +79,7 @@ export function AssessmentResultCard({
   }
 
   return (
-    <Card key={key} className="overflow-hidden py-0">
+    <Card className="overflow-hidden py-0">
       <div className="flex flex-col md:flex-row">
         <div className="flex-1 p-6">
           <div className="flex items-center justify-between mb-4">

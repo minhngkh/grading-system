@@ -176,12 +176,9 @@ export default function UploadAssignmentPage({
           upload: () => {
             return isStarting ?
                 <PendingComponent message="Starting grading session..." />
-              : <UploadStep
-                  form={gradingAttempt}
-                  gradingAttempt={gradingAttemptValues}
-                />;
+              : <UploadStep form={gradingAttempt} />;
           },
-          grading: () => <GradingProgressStep form={gradingAttempt} />,
+          grading: () => <GradingProgressStep gradingAttempt={gradingAttempt} />,
           review: () => <GradingResult gradingAttempt={gradingAttemptValues} />,
         })}
       </div>
