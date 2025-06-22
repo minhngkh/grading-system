@@ -98,7 +98,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             {
                 SubmissionReference = submission.Reference,
                 AssessmentId = assessmentId,
-                Status = AssessmentStatus.Pending.ToString(),
+                Status = AssessmentState.AutoGradingStarted.ToString(),
                 ErrorMessage = null
             });
         }
@@ -130,7 +130,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             {
                 SubmissionReference = domainEvent.AggregateEvent.SubmissionReference,
                 AssessmentId = assessmentId,
-                Status = AssessmentStatus.Pending.ToString(),
+                Status = AssessmentState.Created.ToString(),
                 ErrorMessage = null
             });
         }
@@ -155,7 +155,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         {
             SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
             AssessmentId = assessmentId,
-            Status = AssessmentStatus.UnderAutoGrading.ToString(),
+            Status = AssessmentState.AutoGradingStarted.ToString(),
             ErrorMessage = null
         });
     }
@@ -181,7 +181,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         {
             SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
             AssessmentId = assessmentId,
-            Status = AssessmentStatus.Graded.ToString(),
+            Status = AssessmentState.AutoGradingFinished.ToString(),
             ErrorMessage = null
         });
     }
