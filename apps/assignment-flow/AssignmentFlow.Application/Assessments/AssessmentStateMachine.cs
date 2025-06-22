@@ -17,6 +17,7 @@ public sealed class AssessmentStateMachine : StateMachine<AssessmentState, Asses
     private void Configure()
     {
         Configure(AssessmentState.Created)
+            .Permit(AssessmentTrigger.CancelAutoGrading, AssessmentState.AutoGradingFailed)
             .Permit(AssessmentTrigger.StartAutoGrading, AssessmentState.AutoGradingStarted);
 
         
@@ -25,6 +26,7 @@ public sealed class AssessmentStateMachine : StateMachine<AssessmentState, Asses
             .Permit(AssessmentTrigger.CancelAutoGrading, AssessmentState.AutoGradingFailed);
 
         Configure(AssessmentState.AutoGradingFinished)
+            .PermitReentry(AssessmentTrigger.FinishAutoGrading)
             .Permit(AssessmentTrigger.StartAutoGrading, AssessmentState.AutoGradingStarted)
             .Permit(AssessmentTrigger.Complete, AssessmentState.Completed);
 

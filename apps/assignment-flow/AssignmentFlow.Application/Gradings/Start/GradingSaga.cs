@@ -13,7 +13,8 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
     ISagaHandles<GradingAggregate, GradingId, AutoGradingRestartedEvent>,
     ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessmentCreatedEvent>,
     ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, Assessments.StartAutoGrading.AutoGradingStartedEvent>,
-    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessedEvent>
+    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessedEvent>,
+    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessmentFailedEvent>
 {
     private readonly ILogger<GradingSaga> logger;
     private readonly GradingRepository repository;
@@ -183,6 +184,23 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             AssessmentId = assessmentId,
             Status = AssessmentState.AutoGradingFinished.ToString(),
             ErrorMessage = null
+        });
+    }
+
+    public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessmentFailedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    {
+        var assessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value);
+        Emit(new GradingSagaAssessmentAutoGradingFailedEvent
+        {
+            AssessmentId = assessmentId
+        });
+
+        await PublishProgressUpdate(new AssessmentProgress
+        {
+            SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
+            AssessmentId = assessmentId,
+            Status = AssessmentState.AutoGradingFailed.ToString(),
+            ErrorMessage = string.Join("; ", domainEvent.AggregateEvent.Errors.Select(e => $"{e.Key}: {e.Value}"))
         });
     }
 
