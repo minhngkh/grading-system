@@ -34,6 +34,14 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
+
+
+    var webSocketOptions = new WebSocketOptions
+    {
+        KeepAliveInterval = TimeSpan.FromMinutes(2)
+    };
+
+    app.UseWebSockets(webSocketOptions);
 }
 
 app.UseCors("AllowAll");
