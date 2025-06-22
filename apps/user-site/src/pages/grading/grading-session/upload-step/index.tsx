@@ -23,11 +23,10 @@ import { Controller } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface UploadStepProps {
-  gradingAttempt: GradingAttempt;
   form: UseFormReturn<GradingAttempt>;
 }
 
-export default function UploadStep({ gradingAttempt, form }: UploadStepProps) {
+export default function UploadStep({ form }: UploadStepProps) {
   const auth = useAuth();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
@@ -40,7 +39,9 @@ export default function UploadStep({ gradingAttempt, form }: UploadStepProps) {
     setFocus,
     formState: { errors },
   } = form;
-  // Focus first field with an error
+
+  const gradingAttempt = form.watch();
+
   useEffect(() => {
     const fields = Object.keys(errors);
     if (fields.length > 0) {

@@ -118,7 +118,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
         <ViewRubricDialog
           open={viewRubricOpen}
           onOpenChange={setViewRubricOpen}
-          rubricId={gradingAttempt.rubricId!}
+          rubricId={gradingAttempt.rubricId}
         />
       )}
       {changeScaleFactorOpen && (
