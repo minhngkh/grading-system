@@ -7,6 +7,8 @@ import { AssessmentGradingStatus } from "@/types/grading-progress";
 import { UseFormReturn } from "react-hook-form";
 import { AssessmentStatusCard } from "@/pages/grading/grading-session/grading-step/status-card";
 import { AssessmentState } from "@/types/assessment";
+import { toast } from "sonner";
+import { GradingService } from "@/services/grading-service";
 
 interface GradingProgressStepProps {
   gradingAttempt: UseFormReturn<GradingAttempt>;
@@ -22,6 +24,16 @@ export default function GradingProgressStep({
     AssessmentGradingStatus[] | null
   >(null);
   const hubRef = useRef<SignalRService | null>(null);
+
+  const handleStartGrading = async () => {
+    const token = await auth.getToken();
+    if (!token) {
+      return toast.error("You must be logged in to start grading");
+    }
+
+    await GradingService.startGrading(gradingAttemptValues.id, token);
+    gradingAttempt.setValue("status", GradingStatus.Started);
+  };
 
   const handleGradingStatusChange = (isActive: boolean, newStatus: GradingStatus) => {
     if (!isActive) return;
@@ -78,6 +90,7 @@ export default function GradingProgressStep({
           handleGradingStatusChange(isActive, GradingStatus.Graded),
         );
 
+        await handleStartGrading();
         await hub.start();
         hubRef.current = hub;
 
@@ -103,7 +116,7 @@ export default function GradingProgressStep({
       <div className="size-full text-semibold">
         <div className="flex flex-col items-center justify-center h-full">
           <Spinner />
-          <span>Loading assessment status...</span>
+          <span>Starting grading</span>
         </div>
       </div>
     );
@@ -112,7 +125,9 @@ export default function GradingProgressStep({
     return (
       <div className="size-full text-semibold">
         <div className="flex items-center justify-center h-full">
-          <span className="text-destructive">No assessments found.</span>
+          <span className="text-destructive">
+            No assessments found. Something went wrong.
+          </span>
         </div>
       </div>
     );

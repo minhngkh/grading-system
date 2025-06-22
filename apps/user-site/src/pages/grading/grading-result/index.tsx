@@ -1,7 +1,7 @@
 import { lazy, Suspense, useRef } from "react";
 import { useEffect, useState } from "react";
 import { GradingAttempt } from "@/types/grading";
-import { Assessment } from "@/types/assessment";
+import { Assessment, AssessmentState } from "@/types/assessment";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AssessmentService } from "@/services/assessment-service";
@@ -63,12 +63,24 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
 
     const updatedAssessments = assessments.map((assessment) => {
       const status = initialStatus.find((s) => s.id === assessment.id);
+
+      if (!status) return assessment;
+
       return {
         ...assessment,
-        status: status ? status.status : assessment.status,
+        status: status.status,
       };
     });
+
     setAssessments(updatedAssessments);
+
+    if (
+      !initialStatus.some(
+        (status) => status.status === AssessmentState.AutoGradingStarted,
+      )
+    ) {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
