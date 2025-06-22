@@ -67,7 +67,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseJsonApi();
-app.MapHub<GradingsHub>("/gradings");
+app.MapHub<GradingsHub>("/hubs/gradings");
 app.MapAssignmentFlowEndpoints();
 
 app.UseHealthChecks("/health");
