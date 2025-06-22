@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssignmentFlow.Application.Gradings.Hub;
 
+[Authorize]
 public class GradingsHub(AssignmentFlowDbContext dbContext) : Hub<IGradingClient>
 {
     public async Task<List<AssessmentProgress>> Register(string gradingId)
