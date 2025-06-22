@@ -7,7 +7,6 @@ import { AssessmentGradingStatus } from "@/types/grading-progress";
 import { UseFormReturn } from "react-hook-form";
 import { AssessmentStatusCard } from "@/pages/grading/grading-session/grading-step/status-card";
 import { AssessmentState } from "@/types/assessment";
-import { toast } from "sonner";
 import { GradingService } from "@/services/grading-service";
 
 interface GradingProgressStepProps {
@@ -24,17 +23,6 @@ export default function GradingProgressStep({
     AssessmentGradingStatus[] | null
   >(null);
   const hubRef = useRef<SignalRService | null>(null);
-
-  const handleStartGrading = async () => {
-    const token = await auth.getToken();
-    if (!token) {
-      return toast.error("You must be logged in to start grading");
-    }
-
-    await GradingService.startGrading(gradingAttemptValues.id, token);
-    gradingAttempt.setValue("status", GradingStatus.Started);
-  };
-
   const handleGradingStatusChange = (isActive: boolean, newStatus: GradingStatus) => {
     if (!isActive) return;
     gradingAttempt.setValue("status", newStatus);
@@ -76,7 +64,7 @@ export default function GradingProgressStep({
     let isActive = true;
 
     (async () => {
-      if (gradingAttemptValues.status !== GradingStatus.Started || hubRef.current) return;
+      if (hubRef.current) return;
 
       const token = await auth.getToken();
       if (!token) return;
@@ -90,7 +78,8 @@ export default function GradingProgressStep({
           handleGradingStatusChange(isActive, GradingStatus.Graded),
         );
 
-        await handleStartGrading();
+        await GradingService.startGrading(gradingAttemptValues.id, token);
+        gradingAttempt.setValue("status", GradingStatus.Started);
         await hub.start();
         hubRef.current = hub;
 
