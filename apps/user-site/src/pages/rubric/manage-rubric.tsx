@@ -41,7 +41,7 @@ import { GetAllResult, SearchParams } from "@/types/search-params";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { RubricExporter } from "@/lib/exporters";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
 
 type SortConfig = {
   key: "rubricName" | "updatedOn" | null;
@@ -72,7 +72,7 @@ export default function ManageRubricsPage({
   const [viewRubricOpen, setViewRubricOpen] = useState<boolean>(false);
   const [selectedRubricIndex, setSelectedRubricIndex] = useState<number | null>(null);
   const [exportRubricOpen, setExportRubricOpen] = useState<boolean>(false);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
@@ -217,7 +217,7 @@ export default function ManageRubricsPage({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            navigate({
+                            router.navigate({
                               to: "/rubrics/$id",
                               params: { id: rubric.id },
                             });

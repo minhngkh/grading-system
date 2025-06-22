@@ -1,4 +1,5 @@
 ﻿using AssignmentFlow.IntegrationEvents;
+using Azure.Storage.Blobs;
 using EventFlow;
 using EventFlow.Queries;
 using MassTransit;
@@ -8,6 +9,7 @@ namespace RubricEngine.Application.Rubrics.Complete;
 public class GradingStartedConsumer(
     ICommandBus commandBus,
     IQueryProcessor queryProcessor,
+    BlobServiceClient client,
     ILogger<GradingStartedConsumer> logger)
     : IConsumer<GradingStarted>
 {
@@ -17,51 +19,102 @@ public class GradingStartedConsumer(
             context.Message.GradingId, context.Message.RubricId, context.Message.TeacherId);
 
         var originalRubricId = RubricId.With(context.Message.RubricId);
-
+        
         // Fetch the original rubric's data
-        var originalRubricData = await queryProcessor.ProcessAsync(
-            new ReadModelByIdQuery<Rubric>(originalRubricId),
-            context.CancellationToken);
-
-        if (originalRubricData == null)
-        {
-            logger.LogError("Original rubric {OriginalRubricId} not found. Cloning process aborted for GradingId: {GradingId}.",
-                originalRubricId, context.Message.GradingId);
-            return;
-        }
+        var originalRubricData = await GetOriginalRubricAsync(originalRubricId, context.Message.GradingId, context.CancellationToken);
 
         // Generate a new ID for the cloned rubric
         var clonedRubricId = RubricId.New;
         logger.LogInformation("Initiating rubric clone. OriginalRubricId: {OriginalRubricId} -> ClonedRubricId: {ClonedRubricId}. GradingId: {GradingId}.",
             originalRubricId, clonedRubricId, context.Message.GradingId);
 
-        // 1. Create the new rubric (clone)
+        // Clone the rubric in steps
+        await CreateClonedRubricAsync(clonedRubricId, originalRubricData, context.CancellationToken);
+        var clonedAttachments = await CopyRubricAttachmentsAsync(originalRubricId, clonedRubricId, originalRubricData, context.CancellationToken);
+        await UpdateClonedRubricPropertiesAsync(clonedRubricId, originalRubricData, clonedAttachments, context.CancellationToken);
+        await MarkOriginalRubricAsUsedAsync(originalRubricId, context.Message.GradingId, context.CancellationToken);
+
+        logger.LogInformation("Successfully cloned rubric {OriginalRubricId} to {ClonedRubricId}. Original rubric {OriginalRubricId} marked as used. GradingId: {GradingId}.",
+            originalRubricId, clonedRubricId, originalRubricId, context.Message.GradingId);
+    }
+
+    private async Task<Rubric> GetOriginalRubricAsync(RubricId originalRubricId, string gradingId, CancellationToken cancellationToken)
+    {
+        var originalRubricData = await queryProcessor.ProcessAsync(
+            new ReadModelByIdQuery<Rubric>(originalRubricId),
+            cancellationToken);
+
+        return originalRubricData
+            ?? throw new InvalidOperationException($"Original rubric {originalRubricId} not found. Cloning process aborted for GradingId: {gradingId}."); ;
+    }
+
+    private async Task CreateClonedRubricAsync(RubricId clonedRubricId, Rubric originalRubricData, CancellationToken cancellationToken)
+    {
         var createCommand = new Create.Command(
             clonedRubricId,
             TeacherId.With(originalRubricData.TeacherId)
         );
-        await commandBus.PublishAsync(createCommand, context.CancellationToken);
+        await commandBus.PublishAsync(createCommand, cancellationToken);
+    }
 
-        // 2. Update the cloned rubric with detailed properties (if any not covered by Create)
-        
+    private async Task UpdateClonedRubricPropertiesAsync(RubricId clonedRubricId, Rubric originalRubricData, List<string> clonedAttachments, CancellationToken cancellationToken)
+    {
         var updateCommand = new Update.Command(clonedRubricId)
         {
             Name = RubricName.New(originalRubricData.RubricName),
             PerformanceTags = originalRubricData.PerformanceTags.ToPerformanceTags(),
-            Criteria = originalRubricData.Criteria.ToCriteria()
+            Criteria = originalRubricData.Criteria.ToCriteria(),
+            Metadata = originalRubricData.Metadata,
+            Attachments = clonedAttachments
         };
-        await commandBus.PublishAsync(updateCommand, context.CancellationToken);
+        await commandBus.PublishAsync(updateCommand, cancellationToken);
+    }
 
-        // 3. Mark the *original* rubric as "Used" for this grading session
+    private async Task<List<string>> CopyRubricAttachmentsAsync(RubricId originalRubricId, RubricId clonedRubricId, Rubric originalRubricData, CancellationToken cancellationToken)
+    {
+        var originalAttachments = originalRubricData.Attachments ?? [];
+        var newAttachments = new List<string>();
+        
+        // Create tasks for parallel processing
+        var copyTasks = originalAttachments.Select(async attachment => 
+        {
+            var newAttachmentPath = attachment.Replace(originalRubricId.Value, clonedRubricId.Value);
+            
+            await CopyBlobAsync(
+                sourceBlobName: attachment,
+                destBlobName: newAttachmentPath,
+                cancellationToken: cancellationToken);
+                
+            return newAttachmentPath;
+        }).ToList();
+        
+        // Wait for all copy operations to complete and collect results
+        var results = await Task.WhenAll(copyTasks);
+        newAttachments.AddRange(results);
+        
+        return newAttachments;
+    }
+
+    private async Task MarkOriginalRubricAsUsedAsync(RubricId originalRubricId, string gradingId, CancellationToken cancellationToken)
+    {
         var completeCommand = new Complete.Command(originalRubricId)
         {
-            GradingId = context.Message.GradingId
+            GradingId = gradingId
         };
-        await commandBus.PublishAsync(completeCommand, context.CancellationToken);
+        await commandBus.PublishAsync(completeCommand, cancellationToken);
+    }
 
-        logger.LogInformation("Successfully cloned rubric {OriginalRubricId} to {ClonedRubricId}. Original rubric {OriginalRubricId} marked as used. GradingId: {GradingId}.",
-            originalRubricId, clonedRubricId, originalRubricId, context.Message.GradingId);
-
-        await Task.CompletedTask;
+    private async Task CopyBlobAsync(
+        string sourceBlobName,
+        string destBlobName,
+        CancellationToken cancellationToken)
+    {
+        var container = client.GetBlobContainerClient("rubric-context-store");
+        var sourceBlobClient = container.GetBlobClient(sourceBlobName);
+        var destinationBlobClient = container.GetBlobClient(destBlobName);
+        
+        await destinationBlobClient.StartCopyFromUriAsync(
+            sourceBlobClient.Uri,
+            cancellationToken: cancellationToken);
     }
 }

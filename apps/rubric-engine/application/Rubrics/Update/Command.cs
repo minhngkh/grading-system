@@ -9,6 +9,7 @@ public class Command(RubricId id) : Command<RubricAggregate, RubricId>(id)
     public List<Criterion>? Criteria { get; init; }
     
     public Dictionary<string, object>? Metadata { get; init; }
+    public List<string>? Attachments { get; init; }
 }
 
 public class CommandHandler : CommandHandler<RubricAggregate, RubricId, Command>

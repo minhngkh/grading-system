@@ -18,19 +18,10 @@ interface GradingAnalyticsPageProps {
 export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageProps) {
   const { scaleFactor, averageScore, assessmentCount, scores, criterionData } =
     gradingAnalytics;
-
   const scoreDistribution = getScoreDistribution(scores);
 
   return (
-    <div className="space-y-8">
-      {/* Page Title */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Grading Analytics</h1>
-        <p className="text-muted-foreground">
-          Detailed analysis of assessment scores and criterion performance
-        </p>
-      </div>
-
+    <div className="space-y-6">
       {/* Grading Summary Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="gap-0">
@@ -47,10 +38,10 @@ export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageP
             <CardTitle className="text-sm font-medium">Average Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{averageScore.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">
-              {((averageScore / 100) * scaleFactor).toFixed(2)} out of {scaleFactor}
-            </p>
+            <div className="text-2xl font-bold">
+              {((averageScore / 100) * scaleFactor).toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">out of {scaleFactor}</p>
           </CardContent>
         </Card>
         <Card className="gap-0">
@@ -71,7 +62,7 @@ export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageP
           <TabsTrigger value="overall">Overall Scores</TabsTrigger>
           <TabsTrigger value="criteria">Criteria Scores</TabsTrigger>
         </TabsList>
-        <TabsContent value="overall" className="mt-4">
+        <TabsContent value="overall">
           <Card>
             <CardHeader>
               <CardTitle>Assessment Score Distribution</CardTitle>
@@ -92,6 +83,7 @@ export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageP
           <div className="space-y-6">
             <h3 className="text-xl font-semibold">Criterion Score Distributions</h3>
             <AssessmentCriterionChart
+              assessmentCount={assessmentCount}
               criterionData={criterionData}
               scaleFactor={scaleFactor}
             />

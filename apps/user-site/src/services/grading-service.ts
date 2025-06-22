@@ -1,3 +1,4 @@
+import { buildFilterExpr, contains, eq } from "@/lib/json-api-query";
 import { GradingAnalytics, OverallGradingAnalytics } from "@/types/analytics";
 import {
   CriteriaSelector,
@@ -13,7 +14,7 @@ const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api
 const GRADING_API_URL = `${ASSIGNMENT_FLOW_API_URL}/gradings`;
 
 export class GradingService {
-  private static async buildHeaders(token: string): Promise<AxiosRequestConfig> {
+  private static buildHeaders(token: string): AxiosRequestConfig {
     return {
       headers: {
         "Content-Type": "application/vnd.api+json",
@@ -23,7 +24,7 @@ export class GradingService {
     };
   }
 
-  private static async buildFileHeaders(token: string): Promise<AxiosRequestConfig> {
+  private static buildFileHeaders(token: string): AxiosRequestConfig {
     return {
       headers: {
         "Content-Type": "multipart/form-data",
@@ -36,6 +37,7 @@ export class GradingService {
   private static ConvertToGrading(record: any): GradingAttempt {
     return {
       ...record,
+      rubricId: !record.rubricId ? undefined : record.rubricId,
       lastModified: record.lastModified ? new Date(record.lastModified) : undefined,
       scaleFactor: !record.scaleFactor ? 10 : record.scaleFactor,
     };
@@ -82,7 +84,7 @@ export class GradingService {
     selectors: CriteriaSelector[],
     token: string,
   ) {
-    const configHeaders = await this.buildHeaders(token);
+    const configHeaders = this.buildHeaders(token);
     return await axios.put(
       `${GRADING_API_URL}/${id}/criterionSelectors`,
       { selectors },
@@ -94,26 +96,33 @@ export class GradingService {
     searchParams: SearchParams,
     token: string,
   ): Promise<GetAllResult<GradingAttempt>> {
-    const { page, perPage, search } = searchParams;
+    const { page, perPage, search, status } = searchParams;
     const params = new URLSearchParams();
 
     if (page != undefined) params.append("page[number]", page.toString());
     if (perPage != undefined) params.append("page[size]", perPage.toString());
-    if (search && search.length > 0) params.append("filter", `contains(id,'${search}')`);
 
-    const configHeaders = await this.buildHeaders(token);
+    const filterExpr = buildFilterExpr([
+      search ? contains("id", search) : undefined,
+      status ? eq("status", status) : undefined,
+    ]);
+
+    if (filterExpr) {
+      params.append("filter", filterExpr);
+    }
+
+    const configHeaders = this.buildHeaders(token);
     const response = await axios.get(
       `${GRADING_API_URL}?${params.toString()}`,
       configHeaders,
     );
 
     const data = await this.gradingDeserializer.deserialize(response.data);
-    console.log("Grading attempts data:", data);
     return { data, meta: response.data.meta };
   }
 
   static async getGradingAttempt(id: string, token: string): Promise<GradingAttempt> {
-    const configHeaders = await this.buildHeaders(token);
+    const configHeaders = this.buildHeaders(token);
     const response = await axios.get(`${GRADING_API_URL}/${id}`, configHeaders);
     return this.gradingDeserializer.deserialize(response.data);
   }
@@ -123,7 +132,7 @@ export class GradingService {
     file: File,
     token: string,
   ): Promise<Submission> {
-    const configHeaders = await this.buildFileHeaders(token);
+    const configHeaders = this.buildFileHeaders(token);
     const response = await axios.post(
       `${GRADING_API_URL}/${id}/submissions`,
       {
@@ -136,12 +145,12 @@ export class GradingService {
   }
 
   static async startGrading(id: string, token: string) {
-    const configHeaders = await this.buildHeaders(token);
+    const configHeaders = this.buildHeaders(token);
     return await axios.post(`${GRADING_API_URL}/${id}/start`, null, configHeaders);
   }
 
   static async deleteSubmission(id: string, reference: string, token: string) {
-    const configHeaders = await this.buildHeaders(token);
+    const configHeaders = this.buildHeaders(token);
     return await axios.delete(
       `${GRADING_API_URL}/${id}/submissions/${reference}`,
       configHeaders,
@@ -149,14 +158,24 @@ export class GradingService {
   }
 
   static async getAllGradingsSummary(token: string): Promise<OverallGradingAnalytics> {
-    const configHeaders = await this.buildHeaders(token);
+    const configHeaders = this.buildHeaders(token);
     const response = await axios.get(`${GRADING_API_URL}/summary`, configHeaders);
     return response.data;
   }
 
   static async getGradingSummary(id: string, token: string): Promise<GradingAnalytics> {
-    const configHeaders = await this.buildHeaders(token);
+    const configHeaders = this.buildHeaders(token);
     const response = await axios.get(`${GRADING_API_URL}/${id}/summary`, configHeaders);
     return response.data;
+  }
+
+  static async deleteGradingAttempt(id: string, token: string): Promise<void> {
+    const configHeaders = this.buildHeaders(token);
+    return axios.delete(`${GRADING_API_URL}/${id}`, configHeaders);
+  }
+
+  static async updateGradingName(id: string, name: string, token: string): Promise<void> {
+    const configHeaders = this.buildHeaders(token);
+    return axios.put(`${GRADING_API_URL}/${id}/name`, { name }, configHeaders);
   }
 }

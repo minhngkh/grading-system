@@ -7,42 +7,18 @@ import "./viewer.css";
 
 interface HighlightableViewerProps {
   type: "code" | "essay";
+  content: string; // Nhận content trực tiếp
   feedbacks: FeedbackItem[];
   updateFeedback: (newFeedbacks: FeedbackItem[]) => void;
   isHighlightMode: boolean;
   onHighlightComplete: () => void;
   activeFeedbackId?: string | null;
   fileUrl?: string;
-  rubricCriteria?: string[]; // Add this prop for criteria options
+  rubricCriteria?: string[];
 }
-
-// Map file extension to shiki language id
-const extensionToLanguage: Record<string, string> = {
-  js: "javascript",
-  jsx: "jsx",
-  ts: "typescript",
-  tsx: "tsx",
-  json: "json",
-  css: "css",
-  scss: "scss",
-  html: "html",
-  c: "c",
-  cpp: "cpp",
-  java: "java",
-  py: "python",
-  go: "go",
-  rs: "rust",
-  php: "php",
-  rb: "ruby",
-  cs: "csharp",
-  swift: "swift",
-  kt: "kotlin",
-  md: "markdown",
-  txt: "plaintext",
-};
-
 export default function HighlightableViewer({
   type,
+  content,
   feedbacks,
   updateFeedback,
   isHighlightMode,
@@ -59,25 +35,40 @@ export default function HighlightableViewer({
     from: { line: number; col: number };
     to: { line: number; col: number };
   } | null>(null);
-  const [fileContent, setFileContent] = useState("");
   const [newCriterion, setNewCriterion] = useState<string>("");
+
   // Determine language from fileUrl
   let language = "plaintext";
   if (fileUrl) {
     const ext = fileUrl.split(".").pop()?.toLowerCase() || "";
-    language = extensionToLanguage[ext] || ext || "plaintext";
+    language =
+      {
+        js: "javascript",
+        jsx: "jsx",
+        ts: "typescript",
+        tsx: "tsx",
+        json: "json",
+        css: "css",
+        scss: "scss",
+        html: "html",
+        c: "c",
+        cpp: "cpp",
+        java: "java",
+        py: "python",
+        go: "go",
+        rs: "rust",
+        php: "php",
+        rb: "ruby",
+        cs: "csharp",
+        swift: "swift",
+        kt: "kotlin",
+        md: "markdown",
+        txt: "plaintext",
+        h: "c",
+      }[ext] ||
+      ext ||
+      "plaintext";
   }
-
-  useEffect(() => {
-    if (fileUrl) {
-      fetch(fileUrl)
-        .then((res) => (res.ok ? res.text() : Promise.reject()))
-        .then((text) => setFileContent(text))
-        .catch(() => setFileContent("Cannot load file content."));
-    } else {
-      setFileContent("");
-    }
-  }, [fileUrl]);
 
   // --- Highlight selection logic ---
   useEffect(() => {
@@ -197,8 +188,6 @@ export default function HighlightableViewer({
 
   // --- Render content ---
   let visibleFeedbacks = feedbacks;
-  // ĐỪNG filter visibleFeedbacks khi activeFeedbackId, luôn render tất cả feedbacks!
-
   const renderContent = () => {
     if (type === "code") {
       const getShikiTheme = () => (theme === "dark" ? "github-dark" : "github-light");
@@ -280,7 +269,7 @@ export default function HighlightableViewer({
             },
           ]}
         >
-          {fileContent}
+          {content}
         </ShikiHighlighter>
       );
     }
@@ -332,7 +321,14 @@ export default function HighlightableViewer({
 
     return (
       <div className="font-serif text-md leading-relaxed whitespace-pre-wrap p-3">
-        {fileContent.split("\n").map((line, i) => {
+        {content.split("\n").map((line, i) => {
+          if (line === "") {
+            return (
+              <div key={i} data-line={i}>
+                <br />
+              </div>
+            );
+          }
           const segments = getFeedbackGroupsForLine(i, line.length);
           return (
             <div key={i} data-line={i}>

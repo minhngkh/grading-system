@@ -1,8 +1,7 @@
+import { lazy, Suspense } from "react";
 import { useEffect, useState } from "react";
-import { GradingAttempt, GradingStatus } from "@/types/grading";
+import { GradingAttempt } from "@/types/grading";
 import { Assessment } from "@/types/assessment";
-import SummarySection from "./summary-section";
-import ReviewResults from "./review-results";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AssessmentService } from "@/services/assessment-service";
@@ -12,29 +11,20 @@ import { ExportDialog } from "@/components/app/export-dialog";
 import { GradingExporter } from "@/lib/exporters";
 import { Eye, Scale, Download, RefreshCw, ChartColumn } from "lucide-react";
 import { useAuth } from "@clerk/clerk-react";
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import {
+  ResultCardSkeleton,
+  SummaryCardSkeleton,
+} from "@/pages/grading/grading-result/skeletons";
+
+const SummarySection = lazy(() => import("./summary-section"));
+const ReviewResults = lazy(() => import("./review-results"));
 
 interface GradingResultProps {
   gradingAttempt: GradingAttempt;
 }
 
 export default function GradingResult({ gradingAttempt }: GradingResultProps) {
-  const router = useRouter();
-  if (
-    gradingAttempt.status === GradingStatus.Created ||
-    gradingAttempt.status === GradingStatus.Started
-  )
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4">
-        <p className="text-lg font-semibold">
-          The grading session is under grading or have not started yet.
-        </p>
-        <Button variant="destructive" onClick={() => router.history.back()}>
-          Return
-        </Button>
-      </div>
-    );
-
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [scaleFactor, setScaleFactor] = useState(gradingAttempt.scaleFactor ?? 10);
@@ -50,12 +40,11 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
 
       try {
         setIsLoading(true);
-        const assessmentsData = await AssessmentService.getGradingAssessments(
+        const assessmentsData = await AssessmentService.getAllGradingAssessments(
           gradingAttempt.id,
           token,
         );
-
-        setAssessments(assessmentsData);
+        setAssessments([...assessments, ...assessmentsData]);
       } catch (error) {
         toast.error("Failed to fetch assessments");
         console.error("Error fetching assessments:", error);
@@ -64,7 +53,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
       }
     };
 
-    fetchAssessments();
+    if (!isLoading) fetchAssessments();
   }, [gradingAttempt.id]);
 
   return (
@@ -114,16 +103,17 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
           </Button>
         </div>
       </section>
-      <SummarySection
-        isLoading={isLoading}
-        assessments={assessments}
-        scaleFactor={scaleFactor}
-      />
-      <ReviewResults
-        isLoading={isLoading}
-        assessments={assessments}
-        scaleFactor={scaleFactor}
-      />
+      <Suspense fallback={<SummaryCardSkeleton />}>
+        {isLoading ?
+          <SummaryCardSkeleton />
+        : <SummarySection assessments={assessments} scaleFactor={scaleFactor} />}
+      </Suspense>
+
+      <Suspense fallback={<ResultCardSkeleton />}>
+        {isLoading ?
+          <ResultCardSkeleton />
+        : <ReviewResults assessments={assessments} scaleFactor={scaleFactor} />}
+      </Suspense>
       {viewRubricOpen && (
         <ViewRubricDialog
           open={viewRubricOpen}

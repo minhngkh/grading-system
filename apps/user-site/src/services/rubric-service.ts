@@ -1,4 +1,5 @@
-import type { Rubric } from "@/types/rubric";
+import { buildFilterExpr, contains, eq } from "@/lib/json-api-query";
+import { RubricStatus, type Rubric } from "@/types/rubric";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import type { AxiosRequestConfig } from "axios";
 import axios from "axios";
@@ -49,17 +50,18 @@ export class RubricService {
     searchParams: SearchParams,
     token: string,
   ): Promise<GetAllResult<Rubric>> {
-    const { page, perPage, search } = searchParams;
+    const { page, perPage, search, status } = searchParams;
     const params = new URLSearchParams();
     if (page != undefined) params.append("page[number]", page.toString());
     if (perPage != undefined) params.append("page[size]", perPage.toString());
-    if (search && search.length > 0) {
-      params.append(
-        "filter",
-        `and(contains(rubricName,'${search}'),not(equals(status,'Used')))`,
-      );
-    } else {
-      params.append("filter", "not(equals(status,'Used'))");
+
+    const filterExpr = buildFilterExpr([
+      search ? contains("id", search) : undefined,
+      eq("status", status || RubricStatus.Draft),
+    ]);
+
+    if (filterExpr) {
+      params.append("filter", filterExpr);
     }
 
     const configHeaders = await this.buildHeaders(token);
@@ -110,5 +112,10 @@ export class RubricService {
       `${RUBRIC_API_URL}/${id}/attachments/${file}`,
       configHeaders,
     );
+  }
+
+  static async deleteRubric(id: string, token: string): Promise<void> {
+    const configHeaders = await this.buildHeaders(token);
+    return axios.delete(`${RUBRIC_API_URL}/${id}`, configHeaders);
   }
 }

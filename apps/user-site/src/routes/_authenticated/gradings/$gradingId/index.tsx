@@ -17,8 +17,10 @@ export const Route = createFileRoute("/_authenticated/gradings/$gradingId/")({
   onLeave: () => {
     sessionStorage.removeItem("gradingStep");
   },
-  errorComponent: () => ErrorComponent("Failed to load grading session."),
-  pendingComponent: () => PendingComponent("Loading grading session..."),
+  errorComponent: () => (
+    <ErrorComponent message="Failed to load grading session. Please try again later." />
+  ),
+  pendingComponent: () => <PendingComponent message="Loading grading session..." />,
 });
 
 function RouteComponent() {

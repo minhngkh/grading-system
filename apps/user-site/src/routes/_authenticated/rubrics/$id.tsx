@@ -26,8 +26,10 @@ export const Route = createFileRoute("/_authenticated/rubrics/$id")({
   onLeave: () => {
     sessionStorage.removeItem("rubricStep");
   },
-  errorComponent: () => ErrorComponent("Failed to load rubric."),
-  pendingComponent: () => PendingComponent("Loading rubric..."),
+  errorComponent: () => (
+    <ErrorComponent message="Failed to load rubric. Please try again later." />
+  ),
+  pendingComponent: () => <PendingComponent message="Loading rubric..." />,
 });
 
 function RouteComponent() {

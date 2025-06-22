@@ -55,7 +55,7 @@ public class CommandHandler(BlobServiceClient client)
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
-        var baseBlobName = $"{aggregate.Id}/{command.SubmissionReference}/";
+        var baseBlobName = $"{command.SubmissionReference}/";
 
         if (!SupportedZipMimeTypes.Contains(command.File.ContentType))
         {
@@ -63,9 +63,9 @@ public class CommandHandler(BlobServiceClient client)
             await using var stream = command.File.OpenReadStream();
             var blobName = baseBlobName + command.File.FileName;
             var blob = container.GetBlobClient(blobName);
-            await blob.UploadAsync(stream, new BlobUploadOptions(), cancellationToken);
+            await blob.UploadAsync(stream, cancellationToken);
 
-            yield return Attachment.New(blob.Uri.AbsoluteUri);
+            yield return Attachment.New(blobName);
         }
         else
         {
@@ -85,7 +85,7 @@ public class CommandHandler(BlobServiceClient client)
             foreach (var entry in archive.Entries)
             {
                 // Skip directory entries
-                if (string.IsNullOrEmpty(entry.Name) || entry.FullName.EndsWith("/"))
+                if (string.IsNullOrEmpty(entry.Name) || entry.FullName.EndsWith('/'))
                 {
                     continue;
                 }
@@ -111,7 +111,7 @@ public class CommandHandler(BlobServiceClient client)
                     cancellationToken
                 );
 
-                yield return Attachment.New(blob.Uri.AbsoluteUri);
+                yield return Attachment.New(blobName);
             }
         }
     }
