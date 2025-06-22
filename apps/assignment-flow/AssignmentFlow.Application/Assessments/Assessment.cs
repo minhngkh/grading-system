@@ -1,13 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using AssignmentFlow.Application.Assessments.Assess;
+﻿using AssignmentFlow.Application.Assessments.Assess;
 using AssignmentFlow.Application.Assessments.Create;
 using AssignmentFlow.Application.Assessments.StartAutoGrading;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
-
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using static JsonApiDotNetCore.Resources.Annotations.AttrCapabilities;
 
 namespace AssignmentFlow.Application.Assessments;
@@ -102,6 +101,11 @@ public class Assessment
         if (domainEvent.AggregateEvent.Feedbacks != null)
         {
             Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
+        }
+
+        if (domainEvent.AggregateEvent.Grader == Grader.AIGrader)
+        {
+            StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
         }
 
         UpdateLastModifiedData(domainEvent);
