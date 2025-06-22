@@ -149,6 +149,11 @@ export class GradingService {
     return await axios.post(`${GRADING_API_URL}/${id}/start`, null, configHeaders);
   }
 
+  static async rerunGrading(id: string, token: string) {
+    const configHeaders = this.buildHeaders(token);
+    return await axios.post(`${GRADING_API_URL}/${id}/restart`, null, configHeaders);
+  }
+
   static async deleteSubmission(id: string, reference: string, token: string) {
     const configHeaders = this.buildHeaders(token);
     return await axios.delete(

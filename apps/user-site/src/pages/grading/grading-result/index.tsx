@@ -18,6 +18,7 @@ import {
 } from "@/pages/grading/grading-result/skeletons";
 import { SignalRService } from "@/services/realtime-service";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
+import { GradingService } from "@/services/grading-service";
 
 const SummarySection = lazy(() => import("./summary-section"));
 const ReviewResults = lazy(() => import("./review-results"));
@@ -84,6 +85,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
         hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
           handleStatusChange(isActive, assessmentStatus),
         );
+        hub.on("Complete", () => setIsLoading(false));
 
         await hub.start();
         hubRef.current = hub;
@@ -100,6 +102,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
       isActive = false;
       if (hubRef.current) {
         hubRef.current.off("ReceiveAssessmentProgress");
+        hubRef.current.off("Complete");
         hubRef.current.stop();
       }
     };
@@ -128,7 +131,21 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
     if (!isLoading) fetchAssessments();
   }, [gradingAttempt.id]);
 
-  const handleRegradeAll = () => {};
+  const handleRegradeAll = async () => {
+    try {
+      const token = await auth.getToken();
+      if (!token) {
+        toast.error("You are not authorized to perform this action.");
+        return;
+      }
+
+      setIsLoading(true);
+      await GradingService.rerunGrading(gradingAttempt.id, token);
+    } catch (error) {
+      console.error("Error regrading all assessments:", error);
+      toast.error("Failed to regrade all assessments. Please try again later.");
+    }
+  };
 
   return (
     <div className="space-y-6">
