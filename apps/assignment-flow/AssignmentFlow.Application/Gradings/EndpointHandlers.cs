@@ -26,7 +26,8 @@ internal static class EndpointHandlers
             .MapRemoveSubmission()
             .MapChangeRubric()
             .MapStartGrading()
-            .MapGradingAnalytics();
+            .MapGradingAnalytics()
+            .MapRestartAutoGrading();
 
         return routeBuilder;
     }
