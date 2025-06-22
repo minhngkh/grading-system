@@ -1,27 +1,54 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AssignmentFlow.Application.Assessments;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace AssignmentFlow.Application.Gradings.Hub;
 
 [Authorize]
 public class GradingsHub(AssignmentFlowDbContext dbContext) : Hub<IGradingClient>
 {
+    // Step-by-step plan (pseudocode):
+    // 1) Extract user ID from connection context.
+    // 2) Query the gradings table to match gradingId and user ID.
+    // 3) If no match found, throw an unauthorized exception.
+    // 4) If valid, proceed to join group and fetch progress.
+    // 5) If all statuses are AutoGradingFinished, trigger client notification.
+
     public async Task<List<AssessmentProgress>> Register(string gradingId)
-    { 
+    {
+        //var userId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
+        //    ?? throw new HubException("Teacher ID not found.");
+
+        //var gradingMatch = await dbContext.Gradings
+        //    .AsNoTracking()
+        //    .Where(g => g.Id == gradingId && g.TeacherId == userId)
+        //    .FirstOrDefaultAsync();
+
+        //if (gradingMatch == null)
+        //{
+        //    throw new HubException("Invalid grading access.");
+        //}
+
         await Groups.AddToGroupAsync(Context.ConnectionId, gradingId);
 
-        // Fetch latest assessment progress for the given gradingId
-        var progress = await dbContext.Assessments.AsNoTracking()
+        var progress = await dbContext.Assessments
+            .AsNoTracking()
             .Where(a => a.GradingId == gradingId)
             .Select(a => new AssessmentProgress
             {
                 SubmissionReference = a.SubmissionReference,
                 AssessmentId = a.Id,
-                Status = a.Status.ToString(),
+                Status = a.Status,
                 ErrorMessage = null,
             })
             .ToListAsync();
+
+        if (progress.All(p => p.Status == AssessmentState.AutoGradingFinished.ToString()))
+        {
+            _ = Clients.Groups(gradingId).Complete();
+        }
 
         return progress;
     }
