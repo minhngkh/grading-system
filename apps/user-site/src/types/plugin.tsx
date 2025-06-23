@@ -8,6 +8,25 @@ export const PluginSchema = z.object({
   enabled: z.boolean().default(true),
 });
 
-export const PluginListSchema = z.array(PluginSchema);
+export const CodeRunnerTestCaseSchema = z.object({
+  input: z.string().min(1, "Test case input cannot be empty"),
+  expectedOutput: z.string().min(1, "Test case expected output cannot be empty"),
+});
+
+export const CodeRunnerConfigSchema = z.object({
+  language: z.string().min(1, "Language is required"),
+  installCommand: z.string().min(1, "Install command is required"),
+  runCommand: z.string().min(1, "Run command is required"),
+  environmentVariables: z.record(z.string(), z.string()).optional().default({}),
+  testCases: z
+    .array(CodeRunnerTestCaseSchema)
+    .min(1, "At least one test case is required")
+    .refine(
+      (testCases) => testCases.every((tc) => tc.input.trim() && tc.expectedOutput.trim()),
+      { message: "All test cases must have both input and expected output" },
+    ),
+});
 
 export type Plugin = z.infer<typeof PluginSchema>;
+export type CodeRunnerTestCase = z.infer<typeof CodeRunnerTestCaseSchema>;
+export type CodeRunnerConfig = z.infer<typeof CodeRunnerConfigSchema>;

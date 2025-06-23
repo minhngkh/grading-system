@@ -3,38 +3,60 @@ import PendingComponent from "@/components/app/route-pending";
 import UploadAssignmentPage from "@/pages/grading/grading-session";
 import { GradingService } from "@/services/grading-service";
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
+import z from "zod";
+
+const searchSchema = z.object({
+  id: z.string().optional(),
+});
 
 export const Route = createFileRoute("/_authenticated/gradings/create")({
   component: RouteComponent,
-  beforeLoad: async () => {
-    let gradingId = sessionStorage.getItem("gradingId") ?? undefined;
-    return { gradingId };
-  },
-  loader: async ({ context: { gradingId } }) => {
-    if (!gradingId) {
-      return await GradingService.createGradingAttempt();
+  validateSearch: searchSchema,
+  loaderDeps: ({ search }) => search,
+  loader: async ({ deps, context: { auth } }) => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("You must be logged in to create a grading session.");
     }
 
-    return await GradingService.getGradingAttempt(gradingId);
+    if (deps.id) {
+      return await GradingService.getGradingAttempt(deps.id, token);
+    }
+
+    return await GradingService.createGradingAttempt(token);
   },
   onLeave: () => {
     sessionStorage.removeItem("gradingStep");
-    sessionStorage.removeItem("gradingId");
   },
-  errorComponent: () => ErrorComponent(),
-  pendingComponent: () => PendingComponent("Loading grading..."),
+  errorComponent: () => <ErrorComponent message="Failed to create grading session" />,
+  pendingComponent: () => <PendingComponent message="Initializing grading session..." />,
 });
 
 function RouteComponent() {
-  const gradingStep = sessionStorage.getItem("gradingStep") ?? undefined;
-  const { gradingId } = Route.useRouteContext();
-  const attempt = Route.useLoaderData();
+  const grading = Route.useLoaderData();
+  const navigate = Route.useNavigate();
+  const search = Route.useSearch();
 
-  if (!gradingId) {
-    sessionStorage.setItem("gradingId", attempt.id);
-  }
+  const setIdParam = () => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        id: grading.id,
+      }),
+      replace: true,
+    });
+  };
+
+  useEffect(() => {
+    if (!search.id && grading?.id) {
+      setIdParam();
+    }
+  }, [search.id, grading?.id, navigate]);
+
+  const gradingStep = sessionStorage.getItem("gradingStep") || undefined;
 
   return (
-    <UploadAssignmentPage initialStep={gradingStep} initialGradingAttempt={attempt} />
+    <UploadAssignmentPage initialGradingAttempt={grading} initialStep={gradingStep} />
   );
 }

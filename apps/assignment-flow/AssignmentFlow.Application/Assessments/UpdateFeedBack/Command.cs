@@ -6,3 +6,17 @@ public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentI
 {
     public List<Feedback> Feedbacks { get; init; } = [];
 }
+
+public class CommandHandler()
+    : CommandHandler<AssessmentAggregate, AssessmentId, Command>
+{
+    public override Task ExecuteAsync(AssessmentAggregate aggregate, Command command, CancellationToken cancellationToken)
+    {
+        if (aggregate.IsNew)
+        {
+            throw new InvalidOperationException($"Cannot update feedbacks for assessment {aggregate.Id} because it has not been created yet.");
+        }
+        aggregate.UpdateFeedbacks(command);
+        return Task.CompletedTask;
+    }
+}

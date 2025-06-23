@@ -7,7 +7,7 @@ import { FileArchive, FolderOpen, Trash2 } from "lucide-react";
 
 interface FileListProps {
   gradingAttempt: GradingAttempt;
-  onDelete?: (i: number) => void;
+  onDelete?: (submission: Submission) => void;
 }
 
 export function FileList({ gradingAttempt, onDelete }: FileListProps) {
@@ -42,7 +42,7 @@ export function FileList({ gradingAttempt, onDelete }: FileListProps) {
 interface FileComponentProps {
   submission: Submission;
   index: number;
-  onDelete?: (index: number) => void;
+  onDelete?: (submission: Submission) => void;
 }
 
 function FileComponent({ submission, onDelete, index }: FileComponentProps) {
@@ -52,10 +52,10 @@ function FileComponent({ submission, onDelete, index }: FileComponentProps) {
       className="flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
     >
       <div className="flex items-center space-x-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-background">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-accent">
           <FileArchive className="h-5 w-5 text-purple-500" />
         </div>
-        <span className="font-medium">{getSubmissionName(submission)}.zip</span>
+        <span className="font-medium">{getSubmissionName(submission)}</span>
       </div>
       <div className="flex items-center space-x-3">
         <Badge>Archive</Badge>
@@ -63,7 +63,7 @@ function FileComponent({ submission, onDelete, index }: FileComponentProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onDelete(index)}
+            onClick={() => onDelete(submission)}
             className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8"
           >
             <Trash2 className="h-4 w-4" />

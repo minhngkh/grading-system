@@ -1,20 +1,26 @@
 ﻿using AssignmentFlow.IntegrationEvents;
+using MassTransit.Internals;
+using System.Text.Json;
 
 namespace AssignmentFlow.Application.Assessments;
 
 public static class ValueObjectExtensions
 {
     public static ScoreBreakdowns ToValueObject(this IEnumerable<ScoreBreakdownApiContract> apiContracts)
-        => ScoreBreakdowns.New([.. apiContracts.Select(ToValueObject)]);
+        => ScoreBreakdowns.New(apiContracts
+            .ToDictionary(
+            a => CriterionName.New(a.CriterionName),
+            a => a.ToValueObject()));
 
     public static ScoreBreakdownItem ToValueObject(this ScoreBreakdownApiContract apiContract)
     {
-        return new ScoreBreakdownItem(
-            CriterionName.New(apiContract.CriterionName))
-            {
-                RawScore = Percentage.New(apiContract.RawScore),
-                PerformanceTag = PerformanceTag.New(apiContract.PerformanceTag)
-            };
+        var criterionName = CriterionName.New(apiContract.CriterionName);
+        return new ScoreBreakdownItem(criterionName)
+        {
+            RawScore = Percentage.New(apiContract.RawScore),
+            PerformanceTag = PerformanceTag.New(apiContract.PerformanceTag),
+            MetadataJson = apiContract.MetadataJson
+        };
     }
 
     public static Feedback ToValueObject(this FeedbackItemApiContract apiContract)
@@ -23,9 +29,39 @@ public static class ValueObjectExtensions
             Comment.New(apiContract.Comment),
             Highlight.New(
                 Attachment.New(apiContract.FileRef),
-                DocumentLocation.New(apiContract.FromLine, apiContract.ToLine, apiContract.FromCol, apiContract.ToCol)),
+                string.IsNullOrEmpty(apiContract.LocationDataJson) ? JsonSerializer.Serialize(apiContract.LocationData) : apiContract.LocationDataJson
+            ),
             Tag.New(apiContract.Tag));
 
+    public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(this ScoreBreakdownV2 apiContract, string criterion, Dictionary<string, object?> metadata)
+    {
+        var criterionName = CriterionName.New(criterion);
+
+        var breakdownItem = new ScoreBreakdownItem(criterionName)
+        {
+            RawScore = Percentage.New(apiContract.RawScore),
+            PerformanceTag = PerformanceTag.New(apiContract.Tag),
+            MetadataJson = JsonSerializer.Serialize(metadata)
+        };
+        var feedbackItems = apiContract.FeedbackItems.ConvertAll(fb => fb.ToValueObject(criterionName));
+
+        return (breakdownItem, feedbackItems);
+    }
+
+    public static Feedback ToValueObject(this FeedbackItemV2 apiContract, CriterionName criterion)
+    {
+        var comment = Comment.New(apiContract.Comment);
+
+        var locationDataJson = JsonSerializer.Serialize(apiContract.LocationData);
+        var attachment = Attachment.New(apiContract.FileRef);
+        var feedbackAttachment = Highlight.New(attachment, locationDataJson);
+
+        var feedbackTag = Tag.New(apiContract.Tag);
+
+        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag);
+    }
+
+    // Legacy conversion methods for backwards compatibility
     public static (ScoreBreakdowns, List<Feedback>) ToValueObject(this IEnumerable<ScoreBreakdown> apiContracts)
     {
         var results = apiContracts
@@ -35,7 +71,7 @@ public static class ValueObjectExtensions
         var scoreBreakdownItems = results.ConvertAll(result => result.Item1);
         var allFeedback = results.SelectMany(result => result.Item2).ToList();
 
-        return (ScoreBreakdowns.New(scoreBreakdownItems), allFeedback);
+        return (ScoreBreakdowns.New(scoreBreakdownItems.ToDictionary(s => s.CriterionName, s => s)), allFeedback);
     }
 
     public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(this ScoreBreakdown apiContract)
@@ -54,13 +90,16 @@ public static class ValueObjectExtensions
     {
         var comment = Comment.New(apiContract.Comment);
 
-        var documentLocation = DocumentLocation.New(
-            apiContract.FromLine,
-            apiContract.ToLine,
-            apiContract.FromCol,
-            apiContract.ToCol);
+        var locationData = new Dictionary<string, object?>
+        {
+            ["fromLine"] = apiContract.FromLine,
+            ["toLine"] = apiContract.ToLine,
+            ["fromCol"] = apiContract.FromCol,
+            ["toCol"] = apiContract.ToCol
+        };
+        var locationDataJson = JsonSerializer.Serialize(locationData);
         var attachment = Attachment.New(apiContract.FileRef);
-        var feedbackAttachment = Highlight.New(attachment, documentLocation);
+        var feedbackAttachment = Highlight.New(attachment, locationDataJson);
 
         var feedbackTag = Tag.New(apiContract.Tag);
 

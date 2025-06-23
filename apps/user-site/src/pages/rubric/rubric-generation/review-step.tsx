@@ -1,5 +1,5 @@
 import type { Rubric } from "@/types/rubric";
-import RubricView from "@/components/app/rubric-view";
+import { RubricView } from "@/components/app/rubric-view";
 import {
   Card,
   CardContent,
@@ -7,10 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import ExportDialog from "@/components/app/export-dialog";
+import { ExportDialog } from "@/components/app/export-dialog";
 import { RubricExporter } from "@/lib/exporters";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { BookOpenCheck, FileUp } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 
 interface FinalRubricTableProps {
   rubricData: Rubric;
@@ -18,12 +20,26 @@ interface FinalRubricTableProps {
 
 export default function FinalRubricTable({ rubricData }: FinalRubricTableProps) {
   const [exportOpen, setExportOpen] = useState(false);
+  const navigate = useNavigate();
+
   return (
     <Card className="w-full h-full flex flex-col">
       <CardHeader>
         <div className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
-          <Button onClick={() => setExportOpen(true)}>Export</Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setExportOpen(true)}>
+              <FileUp className="size-4" />
+              Export
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => navigate({ to: "/gradings/create" })}
+            >
+              <BookOpenCheck className="size-4" />
+              Grade Now
+            </Button>
+          </div>
         </div>
         <CardDescription>
           Review the final rubric before submission. You can export it in various formats.

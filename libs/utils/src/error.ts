@@ -1,26 +1,18 @@
 export type CustomErrorInfo = {
-  cause?: unknown;
   message?: string;
-  displayedMessage?: string | null;
+  cause?: unknown;
 };
 
-export class CustomError extends Error {
-  displayedMessage: string | null;
+export type ErrorInfo = {
+  message?: string;
+  options?: ErrorOptions;
+};
 
-  /**
-   * `displayedMessage` if not provided will default to `message`.
-   */
-  constructor(options?: CustomErrorInfo) {
-    super(options?.message, {
-      cause: options?.cause,
-    });
-
-    this.displayedMessage =
-      typeof options?.displayedMessage !== "undefined" ?
-        options.displayedMessage
-      : (options?.message ?? null);
-
-    this.name = "CustomError";
+export class CustomError<TData> extends Error {
+  data: TData;
+  constructor(info: ErrorInfo & { data: TData }) {
+    super(info?.message, info?.options);
+    this.data = info.data;
   }
 }
 
@@ -38,13 +30,6 @@ export function asError(thrown: unknown): Error {
   }
 }
 
-export function wrapError(
-  err: Error,
-  message: string,
-  includeChildMessage: boolean = false,
-): Error {
-  if (includeChildMessage) {
-    return new Error(`${message}: ${err.message}`, { cause: err });
-  }
-  return new Error(message, { cause: err });
+export function wrapError(err: unknown, message: string): Error {
+  return new Error(message, { cause: asError(err) });
 }

@@ -8,11 +8,12 @@ namespace AssignmentFlow.Application.Assessments.StartAutoGrading;
 
 public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentId>(id)
 {
-    public required RubricId RubricId { get; init; }
-    public required SubmissionApiContract Submission { get; init; }
+    public RubricId? RubricId { get; set; } = null;
+    public SubmissionApiContract? Submission { get; set; } = null;
 }
 
 public class CommandHandler(
+    GradingRepository repository,
     RubricService rubricService,
     IPublishEndpoint publishEndpoint) : CommandHandler<AssessmentAggregate, AssessmentId, Command>
 {
@@ -23,27 +24,32 @@ public class CommandHandler(
 
         var rubric = await rubricService.GetRubricAsync(new GetRubricRequest
         {
-            RubricId = command.RubricId
+            RubricId = command.RubricId ?? aggregate.State.RubricId
         }, cancellationToken: cancellationToken);
+        var metadata = !string.IsNullOrWhiteSpace(rubric.MetadataJson) ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(rubric.MetadataJson) : [];
+
+        command.Submission ??= await repository.GetSubmissionAsync(aggregate.State.GradingId, aggregate.State.Reference, cancellationToken);
 
         await publishEndpoint.Publish<ISubmissionGradingStarted>(new
         {
             AssessmentId = aggregate.Id,
-            Criteria = MapCriteria(command.Submission, rubric)
+            Criteria = MapCriteria(aggregate.State.GradingId, command.Submission, rubric),
+            Metadata = metadata,
+            Attachments = rubric.Attachments.ToArray()
         },
         cancellationToken);
 
         aggregate.StartAutoGrading();
     }
 
-    private static Criterion[] MapCriteria(SubmissionApiContract submission, RubricModel rubric)
+    private static Criterion[] MapCriteria(string gradingId, SubmissionApiContract submission, RubricModel rubric)
         => [.. submission.CriteriaFiles.Join(rubric.Criteria,
             outerKeySelector: c => c.Criterion,
             innerKeySelector: c => c.Name,
             (submissionCriterion, rubricCriterion) => new Criterion
             {
                 CriterionName = rubricCriterion.Name,
-                FileRefs = [.. submissionCriterion.Files],
+                FileRefs = [.. submissionCriterion.Files.Select(path => $"{gradingId}/{path}")],
                 Levels = [.. rubricCriterion.Levels.Select(l => new Level
                 {
                     Tag = l.Tag,

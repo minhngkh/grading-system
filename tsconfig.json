@@ -17,6 +17,9 @@
     },
     {
       "path": "./libs/typed-moleculer"
+    },
+    {
+      "path": "./apps/grading-service"
     }
   ]
 }

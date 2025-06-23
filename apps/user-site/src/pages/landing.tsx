@@ -109,98 +109,64 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Testimonials Section */}
-        <section id="testimonials" className="w-full py-6 md:py-12 lg:py-16">
+        {/* How It Works Section */}
+        <section id="how-it-works" className="w-full py-6 md:py-12 lg:py-16">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-primary px-3 py-1 text-sm text-primary-foreground">
-                  Testimonials
+                  How It Works
                 </div>
                 <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-                  Trusted by Educators
+                  Simple 4-Step Grading Process
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl">
-                  See how IntelliGrade is transforming educational workflows and enhancing
-                  the grading experience.
+                  Experience streamlined grading with our intuitive AI-powered workflow
+                  designed for educators.
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl gap-6 py-12 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-4">
-                    <img
-                      src="https://placehold.co/40/orange/white"
-                      width={40}
-                      height={40}
-                      alt="Avatar"
-                      className="rounded-full"
-                    />
-                    <div>
-                      <CardTitle className="text-base">Dr. Eleanor Vance</CardTitle>
-                      <CardDescription>Professor of Computer Science</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    "IntelliGrade has significantly reduced my grading time for
-                    programming assignments, allowing me to focus more on curriculum
-                    development and student interaction."
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-4">
-                    <img
-                      src="https://placehold.co/40/orange/white"
-                      width={40}
-                      height={40}
-                      alt="Avatar"
-                      className="rounded-full"
-                    />
-                    <div>
-                      <CardTitle className="text-base">Samuel Green</CardTitle>
-                      <CardDescription>
-                        Teaching Assistant, Literature Dept.
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    "The AI's ability to provide initial feedback on essays is incredible.
-                    IntelliGrade helps students identify areas for improvement early on,
-                    making my final review much more efficient."
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-4">
-                    <img
-                      src="https://placehold.co/40/orange/white"
-                      width={40}
-                      height={40}
-                      alt="Avatar"
-                      className="rounded-full"
-                    />
-                    <div>
-                      <CardTitle className="text-base">Maria Rodriguez</CardTitle>
-                      <CardDescription>Head of Academic Technology</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    "Implementing IntelliGrade has standardized our grading process across
-                    departments, ensuring fairness and consistency while providing
-                    valuable data insights."
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="mx-auto grid max-w-5xl gap-8 py-12 md:grid-cols-2 lg:grid-cols-4">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  1
+                </div>
+                <h3 className="text-xl font-bold">Create Rubric</h3>
+                <p className="text-muted-foreground">
+                  Generate custom grading rubrics with AI assistance or build from scratch
+                  based on your assignment requirements.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  2
+                </div>
+                <h3 className="text-xl font-bold">Upload Submissions</h3>
+                <p className="text-muted-foreground">
+                  Batch upload student assignments in various formats including text,
+                  code, PDFs, and more for automated processing.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  3
+                </div>
+                <h3 className="text-xl font-bold">AI Analysis</h3>
+                <p className="text-muted-foreground">
+                  Our AI engine evaluates submissions against your rubric, providing
+                  initial scores and detailed feedback automatically.
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  4
+                </div>
+                <h3 className="text-xl font-bold">Review & Finalize</h3>
+                <p className="text-muted-foreground">
+                  Review AI suggestions, make adjustments, add personal feedback, and
+                  export final grades to your preferred format.
+                </p>
+              </div>
             </div>
           </div>
         </section>

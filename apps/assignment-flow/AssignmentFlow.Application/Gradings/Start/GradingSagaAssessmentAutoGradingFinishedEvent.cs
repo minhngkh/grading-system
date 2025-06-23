@@ -8,3 +8,9 @@ public class GradingSagaAssessmentAutoGradingFinishedEvent : IAggregateEvent<Gra
 {
     public required Shared.AssessmentId AssessmentId { get; init; }
 }
+
+[EventVersion("gradingSagaAssessmentAutoGradingFailed", 1)]
+public class GradingSagaAssessmentAutoGradingFailedEvent : IAggregateEvent<GradingSaga, GradingSagaId>
+{
+    public required Shared.AssessmentId AssessmentId { get; init; }
+}

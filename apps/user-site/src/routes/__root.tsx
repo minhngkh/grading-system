@@ -13,7 +13,7 @@ interface AppRouterContext {
 }
 
 export const Route = createRootRouteWithContext<AppRouterContext>()({
-  component: () => <Root />,
+  component: Root,
   errorComponent: ErrorBoundary,
 });
 

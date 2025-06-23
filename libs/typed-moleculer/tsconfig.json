@@ -5,12 +5,6 @@
   "references": [
     {
       "path": "../utils"
-    },
-    {
-      "path": "./tsconfig.lib.json"
-    },
-    {
-      "path": "./tsconfig.spec.json"
     }
   ]
 }

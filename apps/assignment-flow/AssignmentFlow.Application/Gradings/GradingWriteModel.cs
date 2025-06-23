@@ -60,5 +60,10 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
     {
         StateMachine.Fire(GradingTrigger.FinishGrading);
     }
+
+    internal void Apply(AutoGradingRestartedEvent @event)
+    {
+        StateMachine.Fire(GradingTrigger.Restart);
+    }
 }
 

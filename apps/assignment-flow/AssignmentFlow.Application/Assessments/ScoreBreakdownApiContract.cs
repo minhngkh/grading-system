@@ -1,4 +1,6 @@
 ﻿using JsonApiDotNetCore.Resources.Annotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 
 namespace AssignmentFlow.Application.Assessments;
 
@@ -23,4 +25,14 @@ public class ScoreBreakdownApiContract
     /// as originally assigned during assessment.
     /// </summary>
     public decimal RawScore { get; set; }
+
+    //[JsonIgnore]: TODO: Keep this commented until we can make sure this works
+    public string MetadataJson { get; set; } = string.Empty;
+
+    [NotMapped]
+    public Dictionary<string, object?> Metadata
+    {
+        get => string.IsNullOrEmpty(MetadataJson) ? [] : (JsonSerializer.Deserialize<Dictionary<string, object?>>(MetadataJson) ?? []);
+        set => MetadataJson = JsonSerializer.Serialize(value);
+    }
 }

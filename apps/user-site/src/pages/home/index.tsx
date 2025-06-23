@@ -18,7 +18,7 @@ export default function HomePage() {
           <ToolsFilter currentFilter={filter} filterFunction={handleFilter} />
         </div>
         <ToolsList
-          tools={SystemTools.filter((tool) => !filter || tool.type === filter)}
+          tools={SystemTools.filter((tool) => !filter || tool.types.includes(filter))}
         />
       </section>
     </div>

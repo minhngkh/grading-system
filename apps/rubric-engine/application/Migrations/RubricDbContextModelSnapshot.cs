@@ -18,7 +18,7 @@ namespace RubricEngine.Application.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.4")
+                .HasAnnotation("ProductVersion", "9.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -28,6 +28,12 @@ namespace RubricEngine.Application.Migrations
                     b.Property<string>("Id")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.PrimitiveCollection<List<string>>("Attachments")
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("text");
 
                     b.PrimitiveCollection<List<string>>("PerformanceTags")
                         .IsRequired()
@@ -40,7 +46,8 @@ namespace RubricEngine.Application.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("TeacherId")
                         .IsRequired()
@@ -66,9 +73,20 @@ namespace RubricEngine.Application.Migrations
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("integer");
 
+                            b1.Property<string>("Configuration")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)");
+
                             b1.Property<string>("Name")
                                 .IsRequired()
-                                .HasColumnType("text");
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)");
+
+                            b1.Property<string>("Plugin")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)");
 
                             b1.Property<decimal>("Weight")
                                 .HasColumnType("numeric");
@@ -96,11 +114,13 @@ namespace RubricEngine.Application.Migrations
 
                                     b2.Property<string>("Description")
                                         .IsRequired()
-                                        .HasColumnType("text");
+                                        .HasMaxLength(150)
+                                        .HasColumnType("character varying(150)");
 
                                     b2.Property<string>("Tag")
                                         .IsRequired()
-                                        .HasColumnType("text");
+                                        .HasMaxLength(50)
+                                        .HasColumnType("character varying(50)");
 
                                     b2.Property<decimal>("Weight")
                                         .HasColumnType("numeric");

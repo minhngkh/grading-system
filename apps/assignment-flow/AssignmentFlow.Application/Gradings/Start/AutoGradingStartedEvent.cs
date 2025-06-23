@@ -7,3 +7,8 @@ namespace AssignmentFlow.Application.Gradings.Start;
 public class AutoGradingStartedEvent : AggregateEvent<GradingAggregate, GradingId>
 {
 }
+
+[EventVersion("gradingAutoGradingRestarted", 1)]
+public class AutoGradingRestartedEvent : AggregateEvent<GradingAggregate, GradingId>
+{
+}

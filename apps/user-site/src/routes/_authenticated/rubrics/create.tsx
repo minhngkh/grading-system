@@ -3,37 +3,60 @@ import PendingComponent from "@/components/app/route-pending";
 import RubricGenerationPage from "@/pages/rubric/rubric-generation";
 import { RubricService } from "@/services/rubric-service";
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
+import z from "zod";
+
+const searchSchema = z.object({
+  id: z.string().optional(),
+});
 
 export const Route = createFileRoute("/_authenticated/rubrics/create")({
   preload: false,
-  component: RoutePage,
-  beforeLoad: async () => {
-    let rubricId = sessionStorage.getItem("rubricId");
-    return { rubricId };
-  },
-  loader: async ({ context: { rubricId } }) => {
-    if (!rubricId) {
-      return await RubricService.createRubric();
+  component: RouteComponent,
+  validateSearch: searchSchema,
+  loaderDeps: ({ search }) => search,
+  loader: async ({ deps, context: { auth } }) => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("Unauthorized: No token found");
     }
 
-    return await RubricService.getRubric(rubricId);
+    if (deps.id) {
+      return await RubricService.getRubric(deps.id, token);
+    }
+
+    return await RubricService.createRubric(token);
   },
   onLeave: () => {
-    sessionStorage.removeItem("rubricId");
     sessionStorage.removeItem("rubricStep");
   },
-  errorComponent: () => ErrorComponent(),
-  pendingComponent: () => PendingComponent("Loading rubric..."),
+  errorComponent: () => (
+    <ErrorComponent message="Failed to create rubric. Please try again later." />
+  ),
+  pendingComponent: () => <PendingComponent message="Creating rubric..." />,
 });
 
-function RoutePage() {
-  const { rubricId } = Route.useRouteContext();
-  const rubricStep = sessionStorage.getItem("rubricStep") ?? undefined;
+function RouteComponent() {
   const rubric = Route.useLoaderData();
+  const navigate = Route.useNavigate();
+  const search = Route.useSearch();
 
-  if (!rubricId) {
-    sessionStorage.setItem("rubricId", rubric.id);
-  }
+  const setIdParam = () => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        id: rubric.id,
+      }),
+      replace: true,
+    });
+  };
 
-  return <RubricGenerationPage rubricStep={rubricStep} initialRubric={rubric} />;
+  useEffect(() => {
+    if (!search.id && rubric?.id) {
+      setIdParam();
+    }
+  }, [search.id, rubric?.id, navigate]);
+
+  const rubricStep = sessionStorage.getItem("rubricStep") || undefined;
+  return <RubricGenerationPage initialRubric={rubric} rubricStep={rubricStep} />;
 }

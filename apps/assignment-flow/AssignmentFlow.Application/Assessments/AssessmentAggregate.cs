@@ -48,6 +48,16 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void Assess(Assess.Command command)
     {
+        if (command.Errors != null && command.Errors.Count != 0)
+        {
+            Emit(new Assess.AssessmentFailedEvent
+            {
+                GradingId = State.GradingId,
+                Errors = command.Errors
+            });
+            return;
+        }
+
         if (command.Grader.IsAIGrader)
         {
             NormalizeScores(command.ScoreBreakdowns);
@@ -59,6 +69,17 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
             ScoreBreakdowns = command.ScoreBreakdowns,
             Feedbacks = command.Feedbacks,
             GradingId = State.GradingId,
+        });
+    }
+
+    public void AssessCriterion(AssessCriterion.Command command)
+    {
+        Emit(new AssessCriterion.CriterionAssessedEvent
+        {
+            Grader = command.Grader,
+            ScoreBreakdownItem = command.ScoreBreakdownItem,
+            Feedbacks = command.Feedbacks,
+            Metadata = command.Metadata
         });
     }
 
@@ -74,7 +95,7 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         });
 
         var criteria = rubric.Criteria;
-        foreach (var item in scoreBreakdowns.BreakdownItems)
+        foreach (var item in scoreBreakdowns)
         {
             var criterion = criteria.FirstOrDefault(c => c.Name == item.CriterionName);
 
@@ -89,7 +110,13 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         }
     }
 
-    public void UpdateFeedBack() { }
+    public void UpdateFeedbacks(UpdateFeedBack.Command command)
+    {
+        Emit(new UpdateFeedBack.FeedbacksUpdatedEvent
+        {
+            Feedbacks = command.Feedbacks
+        });
+    }
 }
 
 public class AssessmentId(string id) : Identity<AssessmentId>(id) { }
