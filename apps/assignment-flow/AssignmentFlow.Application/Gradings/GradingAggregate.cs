@@ -78,6 +78,12 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
 
         Emit(new Start.AutoGradingFinishedEvent());
     }
+
+    public void RestartAutoGrading()
+    {
+        //TODO: Add specification to check if grading is in a state that allows re-starting auto-grading
+        Emit(new Start.AutoGradingRestartedEvent());
+    }
 }
 
 public class GradingId(string id) : Identity<GradingId>(id) { }

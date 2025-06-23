@@ -22,9 +22,9 @@ const ReviewResults = memo(function ReviewResults({
       {assessments.length === 0 ?
         <div>No assessments found for this grading session.</div>
       : <div className="space-y-4">
-          {assessments.map((item) => (
+          {assessments.map((item, index) => (
             <AssessmentResultCard
-              key={item.id}
+              key={index}
               item={item}
               scaleFactor={scaleFactor}
               criteriaColorMap={criteriaColorMap}

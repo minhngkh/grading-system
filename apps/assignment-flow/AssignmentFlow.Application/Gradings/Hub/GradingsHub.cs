@@ -1,12 +1,56 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using AssignmentFlow.Application.Assessments;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace AssignmentFlow.Application.Gradings.Hub;
 
-public class GradingsHub : Hub<IGradingClient>
+[Authorize]
+public class GradingsHub(AssignmentFlowDbContext dbContext) : Hub<IGradingClient>
 {
-    public async Task Register(string gradingId)
+    // Step-by-step plan (pseudocode):
+    // 1) Extract user ID from connection context.
+    // 2) Query the gradings table to match gradingId and user ID.
+    // 3) If no match found, throw an unauthorized exception.
+    // 4) If valid, proceed to join group and fetch progress.
+    // 5) If all statuses are AutoGradingFinished, trigger client notification.
+
+    public async Task<List<AssessmentProgress>> Register(string gradingId)
     {
+        //var userId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
+        //    ?? throw new HubException("Teacher ID not found.");
+
+        //var gradingMatch = await dbContext.Gradings
+        //    .AsNoTracking()
+        //    .Where(g => g.Id == gradingId && g.TeacherId == userId)
+        //    .FirstOrDefaultAsync();
+
+        //if (gradingMatch == null)
+        //{
+        //    throw new HubException("Invalid grading access.");
+        //}
+
         await Groups.AddToGroupAsync(Context.ConnectionId, gradingId);
+
+        var progress = await dbContext.Assessments
+            .AsNoTracking()
+            .Where(a => a.GradingId == gradingId)
+            .Select(a => new AssessmentProgress
+            {
+                SubmissionReference = a.SubmissionReference,
+                AssessmentId = a.Id,
+                Status = a.Status,
+                ErrorMessage = null,
+            })
+            .ToListAsync();
+
+        if (progress.All(p => p.Status == AssessmentState.AutoGradingFinished.ToString()))
+        {
+            _ = Clients.Groups(gradingId).Complete();
+        }
+
+        return progress;
     }
 
     // Group membership isn't preserved when a connection reconnects. The connection needs to rejoin the group when it's re-established.
@@ -17,17 +61,16 @@ public class GradingsHub : Hub<IGradingClient>
     }
 }
 
-public class GradingProgress
+public class AssessmentProgress
 {
-    public required string GradingId { get; init; }
-
-    public List<string> PendingAssessmentIds { get; init; } = [];
-    public List<string> UnderAutoGradingAssessmentIds { get; init; } = [];
-    public List<string> GradedAssessmentIds { get; init; } = [];
-    public List<string> FailedAssessmentIds { get; init; } = [];
+    public required string SubmissionReference { get; init; } // e.g., "student_id"
+    public required string AssessmentId { get; init; }
+    public required string Status { get; init; } // e.g., "Pending", "UnderAutoGrading", "Graded", "Failed"
+    public required string? ErrorMessage { get; init; } // Optional error message if the assessment failed
 }
 
 public interface IGradingClient
 {
-    Task ReceiveGradingProgress(GradingProgress progress);
+    Task ReceiveAssessmentProgress(AssessmentProgress progress);
+    Task Complete();
 }

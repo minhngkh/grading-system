@@ -15,13 +15,19 @@ builder.Services
     .AddShared(builder.Configuration, builder.Environment)
     .AddGradings();
 
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins")
+    .Get<string[]>()
+    ?? ["http://localhost:5173"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.AllowAnyOrigin()
+        builder.WithOrigins(allowedOrigins)
                .AllowAnyMethod()
-               .AllowAnyHeader();
+               .AllowAnyHeader()
+               .AllowCredentials();
     });
 });
 
@@ -37,6 +43,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
+
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(2)
+};
+
+app.UseWebSockets(webSocketOptions);
 
 // Initialize the database
 using (var scope = app.Services.CreateScope())
@@ -54,7 +67,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseJsonApi();
-app.MapHub<GradingsHub>("/gradings");
+app.MapHub<GradingsHub>("/hubs/gradings");
 app.MapAssignmentFlowEndpoints();
 
 app.UseHealthChecks("/health");

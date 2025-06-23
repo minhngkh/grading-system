@@ -23,16 +23,16 @@ import CriteriaMapper from "./criteria-mapping";
 import { FileList } from "./file-list";
 
 interface UploadStepProps {
-  gradingAttempt: GradingAttempt;
   form: UseFormReturn<GradingAttempt>;
 }
 
-export default function UploadStep({ gradingAttempt, form }: UploadStepProps) {
+export default function UploadStep({ form }: UploadStepProps) {
   const auth = useAuth();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
   const [isFileDialogOpen, setFileDialogOpen] = useState(false);
   const [fileDialogAction, setFileDialogAction] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const {
     register,
     watch,
@@ -40,7 +40,9 @@ export default function UploadStep({ gradingAttempt, form }: UploadStepProps) {
     setFocus,
     formState: { errors },
   } = form;
-  // Focus first field with an error
+
+  const gradingAttempt = form.watch();
+
   useEffect(() => {
     const fields = Object.keys(errors);
     if (fields.length > 0) {
@@ -135,6 +137,9 @@ export default function UploadStep({ gradingAttempt, form }: UploadStepProps) {
   };
 
   const handleFileUpload = async (files: File[]) => {
+    if (isUploading) return;
+    setIsUploading(true);
+
     const token = await auth.getToken();
     if (!token) {
       console.error("Error updating rubric: No token found");
@@ -177,6 +182,7 @@ export default function UploadStep({ gradingAttempt, form }: UploadStepProps) {
 
       setValue("submissions", newSubmissions);
 
+      setIsUploading(false);
       setFileDialogOpen(false);
     }
   };

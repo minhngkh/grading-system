@@ -51,11 +51,11 @@ const FeedbackSchema = z.object({
 });
 
 export enum AssessmentState {
-  Created,
-  AutoGradingStarted,
-  AutoGradingFinished,
-  AutoGradingFailed,
-  Completed,
+  Created = "Created",
+  AutoGradingStarted = "AutoGradingStarted",
+  AutoGradingFinished = "AutoGradingFinished",
+  AutoGradingFailed = "AutoGradingFailed",
+  Completed = "Completed",
 }
 
 export const AssessmentSchema = z.object({
@@ -72,3 +72,6 @@ export const AssessmentSchema = z.object({
 export type Assessment = z.infer<typeof AssessmentSchema>;
 export type FeedbackItem = z.infer<typeof FeedbackSchema>;
 export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;
+export type TextFeedback = z.infer<typeof TextFeedbackSchema>;
+export type ImageFeedback = z.infer<typeof ImageFeedbackSchema>;
+export type PdfFeedback = z.infer<typeof PdfFeedbackSchema>;
