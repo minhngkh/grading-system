@@ -166,6 +166,14 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
     }
   };
 
+  const sortedAssessments = [...assessments].sort((a, b) => {
+    const aIsFailed = a.status === AssessmentState.AutoGradingFailed;
+    const bIsFailed = b.status === AssessmentState.AutoGradingFailed;
+    if (aIsFailed && !bIsFailed) return -1;
+    if (!aIsFailed && bIsFailed) return 1;
+    return 0;
+  });
+
   return (
     <div className="space-y-6">
       <section className="flex">
@@ -216,13 +224,13 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
       <Suspense fallback={<SummaryCardSkeleton />}>
         {isLoading ?
           <SummaryCardSkeleton />
-        : <SummarySection assessments={assessments} scaleFactor={scaleFactor} />}
+        : <SummarySection assessments={sortedAssessments} scaleFactor={scaleFactor} />}
       </Suspense>
 
       <Suspense fallback={<ResultCardSkeleton />}>
         {isLoading ?
           <ResultCardSkeleton />
-        : <ReviewResults assessments={assessments} scaleFactor={scaleFactor} />}
+        : <ReviewResults assessments={sortedAssessments} scaleFactor={scaleFactor} />}
       </Suspense>
       {viewRubricOpen && (
         <ViewRubricDialog

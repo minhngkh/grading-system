@@ -23,7 +23,6 @@ export function AssessmentResultCard({
   criteriaColorMap,
 }: AssessmentResultCardProps) {
   const auth = useAuth();
-
   const [isRerunning, setIsRerunning] = useState(false);
 
   const handleRerun = async () => {
@@ -46,12 +45,13 @@ export function AssessmentResultCard({
     }
   };
 
-  const isUnderGrading =
-    item.status === AssessmentState.AutoGradingStarted || isRerunning;
+  const isUnderGrading = item.status <= AssessmentState.AutoGradingStarted || isRerunning;
 
   if (isUnderGrading) {
     return <ResultCardSkeleton />;
   }
+
+  const isGradingFailed = item.status === AssessmentState.AutoGradingFailed;
 
   return (
     <Card className="overflow-hidden py-0">
@@ -61,32 +61,40 @@ export function AssessmentResultCard({
             <h3 className="text-lg font-semibold flex items-center gap-2">
               {item.submissionReference}
             </h3>
-            <span className="text-2xl font-bold">
-              {(item.rawScore * scaleFactor) / 100} point(s)
-            </span>
+            {isGradingFailed ?
+              <span className="text-2xl font-bold">
+                {(item.rawScore * scaleFactor) / 100} point(s)
+              </span>
+            : <span className="text-2xl font-bold text-destructive">Failed</span>}
           </div>
 
           <div className="space-y-3">
-            {item.scoreBreakdowns.map((score, index) => {
-              const colorStyle = getCriteriaColorStyle(
-                score.criterionName,
-                criteriaColorMap,
-              );
+            {isGradingFailed ?
+              <div className="text-destructive text-sm">
+                Grading for this submission has failed. Please regrade or manually grade
+                this submission.
+              </div>
+            : item.scoreBreakdowns.map((score, index) => {
+                const colorStyle = getCriteriaColorStyle(
+                  score.criterionName,
+                  criteriaColorMap,
+                );
 
-              const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(2);
+                const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(2);
 
-              return (
-                <div key={index} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className={colorStyle.text}>{score.criterionName}</span>
-                    <span className={colorStyle.text}>
-                      {finalScore} ({score.rawScore}%)
-                    </span>
+                return (
+                  <div key={index} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className={colorStyle.text}>{score.criterionName}</span>
+                      <span className={colorStyle.text}>
+                        {finalScore} ({score.rawScore}%)
+                      </span>
+                    </div>
+                    {index !== item.scoreBreakdowns.length - 1 && <Separator />}
                   </div>
-                  {index !== item.scoreBreakdowns.length - 1 && <Separator />}
-                </div>
-              );
-            })}
+                );
+              })
+            }
           </div>
         </div>
 
@@ -95,19 +103,17 @@ export function AssessmentResultCard({
             onClick={handleRerun}
             variant="outline"
             className="flex items-center gap-2 mb-2 w-full"
-            disabled={isUnderGrading}
           >
             <RefreshCw className="h-4 w-4" />
             Rerun
           </Button>
           <Link
-            disabled={isUnderGrading}
             to="/gradings/$gradingId/assessments/$assessmentId"
             params={{ gradingId: item.gradingId, assessmentId: item.id }}
           >
             <Button className="flex items-center gap-2 w-full">
               <FileSearch className="h-4 w-4" />
-              Review
+              {isGradingFailed ? "Manual Grade" : "Review"}
             </Button>
           </Link>
         </div>
