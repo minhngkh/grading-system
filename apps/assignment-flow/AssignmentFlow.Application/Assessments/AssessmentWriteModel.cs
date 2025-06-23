@@ -49,6 +49,19 @@ public class AssessmentWriteModel
         }
     }
 
+    internal void Apply(AssessCriterion.CriterionAssessedEvent @event)
+    {        
+        if (@event.Feedbacks != null)
+        {
+            Feedbacks.AddRange(@event.Feedbacks);
+        }
+    }
+    
+    internal void Apply(UpdateFeedBack.FeedbacksUpdatedEvent @event)
+    {
+        Feedbacks.AddRange(@event.Feedbacks);
+    }
+
     internal void Apply(Assess.AssessmentFailedEvent @event)
     {
         StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);

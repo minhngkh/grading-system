@@ -21,15 +21,12 @@ public sealed class ScoreBreakdownItem : ValueObject
     /// </summary>
     public required Percentage RawScore { get; set; }
 
-    public void NormalizeRawScore(decimal factor)
-    {
-        RawScore *= (factor / 100);
-    }
-
     /// <summary>
     /// Gets or sets the performance tag for this breakdown item.
     /// </summary>
     public required PerformanceTag PerformanceTag { get; init; }
+
+    public string MetadataJson { get; init; } = string.Empty;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ScoreBreakdownItem"/> class with the specified criterion.
@@ -38,6 +35,11 @@ public sealed class ScoreBreakdownItem : ValueObject
     public ScoreBreakdownItem(CriterionName criterionName)
     {
         CriterionName = criterionName;
+    }
+
+    public void NormalizeRawScore(decimal factor)
+    {
+        RawScore *= (factor / 100);
     }
 
     /// <summary>
@@ -49,6 +51,7 @@ public sealed class ScoreBreakdownItem : ValueObject
         yield return CriterionName;
         yield return RawScore;
         yield return PerformanceTag;
+        yield return MetadataJson; // Include metadata in equality check
     }
     
     // Adds RawScores if other item matches the CriterionName and PerformanceTag
@@ -60,7 +63,8 @@ public sealed class ScoreBreakdownItem : ValueObject
         return new ScoreBreakdownItem(a.CriterionName)
         {
             RawScore = a.RawScore + b.RawScore,
-            PerformanceTag = a.PerformanceTag
+            PerformanceTag = a.PerformanceTag,
+            MetadataJson = a.MetadataJson // Keep metadata from the first item
         };
     }
 
@@ -73,7 +77,8 @@ public sealed class ScoreBreakdownItem : ValueObject
         return new ScoreBreakdownItem(a.CriterionName)
         {
             RawScore = a.RawScore - b.RawScore,
-            PerformanceTag = a.PerformanceTag
+            PerformanceTag = a.PerformanceTag,
+            MetadataJson = a.MetadataJson // Keep metadata from the first item
         };
     }
 }
@@ -88,11 +93,13 @@ public sealed class ScoreBreakdownItemConverter : JsonConverter<ScoreBreakdownIt
         var criterionIdentity = jObject.GetRequired<CriterionName>("CriterionName");
         var score = jObject.GetRequired<Percentage>("RawScore");
         var performanceTag = jObject.GetRequired<PerformanceTag>("PerformanceTag");
+        var metadataJson = jObject.Get<string>("MetadataJson") ?? string.Empty;
 
         return new ScoreBreakdownItem(criterionIdentity)
         {
             RawScore = score,
             PerformanceTag = performanceTag,
+            MetadataJson = metadataJson
         };
     }
     public override bool CanWrite => false;

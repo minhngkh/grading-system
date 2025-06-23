@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AssignmentFlow.Application.Assessments;
 
-[Authorize]
+//[Authorize]
 [Route("api/v1/[controller]")]
 public class AssessmentsController : BaseJsonApiController<Assessment, string>
 {
