@@ -25,7 +25,8 @@ public class Grading
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionAddedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionRemovedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, AutoGradingStartedEvent>,
-    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingFinishedEvent>
+    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingFinishedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingRestartedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -153,9 +154,16 @@ public class Grading
         UpdateLastModifiedData(domainEvent);
     }
 
+    public async Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, AutoGradingRestartedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        await StateMachine.FireAsync(GradingTrigger.Restart);
+        UpdateLastModifiedData(domainEvent);
+    }
+
     private void UpdateLastModifiedData(IDomainEvent domainEvent)
     {
         LastModified = domainEvent.Timestamp.ToUniversalTime();
         Version = domainEvent.AggregateSequenceNumber;
     }
+
 }

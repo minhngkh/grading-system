@@ -53,4 +53,10 @@ public class GradingSagaWriteModel :
         UnderAutoGradingAssessmentIds.Remove(e.AssessmentId);
         GradedAssessmentIds.Add(e.AssessmentId);
     }
+
+    internal void Apply(GradingSagaAssessmentAutoGradingFailedEvent e)
+    {
+        UnderAutoGradingAssessmentIds.Remove(e.AssessmentId);
+        FailedAssessmentIds.Add(e.AssessmentId);
+    }
 }

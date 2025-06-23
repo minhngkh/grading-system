@@ -48,4 +48,9 @@ public class AssessmentWriteModel
             StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
         }
     }
+
+    internal void Apply(Assess.AssessmentFailedEvent @event)
+    {
+        StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);
+    }
 }
