@@ -74,12 +74,25 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void AssessCriterion(AssessCriterion.Command command)
     {
+        if (command.ScoreBreakdownItem.Grader.IsAIGrader)
+        {
+            var rubric = rubricProtoService.GetRubric(new GetRubricRequest
+            {
+                RubricId = State.RubricId
+            });
+
+            var criteria = rubric.Criteria;
+            NormalizeScore(command.ScoreBreakdownItem, criteria);
+        }
+
         Emit(new AssessCriterion.CriterionAssessedEvent
         {
-            Grader = command.Grader,
-            ScoreBreakdownItem = command.ScoreBreakdownItem,
-            Feedbacks = command.Feedbacks,
-            Metadata = command.Metadata
+            ScoreBreakdownItem = command.ScoreBreakdownItem
+        });
+
+        Emit(new UpdateFeedBack.FeedbacksUpdatedEvent
+        {
+            Feedbacks = command.Feedbacks
         });
     }
 
@@ -97,17 +110,22 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         var criteria = rubric.Criteria;
         foreach (var item in scoreBreakdowns)
         {
-            var criterion = criteria.FirstOrDefault(c => c.Name == item.CriterionName);
-
-            if (criterion == null)
-            {
-                logger.LogWarning("Criterion {CriterionName} not found in rubric {RubricId}. Skipping assessment for this criterion.",
-                    item.CriterionName, State.RubricId);
-                continue;
-            }
-
-            item.NormalizeRawScore((decimal)criterion.Weight);
+            NormalizeScore(item, criteria);
         }
+    }
+
+    private void NormalizeScore(ScoreBreakdownItem item, IEnumerable<CriterionModel> criteria)
+    {
+        var criterion = criteria.FirstOrDefault(c => c.Name == item.CriterionName);
+
+        if (criterion == null)
+        {
+            logger.LogWarning("Criterion {CriterionName} not found in rubric {RubricId}. Skipping assessment for this criterion.",
+                item.CriterionName, State.RubricId);
+            return;
+        }
+
+        item.NormalizeRawScore((decimal)criterion.Weight);
     }
 
     public void UpdateFeedbacks(UpdateFeedBack.Command command)

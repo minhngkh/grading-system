@@ -1,25 +1,25 @@
 ﻿using AssignmentFlow.IntegrationEvents;
-using MassTransit.Internals;
 using System.Text.Json;
 
 namespace AssignmentFlow.Application.Assessments;
 
 public static class ValueObjectExtensions
 {
-    public static ScoreBreakdowns ToValueObject(this IEnumerable<ScoreBreakdownApiContract> apiContracts)
+    public static ScoreBreakdowns ToValueObject(this IEnumerable<ScoreBreakdownApiContract> apiContracts, Grader grader)
         => ScoreBreakdowns.New(apiContracts
             .ToDictionary(
             a => CriterionName.New(a.CriterionName),
-            a => a.ToValueObject()));
+            a => a.ToValueObject(grader)));
 
-    public static ScoreBreakdownItem ToValueObject(this ScoreBreakdownApiContract apiContract)
+    public static ScoreBreakdownItem ToValueObject(this ScoreBreakdownApiContract apiContract, Grader grader)
     {
         var criterionName = CriterionName.New(apiContract.CriterionName);
         return new ScoreBreakdownItem(criterionName)
         {
             RawScore = Percentage.New(apiContract.RawScore),
             PerformanceTag = PerformanceTag.New(apiContract.PerformanceTag),
-            MetadataJson = apiContract.MetadataJson
+            MetadataJson = apiContract.MetadataJson,
+            Grader = grader
         };
     }
 
@@ -33,7 +33,7 @@ public static class ValueObjectExtensions
             ),
             Tag.New(apiContract.Tag));
 
-    public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(this ScoreBreakdownV2 apiContract, string criterion, Dictionary<string, object?> metadata)
+    public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(this ScoreBreakdownV2 apiContract, string criterion, Grader grader, Dictionary<string, object?> metadata)
     {
         var criterionName = CriterionName.New(criterion);
 
@@ -41,7 +41,8 @@ public static class ValueObjectExtensions
         {
             RawScore = Percentage.New(apiContract.RawScore),
             PerformanceTag = PerformanceTag.New(apiContract.Tag),
-            MetadataJson = JsonSerializer.Serialize(metadata)
+            MetadataJson = JsonSerializer.Serialize(metadata),
+            Grader = grader
         };
         var feedbackItems = apiContract.FeedbackItems.ConvertAll(fb => fb.ToValueObject(criterionName));
 

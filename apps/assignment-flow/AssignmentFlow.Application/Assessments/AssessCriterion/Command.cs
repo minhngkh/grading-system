@@ -4,10 +4,8 @@ namespace AssignmentFlow.Application.Assessments.AssessCriterion;
 
 public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentId>(id)
 {
-    public required Grader Grader { get; init; }
     public required ScoreBreakdownItem ScoreBreakdownItem { get; init; }
     public List<Feedback> Feedbacks { get; init; } = [];
-    public Dictionary<string, object?> Metadata { get; init; } = [];
 }
 
 public class CommandHandler()

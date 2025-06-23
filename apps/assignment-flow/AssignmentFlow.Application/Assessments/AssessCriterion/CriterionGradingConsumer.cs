@@ -17,14 +17,12 @@ public class CriterionGradingConsumer(
 
         var assessmentId = AssessmentId.With(context.Message.AssessmentId);
         var (breakdownItem, feedbackItems) = context.Message.ScoreBreakdown
-            .ToValueObject(context.Message.CriterionName, context.Message.Metadata);
+            .ToValueObject(context.Message.CriterionName, Grader.AIGrader, context.Message.Metadata);
 
         var command = new Command(assessmentId)
         {
             ScoreBreakdownItem = breakdownItem,
-            Feedbacks = feedbackItems,
-            Grader = Grader.AIGrader,
-            Metadata = context.Message.Metadata
+            Feedbacks = feedbackItems
         };
         
         await commandBus.PublishAsync(command, cancellationToken: context.CancellationToken);

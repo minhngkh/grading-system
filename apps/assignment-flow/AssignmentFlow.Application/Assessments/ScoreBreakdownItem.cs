@@ -10,6 +10,8 @@ namespace AssignmentFlow.Application.Assessments;
 [JsonConverter(typeof(ScoreBreakdownItemConverter))]
 public sealed class ScoreBreakdownItem : ValueObject
 {
+    public Grader Grader { get; init; } = Grader.AIGrader;
+
     /// <summary>
     /// Gets the criterion identity associated with this score breakdown item.
     /// </summary>
@@ -52,6 +54,7 @@ public sealed class ScoreBreakdownItem : ValueObject
         yield return RawScore;
         yield return PerformanceTag;
         yield return MetadataJson; // Include metadata in equality check
+        yield return Grader;
     }
     
     // Adds RawScores if other item matches the CriterionName and PerformanceTag
@@ -94,12 +97,14 @@ public sealed class ScoreBreakdownItemConverter : JsonConverter<ScoreBreakdownIt
         var score = jObject.GetRequired<Percentage>("RawScore");
         var performanceTag = jObject.GetRequired<PerformanceTag>("PerformanceTag");
         var metadataJson = jObject.Get<string>("MetadataJson") ?? string.Empty;
+        var grader = jObject.GetValue("Grader", StringComparison.OrdinalIgnoreCase)?.ToObject<Grader>() ?? Grader.AIGrader;
 
         return new ScoreBreakdownItem(criterionIdentity)
         {
             RawScore = score,
             PerformanceTag = performanceTag,
-            MetadataJson = metadataJson
+            MetadataJson = metadataJson,
+            Grader = grader
         };
     }
     public override bool CanWrite => false;

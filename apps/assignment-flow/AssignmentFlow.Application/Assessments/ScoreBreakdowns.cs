@@ -113,12 +113,18 @@ public static class ScoreBreakdownsExtension
 {
     public static List<ScoreBreakdownApiContract> ToApiContracts(this ScoreBreakdowns scoreBreakdowns)
     {
-        return [.. scoreBreakdowns.Select(sb => new ScoreBreakdownApiContract
+        return [.. scoreBreakdowns.Select(sb => sb.ToApiContract())];
+    }
+
+    public static ScoreBreakdownApiContract ToApiContract(this ScoreBreakdownItem scoreBreakdownItem)
+    {
+        return new ScoreBreakdownApiContract
         {
-            CriterionName = sb.CriterionName,
-            PerformanceTag = sb.PerformanceTag,
-            RawScore = sb.RawScore
-        })];
+            CriterionName = scoreBreakdownItem.CriterionName,
+            PerformanceTag = scoreBreakdownItem.PerformanceTag,
+            RawScore = scoreBreakdownItem.RawScore,
+            MetadataJson = scoreBreakdownItem.MetadataJson
+        };
     }
 
     public static List<FeedbackItemApiContract> ToApiContracts(this List<Feedback> feedbacks)
