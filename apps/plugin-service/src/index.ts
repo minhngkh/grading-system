@@ -10,9 +10,11 @@ import { syncDB } from "./db/init";
 import { connectMongoDB } from "./db/mongoose";
 import { aiService } from "./plugins/ai/service";
 
+import { staticAnalysisService } from "@/plugins/static_analysis/service";
 
 const broker = createZodValidatedServiceBroker();
 broker.createService(aiService);
+broker.createService(staticAnalysisService);
 
 const api = createApiGateway(broker);
 
