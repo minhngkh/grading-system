@@ -1,40 +1,41 @@
 import process from "node:process";
 import { BlobServiceClient } from "@azure/storage-blob";
 import { BlobService, getBlobName } from "@grading-system/utils/azure-storage-blob";
-import { setup } from "@/core";
+import logger from "@grading-system/utils/logger";
 
 const CONNECTION_STRING = process.env["ConnectionStrings__submissions-store"] as string;
-const DEFAULT_CONTAINER = "rubric-context-store";
+const DEFAULT_CONTAINER = "submissions-store";
 
 const service = new BlobService(CONNECTION_STRING);
 const container = service.getBlobContainer(DEFAULT_CONTAINER);
 
-export function getBlobRoot(blobUrl: string): string {
-  const name = getBlobName(blobUrl, DEFAULT_CONTAINER);
-  const parts = name.split("/");
+// export function getBlobRoot(blobUrl: string): string {
+//   const name = getBlobName(blobUrl, DEFAULT_CONTAINER);
+//   const parts = name.split("/");
 
-  return parts[0];
-}
+//   return parts[0];
+// }
 
-export function getBlobFile(blobUrl: string): string {
-  const name = getBlobName(blobUrl, DEFAULT_CONTAINER);
-  const parts = name.split("/");
+// export function getBlobFile(blobUrl: string): string {
+//   const name = getBlobName(blobUrl, DEFAULT_CONTAINER);
+//   const parts = name.split("/");
 
-  return parts[1];
-}
+//   return parts[1];
+// }
 
 async function main() {
   const client = BlobServiceClient.fromConnectionString(CONNECTION_STRING);
 
   for await (const container of client.listContainers()) {
-    console.log(`Container: ${container.name }`);
+    console.log(`Container: ${container.name}`);
   }
 
   const containerClient = client.getContainerClient(DEFAULT_CONTAINER);
   const blobs = containerClient.listBlobsFlat();
 
+  
   for await (const blob of blobs) {
-    console.log(blob.name);
+    logger.info(blob.name);
   }
 
   // const a = await container.downloadToBuffer(

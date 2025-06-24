@@ -1,17 +1,19 @@
 import type { FilePart } from "ai";
 import type { LanguageModelWithOptions } from "@/core/llm/types";
-import type { FilesSubset } from "@/plugins/ai/repomix";
-import { getBlobName, getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
+import {
+  getBlobNameParts,
+  getBlobNameRest,
+} from "@grading-system/utils/azure-storage-blob";
 import { CustomError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { generateObject } from "ai";
 import dedent from "dedent";
-import { errAsync, okAsync, ResultAsync, safeTry } from "neverthrow";
+import { errAsync, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
 import z from "zod";
 import { googleProviderOptions } from "@/core/llm/providers/google";
 import { registry } from "@/core/llm/registry";
-import { DEFAULT_CONTAINER } from "@/lib/blob-storage";
-import { createFileAliasManifest, createMediaFileParts } from "@/plugins/ai/media-files";
+import { EmptyListError } from "@/lib/error";
+import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-files";
 import { packFilesSubsets } from "@/plugins/ai/repomix";
 import { generateRubricContext } from "@/plugins/ai/rubric-metadata";
 
@@ -24,19 +26,34 @@ const llmOptions: LanguageModelWithOptions = {
   }),
 };
 
+const textLocationDataSchema = z
+  .object({
+    type: z.literal("text"),
+    fromLine: z.number().int(),
+    fromColumn: z.number().int().optional(),
+    toLine: z.number().int(),
+    toColumn: z.number().int().optional(),
+  })
+  .describe(
+    "Position of part of the files to highlight the reason why you conclude to that comment, this is relative to the file itself",
+  );
+
+const pdfLocationDataSchema = z
+  .object({
+    type: z.literal("pdf"),
+    page: z.number().int(),
+  })
+  .describe(
+    "Page of the PDF file to highlight the reason why you conclude to that comment",
+  );
+
 export const feedbackSchema = z.object({
   comment: z.string().describe("short comment about the reason"),
   fileRef: z.string().describe("The file that the comment refers to"),
-  position: z
-    .object({
-      fromLine: z.number().int(),
-      fromColumn: z.number().int().optional(),
-      toLine: z.number().int(),
-      toColumn: z.number().int().optional(),
-    })
-    .describe(
-      "Position of part of the files to highlight the reason why you conclude to that comment, this is relative to the file itself",
-    ),
+  locationData: z.discriminatedUnion("type", [
+    textLocationDataSchema,
+    pdfLocationDataSchema,
+  ]),
 });
 
 export const criterionGradingResultSchema = z.object({
@@ -47,7 +64,6 @@ export const criterionGradingResultSchema = z.object({
     ),
   tag: z.string().describe("tag of the level that the score reached"),
   score: z.number().int().describe("score of the criterion"),
-  // feedback: z.array(z.string()),
   feedback: z.array(feedbackSchema).describe("feedback reasons for the grading score"),
   summary: z.string().optional().describe("summary feedback for the grading result"),
 });
@@ -92,8 +108,9 @@ function createGradingSystemPrompt(partOfRubric: Criterion[]) {
         - If you choose the highest level with tag "5" that have weight 100, then the score must be exactly 100
       - If the score you gave:
         - is 100, you don't have to provide any detailed feedback in the \`feedback\` field, but at least provide the summary in the \`summary\` field
-        - is less than 100, you should provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the input that you based your decision on, and on which file, if applicable
-          - Note that the \`fileRef\` must be the original file path if you are referring to uploaded files that you can get by using the file manifest below (if present)
+        - is less than 100, you should provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the file that you based your decision on on \`locationData\`, and on which file, if applicable
+          - Note that the \`fileRef\` must be the original file path if you are referring to uploaded files that you can get by using the multimodal file manifest below (if present)
+          - Text file output by repomix have the line number included at the start of each line, so use that to highlight correctly if your feedback is for a text file
   `;
 }
 
@@ -110,9 +127,6 @@ export function gradeCriteria(options: {
 }) {
   const systemPrompt = createGradingSystemPrompt(options.partOfRubric);
   const prompt = `${options.header || ""}\n${options.prompt}\n${options.footer || ""}`;
-
-  console.log(options.header)
-  console.log(options.fileParts)
 
   return ResultAsync.fromPromise(
     generateObject({
@@ -152,33 +166,51 @@ export function gradeSubmission(data: {
 }) {
   return safeTry(async function* () {
     if (data.criterionDataList.length === 0) {
-      return errAsync(new Error("No data provided for grading"));
+      return errAsync(
+        new EmptyListError({
+          message: "No criteria to grade",
+          data: undefined,
+        }),
+      );
     }
 
     const rubricContext = yield* generateRubricContext({
-      blobUrls: data.attachments,
+      blobNameList: data.attachments,
       metadata: data.metadata,
     });
 
     // TODO: change This
-    const sourceId = yield* getBlobName(
+    // const sourceId = yield* getBlobNameParts(
+    //   data.criterionDataList[0].fileRefs[0],
+    // ).map((name) => {
+    //   const { root, rest } = getBlobNameParts(name);
+    //   const { root: dir } = getBlobNameParts(rest);
+    //   return `${root}-${dir}`;
+    // });
+
+    const { root: gradingRef, rest } = getBlobNameParts(
       data.criterionDataList[0].fileRefs[0],
-      DEFAULT_CONTAINER,
-    ).map((name) => {
-      const { root, rest } = getBlobNameParts(name);
-      const { root: dir } = getBlobNameParts(rest);
-      return `${root}-${dir}`;
+    );
+    const { root: submissionRef } = getBlobNameParts(rest);
+    const sourceId = `${gradingRef}-${submissionRef}`;
+    const blobNameRoot = `${gradingRef}/${submissionRef}`;
+
+    const criterionFilesPromises = data.criterionDataList.map((item) => {
+      return Result.combine(
+        item.fileRefs.map((blobName) => getBlobNameRest(blobName, blobNameRoot)),
+      ).map((blobNameRestList) => {
+        return {
+          id: item.criterionName,
+          blobNameRestList,
+        };
+      });
     });
 
-    const criterionFiles = data.criterionDataList.map(
-      (item): FilesSubset => ({
-        id: item.criterionName,
-        blobUrls: item.fileRefs,
-      }),
-    );
+    const criterionFiles = yield* Result.combine(criterionFilesPromises);
 
     const withTextResultList = yield* packFilesSubsets(
       sourceId,
+      blobNameRoot,
       criterionFiles,
       data.attemptId,
     );
@@ -187,8 +219,6 @@ export function gradeSubmission(data: {
       packResult
         .map((packValue) => ({
           criterionNames: packValue.ids,
-          blobUrlNameMap: packValue.blobUrlNameMap,
-          blobPathUrlMap: packValue.blobPathUrlMap,
           downloadDir: packValue.downloadDir,
           textData: packValue.data,
         }))
@@ -202,19 +232,21 @@ export function gradeSubmission(data: {
         )
         .andThen((value) => {
           const nonTextBlobs = [];
-          for (const url of value.textData.allBlobUrls) {
-            const { rest: path } = getBlobNameParts(value.blobUrlNameMap.get(url)!);
-
-            if (value.textData.usedBlobUrls.has(path)) {
+          for (const nameRest of value.textData.allBlobNameRests) {
+            if (value.textData.usedBlobNameRests.has(nameRest)) {
               continue;
             }
 
             // const { rest: path } = getBlobNameParts(value.blobUrlNameMap.get(url)!);
 
-            nonTextBlobs.push(path);
+            nonTextBlobs.push(nameRest);
           }
 
-          return createMediaFileParts(value.downloadDir, nonTextBlobs)
+          return createLlmFileParts({
+            blobNameRestList: nonTextBlobs,
+            downloadDirectory: value.downloadDir,
+            prefix: "file",
+          })
             .mapErr(
               (error) =>
                 new ErrorWithCriteriaInfo({
@@ -224,7 +256,7 @@ export function gradeSubmission(data: {
                 }),
             )
             .andThen((mediaValue) =>
-              createFileAliasManifest(mediaValue.urlAliasMap)
+              createFileAliasManifest(mediaValue.BlobNameRestAliasMap)
                 .mapErr(
                   (error) =>
                     new ErrorWithCriteriaInfo({
@@ -236,8 +268,8 @@ export function gradeSubmission(data: {
                 .map((manifest) => ({
                   ...value,
                   mediaData: {
-                    llmMessageParts: mediaValue.parts,
-                    ignoredUrls: mediaValue.ignoredUrls,
+                    llmMessageParts: mediaValue.llmFileParts,
+                    ignoredNameRestList: mediaValue.ignoredBlobNameRestList,
                     manifestInfo: manifest,
                   },
                 })),
@@ -257,7 +289,7 @@ export function gradeSubmission(data: {
         });
 
         logger.debug("files ignore", {
-          ignoreUrls: value.mediaData.ignoredUrls,
+          ignoreUrls: value.mediaData.ignoredNameRestList,
         });
         return gradeCriteria({
           partOfRubric: criteriaData,
@@ -282,8 +314,11 @@ export function gradeSubmission(data: {
               feedback: r.feedback.map((fb) => ({
                 ...fb,
                 // FIXME: handle this case
-                fileRef: value.blobPathUrlMap.get(fb.fileRef) || fb.fileRef,
+                fileRef: `${blobNameRoot}/${fb.fileRef}`,
               })),
+              ignoredFiles: value.mediaData.ignoredNameRestList.map(
+                (nameRest) => `${blobNameRoot}/${nameRest}`,
+              ),
             })),
           );
       }),

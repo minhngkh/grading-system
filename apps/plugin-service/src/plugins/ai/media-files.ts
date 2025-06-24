@@ -1,21 +1,14 @@
+import type { BlobContainer } from "@grading-system/utils/azure-storage-blob";
 import type { FilePart } from "ai";
+import type { Result } from "neverthrow";
 import { Buffer } from "node:buffer";
-import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { getBlobName } from "@grading-system/utils/azure-storage-blob";
-import { asError, CustomError } from "@grading-system/utils/error";
+import { CustomError } from "@grading-system/utils/error";
+import { readFile } from "@grading-system/utils/file";
 import dedent from "dedent";
 import mime from "mime";
-import {
-  fromPromise,
-  fromSafePromise,
-  ok,
-  okAsync,
-  ResultAsync,
-  safeTry,
-} from "neverthrow";
-import { blobContainer, DEFAULT_CONTAINER } from "@/lib/blob-storage";
+import { err, errAsync, ok, okAsync, ResultAsync, safeTry } from "neverthrow";
 
 const SUPPORTED_CONTENT_TYPES = [
   "image/png",
@@ -24,128 +17,106 @@ const SUPPORTED_CONTENT_TYPES = [
   "image/heic",
   "image/heif",
   "application/pdf",
-  "text/plain",
+  // "text/plain",
 ];
 
-// FIXME: it's not blob urls but blob names
-function signBlobUrls(blobUrls: string[]) {
+function signSupportedBlobs(container: BlobContainer, blobNameList: string[]) {
   return safeTry(async function* () {
-    // const withContentType = yield* ResultAsync.combine(
-    //   blobUrls.map((url) => {
-    //     return blobContainer.getContentType(url).map((contentType) => ({
-    //       url,
-    //       contentType,
-    //     }));
-    //   }),
-    // );
-    const withContentType = blobUrls.map((url) => ({
-      url,
-      contentType: mime.getType(url) || "application/octet-stream",
-    }));
+    const signedBlobPromises = [];
+    const ignoredBlobNames = [];
 
-    const ignoredUrls: string[] = [];
-
-    const filtered = withContentType.filter((item) => {
-      if (SUPPORTED_CONTENT_TYPES.includes(item.contentType)) {
-        return true;
+    for (const blobName of blobNameList) {
+      const contentType = mime.getType(blobName);
+      if (contentType === null || !SUPPORTED_CONTENT_TYPES.includes(contentType)) {
+        ignoredBlobNames.push(blobName);
+        continue;
       }
 
-      ignoredUrls.push(item.url);
-      return false;
-    });
+      signedBlobPromises.push(
+        container.generateSignedUrl(blobName).map((signedUrl) => {
+          return {
+            blobName,
+            signedUrl,
+            contentType,
+          };
+        }),
+      );
+    }
 
-    const signed = yield* ResultAsync.combine(
-      filtered.map((item) => {
-        return blobContainer.generateSasUrlForBlob(item.url).map((signedUrl) => ({
-          originalUrl: item.url,
-          signedUrl,
-          contentType: item.contentType,
-        }));
-      }),
-    );
+    const signedBlobList = yield* ResultAsync.combine(signedBlobPromises);
 
     return okAsync({
-      signedUrls: signed,
-      ignoredUrls,
+      signedBlobList,
+      ignoredBlobNames,
     });
   });
 }
 
-export function createMediaFileParts(
-  downloadDirectory: string,
-  blobNames: string[],
-  prefix = "file",
-) {
-  const urlAliasMap = new Map<string, string>();
+class NotSupportedInProductionError extends CustomError<void> {}
 
-  if (process.env.NODE_ENV === "production") {
-    return signBlobUrls(blobNames).map((info) => {
-      const parts = info.signedUrls.map((item, idx): FilePart => {
-        const fileName = `${prefix}_${idx}`;
-        urlAliasMap.set(item.originalUrl, fileName);
+export function createLlmFileParts(data: {
+  // blobNameRoot: string;
+  blobNameRestList: string[];
+  downloadDirectory: string;
+  prefix?: string;
+}) {
+  return safeTry(async function* () {
+    const prefix = data.prefix || "file";
 
-        return {
-          type: "file",
-          data: item.signedUrl,
-          mimeType: item.contentType,
-          filename: fileName,
-        };
-      });
+    const BlobNameRestAliasMap = new Map<string, string>();
 
-      return {
-        urlAliasMap,
-        parts,
-        ignoredUrls: info.ignoredUrls,
-      };
-    });
-  }
-
-  const resultList = blobNames.map((name, idx) => {
-    const filePath = path.join(downloadDirectory, name);
-
-    console.log(filePath);
-    
-    return fromPromise(fs.readFile(filePath), asError)
-      .map((content): FilePart => {
-        const fileName = `file_${idx}`;
-        urlAliasMap.set(name, fileName);
-
-        return {
-          type: "file",
-          data: Buffer.from(content).toString("base64"),
-          mimeType: mime.getType(name) || "application/octet-stream",
-          filename: fileName,
-        };
-      })
-      .mapErr(
-        (error) =>
-          new CustomError<{ fileName: string }>({
-            data: { fileName: name },
-            message: `Failed to read file ${name}`,
-            options: { cause: error },
-          }),
+    if (process.env.NODE_ENV === "production") {
+      // Should not download files in production, just sign the URLs
+      return errAsync(
+        new NotSupportedInProductionError({
+          message: "Signing blob Urls in production is not yet implemented.",
+          data: undefined,
+        }),
       );
-  });
-
-  return fromSafePromise(Promise.all(resultList)).map((value) => {
-    const parts = [];
-    const ignoredUrls = [];
-
-    for (const item of value) {
-      if (item.isOk()) {
-        parts.push(item.value);
-      } else {
-        ignoredUrls.push(item.error.data.fileName);
-      }
     }
 
-    console.log("aliasMap", urlAliasMap);
+    const promises = data.blobNameRestList.map((nameRest, idx) => {
+      const filePath = path.join(data.downloadDirectory, nameRest);
 
-    return {
-      urlAliasMap,
-      parts,
-      ignoredUrls,
-    };
+      return readFile(filePath).map((content): Result<FilePart, void> => {
+        const fileAlias = `${prefix}_${idx}`;
+        BlobNameRestAliasMap.set(nameRest, fileAlias);
+
+        const contentType = mime.getType(nameRest);
+        if (contentType === null || !SUPPORTED_CONTENT_TYPES.includes(contentType)) {
+          return err();
+        }
+
+        return ok({
+          type: "file",
+          data: Buffer.from(content).toString("base64"),
+          mimeType: contentType,
+          filename: fileAlias,
+        });
+      });
+    });
+
+    const result = yield* ResultAsync.combine(promises).map((value) => {
+      const fileParts = [];
+      const ignoredBlobNameRestList = [];
+
+      for (const item of value) {
+        if (item.isErr()) {
+          ignoredBlobNameRestList.push(item.error);
+          continue;
+        }
+
+        fileParts.push(item.value);
+      }
+
+      return {
+        BlobNameRestAliasMap,
+        llmFileParts: fileParts,
+        ignoredBlobNameRestList,
+      };
+    });
+
+    return okAsync(result);
   });
 }
 
@@ -157,13 +128,13 @@ export const GRADING_FILES_HEADER = dedent`
 const SEPARATOR = "\n---\n";
 
 export function createFileAliasManifest(
-  urlAliasMap: Map<string, string>,
+  BlobNameRestAliasMap: Map<string, string>,
   header = GRADING_FILES_HEADER,
 ) {
   return safeTry(function* () {
     // yield* getBlobName(url, DEFAULT_CONTAINER)
     const entries: string[] = [];
-    for (const [url, alias] of urlAliasMap) {
+    for (const [url, alias] of BlobNameRestAliasMap) {
       entries.push(dedent`
         - **File name:** \`${alias}\`
           - Original Path: \`${url}\`
