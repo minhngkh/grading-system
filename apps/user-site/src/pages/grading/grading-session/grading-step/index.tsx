@@ -8,6 +8,8 @@ import { UseFormReturn } from "react-hook-form";
 import { AssessmentStatusCard } from "@/pages/grading/grading-session/grading-step/status-card";
 import { AssessmentState } from "@/types/assessment";
 import { GradingService } from "@/services/grading-service";
+import { AssessmentService } from "@/services/assessment-service";
+import { toast } from "sonner";
 
 interface GradingProgressStepProps {
   gradingAttempt: UseFormReturn<GradingAttempt>;
@@ -23,6 +25,7 @@ export default function GradingProgressStep({
     AssessmentGradingStatus[] | null
   >(null);
   const hubRef = useRef<SignalRService | null>(null);
+
   const handleGradingStatusChange = (isActive: boolean, newStatus: GradingStatus) => {
     if (!isActive) return;
     gradingAttempt.setValue("status", newStatus);
@@ -60,6 +63,21 @@ export default function GradingProgressStep({
     }
   };
 
+  const handleRegradeAssessment = async (assessmentId: string) => {
+    const token = await auth.getToken();
+    if (!token) return;
+
+    try {
+      await AssessmentService.rerunAssessment(assessmentId, token);
+      if (gradingAttemptValues.status !== GradingStatus.Started) {
+        handleGradingStatusChange(true, GradingStatus.Started);
+      }
+    } catch (error) {
+      console.error("Failed to regrade assessment:", error);
+      toast.error(`Failed to regrade assessment. Please try again.`);
+    }
+  };
+
   useEffect(() => {
     let isActive = true;
 
@@ -87,6 +105,8 @@ export default function GradingProgressStep({
         handleRegister(isActive, initialState);
       } catch (error) {
         gradingAttempt.setValue("status", GradingStatus.Failed);
+        console.error("Failed to start grading:", error);
+        toast.error("Failed to start grading. Please try again.");
       }
     })();
 
@@ -135,6 +155,14 @@ export default function GradingProgressStep({
     }
   };
 
+  const sortedAssessmentStatus = [...assessmentStatus].sort((a, b) => {
+    const aIsFailed = a.status === AssessmentState.AutoGradingFailed;
+    const bIsFailed = b.status === AssessmentState.AutoGradingFailed;
+    if (aIsFailed && !bIsFailed) return -1;
+    if (!aIsFailed && bIsFailed) return 1;
+    return 0;
+  });
+
   return (
     <div className="size-full space-y-6">
       <div className="space-y-2">
@@ -150,8 +178,12 @@ export default function GradingProgressStep({
           /{assessmentStatus.length} assessments graded.
         </p>
       </div>
-      {assessmentStatus.map((status, index) => (
-        <AssessmentStatusCard key={index} status={status} />
+      {sortedAssessmentStatus.map((assessmentStatus) => (
+        <AssessmentStatusCard
+          key={assessmentStatus.id}
+          status={assessmentStatus}
+          onRegrade={handleRegradeAssessment}
+        />
       ))}
     </div>
   );

@@ -36,9 +36,13 @@ const assessmentStateStyles: Partial<Record<AssessmentState, AssessmentStyle>> =
 
 interface AssessmentStatusCardProps {
   status: AssessmentGradingStatus;
+  onRegrade?: (id: string) => void;
 }
 
-export const AssessmentStatusCard = ({ status }: AssessmentStatusCardProps) => {
+export const AssessmentStatusCard = ({
+  status,
+  onRegrade,
+}: AssessmentStatusCardProps) => {
   function getCurrentStatuses(current: AssessmentState): AssessmentState[] {
     const states: AssessmentState[] = [AssessmentState.Created];
 
@@ -87,7 +91,9 @@ export const AssessmentStatusCard = ({ status }: AssessmentStatusCardProps) => {
             );
           })}
         </div>
-        {!isUndergoingGrading && <Button>Re-grade</Button>}
+        {!isUndergoingGrading && (
+          <Button onClick={() => onRegrade?.(status.id)}>Re-grade</Button>
+        )}
       </CardContent>
     </Card>
   );

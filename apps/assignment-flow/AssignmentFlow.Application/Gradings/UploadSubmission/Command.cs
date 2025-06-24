@@ -112,7 +112,7 @@ public class CommandHandler(BlobServiceClient client)
                     cancellationToken
                 );
 
-                yield return Attachment.New(submissionBlobBasePath + command.File.FileName);
+                yield return Attachment.New(submissionBlobBasePath + entry.FullName);
             }
         }
     }
