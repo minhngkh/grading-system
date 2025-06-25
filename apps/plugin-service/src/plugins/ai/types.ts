@@ -6,3 +6,5 @@ export interface LlmClient {
     <T extends ZodType>(prompt: string, outputStructure: T, outputStructureAlias?: string): Promise<z.infer<T>>;
   }
 }
+
+export 

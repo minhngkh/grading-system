@@ -27,7 +27,7 @@ public static class EndpointHandler
 
         await commandBus.PublishAsync(new Command(assessmentId)
         {
-            ScoreBreakdowns = request.ScoreBreakdowns.ToValueObject(),
+            ScoreBreakdowns = request.ScoreBreakdowns.ToValueObject(Grader.Teacher),
             Grader = Grader.Teacher
         }, cancellationToken);
 

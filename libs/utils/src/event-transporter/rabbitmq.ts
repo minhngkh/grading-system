@@ -65,12 +65,12 @@ export class RabbitMQTransporter extends EventTransporter {
       },
       (err) => {
         if (err) {
-          logger.error(`Failed to publish message: ${event.name}`, err);
+          logger.info(`Failed to publish message: ${event.name}`, err);
           callback?.(true);
           return;
         }
 
-        logger.debug(`Message published successfully: ${event.name}`);
+        logger.info(`Message published successfully: ${event.name}`);
         callback?.(false);
       },
     );

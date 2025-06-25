@@ -1,9 +1,10 @@
 ﻿using EventFlow.Commands;
 
-namespace AssignmentFlow.Application.Assessments.UpdateFeedBack;
+namespace AssignmentFlow.Application.Assessments.AssessCriterion;
 
 public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentId>(id)
 {
+    public required ScoreBreakdownItem ScoreBreakdownItem { get; init; }
     public List<Feedback> Feedbacks { get; init; } = [];
 }
 
@@ -14,9 +15,11 @@ public class CommandHandler()
     {
         if (aggregate.IsNew)
         {
-            throw new InvalidOperationException($"Cannot update feedbacks for assessment {aggregate.Id} because it has not been created yet.");
+            throw new InvalidOperationException($"Cannot assess assessment {aggregate.Id} because it has not been created yet.");
         }
-        aggregate.UpdateFeedbacks(command);
+
+        aggregate.AssessCriterion(command);
+
         return Task.CompletedTask;
     }
 }

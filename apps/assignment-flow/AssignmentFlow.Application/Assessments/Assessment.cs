@@ -1,6 +1,8 @@
 ﻿using AssignmentFlow.Application.Assessments.Assess;
+using AssignmentFlow.Application.Assessments.AssessCriterion;
 using AssignmentFlow.Application.Assessments.Create;
 using AssignmentFlow.Application.Assessments.StartAutoGrading;
+using AssignmentFlow.Application.Assessments.UpdateFeedBack;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Resources;
@@ -17,7 +19,9 @@ public class Assessment
     IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent>,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGradingStartedEvent>,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessedEvent>,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessmentFailedEvent>
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessmentFailedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, CriterionAssessedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, FeedbacksUpdatedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -120,9 +124,32 @@ public class Assessment
         return Task.CompletedTask;
     }
 
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, FeedbacksUpdatedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
     private void UpdateLastModifiedData(IDomainEvent domainEvent)
     {
         LastModified = domainEvent.Timestamp.ToUniversalTime();
         Version = domainEvent.AggregateSequenceNumber;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, CriterionAssessedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        var breakdownItem = domainEvent.AggregateEvent.ScoreBreakdownItem.ToApiContract();
+        
+        // Update or add the breakdown item
+        var existingItem = ScoreBreakdowns.FirstOrDefault(b => b.CriterionName == breakdownItem.CriterionName);
+        if (existingItem != null)
+        {
+            ScoreBreakdowns.Remove(existingItem);
+        }
+        ScoreBreakdowns.Add(breakdownItem);
+        
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
     }
 }

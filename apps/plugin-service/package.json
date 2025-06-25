@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "node --import @swc-node/register/esm-register --watch --watch-preserve-output ./src/index.ts"
+    "dev": "node --enable-source-maps --import @swc-node/register/esm-register --watch --watch-preserve-output ./src/index.ts"
   },
   "nx": {
     "name": "plugin-service",
