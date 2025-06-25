@@ -20,7 +20,7 @@ public class AssessedEventHandler(
         }
         logger.LogInformation("Successfully retrieved Assessment with ID: {AssessmentId}", assessmentId);
 
-        var currentScore = assessment.ScoreBreakdowns.ToValueObject();
+        var currentScore = assessment.ScoreBreakdowns.ToValueObject(domainEvent.AggregateEvent.Grader);
         var newScoreFromEvent = domainEvent.AggregateEvent.ScoreBreakdowns;
         var deltaScore = newScoreFromEvent - currentScore;
 

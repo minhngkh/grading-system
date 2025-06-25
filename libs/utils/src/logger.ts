@@ -1,26 +1,8 @@
 // TODO: move to using pino
 
 import process from "node:process";
+import util from "node:util";
 import { createLogger, format, transports } from "winston";
-
-const formatMeta = (meta: object) => {
-  let metaString = "";
-
-  if ("stack" in meta) {
-    metaString += meta.stack;
-    delete meta.stack;
-  }
-
-  if (typeof meta === "string") {
-    metaString += meta;
-  }
-
-  if (typeof meta === "object" && Object.keys(meta).length) {
-    metaString += `\n${JSON.stringify(meta, null, 2)}`;
-  }
-
-  return metaString;
-};
 
 const defaultFormat = format.combine(
   format.colorize(),
@@ -46,9 +28,9 @@ const prettyFormat = format.combine(
 
     let prettyString = "";
 
-    if (typeof timestamp === "string") {
-      prettyString += `${timestamp} `;
-    }
+    // if (typeof timestamp === "string") {
+    //   prettyString += `${timestamp} `;
+    // }
     if (level) {
       prettyString += `${level} `;
     }
@@ -56,8 +38,14 @@ const prettyFormat = format.combine(
       prettyString += `[${label.toUpperCase()}] `;
     }
     prettyString += message;
-    if (Object.keys(meta).length) {
-      prettyString += ` ${formatMeta(meta)}`;
+
+    const props = meta[Symbol.for("splat")];
+    if (Array.isArray(props) && props.length !== 0) {
+      let first = true;
+      for (const prop of props) {
+        prettyString += `${first ? ": " : "\n"}${util.inspect(prop, false, undefined, true)}`;
+        first = false;
+      }
     }
 
     prettyString += "\n";

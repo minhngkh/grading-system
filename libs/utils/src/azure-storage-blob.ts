@@ -1,9 +1,10 @@
 import type { Result } from "neverthrow";
-import type { Buffer } from "node:buffer";
+import path from "node:path";
 import { BlobSASPermissions, BlobServiceClient, SASProtocol } from "@azure/storage-blob";
-import { err, ok, ResultAsync } from "neverthrow";
+import { err, ok, ResultAsync, safeTry } from "neverthrow";
+import { createDirectory, deleteDirectory } from "@/file";
 import logger from "@/logger";
-import { wrapError } from "./error";
+import { CustomError } from "./error";
 
 export function getBlobName(url: string, containerName: string): Result<string, Error> {
   const parts = url.split(`${containerName}/`);
@@ -22,6 +23,17 @@ export function getBlobNameParts(blobName: string) {
   };
 }
 
+export function getBlobNameRest(blobName: string, blobNameRoot: string) {
+  if (!blobName.startsWith(blobNameRoot)) {
+    return err(
+      new Error(`Blob name does not start with the expected root: ${blobNameRoot}`),
+    );
+  }
+
+  const rest = blobName.slice(blobNameRoot.length + 1); // +1 for the slash
+  return ok(rest);
+}
+
 export class BlobService {
   client: BlobServiceClient;
 
@@ -34,6 +46,10 @@ export class BlobService {
   }
 }
 
+class DownloadToBufferError extends CustomError<{ blobName: string }> {}
+class DownloadToFileError extends CustomError<{ blobName: string; localPath: string }> {}
+class GenerateSignedUrlError extends CustomError<{ blobName: string }> {}
+
 export class BlobContainer {
   containerName: string;
   client;
@@ -43,36 +59,82 @@ export class BlobContainer {
     this.client = ServiceClient.getContainerClient(containerName);
   }
 
-  downloadToBuffer(blobName: string): ResultAsync<Buffer<ArrayBufferLike>, Error> {
+  downloadToBuffer(blobName: string) {
     const blobClient = this.client.getBlobClient(blobName);
 
-    return ResultAsync.fromPromise(blobClient.downloadToBuffer(), (err) =>
-      wrapError(err, `Failed to download blob ${blobName} to buffer`),
+    return ResultAsync.fromPromise(
+      blobClient.downloadToBuffer(),
+      (error) =>
+        new DownloadToBufferError({
+          message: `Failed to download blob to buffer`,
+          options: { cause: error },
+          data: { blobName },
+        }),
     );
   }
 
-  downloadToFile(blobName: string, filePath: string): ResultAsync<void, Error> {
+  downloadToFile(blobName: string, localPath: string) {
     const blobClient = this.client.getBlobClient(blobName);
 
-    return ResultAsync.fromPromise(blobClient.downloadToFile(filePath), (err) =>
-      wrapError(err, `Failed to download blob ${blobName} to file ${filePath}`),
-    ).map(() => undefined);
+    return ResultAsync.fromPromise(
+      blobClient.downloadToFile(localPath),
+      (error) =>
+        new DownloadToFileError({
+          message: `Failed to download blob to file`,
+          options: { cause: error },
+          data: { blobName, localPath },
+        }),
+    ).map(() => undefined as void);
   }
 
-  getContentType(blobName: string): ResultAsync<string, Error> {
-    const blobClient = this.client.getBlobClient(blobName);
+  downloadToDirectory(
+    blobNameRoot: string,
+    blobNameRestList: string[],
+    directoryPath: string,
+  ) {
+    // eslint-disable-next-line ts/no-this-alias
+    const self = this;
 
-    return ResultAsync.fromPromise(blobClient.getProperties(), (error) =>
-      wrapError(error, `Failed to get content type for blob ${blobName}`),
-    ).andThen((properties) => {
-      if (!properties.contentType) {
-        return err(new Error(`No content type found for blob ${blobName}`));
+    return safeTry(async function* () {
+      const downloadPromises = [];
+
+      const createdDirs = new Set<string>();
+      for (const blobNameRest of blobNameRestList) {
+        const blobName = `${blobNameRoot}/${blobNameRest}`;
+
+        const blobFilePath = path.join(directoryPath, blobNameRest);
+        const blobDirPath = path.dirname(blobFilePath);
+
+        // check to create folder if it does not exist
+        if (!createdDirs.has(blobDirPath)) {
+          yield* createDirectory(blobDirPath).andTee(() => createdDirs.add(blobDirPath));
+        }
+
+        // download the blob
+        downloadPromises.push(self.downloadToFile(blobName, blobFilePath));
       }
-      return ok(properties.contentType);
+
+      return ResultAsync.combine(downloadPromises)
+        .map(() => undefined as void)
+        .orTee((error) => {
+          logger.debug(`Attempt to clean up directory after failed download`, {
+            blobName: error.data.blobName,
+            blobLocalPath: error.data.localPath,
+            directoryPath,
+          });
+
+          deleteDirectory(directoryPath)
+            .orTee((error) => {
+              logger.debug(`Failed to clean temporary download directory`, error);
+            })
+            .andTee(() => {
+              logger.debug(`Successfully clean temporary download directory`);
+            });
+        });
     });
   }
 
-  generateSasUrlForBlob(blobName: string): ResultAsync<string, Error> {
+  generateSignedUrl(blobName: string) {
     const blobClient = this.client.getBlobClient(blobName);
 
     return ResultAsync.fromPromise(
@@ -84,7 +146,12 @@ export class BlobContainer {
         startsOn: new Date(),
         expiresOn: new Date(new Date().valueOf() + 3600 * 1000), // 1 hour from now
       }),
-      (error) => wrapError(error, `Failed to generate SAS URL for blob ${blobName}`),
+      (error) =>
+        new GenerateSignedUrlError({
+          message: `Failed to sign url for blob`,
+          options: { cause: error },
+          data: { blobName },
+        }),
     );
   }
 }

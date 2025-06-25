@@ -1,26 +1,26 @@
+import type { UseFormReturn } from "react-hook-form";
+import type { CriteriaSelector, GradingAttempt, Submission } from "@/types/grading";
 import type { Rubric } from "@/types/rubric";
-import { Button } from "@/components/ui/button";
-import { FileList } from "./file-list";
-import { ScrollableSelectMemo } from "@/components/app/scrollable-select";
-import { CriteriaSelector, GradingAttempt, Submission } from "@/types/grading";
-import CriteriaMapper from "./criteria-mapping";
+import { useAuth } from "@clerk/clerk-react";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { GradingService } from "@/services/grading-service";
-import { Spinner } from "@/components/app/spinner";
+import { Controller } from "react-hook-form";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
+import { FileUploader } from "@/components/app/file-uploader";
+import { InfoToolTip } from "@/components/app/info-tooltip";
+import { ScrollableSelectMemo } from "@/components/app/scrollable-select";
+import { Spinner } from "@/components/app/spinner";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { InfoToolTip } from "@/components/app/info-tooltip";
-import { FileUploader } from "@/components/app/file-uploader";
-import { useAuth } from "@clerk/clerk-react";
-import { RubricService } from "@/services/rubric-service";
 import { Label } from "@/components/ui/label";
-import type { UseFormReturn } from "react-hook-form";
+import { Progress } from "@/components/ui/progress";
 import { useDebounce } from "@/hooks/use-debounce";
-import { Controller } from "react-hook-form";
-import { Checkbox } from "@/components/ui/checkbox";
+import { GradingService } from "@/services/grading-service";
+import { RubricService } from "@/services/rubric-service";
+import CriteriaMapper from "./criteria-mapping";
+import { FileList } from "./file-list";
 
 interface UploadStepProps {
   form: UseFormReturn<GradingAttempt>;
@@ -110,7 +110,7 @@ export default function UploadStep({ form }: UploadStepProps) {
   };
 
   const handleSelectRubric = async (rubric: Rubric) => {
-    if (gradingAttempt.rubricId != undefined && gradingAttempt.rubricId === rubric.id)
+    if (gradingAttempt.rubricId !== undefined && gradingAttempt.rubricId === rubric.id)
       return;
 
     const token = await auth.getToken();

@@ -11,13 +11,14 @@ public static class EndpointHandler
     {
         endpoint.MapPut("/{id}/feedbacks", UpdateFeedbacks)
             .WithName("UpdateFeedbacks")
+            .Produces(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;
     }
 
-    [Authorize]
-    private static IResult UpdateFeedbacks(
+    //[Authorize]
+    private static async Task<IResult> UpdateFeedbacks(
         [FromRoute] string id,
         [FromBody] UpdateFeedbacksRequest request,
         ICommandBus commandBus,
@@ -25,8 +26,12 @@ public static class EndpointHandler
         IHttpContextAccessor contextAccessor,
         CancellationToken cancellationToken)
     {
-        var teacherId = TeacherId.With("teacher");
+        var assessmentId = AssessmentId.With(id);
+        await commandBus.PublishAsync(new Command(assessmentId)
+        {
+            Feedbacks = [.. request.Feedbacks.Select(f => f.ToValueObject())],
+        }, cancellationToken);
 
-        return TypedResults.Accepted(uri: "");
+        return TypedResults.Ok();
     }
 }

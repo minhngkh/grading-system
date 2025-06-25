@@ -1,61 +1,14 @@
 import type { CliOptions } from "repomix";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { getBlobName, getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
-import { Cache } from "@grading-system/utils/cache";
 import { CustomError, wrapError } from "@grading-system/utils/error";
+import { deleteFile } from "@grading-system/utils/file";
 import logger from "@grading-system/utils/logger";
 import fg from "fast-glob";
 import { okAsync, ResultAsync, safeTry } from "neverthrow";
 import { runDefaultAction } from "repomix";
-import { blobContainer, DEFAULT_CONTAINER } from "@/lib/blob-storage";
-import {
-  cleanTempDirectory,
-  createDirectoryOnSystemTemp,
-  createTempDirectory,
-  deleteFile,
-} from "@/lib/file";
-
-type DownloadDirectory = {
-  path: string;
-  downloadedUrl: Set<string>;
-};
-
-const downloadCache = new Cache<DownloadDirectory>();
-
-function downloadFiles(blobs: string[], directory?: string) {
-  return safeTry(async function* () {
-    const downloadDir = directory ?? (yield* createTempDirectory("download"));
-
-    const createdDirs = new Set<string>();
-    for (const blob of blobs) {
-      const { rest: blobFileName } = getBlobNameParts(blob);
-
-      const downloadPath = path.join(downloadDir, blobFileName);
-      const downloadDirPath = path.dirname(downloadPath);
-
-      if (!createdDirs.has(downloadDirPath)) {
-        // create folder to prepare for downloading
-        yield* ResultAsync.fromPromise(
-          fs.mkdir(downloadDirPath, { recursive: true }),
-          (error) =>
-            wrapError(error, `Failed to create directory for downloading blob: ${blob}`),
-        ).andTee(() => createdDirs.add(downloadDirPath));
-      }
-
-      // download the blob
-      yield* blobContainer.downloadToFile(blob, downloadPath).orTee(() => {
-        cleanTempDirectory(downloadDir).orTee(() => {
-          logger.error(`Failed to clean temporary download directory ${downloadDir}`);
-        });
-      });
-    }
-
-    return okAsync({
-      downloadDir,
-    });
-  });
-}
+import { submissionStore } from "@/lib/blob-storage";
+import { createDirectoryOnSystemTemp, createTempDirectory, getFiles } from "@/lib/file";
 
 const DELETE_PACKED_FILE = true;
 
@@ -83,7 +36,7 @@ function packFiles(options: {
     const packingRunResult = yield* ResultAsync.fromPromise(
       runDefaultAction([options.directory], options.outputDirectory, runOptions),
       (error) => {
-        logger.error("Failed to pack files:", error);
+        logger.info("Failed to pack files:", error);
         return wrapError(error, "Failed to pack files");
       },
     );
@@ -96,122 +49,23 @@ function packFiles(options: {
     ).andTee(() => {
       if (DELETE_PACKED_FILE) {
         deleteFile(outputFilePath).orTee((error) => {
-          logger.error(`Failed to delete packed file ${outputFilePath}:`, error);
+          logger.info(`Failed to delete packed file after packing`, error);
         });
       }
-    });
-
-    logger.debug("packFiles:", {
-      usedBlobs: packingRunResult.packResult.processedFiles.map((f) => f.path),
     });
 
     return okAsync({
       packedContent,
       style: runOptions.style,
       totalTokens: packingRunResult.packResult.totalTokens,
-      usedBlobs: new Set(packingRunResult.packResult.processedFiles.map((f) => f.path)),
+      usedFiles: new Set(packingRunResult.packResult.processedFiles.map((f) => f.path)),
     });
   });
 }
-
-/**
- * Attempt to download files if not cached
- *
- * @param urls array of blob URLs to download
- * @param cacheKey cache key to use for storing downloaded files
- * @returns directory path and a map of blob URLs to their "names" (aka relative path)
- */
-function getFiles(
-  urls: string[],
-  cacheKey: string,
-): ResultAsync<
-  {
-    path: string;
-    urlNameMap: Map<string, string>;
-    pathUrlMap: Map<string, string>;
-  },
-  Error
-> {
-  return safeTry(async function* () {
-    const blobUrlNameMap = new Map<string, string>();
-    const blobPathUrlMap = new Map<string, string>();
-    for (const blobUrl of urls) {
-      const blobName = yield* getBlobName(blobUrl, DEFAULT_CONTAINER);
-      blobUrlNameMap.set(blobUrl, blobName);
-
-      const { rest: blobPath } = getBlobNameParts(blobName);
-      blobPathUrlMap.set(blobPath, blobUrl);
-    }
-
-    const downloadTag = `pack-download-${cacheKey}`;
-
-    const cachedDownloadDirResult = downloadCache.get(downloadTag);
-
-    if (cachedDownloadDirResult.isOk()) {
-      const dir = cachedDownloadDirResult.value;
-
-      const blobsToDownload = Array.from(blobUrlNameMap.entries()).filter(([url]) =>
-        dir.downloadedUrl.has(url),
-      );
-      const blobsToDownloadUrls = blobsToDownload.map(([url]) => url);
-      const blobsToDownloadName = blobsToDownload.map(([_, name]) => name);
-
-      yield* downloadFiles(blobsToDownloadName, dir.path)
-        .andTee(() => {
-          downloadCache.set(downloadTag, {
-            path: dir.path,
-            downloadedUrl: new Set(blobsToDownloadUrls),
-          });
-        })
-        .mapErr((error) =>
-          wrapError(error, `Failed to download new files to cache directory`),
-        );
-
-      return okAsync({
-        path: dir.path,
-        urlNameMap: blobUrlNameMap,
-        pathUrlMap: blobPathUrlMap,
-      });
-    }
-
-    const downloadDir = yield* createDirectoryOnSystemTemp(downloadTag);
-    yield* downloadFiles(Array.from(blobUrlNameMap.values()), downloadDir).andTee(() => {
-      downloadCache.set(downloadTag, {
-        path: downloadDir,
-        downloadedUrl: new Set(urls),
-      });
-    });
-
-    return okAsync({
-      path: downloadDir,
-      urlNameMap: blobUrlNameMap,
-      pathUrlMap: blobPathUrlMap,
-    });
-  });
-}
-
-// type PackResult =
-//   | {
-//       success: false;
-//       ids: string[];
-//       error: string;
-//     }
-//   | {
-//       success: true;
-//       ids: string[];
-//       data: {
-//         packedContent: string;
-//         totalTokens: number;
-//         allBlobUrls: string[];
-//         usedBlobUrls: Set<string>;
-//       };
-//     };
-
-// type PackFilesSubsetsResult = ({ ids: string[] } & PackResult)[];
 
 export type FilesSubset = {
   id: string;
-  blobUrls: string[];
+  blobNameRestList: string[];
 };
 
 class PackFilesError extends CustomError<{
@@ -220,18 +74,21 @@ class PackFilesError extends CustomError<{
 
 type PackResult = {
   ids: string[];
-  blobUrlNameMap: Map<string, string>;
-  blobPathUrlMap: Map<string, string>;
   downloadDir: string;
   data: {
     packedContent: string;
     totalTokens: number;
-    allBlobUrls: string[];
-    usedBlobUrls: Set<string>;
+    allBlobNameRests: string[];
+    usedBlobNameRests: Set<string>;
   };
 };
 
-export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?: string) {
+export function packFilesSubsets(
+  sourceId: string,
+  blobNameRoot: string,
+  batches: FilesSubset[],
+  tag?: string,
+) {
   return safeTry(async function* () {
     let outputDir: string;
     if (tag) {
@@ -240,27 +97,27 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
       outputDir = yield* createTempDirectory(`pack-results-${sourceId}`);
     }
 
-    const allBlobUrls = batches.flatMap((batch) => batch.blobUrls);
+    const allBlobNames = batches.flatMap((batch) => batch.blobNameRestList);
 
-    const {
-      path: downloadDir,
-      urlNameMap: blobUrlNameMap,
-      pathUrlMap: blobPathUrlMap,
-    } = yield* getFiles(allBlobUrls, sourceId);
+    const { path: downloadDir } = yield* getFiles(
+      submissionStore,
+      blobNameRoot,
+      allBlobNames,
+      `pack-download-${sourceId}`,
+    );
 
     const packTasks: {
       subsetIds: string[];
       outputDirectory: string;
       outputFile: string;
       includePattern: string;
-      allBlobUrls: string[];
+      allBlobNameRests: string[];
     }[] = [];
 
     const patternListIdxMap = new Map<string, number>();
     for (const [idx, value] of batches.entries()) {
-      const blobs = value.blobUrls.sort().map((url) => {
-        const { rest: path } = getBlobNameParts(blobUrlNameMap.get(url)!);
-        return fg.escapePath(path);
+      const blobs = value.blobNameRestList.sort().map((nameRest) => {
+        return fg.escapePath(nameRest);
       });
 
       const includePattern = blobs.join(",");
@@ -278,7 +135,7 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
         outputDirectory: outputDir,
         outputFile: `${idx}.xml`,
         includePattern,
-        allBlobUrls: value.blobUrls,
+        allBlobNameRests: value.blobNameRestList,
       });
 
       patternListIdxMap.set(includePattern, packTasks.length - 1);
@@ -294,14 +151,12 @@ export function packFilesSubsets(sourceId: string, batches: FilesSubset[], tag?:
         .map(
           (result): PackResult => ({
             ids: task.subsetIds,
-            blobUrlNameMap,
-            blobPathUrlMap,
             downloadDir,
             data: {
               packedContent: result.packedContent,
               totalTokens: result.totalTokens,
-              allBlobUrls: task.allBlobUrls,
-              usedBlobUrls: result.usedBlobs,
+              allBlobNameRests: task.allBlobNameRests,
+              usedBlobNameRests: result.usedFiles,
             },
           }),
         )

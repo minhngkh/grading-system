@@ -74,7 +74,10 @@ public sealed class Comment : StringValueObject
     private Comment() { }
     [JsonConstructor]
     public Comment(string value) : base(value) { }
-    protected override int? MaxLength => ModelConstants.VeryLongText;
+
+    // FIXME: Why hard limit
+    // protected override int? MaxLength => ModelConstants.VeryLongText;
+    protected override int? MaxLength => 5000;
     public static Comment New(string value) => new(value);
 }
 

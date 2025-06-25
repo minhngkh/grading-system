@@ -30,6 +30,6 @@ export function asError(thrown: unknown): Error {
   }
 }
 
-export function wrapError(err: unknown, message: string): Error {
+export function wrapError(err: unknown, message: string) {
   return new Error(message, { cause: asError(err) });
 }
