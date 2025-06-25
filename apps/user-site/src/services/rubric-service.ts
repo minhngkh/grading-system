@@ -56,7 +56,7 @@ export class RubricService {
     if (perPage != undefined) params.append("page[size]", perPage.toString());
 
     const filterExpr = buildFilterExpr([
-      search ? contains("id", search) : undefined,
+      search ? contains("rubricName", search) : undefined,
       eq("status", status || RubricStatus.Draft),
     ]);
 

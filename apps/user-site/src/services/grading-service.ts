@@ -103,7 +103,7 @@ export class GradingService {
     if (perPage != undefined) params.append("page[size]", perPage.toString());
 
     const filterExpr = buildFilterExpr([
-      search ? contains("id", search) : undefined,
+      search ? contains("name", search) : undefined,
       status ? eq("status", status) : undefined,
     ]);
 
