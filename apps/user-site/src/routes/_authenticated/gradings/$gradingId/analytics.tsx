@@ -14,9 +14,7 @@ export const Route = createFileRoute("/_authenticated/gradings/$gradingId/analyt
 
     return await GradingService.getGradingSummary(gradingId, token);
   },
-  errorComponent: () => (
-    <ErrorComponent message="Failed to load grading analytics. Please try again later." />
-  ),
+  errorComponent: () => <ErrorComponent message="Failed to load grading analytics" />,
   pendingComponent: () => <PendingComponent message="Loading grading analytics..." />,
 });
 

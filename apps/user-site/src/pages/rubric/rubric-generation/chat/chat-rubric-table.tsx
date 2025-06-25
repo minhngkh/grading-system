@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { RubricService } from "@/services/rubric-service";
 import { useAuth } from "@clerk/clerk-react";
 import { lazy, Suspense } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { uploadContextMutationOptions } from "@/queries/rubric-queries";
 
 const RubricView = lazy(() =>
   import("@/components/app/rubric-view").then((module) => ({
@@ -48,12 +50,32 @@ function ChatRubricTable({
   const [isEditingDialogOpen, setIsEditingDialogOpen] = useState(false);
   const [isContextDialogOpen, setIsContextDialogOpen] = useState(false);
   const auth = useAuth();
+  const uploadContextMutation = useMutation(
+    uploadContextMutationOptions(rubricData.id, auth),
+  );
+
+  const handleOpenContextDialog = useCallback(() => setIsContextDialogOpen(true), []);
+  const handleOpenEditDialog = useCallback(() => setIsEditingDialogOpen(true), []);
+
+  const deleteAttachmentMutation = useMutation({
+    mutationFn: async (files: string[]) => {
+      const token = await auth.getToken();
+      if (!token) return toast.error("You are not authorized to perform this action.");
+      return Promise.all(
+        files.map(async (file) => {
+          try {
+            await RubricService.deleteAttachment(rubricData.id, file, token);
+          } catch (error) {
+            console.error("Error deleting attachment:", error);
+            toast.error(`Failed to delete attachment: ${file}`);
+          }
+        }),
+      );
+    },
+  });
 
   const handleUploadContext = useCallback(
     async (files: File[], newAttachments: string[]) => {
-      const token = await auth.getToken();
-      if (!token) return toast.error("You are not authorized to perform this action.");
-
       try {
         let isChanged = false;
 
@@ -62,16 +84,12 @@ function ChatRubricTable({
         );
 
         if (removedAttachments?.length) {
-          await Promise.all(
-            removedAttachments.map((file) =>
-              RubricService.deleteAttachment(rubricData.id, file, token),
-            ),
-          );
+          await deleteAttachmentMutation.mutateAsync(removedAttachments);
           isChanged = true;
         }
 
         if (files.length > 0) {
-          await RubricService.uploadContext(rubricData.id, files, token);
+          await uploadContextMutation.mutateAsync(files);
           isChanged = true;
         }
 
@@ -93,9 +111,6 @@ function ChatRubricTable({
     },
     [auth, rubricData.id, rubricData.attachments, onUpdate],
   );
-
-  const handleOpenContextDialog = useCallback(() => setIsContextDialogOpen(true), []);
-  const handleOpenEditDialog = useCallback(() => setIsEditingDialogOpen(true), []);
 
   return (
     <div className="flex flex-col size-full gap-4">

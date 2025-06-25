@@ -1,5 +1,4 @@
 import type { Rubric } from "@/types/rubric";
-import { ChatService } from "@/services/chat-service";
 import { useCallback, useState } from "react";
 import ChatRubricTable from "./chat-rubric-table";
 import { ChatInterface } from "@/components/app/chat-interface";
@@ -13,7 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/clerk-react";
-import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { sendRubricMessageMutationOptions } from "@/queries/chat-queries";
 interface EditRubricPageProps {
   rubric: Rubric;
   onUpdate: (rubric: Partial<Rubric>) => Promise<void>;
@@ -23,34 +23,20 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
   const [isApplyingEdit, setIsApplyingEdit] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const auth = useAuth();
+  const chatMutation = useMutation(sendRubricMessageMutationOptions(rubric, auth));
 
   const handleSendMessage = useCallback(
     async (messages: ChatMessage[]) => {
-      const token = await auth.getToken();
-      if (!token) {
-        toast.error("You are not authorized to perform this action.");
-        throw new Error("Unauthorized: No token found");
-      }
-
       try {
         setIsLoading(true);
-        const response = await ChatService.sendRubricMessage(
-          messages,
-          {
-            ...rubric,
-            weightInRange: "false",
-          },
-          token,
-        );
-
-        console.log("Response from chat service:", response);
+        const response = await chatMutation.mutateAsync(messages);
 
         if (response.rubric) {
           setIsApplyingEdit(true);
 
           setTimeout(async () => {
             try {
-              await onUpdate(response.rubric!);
+              await onUpdate({ ...response.rubric });
             } catch (error) {
               console.error("Error updating rubric:", error);
               return "Error updating rubric. Please try again.";
@@ -67,7 +53,7 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
         setIsLoading(false);
       }
     },
-    [auth, rubric, onUpdate],
+    [auth, rubric, onUpdate, chatMutation],
   );
 
   return (

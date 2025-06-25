@@ -1,13 +1,11 @@
-import { useState } from "react";
 import type { Rubric } from "@/types/rubric";
 import { cn } from "@/lib/utils";
-import { PluginSelectDialog } from "./plugin-select-dialog";
 
 interface RubricViewProps {
   rubricData: Rubric;
   showPlugins?: boolean;
   editPlugin?: boolean;
-  onPluginSelect?: (plugin: string, criterionIndex: number) => void;
+  onPluginSelect?: (criterionIndex: number) => void;
 }
 
 export function RubricView({
@@ -23,22 +21,6 @@ export function RubricView({
       </div>
     );
   }
-
-  const [pluginDialogOpen, setPluginDialogOpen] = useState(false);
-  const [selectedCriterionIndex, setSelectedCriterionIndex] = useState<number | null>(
-    null,
-  );
-
-  const handlePluginSelect = (plugin: string) => {
-    if (selectedCriterionIndex == null) return;
-    onPluginSelect?.(plugin, selectedCriterionIndex);
-    setPluginDialogOpen(false);
-  };
-
-  const openPluginDialog = (index: number) => {
-    setSelectedCriterionIndex(index);
-    setPluginDialogOpen(true);
-  };
 
   return (
     <div className="border rounded-md overflow-auto h-full">
@@ -104,7 +86,7 @@ export function RubricView({
                     )}
                     onClick={() => {
                       if (!editPlugin) return;
-                      openPluginDialog(index);
+                      onPluginSelect?.(index);
                     }}
                   >
                     <div
@@ -122,14 +104,6 @@ export function RubricView({
           })}
         </tbody>
       </table>
-      {selectedCriterionIndex != null && pluginDialogOpen && (
-        <PluginSelectDialog
-          criterion={rubricData.criteria[selectedCriterionIndex]}
-          open={pluginDialogOpen}
-          onOpenChange={setPluginDialogOpen}
-          onSelect={handlePluginSelect}
-        />
-      )}
     </div>
   );
 }

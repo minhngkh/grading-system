@@ -21,9 +21,7 @@ export const Route = createFileRoute("/_authenticated/gradings/view")({
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search", "status"])],
   },
-  errorComponent: () => (
-    <ErrorComponent message="Failed to load gradings. Please try again later." />
-  ),
+  errorComponent: () => <ErrorComponent message="Failed to load gradings" />,
   pendingComponent: () => <PendingComponent message="Loading gradings..." />,
 });
 
@@ -32,17 +30,20 @@ function RouteComponent() {
   const search = Route.useSearch();
   const rubricsData = Route.useLoaderData();
 
-  const setSearchParam = useCallback((partial: Partial<SearchParams>) => {
-    navigate({
-      search: (prev) => {
-        return {
-          ...prev,
-          ...partial,
-        };
-      },
-      replace: true,
-    });
-  }, []);
+  const setSearchParam = useCallback(
+    (partial: Partial<SearchParams>) => {
+      navigate({
+        search: (prev) => {
+          return {
+            ...prev,
+            ...partial,
+          };
+        },
+        replace: true,
+      });
+    },
+    [navigate],
+  );
 
   return (
     <ManageGradingsPage

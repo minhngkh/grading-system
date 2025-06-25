@@ -8,6 +8,8 @@ import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { useCallback } from "react";
 import PendingComponent from "@/components/app/route-pending";
 import ErrorComponent from "@/components/app/route-error";
+import { getInfiniteGradingAttemptsQueryOptions } from "@/queries/grading-queries";
+import { useAuth } from "@clerk/clerk-react";
 
 const searchParams = z.object({
   id: z.string().optional(),
@@ -26,29 +28,31 @@ export const Route = createFileRoute("/_authenticated/analytics/")({
     if (!id) return null;
     return GradingService.getGradingSummary(id, token);
   },
-  errorComponent: () => (
-    <ErrorComponent message="Failed to load grading analytics. Please try again later." />
-  ),
+  errorComponent: () => <ErrorComponent message="Failed to load grading analytics" />,
   pendingComponent: () => <PendingComponent message="Loading grading analytics..." />,
 });
 
 function RouteComponent() {
   const gradingAnalytics = Route.useLoaderData();
   const navigate = Route.useNavigate();
+  const auth = useAuth();
 
-  const setSearchParam = useCallback((newId?: string) => {
-    if (newId === gradingAnalytics?.gradingId) return;
+  const setSearchParam = useCallback(
+    (newId?: string) => {
+      if (newId === gradingAnalytics?.gradingId) return;
 
-    navigate({
-      search: (prev) => {
-        return {
-          ...prev,
-          id: newId,
-        };
-      },
-      replace: true,
-    });
-  }, []);
+      navigate({
+        search: (prev) => {
+          return {
+            ...prev,
+            id: newId,
+          };
+        },
+        replace: true,
+      });
+    },
+    [navigate],
+  );
 
   return (
     <div className="flex flex-col size-full gap-8">
@@ -64,12 +68,9 @@ function RouteComponent() {
           <ScrollableSelectMemo<GradingAttempt>
             value={gradingAnalytics?.gradingId}
             onValueChange={(grading) => setSearchParam(grading.id)}
-            searchFn={(params, token) =>
-              GradingService.getGradingAttempts(
-                { ...params, status: GradingStatus.Graded },
-                token,
-              )
-            }
+            queryOptionsFn={getInfiniteGradingAttemptsQueryOptions(auth, {
+              status: GradingStatus.Graded,
+            })}
             selectFn={(grading) => grading.id}
           />
         </div>
