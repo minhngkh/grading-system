@@ -1,6 +1,6 @@
 import { Spinner } from "./spinner";
 
-export default function PendingComponent(message: string) {
+export default function PendingComponent({ message }: { message: string }) {
   return (
     <div className="flex flex-col size-full justify-center items-center">
       <Spinner />

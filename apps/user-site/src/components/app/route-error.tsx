@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useRouter } from "@tanstack/react-router";
 
-export default function ErrorComponent(message?: string) {
+export default function ErrorComponent({ message }: { message?: string }) {
   const router = useRouter();
   const handleRetry = () => {
     router.invalidate();

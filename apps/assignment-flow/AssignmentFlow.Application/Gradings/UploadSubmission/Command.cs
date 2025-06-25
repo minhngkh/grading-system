@@ -55,17 +55,18 @@ public class CommandHandler(BlobServiceClient client)
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
-        var baseBlobName = $"{aggregate.Id}/{command.SubmissionReference}/";
+        var baseBlobPath = $"{aggregate.Id.Value}/{command.SubmissionReference}/";
+        var submissionBlobBasePath = $"{command.SubmissionReference}/";
 
         if (!SupportedZipMimeTypes.Contains(command.File.ContentType))
         {
             // Handle single file upload
             await using var stream = command.File.OpenReadStream();
-            var blobName = baseBlobName + command.File.FileName;
+            var blobName = baseBlobPath + command.File.FileName;
             var blob = container.GetBlobClient(blobName);
-            await blob.UploadAsync(stream, new BlobUploadOptions(), cancellationToken);
+            await blob.UploadAsync(stream, cancellationToken);
 
-            yield return Attachment.New(blob.Uri.AbsoluteUri);
+            yield return Attachment.New(submissionBlobBasePath + command.File.FileName);
         }
         else
         {
@@ -85,12 +86,12 @@ public class CommandHandler(BlobServiceClient client)
             foreach (var entry in archive.Entries)
             {
                 // Skip directory entries
-                if (string.IsNullOrEmpty(entry.Name) || entry.FullName.EndsWith("/"))
+                if (string.IsNullOrEmpty(entry.Name) || entry.FullName.EndsWith('/'))
                 {
                     continue;
                 }
 
-                var blobName = baseBlobName + entry.FullName;
+                var blobName = baseBlobPath + entry.FullName;
                 var blob = container.GetBlobClient(blobName);
 
                 await using var entryStream = entry.Open();
@@ -111,7 +112,7 @@ public class CommandHandler(BlobServiceClient client)
                     cancellationToken
                 );
 
-                yield return Attachment.New(blob.Uri.AbsoluteUri);
+                yield return Attachment.New(submissionBlobBasePath + entry.FullName);
             }
         }
     }

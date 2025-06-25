@@ -1,8 +1,10 @@
-import { getBlobName, getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
+import { getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
 import dedent from "dedent";
-import { okAsync, safeTry } from "neverthrow";
-import { DEFAULT_CONTAINER, downloadFiles, downloadFiles2 } from "@/lib/blob-storage";
-import { createFileAliasManifest, createMediaFileParts } from "@/plugins/ai/media-files";
+import { errAsync, okAsync, safeTry } from "neverthrow";
+import { rubricContextStore } from "@/lib/blob-storage";
+import { EmptyListError } from "@/lib/error";
+import { createTempDirectory } from "@/lib/file";
+import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-files";
 
 function createContextHeader(data: Record<string, unknown>) {
   return dedent`
@@ -19,27 +21,38 @@ const CONTEXT_MANIFEST_HEADER = dedent`
   There are also additional missing context for the provided rubric in form of files, which are uploaded separately. Please use this manifest to correlate the files with their original paths in the directory.
 `;
 
-export function generateRubricContext(data: { blobUrls: string[]; metadata: Record<string, unknown> }) {
+export function generateRubricContext(data: {
+  blobNameList: string[];
+  metadata: Record<string, unknown>;
+}) {
   return safeTry(async function* () {
-    const blobUrlPathMap = new Map<string, string>();
-    for (const blobUrl of data.blobUrls) {
-      // const blobName = yield* getBlobName(blobUrl, "");
-      const { rest: blobPath } = getBlobNameParts(blobUrl);
-      blobUrlPathMap.set(blobUrl, blobPath);
-    }
-
-    const contextFilesInfo = yield* downloadFiles2(data.blobUrls).andThen((value) => {
-      console.log("dir", value.downloadDir)
-      console.log("map", blobUrlPathMap.values())
-      return createMediaFileParts(
-        value.downloadDir,
-        Array.from(blobUrlPathMap.values()),
-        "context",
+    if (data.blobNameList.length === 0) {
+      return errAsync(
+        new EmptyListError({
+          message: "List of blob names is empty",
+          data: undefined,
+        }),
       );
-    });
+    }
+    const blobNameRoot = getBlobNameParts(data.blobNameList[0]).root;
+    const blobNameRestList = data.blobNameList.map(
+      (blobName) => getBlobNameParts(blobName).rest,
+    );
+
+    const downloadDirectory = yield* createTempDirectory("rubric-context");
+
+    const contextFilesInfo = yield* rubricContextStore
+      .downloadToDirectory(blobNameRoot, blobNameRestList, downloadDirectory)
+      .andThen(() =>
+        createLlmFileParts({
+          blobNameRestList,
+          downloadDirectory,
+          prefix: "context",
+        }),
+      );
 
     const contextFilesManifest = yield* createFileAliasManifest(
-      contextFilesInfo.urlAliasMap,
+      contextFilesInfo.BlobNameRestAliasMap,
       CONTEXT_MANIFEST_HEADER,
     );
 
@@ -49,7 +62,7 @@ export function generateRubricContext(data: { blobUrls: string[]; metadata: Reco
 
     return okAsync({
       manifest: contextManifest,
-      llmMessageParts: contextFilesInfo.parts,
+      llmMessageParts: contextFilesInfo.llmFileParts,
     });
   });
 }

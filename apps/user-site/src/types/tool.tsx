@@ -13,7 +13,6 @@ export type Tool = {
   types: ToolType[];
   isFavorite: boolean;
   navigation: LinkProps["to"];
-  params?: LinkProps["params"];
   preload?: LinkProps["preload"];
   collapseSidebar?: boolean;
 };

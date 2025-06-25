@@ -18,10 +18,9 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<RubricAgg
                 $"Cannot remove submission for grading {aggregate.Id} because it has not been created yet.");
 
         var container = client.GetBlobContainerClient("rubric-context-store");
-        var attachmentPath = $"{aggregate.Id}/{command.Reference}";
         try
         {
-            BlobClient blobClient = container.GetBlobClient(attachmentPath);
+            BlobClient blobClient = container.GetBlobClient(command.Reference);
             await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
 
             aggregate.RemoveAttachment(command.Reference);

@@ -42,11 +42,12 @@ export default function RubricGenerationPage({
   initialRubric,
   rubricStep,
 }: RubricGenerationPageProps) {
+  const navigate = useNavigate();
+  const auth = useAuth();
   const stepper = useStepper({ initialStep: rubricStep });
   const currentIndex = utils.getIndex(stepper.current.id);
   const { location } = useRouterState();
-  const navigate = useNavigate();
-  const auth = useAuth();
+
   const form = useForm<Rubric>({
     resolver: zodResolver(RubricSchema),
     defaultValues: initialRubric,
@@ -55,7 +56,8 @@ export default function RubricGenerationPage({
   const formValues = form.watch();
 
   const isNextDisabled = () => {
-    return stepper.isFirst && !form.formState.isValid;
+    const formState = RubricSchema.safeParse(form.getValues());
+    return stepper.isFirst && !formState.success;
   };
 
   const handlePrev = () => {
@@ -64,10 +66,6 @@ export default function RubricGenerationPage({
   };
 
   const handleNext = async () => {
-    if (!form.formState.isValid) {
-      return;
-    }
-
     if (stepper.isLast) {
       try {
         const token = await auth.getToken();
@@ -76,7 +74,7 @@ export default function RubricGenerationPage({
         }
 
         await RubricService.updateRubric(initialRubric.id, formValues, token);
-        navigate({ to: location.search?.redirect ?? "/rubrics", replace: true });
+        navigate({ to: location.search?.redirect ?? "/rubrics/view", replace: true });
       } catch (err) {
         toast.error("Failed to update rubric");
         console.error(err);

@@ -58,3 +58,34 @@ export const submissionGradedEvent = {
     ),
   }),
 } satisfies ServiceEvent;
+
+export const criterionGradingSuccessEvent = {
+  name: "grading.criterion.graded",
+  schema: z.object({
+    assessmentId: z.string(),
+    criterionName: z.string(),
+    metadata: z.record(z.unknown()).optional(),
+    scoreBreakdown: z.object({
+      tag: z.string(),
+      rawScore: z.number().int().min(0).max(100),
+      summary: z.string().optional(),
+      feedbackItems: z.array(
+        z.object({
+          comment: z.string(),
+          fileRef: z.string(),
+          tag: z.string(),
+          locationData: z.record(z.unknown()),
+        }),
+      ),
+    }),
+  }),
+};
+
+export const criterionGradingFailedEvent = {
+  name: "grading.criterion.failed",
+  schema: z.object({
+    assessmentId: z.string(),
+    criterionName: z.string(),
+    error: z.string(),
+  }),
+};

@@ -3,7 +3,7 @@ import PendingComponent from "@/components/app/route-pending";
 import ManageGradingsPage from "@/pages/grading/manage-grading";
 import { GradingService } from "@/services/grading-service";
 import { searchParams, SearchParams } from "@/types/search-params";
-import { createFileRoute, retainSearchParams, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, retainSearchParams } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 export const Route = createFileRoute("/_authenticated/gradings/view")({
@@ -19,14 +19,16 @@ export const Route = createFileRoute("/_authenticated/gradings/view")({
     return await GradingService.getGradingAttempts(deps, token);
   },
   search: {
-    middlewares: [retainSearchParams(["perPage", "page", "search"])],
+    middlewares: [retainSearchParams(["perPage", "page", "search", "status"])],
   },
-  errorComponent: () => ErrorComponent("Failed to load gradings"),
-  pendingComponent: () => PendingComponent("Loading gradings..."),
+  errorComponent: () => (
+    <ErrorComponent message="Failed to load gradings. Please try again later." />
+  ),
+  pendingComponent: () => <PendingComponent message="Loading gradings..." />,
 });
 
 function RouteComponent() {
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const rubricsData = Route.useLoaderData();
 
@@ -35,9 +37,7 @@ function RouteComponent() {
       search: (prev) => {
         return {
           ...prev,
-          search: partial.search?.trim() || undefined,
-          page: partial.page || prev.page,
-          perPage: partial.perPage || prev.perPage,
+          ...partial,
         };
       },
       replace: true,

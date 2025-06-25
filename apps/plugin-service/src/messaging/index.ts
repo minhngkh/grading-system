@@ -1,8 +1,11 @@
-import type z from "zod";
 import logger from "@grading-system/utils/logger";
-import { errAsync, okAsync, safeTry } from "neverthrow";
+import { errAsync, okAsync, ResultAsync, safeTry } from "neverthrow";
 import { getTransporter } from "@/lib/transporter";
-import { submissionGradedEvent, submissionStartedEvent } from "@/messaging/events";
+import {
+  criterionGradingFailedEvent,
+  criterionGradingSuccessEvent,
+  submissionStartedEvent,
+} from "@/messaging/events";
 import { gradeSubmission } from "@/plugins/ai/grade";
 
 export async function initMessaging() {
@@ -18,65 +21,57 @@ export async function initMessaging() {
         metadata: data.metadata,
       });
       if (resultList.isErr()) {
-        console.error("Error grading submission", resultList.error);
+        logger.info("Error grading submission", resultList.error);
 
-        transporter.emit(submissionGradedEvent, {
-          assessmentId: data.assessmentId,
-          scoreBreakdowns: [],
-          errors: [
-            {
-              criterionName: "",
-              error: resultList.error.message,
-            },
-          ],
-        });
+        for (const criterion of data.criteria) {
+          transporter.emit(criterionGradingFailedEvent, {
+            assessmentId: data.assessmentId,
+            criterionName: criterion.criterionName,
+            error: resultList.error.message,
+          });
+        }
         return errAsync();
       }
 
-      const gradeResults = await Promise.all(resultList.value);
+      const gradeResults = yield* ResultAsync.fromSafePromise(
+        Promise.all(resultList.value),
+      );
 
-      const message = gradeResults.reduce(
-        (acc, result) => {
-          if (result.isErr()) {
-            logger.error("Error response", result.error);
-            result.error.data.criterionNames.forEach((c) =>
-              acc.errors.push({
-                criterionName: c,
-                error: result.error.message,
-              }),
-            );
-          } else {
-            result.value.forEach((data) => {
-              acc.scoreBreakdowns.push({
-                criterionName: data.criterion,
-                tag: data.tag,
-                rawScore: data.score,
-                plugin: "ai",
-                metadata: undefined,
-                summary: data.summary,
-                feedbackItems: data.feedback.map((item) => ({
+      gradeResults.forEach((result) => {
+        if (result.isErr()) {
+          logger.info("Error when grading criterion", result.error);
+          
+          result.error.data.criterionNames.forEach((c) =>
+            transporter.emit(criterionGradingFailedEvent, {
+              assessmentId: data.assessmentId,
+              criterionName: c,
+              error: result.error.message,
+            }),
+          );
+        } else {
+          result.value.forEach((value) => {
+            transporter.emit(criterionGradingSuccessEvent, {
+              assessmentId: data.assessmentId,
+              criterionName: value.criterion,
+              // plugin: "ai",
+              metadata: {
+                ignoredFiles: value.ignoredFiles,
+              },
+              scoreBreakdown: {
+                tag: value.tag,
+                rawScore: value.score,
+                summary: value.summary,
+                feedbackItems: value.feedback.map((item) => ({
                   comment: item.comment,
                   fileRef: item.fileRef,
                   tag: "info",
-                  fromCol: item.position.fromColumn,
-                  toCol: item.position.toColumn,
-                  fromLine: item.position.fromLine,
-                  toLine: item.position.toLine,
+                  locationData: item.locationData,
                 })),
-              });
+              },
             });
-          }
-
-          return acc;
-        },
-        {
-          assessmentId: data.assessmentId,
-          scoreBreakdowns: [],
-          errors: [],
-        } as z.infer<typeof submissionGradedEvent.schema>,
-      );
-
-      transporter.emit(submissionGradedEvent, message);
+          });
+        }
+      });
 
       return okAsync();
     }),

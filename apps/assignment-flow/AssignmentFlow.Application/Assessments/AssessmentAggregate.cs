@@ -48,6 +48,16 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void Assess(Assess.Command command)
     {
+        if (command.Errors != null && command.Errors.Count != 0)
+        {
+            Emit(new Assess.AssessmentFailedEvent
+            {
+                GradingId = State.GradingId,
+                Errors = command.Errors
+            });
+            return;
+        }
+
         if (command.Grader.IsAIGrader)
         {
             NormalizeScores(command.ScoreBreakdowns);
@@ -59,6 +69,30 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
             ScoreBreakdowns = command.ScoreBreakdowns,
             Feedbacks = command.Feedbacks,
             GradingId = State.GradingId,
+        });
+    }
+
+    public void AssessCriterion(AssessCriterion.Command command)
+    {
+        if (command.ScoreBreakdownItem.Grader.IsAIGrader)
+        {
+            var rubric = rubricProtoService.GetRubric(new GetRubricRequest
+            {
+                RubricId = State.RubricId
+            });
+
+            var criteria = rubric.Criteria;
+            NormalizeScore(command.ScoreBreakdownItem, criteria);
+        }
+
+        Emit(new AssessCriterion.CriterionAssessedEvent
+        {
+            ScoreBreakdownItem = command.ScoreBreakdownItem
+        });
+
+        Emit(new UpdateFeedBack.FeedbacksUpdatedEvent
+        {
+            Feedbacks = command.Feedbacks
         });
     }
 
@@ -74,22 +108,33 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         });
 
         var criteria = rubric.Criteria;
-        foreach (var item in scoreBreakdowns.BreakdownItems)
+        foreach (var item in scoreBreakdowns)
         {
-            var criterion = criteria.FirstOrDefault(c => c.Name == item.CriterionName);
-
-            if (criterion == null)
-            {
-                logger.LogWarning("Criterion {CriterionName} not found in rubric {RubricId}. Skipping assessment for this criterion.",
-                    item.CriterionName, State.RubricId);
-                continue;
-            }
-
-            item.NormalizeRawScore((decimal)criterion.Weight);
+            NormalizeScore(item, criteria);
         }
     }
 
-    public void UpdateFeedBack() { }
+    private void NormalizeScore(ScoreBreakdownItem item, IEnumerable<CriterionModel> criteria)
+    {
+        var criterion = criteria.FirstOrDefault(c => c.Name == item.CriterionName);
+
+        if (criterion == null)
+        {
+            logger.LogWarning("Criterion {CriterionName} not found in rubric {RubricId}. Skipping assessment for this criterion.",
+                item.CriterionName, State.RubricId);
+            return;
+        }
+
+        item.NormalizeRawScore((decimal)criterion.Weight);
+    }
+
+    public void UpdateFeedbacks(UpdateFeedBack.Command command)
+    {
+        Emit(new UpdateFeedBack.FeedbacksUpdatedEvent
+        {
+            Feedbacks = command.Feedbacks
+        });
+    }
 }
 
 public class AssessmentId(string id) : Identity<AssessmentId>(id) { }

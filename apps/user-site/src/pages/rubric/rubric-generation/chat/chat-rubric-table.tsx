@@ -1,5 +1,4 @@
 import type { Rubric } from "@/types/rubric";
-import { RubricView } from "@/components/app/rubric-view";
 import {
   Card,
   CardContent,
@@ -16,12 +15,28 @@ import { RubricContextUploadDialog } from "./context-upload-dialog";
 import { toast } from "sonner";
 import { RubricService } from "@/services/rubric-service";
 import { useAuth } from "@clerk/clerk-react";
+import { lazy, Suspense } from "react";
+
+const RubricView = lazy(() =>
+  import("@/components/app/rubric-view").then((module) => ({
+    default: module.RubricView,
+  })),
+);
 
 interface RubricTableProps {
   rubricData: Rubric;
   onUpdate?: (updatedRubric: Partial<Rubric>) => void;
   disableEdit?: boolean;
   isApplyingEdit?: boolean;
+}
+
+function LoadingFallback({ message }: { message?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      <Spinner />
+      <p>{message || "Loading rubric. Please wait..."}</p>
+    </div>
+  );
 }
 
 function ChatRubricTable({
@@ -106,13 +121,16 @@ function ChatRubricTable({
         </CardHeader>
         <CardContent className="flex-1">
           {isApplyingEdit ?
-            <div className="flex flex-col items-center justify-center h-full">
-              <Spinner />
-              <p>Agent is modifying the rubric. Please wait...</p>
-            </div>
+            <LoadingFallback message="Agent is modifying the rubric. Please wait..." />
           : <div className="h-full overflow-y-auto relative">
               <div className="h-full absolute top-0 left-0 right-0">
-                <RubricView rubricData={rubricData} />
+                <Suspense
+                  fallback={
+                    <LoadingFallback message="Loading rubric view. Please wait..." />
+                  }
+                >
+                  <RubricView rubricData={rubricData} />
+                </Suspense>
               </div>
             </div>
           }

@@ -26,8 +26,10 @@ export const Route = createFileRoute(
     const rubric = await RubricService.getRubric(grading.rubricId, token);
     return { assessment, grading, rubric };
   },
-  errorComponent: () => ErrorComponent("Failed to load assessment."),
-  pendingComponent: () => PendingComponent("Loading assessment..."),
+  errorComponent: () => (
+    <ErrorComponent message="Failed to load assessment. Please try again later." />
+  ),
+  pendingComponent: () => <PendingComponent message="Loading assessment..." />,
 });
 
 function RouteComponent() {

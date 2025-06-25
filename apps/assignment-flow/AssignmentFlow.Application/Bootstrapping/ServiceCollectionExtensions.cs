@@ -1,9 +1,18 @@
-﻿using FluentValidation;
+﻿using AssignmentFlow.Application.Assessments;
+using AssignmentFlow.Application.Gradings;
+using EventFlow.EntityFramework;
+using EventFlow.EntityFramework.Extensions;
+using EventFlow.Extensions;
+using EventFlow.PostgreSql.Connections;
+using EventFlow.PostgreSql.EventStores;
+using EventFlow.PostgreSql.Extensions;
+using FluentValidation;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using RubricEngine.Application.Protos;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
@@ -14,20 +23,23 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddBootstrapping(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
-        // Add application services here
-        // Example: services.AddScoped<IMyService, MyService>();
         services
             .AddOpenApi()
             .AddJwtAuthentication(configuration)
             .AddMessageBus(configuration, typeof(Program).Assembly)
+            .AddProjectEventFlow(configuration, typeof(Program).Assembly)
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
             .AddGrpcClients(configuration)
-            .AddServiceBootstrapping(configuration)
-            .Configure<FormOptions>(options =>
-            {
-                options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB;
-            });
+            .AddServiceBootstrapping(configuration);
+
+        services.AddAntiforgery();
+        services.AddSignalR();
+
+        services.Configure<FormOptions>(options =>
+        {
+            options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB;
+        });
 
         return services;
     }
@@ -51,7 +63,34 @@ public static class ServiceCollectionExtensions
                     ValidateLifetime = true
                 };
 
-                //jwtOptions.MapInboundClaims = false;
+                // We have to hook the OnMessageReceived event in order to
+                // allow the JWT authentication handler to read the access
+                // token from the query string when a WebSocket or 
+                // Server-Sent Events request comes in.
+
+                // Sending the access token in the query string is required when using WebSockets or ServerSentEvents
+                // due to a limitation in Browser APIs. We restrict it to only calls to the
+                // SignalR hub in this code.
+                // See https://docs.microsoft.com/aspnet/core/signalr/security#access-token-logging
+                // for more information about security considerations when using
+                // the query string to transmit the access token.
+                jwtOptions.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+
+                        // If the request is for our hub...
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            (path.StartsWithSegments("/hubs/gradings")))
+                        {
+                            // Read the token out of the query string
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
         return services;
@@ -109,6 +148,27 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    private static IServiceCollection AddProjectEventFlow(this IServiceCollection services, IConfiguration configuration, Assembly? assembly)
+    {
+        services.AddEventFlow(ef => ef
+            .Configure(o =>
+            {
+                o.IsAsynchronousSubscribersEnabled = true;
+                o.ThrowSubscriberExceptions = true;
+            })
+            .ConfigurePostgreSql(PostgreSqlConfiguration.New
+                .SetConnectionString(configuration.GetConnectionString("assignmentflowdb")))
+            .UseEventPersistence<PostgreSqlEventPersistence>()
+            .AddDefaults(typeof(Program).Assembly)
+            .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
+            .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
+            .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
+            .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
+        );
+
+        return services;
+    }
+
     private static IServiceCollection AddGrpcClients(this IServiceCollection services, IConfiguration configuration)
     {
         //Grpc Services
@@ -132,8 +192,6 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddServiceBootstrapping(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddTransient<DbInitializer>();
-        services.AddAntiforgery();
-
         return services;
     }
 }

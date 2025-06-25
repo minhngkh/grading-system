@@ -1,5 +1,12 @@
-import { Assessment, FeedbackItem, ScoreBreakdown } from "@/types/assessment";
-import axios, { AxiosRequestConfig } from "axios";
+import { eq } from "@/lib/json-api-query";
+import {
+  Assessment,
+  AssessmentState,
+  FeedbackItem,
+  ScoreBreakdown,
+} from "@/types/assessment";
+import { GetAllResult, SearchParams } from "@/types/search-params";
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { Deserializer } from "jsonapi-serializer";
 
 const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
@@ -29,6 +36,7 @@ export class AssessmentService {
       adjustedCount: record.adjustedCount,
       scoreBreakdowns: record.scoreBreakdowns ?? [],
       feedbacks: record.feedbacks ?? [],
+      status: record.status,
     };
   }
 
@@ -39,16 +47,41 @@ export class AssessmentService {
   }
 
   static async getGradingAssessments(
+    params: SearchParams,
     gradingId: string,
     token: string,
-  ): Promise<Assessment[]> {
+  ): Promise<GetAllResult<Assessment>> {
+    const { page, perPage } = params;
+
     const configHeaders = await this.buildHeaders(token);
+    const filter = eq("gradingId", gradingId);
     const response = await axios.get(
-      `${ASSESSMENT_API_URL}?filter=equals(gradingId,'${gradingId}')`,
+      `${ASSESSMENT_API_URL}?filter=${filter}&page[number]=${page}&page[size]=${perPage}`,
       configHeaders,
     );
 
-    return this.assessmentDeserializer.deserialize(response.data);
+    const data = await this.assessmentDeserializer.deserialize(response.data);
+    return { data, meta: response.data.meta };
+  }
+
+  static async getAllGradingAssessments(
+    gradingId: string,
+    token: string,
+  ): Promise<Assessment[]> {
+    let allData: Assessment[] = [];
+
+    const filter = eq("gradingId", gradingId);
+    const configHeaders = await this.buildHeaders(token);
+    let nextUrl: string | null = `${ASSESSMENT_API_URL}?filter=${filter}`;
+
+    while (nextUrl) {
+      const response: AxiosResponse = await axios.get(nextUrl, configHeaders);
+      const data = await this.assessmentDeserializer.deserialize(response.data);
+      allData.push(...data);
+      nextUrl = data.links?.next ?? null;
+    }
+
+    return allData;
   }
 
   static async updateFeedback(
@@ -72,7 +105,6 @@ export class AssessmentService {
     token: string,
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
-    console.log("Updating score for assessment:", id, scoreBreakdowns);
     const response = await axios.post(
       `${ASSESSMENT_API_URL}/${id}/scores`,
       { scoreBreakdowns: scoreBreakdowns },
@@ -80,5 +112,25 @@ export class AssessmentService {
     );
     console.log("Score update response:", response.data);
     return this.ConvertToAssessment(response.data);
+  }
+
+  static async rerunAssessment(id: string, token: string) {
+    const configHeaders = await this.buildHeaders(token);
+    return await axios.post(
+      `${ASSESSMENT_API_URL}/${id}/startAutoGrading`,
+      null,
+      configHeaders,
+    );
+  }
+
+  static async getAssessmentStatus(id: string, token: string): Promise<AssessmentState> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(
+      `${ASSESSMENT_API_URL}/${id}?fields[gradings]=status`,
+      configHeaders,
+    );
+
+    const assessment = await this.assessmentDeserializer.deserialize(response.data);
+    return assessment.status;
   }
 }

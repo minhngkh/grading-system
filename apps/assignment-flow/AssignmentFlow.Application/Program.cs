@@ -1,12 +1,6 @@
-using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Bootstrapping;
 using AssignmentFlow.Application.Gradings;
-using EventFlow.EntityFramework;
-using EventFlow.EntityFramework.Extensions;
-using EventFlow.Extensions;
-using EventFlow.PostgreSql.Connections;
-using EventFlow.PostgreSql.EventStores;
-using EventFlow.PostgreSql.Extensions;
+using AssignmentFlow.Application.Gradings.Hub;
 using JsonApiDotNetCore.Configuration;
 using Scalar.AspNetCore;
 
@@ -21,30 +15,19 @@ builder.Services
     .AddShared(builder.Configuration, builder.Environment)
     .AddGradings();
 
-builder.Services.AddEventFlow(ef => ef
-    .Configure(o =>
-    {
-        o.IsAsynchronousSubscribersEnabled = true;
-        o.ThrowSubscriberExceptions = true;
-    })
-    .ConfigurePostgreSql(PostgreSqlConfiguration.New
-        .SetConnectionString(builder.Configuration.GetConnectionString("assignmentflowdb")))
-    .UseEventPersistence<PostgreSqlEventPersistence>()
-    .AddDefaults(typeof(Program).Assembly)
-    .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
-    .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
-    .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
-    .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
-    .ConfigureOptimisticConcurrencyRetry(retries: 5, delayBeforeRetry: TimeSpan.FromMilliseconds(200))
-);
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins")
+    .Get<string[]>()
+    ?? ["http://localhost:5173"];
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>
     {
-        builder.AllowAnyOrigin()
+        builder.WithOrigins(allowedOrigins)
                .AllowAnyMethod()
-               .AllowAnyHeader();
+               .AllowAnyHeader()
+               .AllowCredentials();
     });
 });
 
@@ -60,6 +43,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
+
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(2)
+};
+
+app.UseWebSockets(webSocketOptions);
 
 // Initialize the database
 using (var scope = app.Services.CreateScope())
@@ -77,6 +67,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseJsonApi();
+app.MapHub<GradingsHub>("/hubs/gradings");
 app.MapAssignmentFlowEndpoints();
 
 app.UseHealthChecks("/health");

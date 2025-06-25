@@ -2,7 +2,6 @@ import {
   AgentChatResponse,
   ChatMessage,
   ChatRubric,
-  ChatRubricSchema,
   type RubricAgentResponse,
 } from "@/types/chat";
 import axios, { AxiosRequestConfig } from "axios";
@@ -51,7 +50,7 @@ export class ChatService {
     const res = await axios.post(`${AI_PLUGIN_URL}/chat`, data, configHeaders);
     return {
       message: res.data.message,
-      rubric: res.data.rubric ? ChatRubricSchema.parse(res.data.rubric) : undefined,
+      rubric: res.data.rubric ? res.data.rubric : undefined,
     };
   }
 

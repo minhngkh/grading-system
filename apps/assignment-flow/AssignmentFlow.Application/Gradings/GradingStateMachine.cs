@@ -25,8 +25,9 @@ public sealed class GradingStateMachine : StateMachine<GradingState, GradingTrig
             .Permit(GradingTrigger.FinishGrading, GradingState.Graded);
 
         Configure(GradingState.Graded)
-            //.Permit(GradingTrigger.Start, GradingState.Started)
-            .Permit(GradingTrigger.Complete, GradingState.Completed);
+            .PermitReentry(GradingTrigger.FinishGrading) // Allow re-grade single assessment
+            .Permit(GradingTrigger.Complete, GradingState.Completed)
+            .Permit(GradingTrigger.Restart, GradingState.Started);
     }
 }
 
@@ -35,7 +36,8 @@ public enum GradingTrigger
     UploadSubmission = 0,
     Start = 1,
     FinishGrading = 2,
-    Complete = 3
+    Complete = 3,
+    Restart = 4
 }
 
 public enum GradingState

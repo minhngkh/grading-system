@@ -116,9 +116,7 @@ export const ChangeScaleFactorDialog = ({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="scale-factor" className="text-sm font-medium">
-              Grade Scale
-            </Label>
+            <Label className="text-sm font-medium">Grade Scale</Label>
             <Input
               id="grade-scale"
               type="number"

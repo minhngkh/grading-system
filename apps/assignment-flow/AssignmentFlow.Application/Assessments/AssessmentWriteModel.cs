@@ -34,6 +34,7 @@ public class AssessmentWriteModel
         StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
     }
 
+    //Keep this for backward compatibility
     internal void Apply(Assess.AssessedEvent @event)
     {
         ScoreBreakdowns = @event.ScoreBreakdowns;
@@ -47,5 +48,21 @@ public class AssessmentWriteModel
         {
             StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
         }
+    }
+
+
+    internal void Apply(AssessCriterion.CriterionAssessedEvent @event)
+    {
+        ScoreBreakdowns.AddOrUpdate(@event.ScoreBreakdownItem);
+    }
+    
+    internal void Apply(UpdateFeedBack.FeedbacksUpdatedEvent @event)
+    {
+        Feedbacks = @event.Feedbacks;
+    }
+
+    internal void Apply(Assess.AssessmentFailedEvent @event)
+    {
+        StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);
     }
 }

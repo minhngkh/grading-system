@@ -33,23 +33,24 @@ public class CommandHandler(
         await publishEndpoint.Publish<ISubmissionGradingStarted>(new
         {
             AssessmentId = aggregate.Id,
-            Criteria = MapCriteria(command.Submission, rubric),
+            Criteria = MapCriteria(aggregate.State.GradingId, command.Submission, rubric),
             Metadata = metadata,
-            Attachments = rubric.Attachments.Select(a => $"{rubric.Id}/{a}").ToArray()
+            // Attachments = rubric.Attachments.Select(a => $"{rubric.Id}/{a}").ToArray()
+            Attachments = rubric.Attachments.ToArray()
         },
         cancellationToken);
 
         aggregate.StartAutoGrading();
     }
 
-    private static Criterion[] MapCriteria(SubmissionApiContract submission, RubricModel rubric)
+    private static Criterion[] MapCriteria(string gradingId, SubmissionApiContract submission, RubricModel rubric)
         => [.. submission.CriteriaFiles.Join(rubric.Criteria,
             outerKeySelector: c => c.Criterion,
             innerKeySelector: c => c.Name,
             (submissionCriterion, rubricCriterion) => new Criterion
             {
                 CriterionName = rubricCriterion.Name,
-                FileRefs = [.. submissionCriterion.Files],
+                FileRefs = [.. submissionCriterion.Files.Select(path => $"{gradingId}/{path}")],
                 Levels = [.. rubricCriterion.Levels.Select(l => new Level
                 {
                     Tag = l.Tag,
