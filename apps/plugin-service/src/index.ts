@@ -19,12 +19,12 @@ const api = createApiGateway(broker);
 async function start() {
   try {
     // Connect to MongoDB
-    // await connectMongoDB();
-    // logger.info("Connected to MongoDB");
+    await connectMongoDB();
+    logger.info("Connected to MongoDB");
 
-    // // Initialize default plugins if needed
-    // await syncDB();
-    // logger.info("Plugin initialization completed");
+    // Initialize default plugins if needed
+    await syncDB();
+    logger.info("Plugin initialization completed");
 
     // Set up event listeners for interacting with external systems
     await initMessaging();

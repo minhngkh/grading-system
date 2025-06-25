@@ -79,13 +79,13 @@ export function createLlmFileParts(data: {
       const filePath = path.join(data.downloadDirectory, nameRest);
 
       return readFile(filePath).map((content): Result<FilePart, void> => {
-        const fileAlias = `${prefix}_${idx}`;
-        BlobNameRestAliasMap.set(nameRest, fileAlias);
-
         const contentType = mime.getType(nameRest);
         if (contentType === null || !SUPPORTED_CONTENT_TYPES.includes(contentType)) {
           return err();
         }
+
+        const fileAlias = `${prefix}_${idx}${path.extname(nameRest)}`;
+        BlobNameRestAliasMap.set(nameRest, fileAlias);
 
         return ok({
           type: "file",
@@ -122,7 +122,9 @@ export function createLlmFileParts(data: {
 
 export const GRADING_FILES_HEADER = dedent`
   ### MULTIMODAL FILE MANIFEST ###
-  Addition to all of the text files listed above, this prompt includes the following non-text files, which have been uploaded separately. Please use this manifest to correlate the files with their original paths in the directory.
+  - Addition to all of the text files listed above, this prompt includes the following non-text files, which have been uploaded separately. Please use this manifest to correlate the files with their original paths in the directory.
+  - Remember to use the file original path instead of the uploaded file name when referring to the files in your response.
+    - For example, if the uploaded file name is \`file_1.txt\` the original path is \`/path/to/text.txt\`, you should refer to the file as \`/path/to/text.txt\` in your response.
 `;
 
 const SEPARATOR = "\n---\n";
@@ -136,7 +138,7 @@ export function createFileAliasManifest(
     const entries: string[] = [];
     for (const [url, alias] of BlobNameRestAliasMap) {
       entries.push(dedent`
-        - **File name:** \`${alias}\`
+        - **Uploaded file name:** \`${alias}\`
           - Original Path: \`${url}\`
   
       `);

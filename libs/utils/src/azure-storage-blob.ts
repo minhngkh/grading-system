@@ -125,7 +125,7 @@ export class BlobContainer {
 
           deleteDirectory(directoryPath)
             .orTee((error) => {
-              logger.error(`Failed to clean temporary download directory`, error);
+              logger.debug(`Failed to clean temporary download directory`, error);
             })
             .andTee(() => {
               logger.debug(`Successfully clean temporary download directory`);

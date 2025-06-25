@@ -21,7 +21,7 @@ export async function initMessaging() {
         metadata: data.metadata,
       });
       if (resultList.isErr()) {
-        console.error("Error grading submission", resultList.error);
+        logger.info("Error grading submission", resultList.error);
 
         for (const criterion of data.criteria) {
           transporter.emit(criterionGradingFailedEvent, {
@@ -39,7 +39,8 @@ export async function initMessaging() {
 
       gradeResults.forEach((result) => {
         if (result.isErr()) {
-          logger.error("Error response", result.error);
+          logger.info("Error when grading criterion", result.error);
+          
           result.error.data.criterionNames.forEach((c) =>
             transporter.emit(criterionGradingFailedEvent, {
               assessmentId: data.assessmentId,

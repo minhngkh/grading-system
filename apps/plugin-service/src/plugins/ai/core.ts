@@ -126,6 +126,7 @@ const chatSystemPrompt = dedent`
   ---
 
   ### Decision Logic
+  - Detect and response in user's language
   - If the user's input is a **general question** (e.g. about grading, rubrics, tags, or weights), you must:
     - Return \`rubric: null\`
     - Provide the answer to the question naturally in the \`message\` field

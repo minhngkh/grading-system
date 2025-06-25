@@ -21,7 +21,7 @@ export function checkTempDirectoryExists(name: string) {
 }
 
 class CreateDirectoryError extends CustomError<{ path: string }> {}
-export function createDirectory(directoryPath: string, recursive = false) {
+export function createDirectory(directoryPath: string, recursive = true) {
   return ResultAsync.fromPromise(
     fs.mkdir(directoryPath, { recursive: true }),
     (error) =>

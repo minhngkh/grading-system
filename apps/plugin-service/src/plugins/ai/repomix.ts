@@ -36,7 +36,7 @@ function packFiles(options: {
     const packingRunResult = yield* ResultAsync.fromPromise(
       runDefaultAction([options.directory], options.outputDirectory, runOptions),
       (error) => {
-        logger.error("Failed to pack files:", error);
+        logger.info("Failed to pack files:", error);
         return wrapError(error, "Failed to pack files");
       },
     );
@@ -49,7 +49,7 @@ function packFiles(options: {
     ).andTee(() => {
       if (DELETE_PACKED_FILE) {
         deleteFile(outputFilePath).orTee((error) => {
-          logger.error(`Failed to delete packed file after packing`, error);
+          logger.info(`Failed to delete packed file after packing`, error);
         });
       }
     });

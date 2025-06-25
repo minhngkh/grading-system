@@ -1,5 +1,9 @@
 import type { FilePart } from "ai";
 import type { LanguageModelWithOptions } from "@/core/llm/types";
+import { fstat } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import process from "node:process";
 import {
   getBlobNameParts,
   getBlobNameRest,
@@ -8,7 +12,7 @@ import { CustomError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { generateObject } from "ai";
 import dedent from "dedent";
-import { errAsync, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
+import { errAsync, fromPromise, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
 import z from "zod";
 import { googleProviderOptions } from "@/core/llm/providers/google";
 import { registry } from "@/core/llm/registry";
@@ -47,12 +51,17 @@ const pdfLocationDataSchema = z
     "Page of the PDF file to highlight the reason why you conclude to that comment",
   );
 
+const otherLocationDataSchema = z.object({
+  type: z.literal("other"),
+});
+
 export const feedbackSchema = z.object({
   comment: z.string().describe("short comment about the reason"),
   fileRef: z.string().describe("The file that the comment refers to"),
   locationData: z.discriminatedUnion("type", [
     textLocationDataSchema,
     pdfLocationDataSchema,
+    otherLocationDataSchema,
   ]),
 });
 
@@ -111,6 +120,7 @@ function createGradingSystemPrompt(partOfRubric: Criterion[]) {
         - is less than 100, you should provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the file that you based your decision on on \`locationData\`, and on which file, if applicable
           - Note that the \`fileRef\` must be the original file path if you are referring to uploaded files that you can get by using the multimodal file manifest below (if present)
           - Text file output by repomix have the line number included at the start of each line, so use that to highlight correctly if your feedback is for a text file
+          - Use the correct \`locationData\` type based on the file type, if it is a text file provided by repomix output, then use \`text\` type. If it is a multimodal uploaded file (should be listed in the manifest below if any), check the extension, then use \`pdf\` type if it is a PDF file, or \`other\` type if it is any other file type. Don't use \`text\` type for multimodal files
   `;
 }
 
@@ -127,6 +137,28 @@ export function gradeCriteria(options: {
 }) {
   const systemPrompt = createGradingSystemPrompt(options.partOfRubric);
   const prompt = `${options.header || ""}\n${options.prompt}\n${options.footer || ""}`;
+
+  fromPromise(mkdir(path.join(process.cwd(), "tmp")), () => {
+    logger.debug("Failed to create tmp directory for grading system prompt");
+  });
+
+  fromPromise(
+    writeFile(
+      path.join(process.cwd(), "tmp/grading-system-prompt.txt"),
+      systemPrompt,
+      "utf-8",
+    ),
+    () => {
+      logger.debug("Failed to write grading system prompt to file");
+    },
+  );
+
+  fromPromise(
+    writeFile(path.join(process.cwd(), "tmp/grading-prompt.txt"), prompt, "utf-8"),
+    () => {
+      logger.debug("Failed to write grading prompt to file");
+    },
+  );
 
   return ResultAsync.fromPromise(
     generateObject({
