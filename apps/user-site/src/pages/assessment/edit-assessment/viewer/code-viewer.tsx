@@ -4,29 +4,31 @@ import { FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
 import { Button } from "@/components/ui/button";
 import "./viewer.css";
+import { FileItem } from "@/types/file";
 
 interface HighlightableViewerProps {
-  type: "code" | "essay";
-  content: string; // Nhận content trực tiếp
+  file: FileItem;
   feedbacks: FeedbackItem[];
+  feedbacksAll?: FeedbackItem[]; // Thêm prop này
   updateFeedback: (newFeedbacks: FeedbackItem[]) => void;
   isHighlightMode: boolean;
   onHighlightComplete: () => void;
   activeFeedbackId?: string | null;
-  fileUrl?: string;
   rubricCriteria?: string[];
 }
 export default function HighlightableViewer({
-  type,
-  content,
+  file,
   feedbacks,
+  feedbacksAll = [],
   updateFeedback,
   isHighlightMode,
   onHighlightComplete,
   activeFeedbackId,
-  fileUrl,
   rubricCriteria = [],
 }: HighlightableViewerProps) {
+  // Xác định type tại đây
+  // const type = file.extension === "txt" ? "essay" : "code";
+
   const { theme = "light" } = useTheme?.() || {};
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -39,8 +41,7 @@ export default function HighlightableViewer({
 
   // Determine language from fileUrl
   let language = "plaintext";
-  if (fileUrl) {
-    const ext = fileUrl.split(".").pop()?.toLowerCase() || "";
+  if (file.relativePath) {
     language =
       {
         js: "javascript",
@@ -65,8 +66,8 @@ export default function HighlightableViewer({
         md: "markdown",
         txt: "plaintext",
         h: "c",
-      }[ext] ||
-      ext ||
+      }[file.extension] ||
+      file.extension ||
       "plaintext";
   }
 
@@ -107,14 +108,14 @@ export default function HighlightableViewer({
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 0) return;
       const lineEl = (e.target as HTMLElement).closest(
-        type === "code" ? ".line" : "[data-line]",
+        file.type === "code" ? ".line" : "[data-line]",
       ) as HTMLElement;
       if (!lineEl) return;
       isMouseDown = true;
       mouseMoved = false;
       // Tách logic lấy số dòng cho code và essay
       const line =
-        type === "code" ?
+        file.type === "code" ?
           parseInt(lineEl.dataset.line || "0", 10) // code: zero-based
         : parseInt(lineEl.dataset.line || "0", 10) + 1; // essay: one-based
       const col = calculateColumn(e, lineEl); // col luôn từ 0
@@ -128,11 +129,11 @@ export default function HighlightableViewer({
     const onMouseUp = (e: MouseEvent) => {
       if (!isMouseDown) return;
       const lineEl = (e.target as HTMLElement).closest(
-        type === "code" ? ".line" : "[data-line]",
+        file.type === "code" ? ".line" : "[data-line]",
       ) as HTMLElement;
       if (lineEl && startPosition) {
         const line =
-          type === "code" ?
+          file.type === "code" ?
             parseInt(lineEl.dataset.line || "0", 10)
           : parseInt(lineEl.dataset.line || "0", 10) + 1;
         const col = calculateColumn(e, lineEl);
@@ -157,16 +158,13 @@ export default function HighlightableViewer({
       window.removeEventListener("mousemove", onMouseMove);
       // mouseup is once:true
     };
-  }, [isHighlightMode, type]);
+  }, [isHighlightMode, file.type]);
 
   // --- Add feedback ---
   const addFeedback = () => {
     if (!selectionRange || !newComment.trim() || !newCriterion) return;
     const { from, to } = selectionRange;
-    let fileRef = "";
-    if (fileUrl) {
-      fileRef = fileUrl.split("/").pop() || "";
-    }
+    let fileRef = file.relativePath || "";
     const newFeedback: FeedbackItem = {
       criterion: newCriterion,
       fileRef,
@@ -187,9 +185,12 @@ export default function HighlightableViewer({
   };
 
   // --- Render content ---
-  let visibleFeedbacks = feedbacks;
   const renderContent = () => {
-    if (type === "code") {
+    // Lọc feedback hợp lệ
+    //
+    // const validFeedbacks = getAdjustedFeedbacks(content, feedbacks);
+
+    if (file.type === "code") {
       const getShikiTheme = () => (theme === "dark" ? "github-dark" : "github-light");
       return (
         <ShikiHighlighter
@@ -201,9 +202,17 @@ export default function HighlightableViewer({
           transformers={[
             {
               preprocess(code, options) {
-                let decorations = visibleFeedbacks
-                  .map((fb, idx) => {
-                    // Nếu fromLine == toLine và fromCol == toCol thì tăng toLine lên 1
+                let decorations = feedbacks
+                  .map((fb) => {
+                    // Lấy index toàn cục của feedback này trong feedbacksAll
+                    const globalIdx = feedbacksAll.findIndex(
+                      (item) =>
+                        item.fileRef === fb.fileRef &&
+                        item.fromLine === fb.fromLine &&
+                        item.toLine === fb.toLine &&
+                        item.criterion === fb.criterion &&
+                        item.comment === fb.comment,
+                    );
                     let fromLine = fb.fromLine!;
                     let toLine = fb.toLine!;
                     let fromCol = fb.fromCol!;
@@ -218,7 +227,7 @@ export default function HighlightableViewer({
                     ) {
                       toLine = fromLine + 1;
                     }
-                    return { fb: { ...fb, fromLine, toLine, fromCol, toCol }, idx };
+                    return { fb: { ...fb, fromLine, toLine, fromCol, toCol }, globalIdx };
                   })
                   .filter(
                     ({ fb }) =>
@@ -227,13 +236,13 @@ export default function HighlightableViewer({
                       typeof fb.fromCol === "number" &&
                       typeof fb.toCol === "number",
                   );
-                // Nếu có activeFeedbackId, chỉ giữ decoration của feedback đó
+                // Nếu có activeFeedbackId, chỉ giữ decoration của feedback đó (so sánh index toàn cục)
                 if (activeFeedbackId !== undefined && activeFeedbackId !== null) {
                   decorations = decorations.filter(
-                    ({ idx }) => String(idx) === String(activeFeedbackId),
+                    ({ globalIdx }) => String(globalIdx) === String(activeFeedbackId),
                   );
                 }
-                options.decorations = decorations.map(({ fb, idx }) => ({
+                options.decorations = decorations.map(({ fb, globalIdx }) => ({
                   start: {
                     line: fb.fromLine! - 1,
                     character: fb.fromCol!,
@@ -245,10 +254,12 @@ export default function HighlightableViewer({
                   properties: {
                     class:
                       "annotation-span" +
-                      (activeFeedbackId && String(idx) === String(activeFeedbackId) ?
+                      ((
+                        activeFeedbackId && String(globalIdx) === String(activeFeedbackId)
+                      ) ?
                         " annotation-span-focused"
                       : ""),
-                    "data-id": String(idx),
+                    "data-id": String(globalIdx),
                     "data-comment": fb.comment,
                     "data-tag": fb.tag,
                     "data-criterion": fb.criterion,
@@ -269,7 +280,7 @@ export default function HighlightableViewer({
             },
           ]}
         >
-          {content}
+          {file.content}
         </ShikiHighlighter>
       );
     }
@@ -279,9 +290,17 @@ export default function HighlightableViewer({
         pos: number;
         type: "start" | "end";
         fb: FeedbackItem;
-        idx: number;
+        globalIdx: number;
       }[] = [];
-      visibleFeedbacks.forEach((fb, idx) => {
+      feedbacks.forEach((fb) => {
+        const globalIdx = feedbacksAll.findIndex(
+          (item) =>
+            item.fileRef === fb.fileRef &&
+            item.fromLine === fb.fromLine &&
+            item.toLine === fb.toLine &&
+            item.criterion === fb.criterion &&
+            item.comment === fb.comment,
+        );
         if (
           typeof fb.fromCol !== "number" ||
           typeof fb.toCol !== "number" ||
@@ -293,23 +312,23 @@ export default function HighlightableViewer({
         const start = fb.fromCol;
         const end = fb.toCol;
         if (start < end) {
-          boundaries.push({ pos: start, type: "start", fb, idx });
-          boundaries.push({ pos: end, type: "end", fb, idx });
+          boundaries.push({ pos: start, type: "start", fb, globalIdx });
+          boundaries.push({ pos: end, type: "end", fb, globalIdx });
         }
       });
       boundaries.sort((a, b) => a.pos - b.pos || (a.type === "end" ? -1 : 1));
       const segments: {
         start: number;
         end: number;
-        feedbacks: { fb: FeedbackItem; idx: number }[];
+        feedbacks: { fb: FeedbackItem; globalIdx: number }[];
       }[] = [];
-      let active: { fb: FeedbackItem; idx: number }[] = [];
+      let active: { fb: FeedbackItem; globalIdx: number }[] = [];
       let lastPos = 0;
       for (const b of boundaries) {
         if (b.pos > lastPos) {
           segments.push({ start: lastPos, end: b.pos, feedbacks: [...active] });
         }
-        if (b.type === "start") active.push({ fb: b.fb, idx: b.idx });
+        if (b.type === "start") active.push({ fb: b.fb, globalIdx: b.globalIdx });
         else active = active.filter((f) => f.fb !== b.fb);
         lastPos = b.pos;
       }
@@ -321,7 +340,7 @@ export default function HighlightableViewer({
 
     return (
       <div className="font-serif text-md leading-relaxed whitespace-pre-wrap p-3">
-        {content.split("\n").map((line, i) => {
+        {file.content.split("\n").map((line, i) => {
           if (line === "") {
             return (
               <div key={i} data-line={i}>
@@ -338,7 +357,7 @@ export default function HighlightableViewer({
                 if (activeFeedbackId !== undefined && activeFeedbackId !== null) {
                   // Tìm feedback đang active trong seg.feedbacks
                   const activeFb = seg.feedbacks.find(
-                    (f) => String(f.idx) === String(activeFeedbackId),
+                    (f) => String(f.globalIdx) === String(activeFeedbackId),
                   );
                   if (activeFb) {
                     // Chỉ wrap đoạn text này bằng span actived cho feedback active
@@ -362,7 +381,7 @@ export default function HighlightableViewer({
                           "annotation-span actived annotation-span-focused " +
                           (seg.feedbacks.length === 1 ? "highlight-top" : "")
                         }
-                        data-id={String(activeFb.idx)}
+                        data-id={String(activeFb.globalIdx)}
                         data-comment={activeFb.fb.comment}
                         data-tag={activeFb.fb.tag}
                       >
@@ -397,7 +416,7 @@ export default function HighlightableViewer({
                             "highlight-top"
                           : "highlight-under")
                         }
-                        data-id={String(f.idx)}
+                        data-id={String(f.globalIdx)}
                         data-comment={f.fb.comment}
                         data-tag={f.fb.tag}
                       >

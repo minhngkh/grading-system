@@ -4,7 +4,6 @@ import { Deserializer } from "jsonapi-serializer";
 
 const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
 const ASSESSMENT_API_URL = `${ASSIGNMENT_FLOW_API_URL}/assessments`;
-const BLOB_STORAGE_URL = `${import.meta.env.SUBMISSION_STORAGE_URL}`;
 
 export class AssessmentService {
   private static async buildHeaders(token: string): Promise<AxiosRequestConfig> {
@@ -60,7 +59,8 @@ export class AssessmentService {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.put(
       `${ASSESSMENT_API_URL}/${id}/feedbacks`,
-      { feedbacks: feedbacks },
+      // { feedbacks: feedbacks },
+      feedbacks,
       configHeaders,
     );
     return this.ConvertToAssessment(response.data);

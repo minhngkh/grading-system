@@ -6,6 +6,7 @@ import { getTagColor } from "./icon-utils";
 import { Assessment } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
+import { TestCase, TestResult } from "@/pages/assessment/edit-assessment/test-result";
 
 interface ScoringPanelProps {
   activeTab: string;
@@ -36,6 +37,39 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   feedbackOverview,
   updateScore,
 }) => {
+  const tests: TestCase[] = [
+    { input: "1\n2\n3\n", expectedOutput: "6\n", actualOutput: "6\n", status: "pass" },
+    { input: "5\n10\n", expectedOutput: "15\n", actualOutput: "", status: "pending" },
+    { input: "4 5\n", expectedOutput: "20\n", actualOutput: "19\n", status: "fail" },
+    {
+      input: "100\n200\n300\n",
+      expectedOutput: "600\n",
+      actualOutput: "600\n",
+      status: "pass",
+    },
+    { input: "-1\n1\n", expectedOutput: "0\n", actualOutput: "0\n", status: "pass" },
+    { input: "0\n0\n0\n", expectedOutput: "0\n", actualOutput: "0\n", status: "pass" },
+    { input: "a b\n", expectedOutput: "error\n", actualOutput: "", status: "pending" },
+    {
+      input: "999999\n1\n",
+      expectedOutput: "1000000\n",
+      actualOutput: "",
+      status: "pending",
+    },
+    {
+      input: "3\n-3\n3\n-3\n",
+      expectedOutput: "0\n",
+      actualOutput: "0\n",
+      status: "fail",
+    },
+    {
+      input: "123456789\n987654321\n",
+      expectedOutput: "1111111110\n",
+      actualOutput: "",
+      status: "pending",
+    },
+  ];
+
   // Tính điểm giống bên index
   const calcScore = (rawScore: number, weight: number) => {
     const scale = grading.scaleFactor ?? 10;
@@ -74,7 +108,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               <TabsTrigger value="scoring">Rubric Scoring</TabsTrigger>
               <TabsTrigger value="summary">Score Summary</TabsTrigger>
               <TabsTrigger value="tests">Test Results</TabsTrigger>
-              <TabsTrigger value="overview">Feedback Overview</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="scoring" className="flex-1 overflow-auto px-4 pb-4">
@@ -102,8 +135,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                   (sb) => sb.criterionName === criterion.name,
                 );
                 const scale = grading.scaleFactor ?? 10;
-                const currentScore =
-                  currentRawScore ? (currentRawScore.rawScore * scale) / 100 : 0;
                 const rawScore = currentRawScore?.rawScore || 0;
                 const criterionMaxPoints =
                   ((grading.scaleFactor ?? 10) * (criterion.weight ?? 0)) / 100;
@@ -128,7 +159,11 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                               min={0}
                               max={criterionMaxPoints}
                               step={0.5}
-                              value={currentScore ? Number(points.toFixed(2)) : ""}
+                              value={
+                                points !== undefined && points !== null ?
+                                  Number(points.toFixed(2))
+                                : ""
+                              }
                               onChange={(e) => {
                                 const val = parseFloat(e.target.value);
                                 const maxPoints = criterionMaxPoints;
@@ -155,28 +190,31 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         </span>
                       </div>
                       <div className="flex gap-4">
-                        {criterion.levels.map((level) => (
-                          <div key={level.tag} className="flex-1">
-                            <div className="text-center mb-2">
-                              <span className="text-xs text-gray-400">
-                                {level.weight}%
-                              </span>
+                        {criterion.levels
+                          .slice()
+                          .sort((a, b) => a.weight - b.weight)
+                          .map((level) => (
+                            <div key={level.tag} className="flex-1">
+                              <div className="text-center mb-2">
+                                <span className="text-xs text-gray-400">
+                                  {level.weight}%
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => updateScore(criterion.name, level.weight)}
+                                className={`w-full p-3 rounded text-center ${
+                                  (
+                                    rawScore ===
+                                    (level.weight * (criterion.weight ?? 0)) / 100
+                                  ) ?
+                                    "border-2 border-blue-400"
+                                  : "border"
+                                }`}
+                              >
+                                <div className="text-xs">{level.description}</div>
+                              </button>
                             </div>
-                            <button
-                              onClick={() => updateScore(criterion.name, level.weight)}
-                              className={`w-full p-3 rounded text-center ${
-                                (
-                                  rawScore ===
-                                  (level.weight * (criterion.weight ?? 0)) / 100
-                                ) ?
-                                  "border-2 border-blue-400"
-                                : "border"
-                              }`}
-                            >
-                              <div className="text-xs">{level.description}</div>
-                            </button>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </div>
                   </TabsContent>
@@ -195,7 +233,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                   const weight = criterion.weight ?? 0;
                   const score =
                     currentScore ? calcScore(currentScore.rawScore, weight) : 0;
-                  console.log(currentScore);
                   return (
                     <div key={criterion.id} className="rounded-lg border p-4">
                       <div className="flex items-center justify-between mb-2">
@@ -231,17 +268,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
             </div>
           </TabsContent>
           <TabsContent value="tests" className="flex-1 overflow-auto px-4 pb-4">
-            {/* ...add test results if needed... */}
-          </TabsContent>
-          <TabsContent value="overview" className="flex-1 overflow-auto px-4 pb-4">
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-muted-foreground">
-                Feedback Overview
-              </h3>
-              <div className="rounded-lg border p-4">
-                <div dangerouslySetInnerHTML={{ __html: feedbackOverview }} />
-              </div>
-            </div>
+            <TestResult testCases={tests} />
           </TabsContent>
         </Tabs>
       </div>
