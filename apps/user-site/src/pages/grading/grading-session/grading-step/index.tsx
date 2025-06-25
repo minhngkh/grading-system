@@ -96,8 +96,11 @@ export default function GradingProgressStep({
           handleGradingStatusChange(isActive, GradingStatus.Graded),
         );
 
-        await GradingService.startGrading(gradingAttemptValues.id, token);
-        gradingAttempt.setValue("status", GradingStatus.Started);
+        if (gradingAttemptValues.status === GradingStatus.Created) {
+          await GradingService.startGrading(gradingAttemptValues.id, token);
+          gradingAttempt.setValue("status", GradingStatus.Started);
+        }
+
         await hub.start();
         hubRef.current = hub;
 
@@ -178,12 +181,13 @@ export default function GradingProgressStep({
           /{assessmentStatus.length} assessments graded.
         </p>
       </div>
-      {sortedAssessmentStatus.map((assessmentStatus) => (
-        <AssessmentStatusCard
-          key={assessmentStatus.id}
-          status={assessmentStatus}
-          onRegrade={handleRegradeAssessment}
-        />
+      {sortedAssessmentStatus.map((assessmentStatus, index) => (
+        <div key={index}>
+          <AssessmentStatusCard
+            status={assessmentStatus}
+            onRegrade={handleRegradeAssessment}
+          />
+        </div>
       ))}
     </div>
   );
