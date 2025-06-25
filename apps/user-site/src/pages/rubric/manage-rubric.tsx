@@ -253,7 +253,7 @@ export default function ManageRubricsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            Showing {rubrics.length} of {sortedRubrics.length} rubrics
+            Showing {rubrics.length} of {totalCount} rubrics
           </p>
           <Select
             value={perPage.toString()}

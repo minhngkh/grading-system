@@ -71,6 +71,7 @@ export class RubricService {
     );
 
     const data = await this.rubricDeserializer.deserialize(response.data);
+    console.log("Rubric data:", data);
     return { data, meta: response.data.meta };
   }
 

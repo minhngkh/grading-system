@@ -56,7 +56,8 @@ export default function RubricGenerationPage({
   const formValues = form.watch();
 
   const isNextDisabled = () => {
-    return stepper.isFirst && !form.formState.isValid;
+    const formState = RubricSchema.safeParse(form.getValues());
+    return stepper.isFirst && !formState.success;
   };
 
   const handlePrev = () => {
@@ -65,8 +66,6 @@ export default function RubricGenerationPage({
   };
 
   const handleNext = async () => {
-    if (!form.formState.isValid) return;
-
     if (stepper.isLast) {
       try {
         const token = await auth.getToken();

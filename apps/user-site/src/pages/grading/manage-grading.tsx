@@ -331,7 +331,7 @@ export default function ManageGradingsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            Showing {sortedGradings.length} of {gradings.length} gradings
+            Showing {sortedGradings.length} of {totalCount} gradings
           </p>
           <Select
             value={perPage.toString()}

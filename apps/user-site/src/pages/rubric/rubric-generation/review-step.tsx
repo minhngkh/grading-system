@@ -28,12 +28,13 @@ export default function FinalRubricTable({ rubricData }: FinalRubricTableProps) 
         <div className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
           <div className="flex gap-2">
-            <Button onClick={() => setExportOpen(true)}>
+            <Button size="sm" onClick={() => setExportOpen(true)}>
               <FileUp className="size-4" />
               Export
             </Button>
             <Button
-              variant="destructive"
+              size="sm"
+              className="bg-green-500 hover:bg-green-600 text-white"
               onClick={() => navigate({ to: "/gradings/create" })}
             >
               <BookOpenCheck className="size-4" />
