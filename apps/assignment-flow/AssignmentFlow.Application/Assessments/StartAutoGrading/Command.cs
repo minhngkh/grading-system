@@ -35,8 +35,7 @@ public class CommandHandler(
             AssessmentId = aggregate.Id,
             Criteria = MapCriteria(aggregate.State.GradingId, command.Submission, rubric),
             Metadata = metadata,
-            // Attachments = rubric.Attachments.Select(a => $"{rubric.Id}/{a}").ToArray()
-            Attachments = rubric.Attachments.ToArray()
+            Attachments = rubric.Attachments.Select(a => $"{rubric.Id}/{a}").ToArray()
         },
         cancellationToken);
 
