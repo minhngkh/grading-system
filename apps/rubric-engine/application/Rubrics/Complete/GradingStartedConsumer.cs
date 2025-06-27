@@ -30,7 +30,7 @@ public class GradingStartedConsumer(
 
         // Clone the rubric in steps
         await CreateClonedRubricAsync(clonedRubricId, originalRubricData, context.CancellationToken);
-        await CopyRubricAttachmentsAsync(originalRubricId, clonedRubricId, originalRubricData, context.CancellationToken);
+        await CopyRubricAttachmentsAsync(clonedRubricId, originalRubricData, context.CancellationToken);
         await UpdateClonedRubricPropertiesAsync(clonedRubricId, originalRubricData, context.CancellationToken);
         await MarkOriginalRubricAsUsedAsync(originalRubricId, context.Message.GradingId, context.CancellationToken);
 
@@ -70,7 +70,7 @@ public class GradingStartedConsumer(
         await commandBus.PublishAsync(updateCommand, cancellationToken);
     }
 
-    private async Task CopyRubricAttachmentsAsync(RubricId originalRubricId, RubricId clonedRubricId, Rubric originalRubricData, CancellationToken cancellationToken)
+    private async Task CopyRubricAttachmentsAsync(RubricId clonedRubricId, Rubric originalRubricData, CancellationToken cancellationToken)
     {
         var originalAttachments = originalRubricData.Attachments ?? [];
         var newAttachments = new List<string>();
@@ -79,7 +79,7 @@ public class GradingStartedConsumer(
         var copyTasks = originalAttachments.Select(async attachment => 
         {
             await CopyBlobAsync(
-                sourceBlobName: $"{originalRubricId}/{attachment}",
+                sourceBlobName: $"{originalRubricData.Id}/{attachment}",
                 destBlobName: $"{clonedRubricId}/{attachment}",
                 cancellationToken: cancellationToken);
         }).ToList();

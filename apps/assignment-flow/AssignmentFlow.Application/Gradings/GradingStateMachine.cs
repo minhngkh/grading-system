@@ -21,7 +21,7 @@ public sealed class GradingStateMachine : StateMachine<GradingState, GradingTrig
             .Permit(GradingTrigger.Start, GradingState.Started);
         
         Configure(GradingState.Started)
-            .PermitReentry(GradingTrigger.Start) // Allow restart
+            .PermitReentry(GradingTrigger.Restart)
             .Permit(GradingTrigger.FinishGrading, GradingState.Graded);
 
         Configure(GradingState.Graded)
