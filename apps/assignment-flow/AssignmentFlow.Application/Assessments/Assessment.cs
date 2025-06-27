@@ -1,9 +1,4 @@
-﻿using AssignmentFlow.Application.Assessments.Assess;
-using AssignmentFlow.Application.Assessments.AssessCriterion;
-using AssignmentFlow.Application.Assessments.Create;
-using AssignmentFlow.Application.Assessments.StartAutoGrading;
-using AssignmentFlow.Application.Assessments.UpdateFeedBack;
-using EventFlow.Aggregates;
+﻿using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
@@ -16,12 +11,13 @@ namespace AssignmentFlow.Application.Assessments;
 public class Assessment
     : Identifiable<string>,
     IReadModel,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent>,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGradingStartedEvent>,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessedEvent>,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, AssessmentFailedEvent>,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, CriterionAssessedEvent>,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, FeedbacksUpdatedEvent>
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, Create.AssessmentCreatedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.AutoGradingStartedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.AutoGradingFinishedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, Assess.AssessedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, Assess.AssessmentFailedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.CriterionAssessedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, UpdateFeedBack.FeedbacksUpdatedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -82,38 +78,37 @@ public class Assessment
 
     public bool IsActionAllowed(string action) => StateMachine.PermittedTriggers.Any(a => Enum.GetName(a) == action);
 
-    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessmentCreatedEvent> domainEvent, CancellationToken cancellationToken)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, Create.AssessmentCreatedEvent> domainEvent, CancellationToken cancellationToken)
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
         GradingId = domainEvent.AggregateEvent.GradingId;
         SubmissionReference = domainEvent.AggregateEvent.SubmissionReference;
 
+        ScoreBreakdowns = domainEvent.AggregateEvent.InitialScoreBreakdowns.ToApiContracts();
+        RawScore = domainEvent.AggregateEvent.InitialScoreBreakdowns.TotalRawScore;
+
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
 
-    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGradingStartedEvent> domainEvent, CancellationToken cancellationToken)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGrading.AutoGradingStartedEvent> domainEvent, CancellationToken cancellationToken)
     {
         StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
 
-    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessmentFailedEvent> domainEvent, CancellationToken cancellationToken)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, Assess.AssessmentFailedEvent> domainEvent, CancellationToken cancellationToken)
     {
         StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
 
-    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessedEvent> domainEvent, CancellationToken cancellationToken)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, Assess.AssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
         ScoreBreakdowns = domainEvent.AggregateEvent.ScoreBreakdowns.ToApiContracts();
         RawScore = domainEvent.AggregateEvent.ScoreBreakdowns.TotalRawScore;
-        if (domainEvent.AggregateEvent.Feedbacks != null)
-        {
-            Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
-        }
 
         if (domainEvent.AggregateEvent.Grader == Grader.AIGrader)
         {
@@ -124,7 +119,7 @@ public class Assessment
         return Task.CompletedTask;
     }
 
-    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, FeedbacksUpdatedEvent> domainEvent, CancellationToken cancellationToken)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, UpdateFeedBack.FeedbacksUpdatedEvent> domainEvent, CancellationToken cancellationToken)
     {
         Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
         UpdateLastModifiedData(domainEvent);
@@ -137,7 +132,7 @@ public class Assessment
         Version = domainEvent.AggregateSequenceNumber;
     }
 
-    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, CriterionAssessedEvent> domainEvent, CancellationToken cancellationToken)
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGrading.CriterionAssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
         var breakdownItem = domainEvent.AggregateEvent.ScoreBreakdownItem.ToApiContract();
         
@@ -149,6 +144,19 @@ public class Assessment
         }
         ScoreBreakdowns.Add(breakdownItem);
         
+        if(ScoreBreakdowns.All(item => item.Status == "Completed"))
+        {
+            StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
+        }
+        
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGrading.AutoGradingFinishedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
+
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }

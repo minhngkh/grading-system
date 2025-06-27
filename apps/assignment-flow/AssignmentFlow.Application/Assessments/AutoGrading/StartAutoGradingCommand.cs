@@ -4,20 +4,20 @@ using EventFlow.Commands;
 using MassTransit;
 using RubricEngine.Application.Protos;
 using RubricService = RubricEngine.Application.Protos.RubricProtoService.RubricProtoServiceClient;
-namespace AssignmentFlow.Application.Assessments.StartAutoGrading;
+namespace AssignmentFlow.Application.Assessments.AutoGrading;
 
-public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentId>(id)
+public class StartAutoGradingCommand(AssessmentId id) : Command<AssessmentAggregate, AssessmentId>(id)
 {
     public RubricId? RubricId { get; set; } = null;
     public SubmissionApiContract? Submission { get; set; } = null;
 }
 
-public class CommandHandler(
+public class StartAutoGradingCommandHandler(
     GradingRepository repository,
     RubricService rubricService,
-    IPublishEndpoint publishEndpoint) : CommandHandler<AssessmentAggregate, AssessmentId, Command>
+    IPublishEndpoint publishEndpoint) : CommandHandler<AssessmentAggregate, AssessmentId, StartAutoGradingCommand>
 {
-    public override async Task ExecuteAsync(AssessmentAggregate aggregate, Command command, CancellationToken cancellationToken)
+    public override async Task ExecuteAsync(AssessmentAggregate aggregate, StartAutoGradingCommand command, CancellationToken cancellationToken)
     {
         if (aggregate.IsNew)
             return;

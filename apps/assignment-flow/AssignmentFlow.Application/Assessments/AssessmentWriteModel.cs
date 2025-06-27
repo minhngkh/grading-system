@@ -1,5 +1,4 @@
-﻿using AssignmentFlow.Application.Assessments.StartAutoGrading;
-using EventFlow.Aggregates;
+﻿using EventFlow.Aggregates;
 namespace AssignmentFlow.Application.Assessments;
 
 public class AssessmentWriteModel
@@ -16,7 +15,7 @@ public class AssessmentWriteModel
     public ScaleFactor ScaleFactor { get; private set; } = ScaleFactor.TenPoint;
 
     public ScoreBreakdowns ScoreBreakdowns { get; private set; } = ScoreBreakdowns.Empty;
-
+    public List<ScoreBreakdownItem> items { get; private set; } = [];
     public List<Feedback> Feedbacks { get; private set; } = [];
 
     public AssessmentStateMachine StateMachine { get; private set; } = new();
@@ -27,9 +26,10 @@ public class AssessmentWriteModel
         GradingId = @event.GradingId;
         Reference = @event.SubmissionReference;
         RubricId = @event.RubricId;
+        ScoreBreakdowns = @event.InitialScoreBreakdowns;
     }
 
-    internal void Apply(AutoGradingStartedEvent _)
+    internal void Apply(AutoGrading.AutoGradingStartedEvent _)
     {
         StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
     }
@@ -50,19 +50,23 @@ public class AssessmentWriteModel
         }
     }
 
-
-    internal void Apply(AssessCriterion.CriterionAssessedEvent @event)
+    internal void Apply(AutoGrading.CriterionAssessedEvent @event)
     {
-        ScoreBreakdowns.AddOrUpdate(@event.ScoreBreakdownItem);
+        ScoreBreakdowns = ScoreBreakdowns.AddOrUpdate(@event.ScoreBreakdownItem);
     }
-    
+
+    internal void Apply(AutoGrading.AutoGradingFinishedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
+    }
+
+    internal void Apply(Assess.AssessmentFailedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);
+    }
+
     internal void Apply(UpdateFeedBack.FeedbacksUpdatedEvent @event)
     {
         Feedbacks = @event.Feedbacks;
-    }
-
-    internal void Apply(Assess.AssessmentFailedEvent @event)
-    {
-        StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);
     }
 }

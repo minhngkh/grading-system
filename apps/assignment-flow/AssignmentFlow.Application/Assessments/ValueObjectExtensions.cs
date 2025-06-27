@@ -6,10 +6,7 @@ namespace AssignmentFlow.Application.Assessments;
 public static class ValueObjectExtensions
 {
     public static ScoreBreakdowns ToValueObject(this IEnumerable<ScoreBreakdownApiContract> apiContracts, Grader grader)
-        => ScoreBreakdowns.New(apiContracts
-            .ToDictionary(
-            a => CriterionName.New(a.CriterionName),
-            a => a.ToValueObject(grader)));
+        => ScoreBreakdowns.New([.. apiContracts.Select(s => s.ToValueObject(grader))]);
 
     public static ScoreBreakdownItem ToValueObject(this ScoreBreakdownApiContract apiContract, Grader grader)
     {
@@ -72,7 +69,7 @@ public static class ValueObjectExtensions
         var scoreBreakdownItems = results.ConvertAll(result => result.Item1);
         var allFeedback = results.SelectMany(result => result.Item2).ToList();
 
-        return (ScoreBreakdowns.New(scoreBreakdownItems.ToDictionary(s => s.CriterionName, s => s)), allFeedback);
+        return (ScoreBreakdowns.New(scoreBreakdownItems), allFeedback);
     }
 
     public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(this ScoreBreakdown apiContract)

@@ -1,6 +1,5 @@
 ﻿using EventFlow.ValueObjects;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System.Collections;
 
 namespace AssignmentFlow.Application.Assessments;
@@ -19,27 +18,25 @@ public sealed class ScoreBreakdowns : ValueObject, IEnumerable<ScoreBreakdownIte
     /// <summary>
     /// Gets the array of score breakdown items.
     /// </summary>
-    private Dictionary<CriterionName, ScoreBreakdownItem> BreakdownItems { get; }
+    private List<ScoreBreakdownItem> BreakdownItems { get; }
 
     /// <summary>
     /// Gets the total percentage score calculated from the breakdown items.
     /// </summary>
-    public Percentage TotalRawScore => Percentage.New(BreakdownItems.Values.Sum(x => x.RawScore));
+    public Percentage TotalRawScore => Percentage.New(BreakdownItems.Sum(x => x.RawScore));
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ScoreBreakdowns"/> class with the specified breakdown items.
     /// </summary>
     /// <param name="scoreValue">The array of score breakdown items.</param>
-    private ScoreBreakdowns(Dictionary<CriterionName, ScoreBreakdownItem> scoreValue) =>
-        BreakdownItems = scoreValue;
+    private ScoreBreakdowns(List<ScoreBreakdownItem> scoreValue) => BreakdownItems = scoreValue;
 
     /// <summary>
     /// Creates a new instance of <see cref="ScoreBreakdowns"/> with the specified breakdown items.
     /// </summary>
-    /// <param name="scoreBreakdownItems">The dictionary of score breakdown items.</param>
+    /// <param name="scoreBreakdownItems">The list of score breakdown items.</param>
     /// <returns>A new <see cref="ScoreBreakdowns"/> instance.</returns>
-    public static ScoreBreakdowns New(Dictionary<CriterionName, ScoreBreakdownItem> scoreBreakdownItems) =>
-        new(scoreBreakdownItems);
+    public static ScoreBreakdowns New(List<ScoreBreakdownItem> scoreBreakdownItems) => new(scoreBreakdownItems);
     
     /// <summary>
     /// Provides the components used for equality comparison.
@@ -56,36 +53,65 @@ public sealed class ScoreBreakdowns : ValueObject, IEnumerable<ScoreBreakdownIte
     // Plus operator: Combines two lists (summing scores with the same criteria/tags)
     public static ScoreBreakdowns operator +(ScoreBreakdowns a, ScoreBreakdowns b)
     {
-        foreach (var (k, v) in b.BreakdownItems)
+        foreach (var item in b.BreakdownItems)
         {
-            if (!a.BreakdownItems.TryAdd(k, v))
-                a.BreakdownItems[k] += v;
+            var existingItem = a.BreakdownItems.FirstOrDefault(x => x.CriterionName == item.CriterionName);
+            if (existingItem == null)
+            {
+                a.BreakdownItems.Add(item);
+            }
+            else
+            {
+                existingItem.RawScore += item.RawScore;
+            }
         }
 
         return a;
     }
 
-    // Minus operator: Subtracts matching ScoreBreakdownItems by CriterionName/PerformanceTag
     public static ScoreBreakdowns operator -(ScoreBreakdowns a, ScoreBreakdowns b)
     {
-        foreach (var (k, v) in b.BreakdownItems)
+        foreach (var item in b.BreakdownItems)
         {
-            if (!a.BreakdownItems.TryAdd(k, v))
-                a.BreakdownItems[k] -= v;
+            var existingItem = a.BreakdownItems.FirstOrDefault(x => x.CriterionName == item.CriterionName);
+            if (existingItem == null)
+            {
+                a.BreakdownItems.Add(item);
+            }
+            else
+            {
+                existingItem.RawScore -= item.RawScore;
+            }
         }
 
         return a;
     }
 
-
-    public void AddOrUpdate(ScoreBreakdownItem item)
+    public ScoreBreakdowns AddOrUpdate(ScoreBreakdownItem item)
     {
-        BreakdownItems.TryAdd(item.CriterionName, item);
+        var existingItem = BreakdownItems.FirstOrDefault(x => x.CriterionName == item.CriterionName);
+        if (existingItem == null)
+        {
+            BreakdownItems.Add(item);
+        }
+        else
+        {
+            BreakdownItems.Remove(existingItem);
+            BreakdownItems.Add(item);
+        }
+
+        return ScoreBreakdowns.New([..BreakdownItems.Select(item => item.Clone())]);
+    }
+
+    public bool IsComplete()
+    {
+        // Check if all items have a non-zero RawScore
+        return BreakdownItems.All(item => item.Status == "Completed");
     }
 
     public IEnumerator<ScoreBreakdownItem> GetEnumerator()
     {
-        return BreakdownItems.Values.GetEnumerator();
+        return BreakdownItems.GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -100,9 +126,10 @@ public sealed class ScoreBreakdownsConverter : JsonConverter<ScoreBreakdowns>
     {
         if (reader.TokenType == JsonToken.Null)
             return null;
-        var jObject = JObject.Load(reader);
-        var breakdownItems = jObject.GetRequired<Dictionary<CriterionName, ScoreBreakdownItem>>("BreakdownItems");
-        return ScoreBreakdowns.New(breakdownItems);
+
+        var breakdownItems = serializer.Deserialize<List<ScoreBreakdownItem>>(reader);
+
+        return ScoreBreakdowns.New(breakdownItems ?? []);
     }
     public override bool CanWrite => false;
 
@@ -123,7 +150,8 @@ public static class ScoreBreakdownsExtension
             CriterionName = scoreBreakdownItem.CriterionName,
             PerformanceTag = scoreBreakdownItem.PerformanceTag,
             RawScore = scoreBreakdownItem.RawScore,
-            MetadataJson = scoreBreakdownItem.MetadataJson
+            MetadataJson = scoreBreakdownItem.MetadataJson,
+            Status = scoreBreakdownItem.Status
         };
     }
 
