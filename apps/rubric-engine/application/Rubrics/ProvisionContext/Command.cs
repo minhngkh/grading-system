@@ -41,7 +41,7 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<RubricAgg
             var blob = container.GetBlobClient(blobName);
             await blob.UploadAsync(stream, new BlobUploadOptions(), cancellationToken);
 
-            yield return blobName;
+            yield return attachment.FileName;
         }
     }
 }

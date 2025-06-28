@@ -1,9 +1,6 @@
 using EventFlow.Aggregates;
 using EventFlow.Core;
 using EventFlow.Extensions;
-using RubricEngine.Application.Rubrics.Complete;
-using RubricEngine.Application.Rubrics.RemoveAttachment;
-using RubricEngine.Application.Rubrics.Update;
 
 namespace RubricEngine.Application.Rubrics;
 
@@ -36,23 +33,23 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
 
     public void UpdateRubric(Rubrics.Update.Command command)
     {
-        RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+        Update.RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
         // All validations passed, emit the update event
         ConditionalEmit(command.Name is not null,
-            () => new RubricInfoUpdatedEvent
+            () => new Update.RubricInfoUpdatedEvent
             {
                 Name = command.Name!
             });
 
         ConditionalEmit(command.PerformanceTags is not null,
-            () => new PerformanceTagsUpdatedEvent
+            () => new Update.PerformanceTagsUpdatedEvent
             {
                 PerformanceTags = command.PerformanceTags!
             });
 
         ConditionalEmit(command.Criteria is not null,
-            () => new CriteriaUpdatedEvent
+            () => new Update.CriteriaUpdatedEvent
             {
                 Criteria = command.Criteria!
             });
@@ -64,15 +61,15 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
             });
 
         ConditionalEmit(command.Metadata is not null,
-            () => new MetadataUpdatedEvent
+            () => new Update.MetadataUpdatedEvent
             {
                 MetadataJson = System.Text.Json.JsonSerializer.Serialize(command.Metadata!) // Use the static JsonSerializer from System.Text.Json
             });
     }
 
-    public void CompleteRubric(Rubrics.Complete.Command command)
+    public void CompleteRubric(Complete.Command command)
     {
-        RubricCanBeMarkedAsUsedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+        Complete.RubricCanBeMarkedAsUsedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
         Emit(new Complete.RubricUsedEvent
         {
             GradingId = command.GradingId
@@ -82,7 +79,7 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
     public void ProvisionContext(List<string> attachments, Dictionary<string, object>? metadata = null)
     {
         //TODO: Create new specification
-        RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+        Update.RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
         Emit(new ProvisionContext.AttachmentsProvisionedEvent
         {
@@ -90,7 +87,7 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
         });
 
         ConditionalEmit(metadata is not null,
-            () => new MetadataUpdatedEvent
+            () => new Update.MetadataUpdatedEvent
             {
                 MetadataJson = System.Text.Json.JsonSerializer.Serialize(metadata) // Use the static JsonSerializer from System.Text.Json
             });
@@ -98,9 +95,9 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
 
     public void RemoveAttachment(string attachment)
     {
-        RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
+        Update.RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
-        Emit(new AttachmentRemovedEvent
+        Emit(new RemoveAttachment.AttachmentRemovedEvent
         {
             RemovedAttachment = attachment
         });

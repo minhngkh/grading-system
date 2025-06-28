@@ -20,7 +20,7 @@ public class CommandHandler(BlobServiceClient client) : CommandHandler<RubricAgg
         var container = client.GetBlobContainerClient("rubric-context-store");
         try
         {
-            BlobClient blobClient = container.GetBlobClient(command.Reference);
+            BlobClient blobClient = container.GetBlobClient($"{aggregate.Id}/{command.Reference}");
             await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
 
             aggregate.RemoveAttachment(command.Reference);

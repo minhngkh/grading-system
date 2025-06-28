@@ -1,6 +1,6 @@
+using AssignmentFlow.Application.Assessments.Hub;
 using AssignmentFlow.Application.Bootstrapping;
 using AssignmentFlow.Application.Gradings;
-using AssignmentFlow.Application.Gradings.Hub;
 using JsonApiDotNetCore.Configuration;
 using Scalar.AspNetCore;
 
