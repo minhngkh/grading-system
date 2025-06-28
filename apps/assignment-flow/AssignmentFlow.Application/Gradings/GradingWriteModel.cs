@@ -13,6 +13,7 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
 {
     public TeacherId TeacherId { get; private set; } = TeacherId.Empty;
     public RubricId RubricId { get; private set; } = RubricId.Empty;
+    public string Reference { get; private set; } = string.Empty;
     public ScaleFactor ScaleFactor { get; private set; } = ScaleFactor.TenPoint;
     public List<Selector> Selectors { get; private set; } = [];
    
@@ -23,6 +24,7 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
     internal void Apply(GradingCreatedEvent @event)
     {
         TeacherId = @event.TeacherId;
+        Reference = @event.Reference;
     }
 
     internal void Apply(SelectorsUpdatedEvent @event)

@@ -89,6 +89,7 @@ public class Grading
         CancellationToken cancellationToken)
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
+        Reference = domainEvent.AggregateEvent.Reference;
 
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
