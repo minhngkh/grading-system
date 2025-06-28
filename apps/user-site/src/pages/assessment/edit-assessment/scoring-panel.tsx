@@ -6,7 +6,6 @@ import { getTagColor } from "./icon-utils";
 import { Assessment } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
-import { TestCase, TestResult } from "@/pages/assessment/edit-assessment/test-result";
 
 interface ScoringPanelProps {
   activeTab: string;
@@ -16,10 +15,8 @@ interface ScoringPanelProps {
   rubric: Rubric;
   grading: GradingAttempt;
   formData: Assessment;
-  bottomPanelHeight: number;
   isResizing: boolean;
   handleMouseDown: (e: React.MouseEvent) => void;
-  feedbackOverview: string;
   updateScore: (criterionName: string, newScore: number) => void;
 }
 
@@ -31,44 +28,42 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   rubric,
   grading,
   formData,
-  bottomPanelHeight,
   isResizing,
   handleMouseDown,
-  feedbackOverview,
   updateScore,
 }) => {
-  const tests: TestCase[] = [
-    { input: "1\n2\n3\n", expectedOutput: "6\n", actualOutput: "6\n", status: "pass" },
-    { input: "5\n10\n", expectedOutput: "15\n", actualOutput: "", status: "pending" },
-    { input: "4 5\n", expectedOutput: "20\n", actualOutput: "19\n", status: "fail" },
-    {
-      input: "100\n200\n300\n",
-      expectedOutput: "600\n",
-      actualOutput: "600\n",
-      status: "pass",
-    },
-    { input: "-1\n1\n", expectedOutput: "0\n", actualOutput: "0\n", status: "pass" },
-    { input: "0\n0\n0\n", expectedOutput: "0\n", actualOutput: "0\n", status: "pass" },
-    { input: "a b\n", expectedOutput: "error\n", actualOutput: "", status: "pending" },
-    {
-      input: "999999\n1\n",
-      expectedOutput: "1000000\n",
-      actualOutput: "",
-      status: "pending",
-    },
-    {
-      input: "3\n-3\n3\n-3\n",
-      expectedOutput: "0\n",
-      actualOutput: "0\n",
-      status: "fail",
-    },
-    {
-      input: "123456789\n987654321\n",
-      expectedOutput: "1111111110\n",
-      actualOutput: "",
-      status: "pending",
-    },
-  ];
+  // const tests: TestCase[] = [
+  //   { input: "1\n2\n3\n", expectedOutput: "6\n", actualOutput: "6\n", status: "pass" },
+  //   { input: "5\n10\n", expectedOutput: "15\n", actualOutput: "", status: "pending" },
+  //   { input: "4 5\n", expectedOutput: "20\n", actualOutput: "19\n", status: "fail" },
+  //   {
+  //     input: "100\n200\n300\n",
+  //     expectedOutput: "600\n",
+  //     actualOutput: "600\n",
+  //     status: "pass",
+  //   },
+  //   { input: "-1\n1\n", expectedOutput: "0\n", actualOutput: "0\n", status: "pass" },
+  //   { input: "0\n0\n0\n", expectedOutput: "0\n", actualOutput: "0\n", status: "pass" },
+  //   { input: "a b\n", expectedOutput: "error\n", actualOutput: "", status: "pending" },
+  //   {
+  //     input: "999999\n1\n",
+  //     expectedOutput: "1000000\n",
+  //     actualOutput: "",
+  //     status: "pending",
+  //   },
+  //   {
+  //     input: "3\n-3\n3\n-3\n",
+  //     expectedOutput: "0\n",
+  //     actualOutput: "0\n",
+  //     status: "fail",
+  //   },
+  //   {
+  //     input: "123456789\n987654321\n",
+  //     expectedOutput: "1111111110\n",
+  //     actualOutput: "",
+  //     status: "pending",
+  //   },
+  // ];
 
   // Tính điểm giống bên index
   const calcScore = (rawScore: number, weight: number) => {
@@ -77,7 +72,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   };
 
   return (
-    <>
+    <div className="flex flex-col bg-background w-full h-full overflow-hidden">
       <div
         className={`h-1 hover:bg-blue-400 cursor-ns-resize transition-colors duration-200 ${
           isResizing ? "bg-blue-500" : ""
@@ -88,23 +83,14 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           <div className="w-12 h-0.5 bg-gray-400 rounded-full"></div>
         </div>
       </div>
-      <div
-        className="border-t flex flex-col"
-        style={{
-          minHeight: 120,
-          maxHeight: "100vh",
-          height: bottomPanelHeight,
-          flex: "0 0 auto",
-          overflow: "hidden",
-        }}
-      >
+      <div className="flex flex-col">
         <Tabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v || "")}
           className="flex-1 flex flex-col"
         >
-          <div className="p-4 flex-shrink-0">
-            <TabsList className="inline-flex w-full h-auto items-center justify-center rounded-xl p-1 text-gray-500">
+          <div className="p-2 flex-shrink-0">
+            <TabsList className=" w-full h-auto rounded-lg">
               <TabsTrigger value="scoring">Rubric Scoring</TabsTrigger>
               <TabsTrigger value="summary">Score Summary</TabsTrigger>
               <TabsTrigger value="tests">Test Results</TabsTrigger>
@@ -116,19 +102,17 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               onValueChange={(v) => setActiveScoringTab(v || "")}
               className="flex-1 flex flex-col"
             >
-              <div className="px-4 py-2 flex-shrink-0">
-                <TabsList className="flex flex-wrap gap-1 p-1 rounded-lg">
-                  {rubric.criteria.map((criterion) => (
-                    <TabsTrigger
-                      key={criterion.id}
-                      value={criterion.name}
-                      className="px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
-                    >
-                      {criterion.name}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
+              <TabsList className="flex flex-wrap gap-1 p-1 rounded-lg">
+                {rubric.criteria.map((criterion) => (
+                  <TabsTrigger
+                    key={criterion.id}
+                    value={criterion.name}
+                    className="px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
+                  >
+                    {criterion.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
               {rubric.criteria.map((criterion) => {
                 if (activeScoringTab !== criterion.name) return null;
                 const currentRawScore = formData.scoreBreakdowns.find(
@@ -268,10 +252,10 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
             </div>
           </TabsContent>
           <TabsContent value="tests" className="flex-1 overflow-auto px-4 pb-4">
-            <TestResult testCases={tests} />
+            {/* <TestResult testCases={tests} /> */}
           </TabsContent>
         </Tabs>
       </div>
-    </>
+    </div>
   );
 };

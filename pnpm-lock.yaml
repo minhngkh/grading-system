@@ -253,6 +253,9 @@ importers:
       '@react-pdf-viewer/highlight':
         specifier: ^3.12.0
         version: 3.12.0(pdfjs-dist@3.4.120(encoding@0.1.13))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@react-pdf-viewer/page-navigation':
+        specifier: ^3.12.0
+        version: 3.12.0(pdfjs-dist@3.4.120(encoding@0.1.13))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@shikijs/rehype':
         specifier: ^3.3.0
         version: 3.4.2

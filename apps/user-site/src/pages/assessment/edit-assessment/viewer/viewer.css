@@ -1,3 +1,7 @@
+/* CSS */
+.no-inner-scroll pre {
+  overflow: visible !important;
+}
 code {
   font-family: monospace;
   display: grid;

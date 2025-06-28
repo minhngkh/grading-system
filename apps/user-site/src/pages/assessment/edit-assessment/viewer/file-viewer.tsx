@@ -1,7 +1,7 @@
-import React from "react";
-import HighlightableViewer from "./code-viewer";
-import PDFViewer from "./pdf-view";
-import ImageViewer from "./image-highlighter";
+import React, { useRef } from "react";
+import HighlightableViewer, { HighlightableViewerHandle } from "./code-viewer";
+import PDFViewer from "./pdf-viewer";
+import ImageViewer from "./image-viewer";
 import { FeedbackItem } from "@/types/assessment";
 import { FileItem } from "@/types/file";
 
@@ -9,41 +9,80 @@ interface FileViewerProps {
   file: FileItem;
   feedbacks: FeedbackItem[];
   feedbacksAll: FeedbackItem[];
-  updateFeedback: (newFeedbacks: FeedbackItem[]) => void;
+  addFeedback: (newFeedback: FeedbackItem) => void;
+  updateFeedback: (index: number, adjustedFeedback: FeedbackItem) => void;
   isHighlightMode: boolean;
   onHighlightComplete: () => void;
   activeFeedbackId?: string | null;
   rubricCriteria?: string[];
+  gradingId: string;
+  submissionReference: string;
 }
 
 const FileViewer: React.FC<FileViewerProps> = ({
   file,
   feedbacks,
   feedbacksAll,
+  addFeedback,
   updateFeedback,
   isHighlightMode,
   onHighlightComplete,
   activeFeedbackId,
   rubricCriteria = [],
+  gradingId,
+  submissionReference,
 }) => {
+  const codeViewerRef = useRef<HighlightableViewerHandle>(null);
+
   // Gộp logic xác định loại file
   if (file.type === "image") {
-    return <ImageViewer src={file.content} />;
+    return (
+      <ImageViewer
+        src={file.content}
+        file={file}
+        addFeedback={addFeedback}
+        // updateFeedback={updateFeedback}
+        isHighlightMode={isHighlightMode}
+        onHighlightComplete={onHighlightComplete}
+        rubricCriteria={rubricCriteria}
+        gradingId={gradingId}
+        submissionReference={submissionReference}
+      />
+    );
   }
   if (file.type === "pdf") {
-    return <PDFViewer fileUrl={file.content} />;
+    return (
+      <PDFViewer
+        fileUrl={file.content}
+        file={file}
+        feedbacks={feedbacks}
+        feedbacksAll={feedbacksAll}
+        addFeedback={addFeedback}
+        updateFeedback={updateFeedback}
+        isHighlightMode={isHighlightMode}
+        onHighlightComplete={onHighlightComplete}
+        rubricCriteria={rubricCriteria}
+        gradingId={gradingId}
+        submissionReference={submissionReference}
+        activeFeedbackId={activeFeedbackId} // truyền activeFeedbackId
+      />
+    );
   }
   if (file.type === "code" || file.type === "document" || file.type === "essay") {
     return (
       <HighlightableViewer
+        ref={codeViewerRef}
         file={file}
         feedbacks={feedbacks}
         feedbacksAll={feedbacksAll}
+        addFeedback={addFeedback}
         updateFeedback={updateFeedback}
         isHighlightMode={isHighlightMode}
         onHighlightComplete={onHighlightComplete}
         activeFeedbackId={activeFeedbackId}
         rubricCriteria={rubricCriteria}
+        gradingId={gradingId}
+        submissionReference={submissionReference}
       />
     );
   }
