@@ -31,6 +31,14 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         });
     }
 
+    public void UpdateInfo(UpdateInfo.Command command)
+    {
+        Emit(new UpdateInfo.InfoUpdatedEvent
+        {
+            GradingName = command.GradingName
+        });
+    }   
+
     public void UpdateSelectors(UpdateCriterionSelectors.Command command)
     {
         Emit(new UpdateCriterionSelectors.SelectorsUpdatedEvent
