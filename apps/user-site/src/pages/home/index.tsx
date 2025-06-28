@@ -1,6 +1,7 @@
+import { SystemTools } from "@/consts/tools";
 import ToolsFilter from "@/pages/home/tool-filter";
 import { ToolsList } from "@/pages/home/tool-list";
-import { SystemTools, ToolType } from "@/types/tool";
+import { ToolType } from "@/types/tool";
 import { useState } from "react";
 
 export default function HomePage() {

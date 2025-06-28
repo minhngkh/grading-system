@@ -14,7 +14,7 @@ import { useCallback, useState, useRef, memo } from "react";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { SearchParams } from "@/types/search-params";
-import { InfiniteQueryOption } from "@/types/infinite-query";
+import { InfiniteQueryOption } from "@/types/query";
 
 const PAGE_SIZE = 10;
 const SCROLL_THRESHOLD = 10;

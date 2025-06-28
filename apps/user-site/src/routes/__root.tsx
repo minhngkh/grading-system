@@ -6,7 +6,7 @@ import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { useAuth } from "@clerk/clerk-react";
 import { ErrorBoundary } from "@/components/layout/error-boundary";
 import { Toaster } from "@/components/ui/sonner";
-import { NavigationItems } from "@/types/navigation";
+import { NavigationItems } from "@/consts/navigations";
 
 interface AppRouterContext {
   auth: ReturnType<typeof useAuth>;
