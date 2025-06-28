@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
 import { startGradingMutationOptions } from "@/queries/grading-queries";
+import ErrorComponent from "@/components/app/route-error";
 
 interface GradingProgressStepProps {
   gradingAttempt: UseFormReturn<GradingAttempt>;
@@ -26,7 +27,7 @@ export default function GradingProgressStep({
   >(null);
   const hubRef = useRef<SignalRService | null>(null);
   const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
-  const startGradingMutation = useMutation(
+  const { isSuccess: isStartGradingSuccess, mutateAsync: startGrading } = useMutation(
     startGradingMutationOptions(gradingAttemptValues.id, auth),
   );
 
@@ -99,8 +100,13 @@ export default function GradingProgressStep({
         );
 
         if (gradingAttemptValues.status === GradingStatus.Created) {
-          await startGradingMutation.mutateAsync();
-          gradingAttempt.setValue("status", GradingStatus.Started);
+          await startGrading();
+          if (isStartGradingSuccess) {
+            gradingAttempt.setValue("status", GradingStatus.Started);
+          } else {
+            gradingAttempt.setValue("status", GradingStatus.Failed);
+            return;
+          }
         }
 
         await hub.start();
@@ -124,6 +130,10 @@ export default function GradingProgressStep({
       }
     };
   }, []);
+
+  if (gradingAttemptValues.status === GradingStatus.Failed) {
+    return <ErrorComponent message="Failed to start grading" />;
+  }
 
   if (assessmentStatus === null)
     return (

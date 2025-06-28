@@ -6,6 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/gradings/$gradingId/")({
   component: RouteComponent,
+  loaderDeps: (ctx) => ctx.search,
   loader: async ({ params: { gradingId }, context: { auth } }) => {
     const token = await auth.getToken();
     if (!token) {

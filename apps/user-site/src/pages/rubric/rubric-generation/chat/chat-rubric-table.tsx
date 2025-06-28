@@ -50,14 +50,14 @@ function ChatRubricTable({
   const [isEditingDialogOpen, setIsEditingDialogOpen] = useState(false);
   const [isContextDialogOpen, setIsContextDialogOpen] = useState(false);
   const auth = useAuth();
-  const uploadContextMutation = useMutation(
+  const { isPending, mutateAsync: uploadContext } = useMutation(
     uploadContextMutationOptions(rubricData.id, auth),
   );
 
   const handleOpenContextDialog = useCallback(() => setIsContextDialogOpen(true), []);
   const handleOpenEditDialog = useCallback(() => setIsEditingDialogOpen(true), []);
 
-  const deleteAttachmentMutation = useMutation({
+  const { mutateAsync: deleteAttachments } = useMutation({
     mutationFn: async (files: string[]) => {
       const token = await auth.getToken();
       if (!token) return toast.error("You are not authorized to perform this action.");
@@ -84,12 +84,12 @@ function ChatRubricTable({
         );
 
         if (removedAttachments?.length) {
-          await deleteAttachmentMutation.mutateAsync(removedAttachments);
+          await deleteAttachments(removedAttachments);
           isChanged = true;
         }
 
         if (files.length > 0) {
-          await uploadContextMutation.mutateAsync(files);
+          await uploadContext(files);
           isChanged = true;
         }
 
@@ -159,6 +159,7 @@ function ChatRubricTable({
           )}
           {isContextDialogOpen && (
             <RubricContextUploadDialog
+              isPending={isPending}
               attachments={rubricData.attachments}
               open={isContextDialogOpen}
               onOpenChange={setIsContextDialogOpen}
