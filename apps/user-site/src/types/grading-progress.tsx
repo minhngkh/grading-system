@@ -1,7 +1,7 @@
 import { AssessmentState } from "@/types/assessment";
 
 export type AssessmentGradingStatus = {
-  id: string;
+  assessmentId: string;
   submissionReference: string;
   status: AssessmentState;
   errorMessage?: string;

@@ -1,4 +1,6 @@
 import { getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
+import { deleteFile } from "@grading-system/utils/file";
+import logger from "@grading-system/utils/logger";
 import dedent from "dedent";
 import { errAsync, okAsync, safeTry } from "neverthrow";
 import { rubricContextStore } from "@/lib/blob-storage";
@@ -49,7 +51,12 @@ export function generateRubricContext(data: {
           downloadDirectory,
           prefix: "context",
         }),
-      );
+      )
+      .andTee(() => {
+        deleteFile(downloadDirectory).orTee((error) => {
+          logger.info(`Failed to delete rubric context files`, error);
+        });
+      });
 
     const contextFilesManifest = yield* createFileAliasManifest(
       contextFilesInfo.BlobNameRestAliasMap,

@@ -5,6 +5,7 @@ import {
   type AgentChatResponse,
   type RubricAgentResponse,
   ChatRubric,
+  ChatRubricSchema,
 } from "@/types/chat";
 import { useAuth } from "@clerk/clerk-react";
 import { Rubric } from "@/types/rubric";
@@ -36,7 +37,11 @@ export function sendRubricMessageMutationOptions(
     mutationFn: async (messages: ChatMessage[]) => {
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required");
-      return ChatService.sendRubricMessage(messages, rubric as ChatRubric, token);
+      return ChatService.sendRubricMessage(
+        messages,
+        ChatRubricSchema.parse(rubric),
+        token,
+      );
     },
     ...options,
   };
