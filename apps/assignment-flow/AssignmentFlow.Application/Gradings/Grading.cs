@@ -41,6 +41,9 @@ public class Grading
     public string RubricId { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public string Reference { get; set; } = string.Empty;
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public decimal ScaleFactor { get; set; }
 
     [Attr(Capabilities = AllowView)]
