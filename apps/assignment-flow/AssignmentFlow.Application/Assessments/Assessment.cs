@@ -148,7 +148,9 @@ public class Assessment
         {
             StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
         }
-        
+
+        RawScore = ScoreBreakdowns.Sum(s => s.RawScore);
+
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
