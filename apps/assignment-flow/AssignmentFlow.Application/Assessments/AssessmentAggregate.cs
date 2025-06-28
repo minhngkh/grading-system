@@ -29,20 +29,16 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void CreateAssessment(Create.Command command)
     {
+        var initialScoreBreakdowns = ScoreBreakdowns.New(
+            [.. command.Criteria.Select(ScoreBreakdownItem.Pending)]);
+
         Emit(new Create.AssessmentCreatedEvent
         {
             SubmissionReference = command.SubmissionReference,
             GradingId = command.GradingId,
             TeacherId = command.TeacherId,
-            RubricId = command.RubricId
-        });
-    }
-
-    public void StartAutoGrading()
-    {
-        Emit(new StartAutoGrading.AutoGradingStartedEvent
-        {
-            GradingId = State.GradingId
+            RubricId = command.RubricId,
+            InitialScoreBreakdowns = initialScoreBreakdowns
         });
     }
 
@@ -72,8 +68,18 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         });
     }
 
-    public void AssessCriterion(AssessCriterion.Command command)
+    public void StartAutoGrading()
     {
+        Emit(new AutoGrading.AutoGradingStartedEvent
+        {
+            GradingId = State.GradingId
+        });
+    }
+
+    public void Assess(AutoGrading.AssessCriterionCommand command)
+    {
+        var scoreItem = command.ScoreBreakdownItem.Clone();
+        scoreItem.MarkAsCompleted();
         if (command.ScoreBreakdownItem.Grader.IsAIGrader)
         {
             var rubric = rubricProtoService.GetRubric(new GetRubricRequest
@@ -82,18 +88,23 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
             });
 
             var criteria = rubric.Criteria;
-            NormalizeScore(command.ScoreBreakdownItem, criteria);
+            NormalizeScore(scoreItem, criteria);
         }
 
-        Emit(new AssessCriterion.CriterionAssessedEvent
-        {
-            ScoreBreakdownItem = command.ScoreBreakdownItem
-        });
+        Emit(new UpdateFeedBack.FeedbacksUpdatedEvent { Feedbacks = command.Feedbacks });
 
-        Emit(new UpdateFeedBack.FeedbacksUpdatedEvent
+        Emit(new AutoGrading.CriterionAssessedEvent { ScoreBreakdownItem = scoreItem });
+    }
+
+    public void FinishAutoGrading()
+    {
+        if (AutoGrading.AutoGradingCanBeFinishedSpecification.New().IsSatisfiedBy(State))
         {
-            Feedbacks = command.Feedbacks
-        });
+            Emit(new AutoGrading.AutoGradingFinishedEvent
+            {
+                GradingId = State.GradingId
+            });
+        }
     }
 
     /// <summary>

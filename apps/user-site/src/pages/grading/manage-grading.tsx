@@ -42,10 +42,9 @@ import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { Link } from "@tanstack/react-router";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { GradingExporter } from "@/lib/exporters";
-import { Assessment } from "@/types/assessment";
-import { AssessmentService } from "@/services/assessment-service";
-import { toast } from "sonner";
 import { useAuth } from "@clerk/clerk-react";
+import { useQuery } from "@tanstack/react-query";
+import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
 
 type SortConfig = {
   key: "id" | "lastModified" | "status" | null;
@@ -73,52 +72,21 @@ export default function ManageGradingsPage({
     meta: { total: totalCount },
   } = results;
   const auth = useAuth();
-  const [searchTerm, setSearchTerm] = useState<string>(searchParams.search || "");
+  const [searchTerm, setSearchTerm] = useState<string>(searchParams.search ?? "");
   const [exportGradingOpen, setExportGradingOpen] = useState(false);
   const [selectGradingIndex, setSelectGradingIndex] = useState<number | null>(null);
-  const [gradingAssessments, setGradingAssessments] = useState<Assessment[]>([]);
-  const [isGettingAssessments, setIsGettingAssessments] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   useEffect(() => {
-    async function fetchGradingAssessments() {
-      const token = await auth.getToken();
-      if (!token) return toast.error("You are not authorized to perform this action.");
-
-      try {
-        setIsGettingAssessments(true);
-        const data = await AssessmentService.getAllGradingAssessments(
-          sortedGradings[selectGradingIndex!].id,
-          token,
-        );
-        setGradingAssessments(data);
-      } catch {
-        toast.error("Failed to fetch grading assessments");
-        setExportGradingOpen(false);
-      } finally {
-        setIsGettingAssessments(false);
-      }
+    if (searchParams.search !== debouncedSearchTerm) {
+      setSearchParam({ search: debouncedSearchTerm, page: 1 });
     }
-
-    if (exportGradingOpen && selectGradingIndex != null) {
-      fetchGradingAssessments();
-    } else {
-      setGradingAssessments([]);
-    }
-  }, [selectGradingIndex, exportGradingOpen]);
-
-  useEffect(() => {
-    setSearchParam({
-      search: debouncedSearchTerm,
-      page: 1,
-    });
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, searchParams.search]);
 
   const sortedGradings = [...gradings].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const aKey = a[sortConfig.key];
     const bKey = b[sortConfig.key];
-    // Handle undefined or null values
     if (aKey == null && bKey == null) return 0;
     if (aKey == null) return sortConfig.direction === "asc" ? 1 : -1;
     if (bKey == null) return sortConfig.direction === "asc" ? -1 : 1;
@@ -130,6 +98,15 @@ export default function ManageGradingsPage({
     }
     return 0;
   });
+
+  const gradingId =
+    selectGradingIndex != null ? sortedGradings[selectGradingIndex].id : "";
+
+  const { data: gradingAssessments = [], isLoading: isGettingAssessments } = useQuery(
+    getAllGradingAssessmentsQueryOptions(gradingId, auth, {
+      enabled: exportGradingOpen && selectGradingIndex != null,
+    }),
+  );
 
   const totalPages = Math.ceil(totalCount / perPage);
 

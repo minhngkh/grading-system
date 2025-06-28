@@ -7,9 +7,11 @@ import { AssessmentGradingStatus } from "@/types/grading-progress";
 import { UseFormReturn } from "react-hook-form";
 import { AssessmentStatusCard } from "@/pages/grading/grading-session/grading-step/status-card";
 import { AssessmentState } from "@/types/assessment";
-import { GradingService } from "@/services/grading-service";
-import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
+import { startGradingMutationOptions } from "@/queries/grading-queries";
+import ErrorComponent from "@/components/app/route-error";
 
 interface GradingProgressStepProps {
   gradingAttempt: UseFormReturn<GradingAttempt>;
@@ -20,11 +22,14 @@ export default function GradingProgressStep({
 }: GradingProgressStepProps) {
   const auth = useAuth();
   const gradingAttemptValues = gradingAttempt.watch();
-
   const [assessmentStatus, setAssessmentStatus] = useState<
     AssessmentGradingStatus[] | null
   >(null);
   const hubRef = useRef<SignalRService | null>(null);
+  const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
+  const { isSuccess: isStartGradingSuccess, mutateAsync: startGrading } = useMutation(
+    startGradingMutationOptions(gradingAttemptValues.id, auth),
+  );
 
   const handleGradingStatusChange = (isActive: boolean, newStatus: GradingStatus) => {
     if (!isActive) return;
@@ -64,14 +69,12 @@ export default function GradingProgressStep({
   };
 
   const handleRegradeAssessment = async (assessmentId: string) => {
-    const token = await auth.getToken();
-    if (!token) return;
-
     try {
-      await AssessmentService.rerunAssessment(assessmentId, token);
-      if (gradingAttemptValues.status !== GradingStatus.Started) {
-        handleGradingStatusChange(true, GradingStatus.Started);
-      }
+      await rerunAssessmentMutation.mutateAsync(assessmentId);
+      handleGradingStatusChange(
+        gradingAttemptValues.status !== GradingStatus.Started,
+        GradingStatus.Started,
+      );
     } catch (error) {
       console.error("Failed to regrade assessment:", error);
       toast.error(`Failed to regrade assessment. Please try again.`);
@@ -97,8 +100,13 @@ export default function GradingProgressStep({
         );
 
         if (gradingAttemptValues.status === GradingStatus.Created) {
-          await GradingService.startGrading(gradingAttemptValues.id, token);
-          gradingAttempt.setValue("status", GradingStatus.Started);
+          await startGrading();
+          if (isStartGradingSuccess) {
+            gradingAttempt.setValue("status", GradingStatus.Started);
+          } else {
+            gradingAttempt.setValue("status", GradingStatus.Failed);
+            return;
+          }
         }
 
         await hub.start();
@@ -122,6 +130,10 @@ export default function GradingProgressStep({
       }
     };
   }, []);
+
+  if (gradingAttemptValues.status === GradingStatus.Failed) {
+    return <ErrorComponent message="Failed to start grading" />;
+  }
 
   if (assessmentStatus === null)
     return (

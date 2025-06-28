@@ -1,7 +1,7 @@
 ﻿using EventFlow;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AssignmentFlow.Application.Assessments.StartAutoGrading;
+namespace AssignmentFlow.Application.Assessments.AutoGrading;
 
 public static class EndpointHandler
 {
@@ -23,7 +23,7 @@ public static class EndpointHandler
     {
         var assessmentId = AssessmentId.With(id);
 
-        await commandBus.PublishAsync(new Command(assessmentId), cancellationToken);
+        await commandBus.PublishAsync(new StartAutoGradingCommand(assessmentId), cancellationToken);
 
         return TypedResults.Accepted(uri: "");
     }

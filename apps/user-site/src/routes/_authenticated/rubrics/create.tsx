@@ -1,62 +1,56 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import RubricGenerationPage from "@/pages/rubric/rubric-generation";
 import { RubricService } from "@/services/rubric-service";
+import { useAuth } from "@clerk/clerk-react";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
-import z from "zod";
-
-const searchSchema = z.object({
-  id: z.string().optional(),
-});
+import { useEffect, useRef } from "react";
 
 export const Route = createFileRoute("/_authenticated/rubrics/create")({
-  preload: false,
   component: RouteComponent,
-  validateSearch: searchSchema,
-  loaderDeps: ({ search }) => search,
-  loader: async ({ deps, context: { auth } }) => {
-    const token = await auth.getToken();
-    if (!token) {
-      throw new Error("Unauthorized: No token found");
-    }
-
-    if (deps.id) {
-      return await RubricService.getRubric(deps.id, token);
-    }
-
-    return await RubricService.createRubric(token);
-  },
-  onLeave: () => {
-    sessionStorage.removeItem("rubricStep");
-  },
-  errorComponent: () => (
-    <ErrorComponent message="Failed to create rubric. Please try again later." />
-  ),
-  pendingComponent: () => <PendingComponent message="Creating rubric..." />,
 });
 
 function RouteComponent() {
-  const rubric = Route.useLoaderData();
   const navigate = Route.useNavigate();
-  const search = Route.useSearch();
+  const auth = useAuth();
+  const didRun = useRef(false);
 
-  const setIdParam = () => {
-    navigate({
-      search: (prev) => ({
-        ...prev,
-        id: rubric.id,
-      }),
-      replace: true,
-    });
-  };
+  const { mutateAsync, isPending, isError } = useMutation({
+    mutationFn: async () => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Unauthorized: No token");
+      return RubricService.createRubric(token);
+    },
+  });
 
   useEffect(() => {
-    if (!search.id && rubric?.id) {
-      setIdParam();
-    }
-  }, [search.id, rubric?.id, navigate]);
+    if (didRun.current) return;
+    didRun.current = true;
 
-  const rubricStep = sessionStorage.getItem("rubricStep") || undefined;
-  return <RubricGenerationPage initialRubric={rubric} rubricStep={rubricStep} />;
+    const createRubric = async () => {
+      try {
+        const rubric = await mutateAsync();
+
+        navigate({
+          to: "/rubrics/$id",
+          params: { id: rubric.id },
+          replace: true,
+        });
+      } catch (err) {
+        console.error("Failed to create rubric", err);
+      }
+    };
+
+    createRubric();
+  }, [mutateAsync, navigate]);
+
+  if (isPending) {
+    return <PendingComponent message="Creating rubric..." />;
+  }
+
+  if (isError) {
+    return <ErrorComponent message="Failed to create rubric" />;
+  }
+
+  return null;
 }

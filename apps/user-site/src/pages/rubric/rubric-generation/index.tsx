@@ -1,7 +1,6 @@
 import type { Rubric } from "@/types/rubric";
 import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
-import { RubricService } from "@/services/rubric-service";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { defineStepper } from "@stepperize/react";
@@ -13,6 +12,8 @@ import { useCallback } from "react";
 import ChatWindow from "./chat";
 import FinalRubricTable from "./review-step";
 import PluginRubricTable from "./plugins";
+import { useMutation } from "@tanstack/react-query";
+import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 
 type StepData = {
   title: string;
@@ -47,7 +48,9 @@ export default function RubricGenerationPage({
   const stepper = useStepper({ initialStep: rubricStep });
   const currentIndex = utils.getIndex(stepper.current.id);
   const { location } = useRouterState();
-
+  const updateRubricMutation = useMutation(
+    updateRubricMutationOptions(initialRubric.id, auth),
+  );
   const form = useForm<Rubric>({
     resolver: zodResolver(RubricSchema),
     defaultValues: initialRubric,
@@ -68,12 +71,7 @@ export default function RubricGenerationPage({
   const handleNext = async () => {
     if (stepper.isLast) {
       try {
-        const token = await auth.getToken();
-        if (!token) {
-          throw new Error("You must be logged in to save a rubric");
-        }
-
-        await RubricService.updateRubric(initialRubric.id, formValues, token);
+        await updateRubricMutation.mutateAsync(formValues);
         navigate({ to: location.search?.redirect ?? "/rubrics/view", replace: true });
       } catch (err) {
         toast.error("Failed to update rubric");
@@ -99,12 +97,7 @@ export default function RubricGenerationPage({
         throw result.error;
       }
 
-      const token = await auth.getToken();
-      if (!token) {
-        throw new Error("You must be logged in to save a rubric");
-      }
-
-      await RubricService.updateRubric(initialRubric.id, updatedRubricData, token);
+      await updateRubricMutation.mutateAsync(updatedRubric);
       form.reset(updatedRubric);
     },
     [formValues, auth],

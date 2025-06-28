@@ -45,12 +45,12 @@ export default function UploadAssignmentPage({
   const gradingAttemptValues = gradingAttempt.watch();
 
   useEffect(() => {
-    if (
-      (!initialStep || initialStep === "upload") &&
-      initialGradingAttempt.status !== GradingStatus.Created
-    ) {
-      stepper.next();
+    if (initialGradingAttempt.status === GradingStatus.Started) {
+      stepper.goTo(steps[1].id);
       sessionStorage.setItem("gradingStep", steps[1].id);
+    } else if (initialGradingAttempt.status === GradingStatus.Graded) {
+      stepper.goTo(steps[2].id);
+      sessionStorage.setItem("gradingStep", steps[2].id);
     }
   }, []);
 

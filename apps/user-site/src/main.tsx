@@ -4,6 +4,7 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { routeTree } from "./routeTree.gen";
 import { LoadingScreen } from "./components/app/loading-screen";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
 
@@ -24,6 +25,8 @@ declare module "@tanstack/react-router" {
   }
 }
 
+const queryClient = new QueryClient();
+
 function App() {
   const auth = useAuth();
 
@@ -31,7 +34,11 @@ function App() {
     return <LoadingScreen />;
   }
 
-  return <RouterProvider router={router} context={{ auth }} />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} context={{ auth }} />
+    </QueryClientProvider>
+  );
 }
 
 const rootElement = document.getElementById("root")!;

@@ -1,4 +1,5 @@
 using EventFlow.ValueObjects;
+using Google.Protobuf;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -8,8 +9,10 @@ namespace AssignmentFlow.Application.Assessments;
 /// Represents a single score breakdown item, including its criterion, score, performance tag, and feedback.
 /// </summary>
 [JsonConverter(typeof(ScoreBreakdownItemConverter))]
-public sealed class ScoreBreakdownItem : ValueObject
+public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakdownItem>
 {
+    public static ScoreBreakdownItem Pending(CriterionName criterion) => new ScoreBreakdownItem(criterion) { Status = "Pending" };
+
     public Grader Grader { get; init; } = Grader.AIGrader;
 
     /// <summary>
@@ -21,12 +24,12 @@ public sealed class ScoreBreakdownItem : ValueObject
     /// Gets or sets the raw percentage score awarded for this breakdown item.
     /// This represents the assessed percentage for the criterion before aggregation into the final score.
     /// </summary>
-    public required Percentage RawScore { get; set; }
+    public Percentage RawScore { get; set; } = Percentage.Zero;
 
     /// <summary>
     /// Gets or sets the performance tag for this breakdown item.
     /// </summary>
-    public required PerformanceTag PerformanceTag { get; init; }
+    public PerformanceTag PerformanceTag { get; init; } = PerformanceTag.Default;
 
     public string MetadataJson { get; init; } = string.Empty;
 
@@ -44,6 +47,13 @@ public sealed class ScoreBreakdownItem : ValueObject
         RawScore *= (factor / 100);
     }
 
+    public void MarkAsCompleted()
+    {
+        Status = "Completed";
+    }
+
+    public string Status { get; set; } = "Pending"; // Default status, can be updated based on grading logic
+
     /// <summary>
     /// Provides the components used for equality comparison.
     /// </summary>
@@ -55,8 +65,21 @@ public sealed class ScoreBreakdownItem : ValueObject
         yield return PerformanceTag;
         yield return MetadataJson; // Include metadata in equality check
         yield return Grader;
+        yield return Status; // Include status in equality check
     }
-    
+
+    public ScoreBreakdownItem Clone()
+    {
+        return new ScoreBreakdownItem(CriterionName)
+        {
+            RawScore = RawScore,
+            PerformanceTag = PerformanceTag,
+            MetadataJson = MetadataJson,
+            Grader = Grader,
+            Status = Status // Clone the status as well
+        };
+    }
+
     // Adds RawScores if other item matches the CriterionName and PerformanceTag
     public static ScoreBreakdownItem operator +(ScoreBreakdownItem a, ScoreBreakdownItem b)
     {
@@ -66,8 +89,10 @@ public sealed class ScoreBreakdownItem : ValueObject
         return new ScoreBreakdownItem(a.CriterionName)
         {
             RawScore = a.RawScore + b.RawScore,
+            Grader = a.Grader, // Keep the Grader from the first item
             PerformanceTag = a.PerformanceTag,
-            MetadataJson = a.MetadataJson // Keep metadata from the first item
+            MetadataJson = a.MetadataJson, // Keep metadata from the first item
+            Status = a.Status // Keep status from the first item
         };
     }
 
@@ -80,8 +105,10 @@ public sealed class ScoreBreakdownItem : ValueObject
         return new ScoreBreakdownItem(a.CriterionName)
         {
             RawScore = a.RawScore - b.RawScore,
+            Grader = a.Grader,
             PerformanceTag = a.PerformanceTag,
-            MetadataJson = a.MetadataJson // Keep metadata from the first item
+            MetadataJson = a.MetadataJson, // Keep metadata from the first item
+            Status = a.Status // Keep status from the first item
         };
     }
 }
@@ -98,13 +125,15 @@ public sealed class ScoreBreakdownItemConverter : JsonConverter<ScoreBreakdownIt
         var performanceTag = jObject.GetRequired<PerformanceTag>("PerformanceTag");
         var metadataJson = jObject.Get<string>("MetadataJson") ?? string.Empty;
         var grader = jObject.GetValue("Grader", StringComparison.OrdinalIgnoreCase)?.ToObject<Grader>() ?? Grader.AIGrader;
+        var status = jObject.Get<string>("Status") ?? "Pending";
 
         return new ScoreBreakdownItem(criterionIdentity)
         {
             RawScore = score,
             PerformanceTag = performanceTag,
             MetadataJson = metadataJson,
-            Grader = grader
+            Grader = grader,
+            Status = status
         };
     }
     public override bool CanWrite => false;

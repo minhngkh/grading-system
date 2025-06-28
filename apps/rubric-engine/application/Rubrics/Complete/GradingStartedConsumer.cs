@@ -30,8 +30,8 @@ public class GradingStartedConsumer(
 
         // Clone the rubric in steps
         await CreateClonedRubricAsync(clonedRubricId, originalRubricData, context.CancellationToken);
-        var clonedAttachments = await CopyRubricAttachmentsAsync(originalRubricId, clonedRubricId, originalRubricData, context.CancellationToken);
-        await UpdateClonedRubricPropertiesAsync(clonedRubricId, originalRubricData, clonedAttachments, context.CancellationToken);
+        await CopyRubricAttachmentsAsync(clonedRubricId, originalRubricData, context.CancellationToken);
+        await UpdateClonedRubricPropertiesAsync(clonedRubricId, originalRubricData, context.CancellationToken);
         await MarkOriginalRubricAsUsedAsync(originalRubricId, context.Message.GradingId, context.CancellationToken);
 
         logger.LogInformation("Successfully cloned rubric {OriginalRubricId} to {ClonedRubricId}. Original rubric {OriginalRubricId} marked as used. GradingId: {GradingId}.",
@@ -57,7 +57,7 @@ public class GradingStartedConsumer(
         await commandBus.PublishAsync(createCommand, cancellationToken);
     }
 
-    private async Task UpdateClonedRubricPropertiesAsync(RubricId clonedRubricId, Rubric originalRubricData, List<string> clonedAttachments, CancellationToken cancellationToken)
+    private async Task UpdateClonedRubricPropertiesAsync(RubricId clonedRubricId, Rubric originalRubricData, CancellationToken cancellationToken)
     {
         var updateCommand = new Update.Command(clonedRubricId)
         {
@@ -65,12 +65,12 @@ public class GradingStartedConsumer(
             PerformanceTags = originalRubricData.PerformanceTags.ToPerformanceTags(),
             Criteria = originalRubricData.Criteria.ToCriteria(),
             Metadata = originalRubricData.Metadata,
-            Attachments = clonedAttachments
+            Attachments = originalRubricData.Attachments
         };
         await commandBus.PublishAsync(updateCommand, cancellationToken);
     }
 
-    private async Task<List<string>> CopyRubricAttachmentsAsync(RubricId originalRubricId, RubricId clonedRubricId, Rubric originalRubricData, CancellationToken cancellationToken)
+    private async Task CopyRubricAttachmentsAsync(RubricId clonedRubricId, Rubric originalRubricData, CancellationToken cancellationToken)
     {
         var originalAttachments = originalRubricData.Attachments ?? [];
         var newAttachments = new List<string>();
@@ -78,21 +78,14 @@ public class GradingStartedConsumer(
         // Create tasks for parallel processing
         var copyTasks = originalAttachments.Select(async attachment => 
         {
-            var newAttachmentPath = attachment.Replace(originalRubricId.Value, clonedRubricId.Value);
-            
             await CopyBlobAsync(
-                sourceBlobName: attachment,
-                destBlobName: newAttachmentPath,
+                sourceBlobName: $"{originalRubricData.Id}/{attachment}",
+                destBlobName: $"{clonedRubricId}/{attachment}",
                 cancellationToken: cancellationToken);
-                
-            return newAttachmentPath;
         }).ToList();
-        
+
         // Wait for all copy operations to complete and collect results
-        var results = await Task.WhenAll(copyTasks);
-        newAttachments.AddRange(results);
-        
-        return newAttachments;
+        await Task.WhenAll(copyTasks);
     }
 
     private async Task MarkOriginalRubricAsUsedAsync(RubricId originalRubricId, string gradingId, CancellationToken cancellationToken)

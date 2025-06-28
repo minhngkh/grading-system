@@ -23,7 +23,6 @@ interface PluginItemProps {
   onSelect: (plugin: string) => void;
 }
 
-// memoized plugin item component
 const PluginItem = React.memo<PluginItemProps>(({ plugin, isSelected, onSelect }) => (
   <Card
     onClick={() => onSelect(plugin.name)}

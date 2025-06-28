@@ -1,6 +1,6 @@
 import type { UseFormReturn } from "react-hook-form";
 import type { CriteriaSelector, GradingAttempt, Submission } from "@/types/grading";
-import type { Rubric } from "@/types/rubric";
+import { RubricStatus, type Rubric } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -18,9 +18,9 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useDebounce } from "@/hooks/use-debounce";
 import { GradingService } from "@/services/grading-service";
-import { RubricService } from "@/services/rubric-service";
 import CriteriaMapper from "./criteria-mapping";
 import { FileList } from "./file-list";
+import { getInfiniteRubricsQueryOptions } from "@/queries/rubric-queries";
 
 interface UploadStepProps {
   form: UseFormReturn<GradingAttempt>;
@@ -290,7 +290,9 @@ export default function UploadStep({ form }: UploadStepProps) {
           <ScrollableSelectMemo<Rubric>
             value={gradingAttempt.rubricId}
             onValueChange={handleSelectRubric}
-            searchFn={(params, token) => RubricService.getRubrics(params, token)}
+            queryOptionsFn={getInfiniteRubricsQueryOptions(auth, {
+              status: RubricStatus.Draft,
+            })}
             selectFn={(rubric) => rubric.rubricName}
           />
           <span>or</span>

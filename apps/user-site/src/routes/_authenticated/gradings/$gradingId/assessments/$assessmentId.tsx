@@ -20,15 +20,15 @@ export const Route = createFileRoute(
       GradingService.getGradingAttempt(gradingId, token),
       AssessmentService.getAssessmentById(assessmentId, token),
     ]);
+
     if (grading.rubricId === undefined) {
       throw new Error("This assessment does not have a rubric associated with it.");
     }
+
     const rubric = await RubricService.getRubric(grading.rubricId, token);
     return { assessment, grading, rubric };
   },
-  errorComponent: () => (
-    <ErrorComponent message="Failed to load assessment. Please try again later." />
-  ),
+  errorComponent: () => <ErrorComponent message="Failed to load assessment" />,
   pendingComponent: () => <PendingComponent message="Loading assessment..." />,
 });
 

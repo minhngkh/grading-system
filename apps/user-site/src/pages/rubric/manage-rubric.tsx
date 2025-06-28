@@ -76,11 +76,11 @@ export default function ManageRubricsPage({
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   useEffect(() => {
-    setSearchParam({
-      search: debouncedSearchTerm,
-      page: 1,
-    });
-  }, [debouncedSearchTerm]);
+    // only reset to page 1 when search term actually changed
+    if (searchParams.search !== debouncedSearchTerm) {
+      setSearchParam({ search: debouncedSearchTerm, page: 1 });
+    }
+  }, [debouncedSearchTerm, searchParams.search]);
 
   // Remove client filtering - use rubrics directly
   const sortedRubrics = [...rubrics].sort((a, b) => {

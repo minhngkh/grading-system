@@ -1,7 +1,7 @@
 ﻿using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Assessments.Assess;
 using AssignmentFlow.Application.Assessments.Create;
-using AssignmentFlow.Application.Gradings.Hub;
+using AssignmentFlow.Application.Assessments.Hub;
 using EventFlow.Aggregates;
 using EventFlow.Sagas;
 using EventFlow.Sagas.AggregateSagas;
@@ -12,7 +12,8 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
     ISagaIsStartedBy<GradingAggregate, GradingId, AutoGradingStartedEvent>,
     ISagaHandles<GradingAggregate, GradingId, AutoGradingRestartedEvent>,
     ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessmentCreatedEvent>,
-    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, Assessments.StartAutoGrading.AutoGradingStartedEvent>,
+    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, Assessments.AutoGrading.AutoGradingStartedEvent>,
+    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, Assessments.AutoGrading.AutoGradingFinishedEvent>,
     ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessedEvent>,
     ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessmentFailedEvent>
 {
@@ -64,7 +65,8 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
                 SubmissionReference = SubmissionReference.New(submission.Reference),
                 GradingId = Shared.GradingId.With(gradingSummary.Id),
                 TeacherId = TeacherId.With(gradingSummary.TeacherId),
-                RubricId = RubricId.With(gradingSummary.RubricId)
+                RubricId = RubricId.With(gradingSummary.RubricId),
+                Criteria = [.. submission.CriteriaFiles.Select(cf => CriterionName.New(cf.Criterion))]
             });
         }
 
@@ -88,7 +90,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
                 aggregateState.AssessmentToSubmissionRefs[assessmentId],
                 cancellationToken);
 
-            Publish(new Assessments.StartAutoGrading.Command(Assessments.AssessmentId.With(assessmentId))
+            Publish(new Assessments.AutoGrading.StartAutoGradingCommand(Assessments.AssessmentId.With(assessmentId))
             {
                 RubricId = aggregateState.RubricId,
                 Submission = submission
@@ -121,7 +123,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
                 domainEvent.AggregateEvent.SubmissionReference,
                 cancellationToken);
 
-            Publish(new Assessments.StartAutoGrading.Command(domainEvent.AggregateIdentity)
+            Publish(new Assessments.AutoGrading.StartAutoGradingCommand(domainEvent.AggregateIdentity)
             {
                 RubricId = aggregateState.RubricId,
                 Submission = submission
@@ -142,7 +144,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         }
     }
 
-    public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, Assessments.StartAutoGrading.AutoGradingStartedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, Assessments.AutoGrading.AutoGradingStartedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
     {
         var assessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value);
 
@@ -201,6 +203,27 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             AssessmentId = assessmentId,
             Status = AssessmentState.AutoGradingFailed.ToString(),
             ErrorMessage = string.Join("; ", domainEvent.AggregateEvent.Errors.Select(e => $"{e.Key}: {e.Value}"))
+        });
+    }
+
+    public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, Assessments.AutoGrading.AutoGradingFinishedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    {
+        var assessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value);
+        // Emit event to mark this assessment as auto-graded
+        Emit(new GradingSagaAssessmentAutoGradingFinishedEvent
+        {
+            AssessmentId = assessmentId
+        });
+
+        // Check if all assessments are now graded
+        await HandleAutoGradingCompletion();
+
+        await PublishProgressUpdate(new AssessmentProgress
+        {
+            SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
+            AssessmentId = assessmentId,
+            Status = AssessmentState.AutoGradingFinished.ToString(),
+            ErrorMessage = null
         });
     }
 

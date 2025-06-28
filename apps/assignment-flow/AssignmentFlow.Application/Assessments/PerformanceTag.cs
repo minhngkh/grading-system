@@ -25,4 +25,7 @@ public sealed class PerformanceTag : StringValueObject
     /// <param name="value">The tag value.</param>
     /// <returns>A new <see cref="PerformanceTag"/> instance.</returns>
     public static PerformanceTag New(string value) => new(value);
+    
+    public static PerformanceTag Default => new("N/A");
+    public static PerformanceTag Low => new("Low");
 }

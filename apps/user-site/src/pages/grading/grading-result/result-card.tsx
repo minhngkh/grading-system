@@ -7,9 +7,9 @@ import { Link } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
-import { AssessmentService } from "@/services/assessment-service";
 import { ResultCardSkeleton } from "@/pages/grading/grading-result/skeletons";
-import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
 
 interface AssessmentResultCardProps {
   item: Assessment;
@@ -23,36 +23,25 @@ export function AssessmentResultCard({
   criteriaColorMap,
 }: AssessmentResultCardProps) {
   const auth = useAuth();
-  const [isRerunning, setIsRerunning] = useState(false);
+  const { isPending: isRerunning, mutateAsync: rerunAssessment } = useMutation(
+    rerunAssessmentMutationOptions(auth),
+  );
 
   const handleRerun = async () => {
-    const token = await auth.getToken();
-    if (!token) {
-      toast.error("You are not authorized to perform this action.");
-      return;
-    }
-
     try {
-      setIsRerunning(true);
-      await AssessmentService.rerunAssessment(item.id, token);
+      await rerunAssessment(item.id);
     } catch (error) {
       console.error("Failed to rerun assessment:", error);
       toast.error(
         `Failed to rerun assessment: ${item.submissionReference}. Please try again.`,
       );
-    } finally {
-      setIsRerunning(false);
     }
   };
 
-  const isUnderGrading = item.status <= AssessmentState.AutoGradingStarted || isRerunning;
-
-  if (isUnderGrading) {
+  if (item.status <= AssessmentState.AutoGradingStarted || isRerunning)
     return <ResultCardSkeleton />;
-  }
 
   const isGradingFailed = item.status === AssessmentState.AutoGradingFailed;
-
   return (
     <Card className="overflow-hidden py-0">
       <div className="flex flex-col md:flex-row">

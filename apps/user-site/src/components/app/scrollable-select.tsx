@@ -1,6 +1,3 @@
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -10,10 +7,14 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useCallback, useState, useRef, memo } from "react";
+import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
-import { useCallback, useEffect, useRef, useState, memo } from "react";
-import { useAuth } from "@clerk/clerk-react";
-import { GetAllResult, SearchParams } from "@/types/search-params";
+import type { SearchParams } from "@/types/search-params";
+import { InfiniteQueryOption } from "@/types/query";
 
 const PAGE_SIZE = 10;
 const SCROLL_THRESHOLD = 10;
@@ -28,9 +29,9 @@ interface ScrollableSelectProps<T extends Item> {
   emptyMessage?: string;
   className?: string;
   value?: string;
-  onValueChange: (value: T) => any;
-  searchFn: (params: SearchParams, token: string) => Promise<GetAllResult<T>>;
+  onValueChange: (value: T) => void;
   selectFn: (item: T) => string;
+  queryOptionsFn: (searchParams: SearchParams) => InfiniteQueryOption<T>;
 }
 
 function ScrollableSelect<T extends Item>({
@@ -39,106 +40,41 @@ function ScrollableSelect<T extends Item>({
   className,
   value,
   onValueChange,
-  searchFn,
   selectFn,
+  queryOptionsFn,
 }: ScrollableSelectProps<T>) {
   const [open, setOpen] = useState(false);
-  const [selectedValue, setSelectedValue] = useState<T | undefined>();
-  const [items, setItems] = useState<T[]>([]);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null);
-  const auth = useAuth();
   const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE_DELAY);
+  const listRef = useRef<HTMLDivElement>(null);
 
-  const fetchItems = useCallback(
-    async (currentPage: number, term: string, resetItems = false) => {
-      setIsSearching(true);
-      try {
-        if (!searchFn) return;
+  const { data, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery(
+      queryOptionsFn({
+        search: debouncedSearchTerm,
+        page: 1,
+        perPage: PAGE_SIZE,
+      }),
+    );
 
-        const token = await auth.getToken();
-        if (!token) {
-          throw new Error("Unauthorized: No token found");
-        }
-
-        const params = {
-          page: currentPage,
-          perPage: PAGE_SIZE,
-          search: term.trim(),
-        };
-
-        const result = await searchFn(params, token);
-
-        setItems((prev) => {
-          const combined = resetItems ? result.data : [...prev, ...result.data];
-
-          setHasMore(
-            result.meta.total >
-              (resetItems ? result.data.length : prev.length + result.data.length),
-          );
-
-          return combined;
-        });
-      } catch (error) {
-        console.error("Error loading data:", error);
-      } finally {
-        setIsSearching(false);
-      }
-    },
-    [searchFn],
-  );
-
-  useEffect(() => {
-    const loadData = async () => {
-      setPage(1);
-      await fetchItems(1, debouncedSearchTerm, true);
-    };
-
-    if (!isSearching) loadData();
-  }, [debouncedSearchTerm, fetchItems]);
-
-  useEffect(() => {
-    if (!value || items.length === 0) return;
-
-    const matchedItem = items.find((item) => item.id === value);
-    if (matchedItem && matchedItem.id !== selectedValue?.id) {
-      setSelectedValue(matchedItem);
-    }
-  }, [value, items.length, selectedValue?.id]);
-
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchTerm(value);
-  }, []);
+  const items = data?.pages.flatMap((page) => page.data) ?? [];
+  const selectedValue = items.find((item) => item.id === value);
 
   const handleScroll = useCallback(
-    async (e: React.UIEvent<HTMLDivElement>) => {
-      if (!hasMore || loading || isSearching) return;
-
+    (e: React.UIEvent<HTMLDivElement>) => {
       const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-
-      if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
-        const nextPage = page + 1;
-        setPage(nextPage);
-        setLoading(true);
-        await fetchItems(nextPage, searchTerm);
-        setLoading(false);
+      const nearBottom = scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD;
+      if (nearBottom && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
       }
     },
-    [hasMore, loading, isSearching, page, searchTerm, fetchItems],
+    [hasNextPage, isFetchingNextPage, fetchNextPage],
   );
 
-  const handleItemSelect = useCallback(
-    (item: T) => {
-      setSelectedValue(item);
-      onValueChange?.(item);
-      setOpen(false);
-    },
-    [onValueChange],
-  );
+  const handleSelect = (item: T) => {
+    onValueChange(item);
+    setOpen(false);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -146,10 +82,9 @@ function ScrollableSelect<T extends Item>({
         <Button
           variant="outline"
           role="combobox"
-          aria-expanded={open}
           className={cn("justify-between", className)}
         >
-          {selectedValue ? selectFn?.(selectedValue) : placeholder}
+          {selectedValue ? selectFn(selectedValue) : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -158,10 +93,10 @@ function ScrollableSelect<T extends Item>({
           <CommandInput
             placeholder="Search items..."
             value={searchTerm}
-            onValueChange={handleSearchChange}
+            onValueChange={setSearchTerm}
           />
           <CommandEmpty>
-            {isSearching ?
+            {isFetching ?
               <div className="flex items-center justify-center py-2">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
@@ -180,9 +115,9 @@ function ScrollableSelect<T extends Item>({
                   className="flex justify-between"
                   key={item.id}
                   value={item.id}
-                  onSelect={() => handleItemSelect(item)}
+                  onSelect={() => handleSelect(item)}
                 >
-                  {selectFn ? selectFn(item) : item.id}
+                  {selectFn(item)}
                   <Check
                     className={cn(
                       "ml-2 h-4 w-4",
@@ -191,11 +126,11 @@ function ScrollableSelect<T extends Item>({
                   />
                 </CommandItem>
               ))}
-              {loading && !isSearching && items.length > 0 && (
+              {isFetchingNextPage && (
                 <div className="flex items-center justify-center py-2">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   <span className="ml-2 text-sm text-muted-foreground">
-                    Loading more items...
+                    Loading more...
                   </span>
                 </div>
               )}
@@ -207,8 +142,6 @@ function ScrollableSelect<T extends Item>({
   );
 }
 
-const ScrollableSelectMemo = memo(ScrollableSelect) as <T extends Item>(
+export const ScrollableSelectMemo = memo(ScrollableSelect) as <T extends Item>(
   props: ScrollableSelectProps<T>,
 ) => JSX.Element;
-
-export { ScrollableSelectMemo };

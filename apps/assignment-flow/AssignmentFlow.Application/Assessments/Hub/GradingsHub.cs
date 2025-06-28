@@ -1,10 +1,8 @@
-﻿using AssignmentFlow.Application.Assessments;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
-namespace AssignmentFlow.Application.Gradings.Hub;
+namespace AssignmentFlow.Application.Assessments.Hub;
 
 [Authorize]
 public class GradingsHub(AssignmentFlowDbContext dbContext) : Hub<IGradingClient>
@@ -66,11 +64,19 @@ public class AssessmentProgress
     public required string SubmissionReference { get; init; } // e.g., "student_id"
     public required string AssessmentId { get; init; }
     public required string Status { get; init; } // e.g., "Pending", "UnderAutoGrading", "Graded", "Failed"
-    public required string? ErrorMessage { get; init; } // Optional error message if the assessment failed
+    public string? ErrorMessage { get; init; } // Optional error message if the assessment failed
+}
+
+public class AssessmentCriterionProgress
+{
+    public required string SubmissionReference { get; init; } // e.g., "student_id"
+    public required string AssessmentId { get; init; }
+    public required ScoreBreakdownApiContract RawScore { get; init; }
 }
 
 public interface IGradingClient
 {
+    Task ReceiveAssessmentCriterionProgress(AssessmentCriterionProgress progress);
     Task ReceiveAssessmentProgress(AssessmentProgress progress);
     Task Complete();
 }

@@ -11,6 +11,7 @@ import { useState } from "react";
 import { PluginDialogComponent } from "./type";
 import CodeRunnerConfigDialog from "./code-runner";
 import { toast } from "sonner";
+import { PluginSelectDialog } from "./plugin-select-dialog";
 
 const PluginConfigDialogs: Record<string, PluginDialogComponent> = {
   "code-runner": CodeRunnerConfigDialog,
@@ -26,12 +27,16 @@ export default function PluginRubricTable({
   rubricData,
   onUpdate,
 }: PluginRubricTableProps) {
+  const [pluginDialogOpen, setPluginDialogOpen] = useState(false);
   const [pluginDialogConfigOpen, setPluginDialogConfigOpen] = useState(false);
   const [ActivePluginConfigDialog, setActivePluginConfigDialog] =
-    useState<PluginDialogComponent | null>(null);
-  const [selectedCriterionIndex, setSelectedCriterionIndex] = useState<number | null>(
-    null,
-  );
+    useState<PluginDialogComponent>();
+  const [selectedCriterionIndex, setSelectedCriterionIndex] = useState<number>();
+
+  const openPluginDialog = (criterionIndex: number) => {
+    setSelectedCriterionIndex(criterionIndex);
+    setPluginDialogOpen(true);
+  };
 
   const onPluginSelect = async (plugin: string, criterionIndex: number) => {
     try {
@@ -46,16 +51,17 @@ export default function PluginRubricTable({
       });
 
       await onUpdate?.({ criteria: updatedCriteria });
-      setSelectedCriterionIndex(criterionIndex);
-      setActivePluginConfigDialog(PluginConfigDialogs[plugin]);
-      setPluginDialogConfigOpen(true);
+      if (PluginConfigDialogs[plugin]) {
+        setActivePluginConfigDialog(PluginConfigDialogs[plugin]);
+        setPluginDialogConfigOpen(true);
+      }
     } catch (error) {
       console.error("Error selecting plugin:", error);
       toast.error("Failed to select plugin. Please try again.");
     }
   };
 
-  const handleConfigChange = (config: string, criterionIndex: number) => {
+  const handleConfigChange = async (config: string, criterionIndex: number) => {
     try {
       const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
         if (idx === criterionIndex) {
@@ -66,7 +72,8 @@ export default function PluginRubricTable({
         }
         return criterion;
       });
-      onUpdate?.({ criteria: updatedCriteria });
+
+      await onUpdate?.({ criteria: updatedCriteria });
       setPluginDialogConfigOpen(false);
     } catch (error) {
       console.error("Error updating Code Runner configuration:", error);
@@ -88,14 +95,22 @@ export default function PluginRubricTable({
           rubricData={rubricData}
           showPlugins
           editPlugin
-          onPluginSelect={onPluginSelect}
+          onPluginSelect={openPluginDialog}
         />
-        {ActivePluginConfigDialog && pluginDialogConfigOpen && selectedCriterionIndex && (
+        {ActivePluginConfigDialog && pluginDialogConfigOpen && (
           <ActivePluginConfigDialog
-            criterionIndex={selectedCriterionIndex}
+            criterionIndex={selectedCriterionIndex!}
             open={pluginDialogConfigOpen}
             onOpenChange={setPluginDialogConfigOpen}
             onCriterionConfigChange={handleConfigChange}
+          />
+        )}
+        {pluginDialogOpen && (
+          <PluginSelectDialog
+            criterion={rubricData.criteria[selectedCriterionIndex!]}
+            open={pluginDialogOpen}
+            onOpenChange={setPluginDialogOpen}
+            onSelect={(plugin) => onPluginSelect(plugin, selectedCriterionIndex!)}
           />
         )}
       </CardContent>

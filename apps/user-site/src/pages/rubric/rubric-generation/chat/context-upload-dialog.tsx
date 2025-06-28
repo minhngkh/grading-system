@@ -18,10 +18,17 @@ interface RubricContextUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm?: (files: File[], attachments: string[]) => void;
+  isPending?: boolean;
 }
 
 export const RubricContextUploadDialog = memo(
-  ({ open, onOpenChange, onConfirm, attachments }: RubricContextUploadDialogProps) => {
+  ({
+    open,
+    onOpenChange,
+    onConfirm,
+    attachments,
+    isPending,
+  }: RubricContextUploadDialogProps) => {
     const [contextFiles, setContextFiles] = useState<File[]>([]);
     const [currentAttachments, setCurrentAttachments] = useState<string[]>([]);
 
@@ -95,7 +102,9 @@ export const RubricContextUploadDialog = memo(
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>
-            <Button onClick={handleConfirm}>Confirm</Button>
+            {isPending ?
+              <Button>Uploading</Button>
+            : <Button onClick={handleConfirm}>Confirm</Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
