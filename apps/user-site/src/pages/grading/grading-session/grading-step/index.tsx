@@ -45,14 +45,12 @@ export default function GradingProgressStep({
   };
 
   const handleStatusChange = (isActive: boolean, newStatus: AssessmentGradingStatus) => {
-    console.log("Received assessment status update:", newStatus);
     if (!isActive) return;
 
     setAssessmentStatus((prev) => {
-      if (!prev) return [newStatus];
+      if (prev == null || prev.length === 0) return [newStatus];
 
       const exists = prev.some((item) => item.assessmentId === newStatus.assessmentId);
-
       if (!exists) {
         return [...prev, newStatus];
       }
@@ -112,7 +110,6 @@ export default function GradingProgressStep({
         );
 
         if (gradingAttemptValues.status === GradingStatus.Created) {
-          console.log("Starting grading attempt:", gradingAttemptValues.id);
           await startGrading();
         }
 
