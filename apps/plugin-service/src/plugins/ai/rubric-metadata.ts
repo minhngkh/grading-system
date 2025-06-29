@@ -2,9 +2,8 @@ import { getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
 import { deleteFile } from "@grading-system/utils/file";
 import logger from "@grading-system/utils/logger";
 import dedent from "dedent";
-import { errAsync, okAsync, safeTry } from "neverthrow";
+import { okAsync, safeTry } from "neverthrow";
 import { rubricContextStore } from "@/lib/blob-storage";
-import { EmptyListError } from "@/lib/error";
 import { createTempDirectory } from "@/lib/file";
 import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-files";
 
@@ -29,13 +28,12 @@ export function generateRubricContext(data: {
 }) {
   return safeTry(async function* () {
     if (data.blobNameList.length === 0) {
-      return errAsync(
-        new EmptyListError({
-          message: "List of blob names is empty",
-          data: undefined,
-        }),
-      );
+      return okAsync({
+        manifest: createContextHeader(data.metadata),
+        llmMessageParts: [],
+      });
     }
+
     const blobNameRoot = getBlobNameParts(data.blobNameList[0]).root;
     const blobNameRestList = data.blobNameList.map(
       (blobName) => getBlobNameParts(blobName).rest,
@@ -43,6 +41,7 @@ export function generateRubricContext(data: {
 
     const downloadDirectory = yield* createTempDirectory("rubric-context");
 
+    // TOOD: download straght to buffer or cache if it doesnt change 
     const contextFilesInfo = yield* rubricContextStore
       .downloadToDirectory(blobNameRoot, blobNameRestList, downloadDirectory)
       .andThen(() =>
