@@ -78,7 +78,7 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void Assess(AutoGrading.AssessCriterionCommand command)
     {
-        var scoreItem = command.ScoreBreakdownItem;
+        var scoreItem = command.ScoreBreakdownItem.Clone();
 
         if (command.ScoreBreakdownItem.Grader.IsAIGrader && scoreItem.RawScore != 0m)
         {
