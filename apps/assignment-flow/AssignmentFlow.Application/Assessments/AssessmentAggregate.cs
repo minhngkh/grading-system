@@ -78,9 +78,9 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void Assess(AutoGrading.AssessCriterionCommand command)
     {
-        var scoreItem = command.ScoreBreakdownItem.Clone();
-        
-        if (command.ScoreBreakdownItem.Grader.IsAIGrader)
+        var scoreItem = command.ScoreBreakdownItem;
+
+        if (command.ScoreBreakdownItem.Grader.IsAIGrader && scoreItem.RawScore != 0m)
         {
             var rubric = rubricProtoService.GetRubric(new GetRubricRequest
             {
@@ -101,7 +101,12 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
     {
         ConditionalEmit(
             AutoGrading.AutoGradingCanBeFinishedSpecification.New().IsSatisfiedBy(State),
-            () => new AutoGrading.AutoGradingFinishedEvent { GradingId = State.GradingId });
+            () => new AutoGrading.AutoGradingFinishedEvent { 
+                GradingId = State.GradingId,
+                Errors = State.ScoreBreakdowns.ToDictionary(
+                    item => item.CriterionName.Value,
+                    item => item.FailureReason)
+            });
     }
 
     /// <summary>
