@@ -4,7 +4,7 @@ import { FileItem } from "@/types/file";
 const BLOB_ENDPOINT = "http://127.0.0.1:27000/devstoreaccount1";
 
 const SAS_TOKEN =
-  "sv=2023-01-03&ss=btqf&srt=sco&st=2025-06-27T12%3A52%3A27Z&se=2025-09-01T12%3A52%3A00Z&sp=rl&sig=IQ2dkMMmQa8%2FR84vAgBz0UDY7MlkAXVR8W87oeyN65U%3D";
+  "sv=2023-01-03&ss=btqf&srt=sco&st=2025-06-29T13%3A58%3A28Z&se=2025-10-08T13%3A58%3A00Z&sp=rl&sig=4FFusSSBp5eqWoZ2ahgafhFCUQfJW5mbkNXhIE4U6RY%3D";
 
 const blobServiceClient = new BlobServiceClient(`${BLOB_ENDPOINT}?${SAS_TOKEN}`);
 const containerClient = blobServiceClient.getContainerClient("submissions-store");
