@@ -2,6 +2,7 @@
 using AssignmentFlow.Application.Gradings.BulkSubmissionUpload;
 using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
+using AssignmentFlow.Application.Gradings.GetSASToken;
 using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.RestartAutoGrading;
 using AssignmentFlow.Application.Gradings.Start;
@@ -31,7 +32,8 @@ internal static class EndpointHandlers
             .MapStartGrading()
             .MapGradingAnalytics()
             .MapRestartAutoGrading()
-            .MapUpdateInfo();
+            .MapUpdateInfo()
+            .MapGetSASToken();
 
         return routeBuilder;
     }
