@@ -103,11 +103,10 @@ public sealed class ScoreBreakdowns : ValueObject, IEnumerable<ScoreBreakdownIte
         return ScoreBreakdowns.New([..BreakdownItems.Select(item => item.Clone())]);
     }
 
-    public bool IsComplete()
-    {
-        // Check if all items have a non-zero RawScore
-        return BreakdownItems.All(item => item.Status == "Completed");
-    }
+    public bool IsCompleted => BreakdownItems.All(item => item.IsCompleted);
+    public bool IsCompletedWithErrors => BreakdownItems.Any(
+        item => item.Status == "Failed"
+        || !string.IsNullOrWhiteSpace(item.FailureReason));
 
     public IEnumerator<ScoreBreakdownItem> GetEnumerator()
     {
