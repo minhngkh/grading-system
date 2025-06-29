@@ -13,6 +13,7 @@ interface ImageViewerProps {
   rubricCriteria?: string[];
   gradingId: string;
   submissionReference: string;
+  bottomPanelHeight: number;
 }
 
 export const ImageViewer: React.FC<ImageViewerProps> = ({
@@ -24,6 +25,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   rubricCriteria = [],
   gradingId,
   submissionReference,
+  bottomPanelHeight,
 }) => {
   const [open, setOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -78,7 +80,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   return (
     <>
       <div
-        className={`flex justify-center items-center w-full`}
+        className={`flex justify-center items-center w-full overflow-auto`}
         onClick={handleImageClick}
       >
         <img src={src} />

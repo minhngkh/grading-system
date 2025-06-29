@@ -29,15 +29,15 @@ export function getTestStatusIcon(status: string) {
 export function getTagColor(tag: string) {
   switch (tag) {
     case "notice":
-      return "bg-green-100";
+      return "border-green-100";
     case "info":
-      return "bg-blue-100";
+      return "border-blue-100";
     case "tip":
-      return "bg-yellow-100";
+      return "border-yellow-100";
     case "caution":
-      return "bg-red-100";
+      return "border-red-100";
     default:
-      return "bg-gray-100";
+      return "border-gray-100";
   }
 }
 

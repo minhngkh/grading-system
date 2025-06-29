@@ -17,6 +17,7 @@ interface FileViewerProps {
   rubricCriteria?: string[];
   gradingId: string;
   submissionReference: string;
+  bottomPanelHeight: number; // Thêm prop này nếu cần thiết
 }
 
 const FileViewer: React.FC<FileViewerProps> = ({
@@ -31,6 +32,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   rubricCriteria = [],
   gradingId,
   submissionReference,
+  bottomPanelHeight, // Thêm giá trị mặc định nếu cần thiết
 }) => {
   const codeViewerRef = useRef<HighlightableViewerHandle>(null);
 
@@ -47,6 +49,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         rubricCriteria={rubricCriteria}
         gradingId={gradingId}
         submissionReference={submissionReference}
+        bottomPanelHeight={bottomPanelHeight} // Truyền giá trị này nếu cần
       />
     );
   }

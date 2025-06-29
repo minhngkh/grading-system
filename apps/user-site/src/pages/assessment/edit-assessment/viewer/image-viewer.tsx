@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FeedbackItem } from "@/types/assessment";
 import { FileItem } from "@/types/file";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   const [newComment, setNewComment] = useState("");
   const [newFeedbackTag, setNewFeedbackTag] = useState<string>("info");
   const [newCriterion, setNewCriterion] = useState<string>("");
-
+  const imageModalRef = useRef<HTMLImageElement>(null);
   // Function to handle adding feedback for image
   const handleAddFeedback = () => {
     if (!newComment.trim() || !newCriterion) return;
@@ -62,6 +62,28 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
     if (isHighlightMode) setIsDialogOpen(true);
     else setIsDialogOpen(false);
   }, [isHighlightMode]);
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // If modal is open and click is outside the image
+      if (
+        open &&
+        imageModalRef.current &&
+        !imageModalRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    // Add event listener when modal is open
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Clean up the event listener
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
@@ -73,19 +95,13 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
 
   return (
     <>
-      <div
-        className={`flex justify-center items-center w-full`}
-        // remove onClick={handleImageClick}
-      >
-        <img src={src} />
+      <div className={`flex justify-center items-center w-full`}>
+        <img className="hover:cursor-zoom-in" src={src} onClick={() => setOpen(true)} />
       </div>
-
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-          onClick={() => setOpen(false)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <img
+            ref={imageModalRef}
             src={src}
             style={{
               maxWidth: "96vw",

@@ -6,7 +6,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { NavigationItems } from "@/types/navigation";
+import { NavigationItems } from "@/consts/navigations";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
 

@@ -14,12 +14,13 @@ import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
 import { loadFileItems } from "@/services/file-service";
 import { getFileIcon } from "./icon-utils";
-import { FileExplorer } from "./file-explorer";
+import { FileExplorer } from "@/components/app/file-explorer";
 import { ScoringPanel } from "./scoring-panel";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { AssessmentExporter } from "@/lib/exporters";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FeedbackListPanel } from "./feedback-list-panel";
+import { s } from "node_modules/framer-motion/dist/types.d-CtuPurYT";
 
 export function EditAssessmentUI({
   assessment,
@@ -66,7 +67,7 @@ export function EditAssessmentUI({
     rubric.criteria[0]?.name || "",
   );
   const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">("file");
-
+  console.log("EditAssessmentUI rendered with formData:", formData);
   useEffect(() => {
     async function load() {
       const items = await loadFileItems(`${grading.id}/${formData.submissionReference}`);
@@ -116,10 +117,8 @@ export function EditAssessmentUI({
 
     form.setValue("scoreBreakdowns", updated, { shouldValidate: true });
   };
-  // Hàm kiểm tra feedback thuộc file nào (dựa vào fileRef)
   const isFeedbackForFile = (fb: FeedbackItem, file: any) => {
     try {
-      // So sánh relativePath hoặc so sánh fileRef kết thúc bằng relativePath
       if (fb.fileRef && file.relativePath && fb.fileRef.endsWith(file.relativePath))
         return true;
     } catch {}
@@ -135,11 +134,6 @@ export function EditAssessmentUI({
     }
   }, [files, formData.feedbacks]);
 
-  // // Update feedbacks từ child viewer
-  // const handleUpdateFeedbacks = (newFeedbacks: FeedbackItem[]) => {
-  //   // Nhận toàn bộ mảng feedbacks mới từ child, cập nhật trực tiếp
-  //   form.setValue("feedbacks", newFeedbacks, { shouldValidate: true });
-  // };
   const handleUpdateFeedback = (
     index: number,
     updatedFeedback: Partial<FeedbackItem>,
@@ -159,14 +153,11 @@ export function EditAssessmentUI({
     return false;
   };
 
-  // Hàm thêm một feedback mới
   const handleAddNewFeedback = (newFeedback: FeedbackItem) => {
     const currentFeedbacks = [...formData.feedbacks];
     currentFeedbacks.push(newFeedback);
 
     form.setValue("feedbacks", currentFeedbacks, { shouldValidate: true });
-
-    // Tự động chọn feedback vừa thêm
     const newIndex = currentFeedbacks.length - 1;
     setSelectedFeedbackIndex(newIndex);
     setSelectedFeedback(newFeedback);
@@ -452,20 +443,22 @@ export function EditAssessmentUI({
                 </div>
               )}
             </div>
-
-            <div
-              className="flex-1 overflow-auto no-inner-scroll"
-              style={{
-                minWidth: 0,
-                minHeight: 0,
-              }}
-            >
-              {renderFileContent()}
-            </div>
+            {selectedFile.type === "code" ?
+              renderFileContent()
+            : <div
+                className="flex-1 overflow-auto"
+                style={{
+                  minWidth: 0,
+                  minHeight: 0,
+                }}
+              >
+                {renderFileContent()}
+              </div>
+            }
           </div>
 
           {/* Feedback Panel with View Mode Toggle */}
-          <div className="ml-3 w-70 max-w-60 text-wrap overflow-auto flex-shrink-0 h-full">
+          <div className="ml-4 w-70 max-w-60 text-wrap overflow-auto">
             {/* Feedback View Mode Toggle + Content (shadcn Tabs) */}
             <Tabs
               value={feedbackViewMode}

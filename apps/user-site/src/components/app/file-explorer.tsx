@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FolderOpen, Folder, Filter } from "lucide-react";
-import { getFileIcon } from "./icon-utils";
+import { getFileIcon } from "../../pages/assessment/edit-assessment/icon-utils";
 import { GradingAttempt } from "@/types/grading";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -169,7 +169,7 @@ function renderTree(
         return (
           <div key={fullPath}>
             <div
-              className="flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+              className="flex items-center gap-2 px-2 rounded-md cursor-pointer hover:bg-gray-100 transition-colors duration-150"
               onClick={() =>
                 setExpandedFolders((prev) => ({
                   ...prev,
@@ -209,7 +209,7 @@ function renderTree(
             .map((file: any) => (
               <div
                 key={file.id}
-                className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-all duration-150 ${
+                className={`flex items-center gap-2 px-2 rounded-md cursor-pointer transition-all duration-150 ${
                   selectedFile?.id === file.id ?
                     "bg-blue-100 text-blue-900 shadow-sm"
                   : "hover:bg-gray-100"
@@ -271,7 +271,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     selectors.length > 0 && selectedCriteria.length === selectors.length;
   return (
     <div className="p-4 h-full w-50">
-      <div className="justify-between flex items-center mb-2">
+      <div className="justify-between flex items-center">
         <h3 className="text-sm font-medium">Explorer</h3>
         <Popover>
           <div className="flex items-end">

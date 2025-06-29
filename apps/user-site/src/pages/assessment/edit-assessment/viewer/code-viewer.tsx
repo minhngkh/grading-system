@@ -286,13 +286,6 @@ const HighlightableViewer = forwardRef<
             const lineEl = root.querySelector(
               `.line[data-line="${fb.locationData.fromLine}"]`,
             );
-            console.log(lineEl, "line element to scroll to");
-            console.log(
-              "scrollHeight:",
-              root.scrollHeight,
-              "clientHeight:",
-              root.clientHeight,
-            );
 
             if (lineEl) {
               root.scrollTo({
@@ -324,7 +317,7 @@ const HighlightableViewer = forwardRef<
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
-          className="h-full"
+          className="h-full overflow-auto"
           transformers={[
             {
               preprocess(code, options) {
