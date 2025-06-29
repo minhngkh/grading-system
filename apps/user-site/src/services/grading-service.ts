@@ -103,7 +103,7 @@ export class GradingService {
     if (perPage != undefined) params.append("page[size]", perPage.toString());
 
     const filterExpr = buildFilterExpr([
-      search ? contains("id", search) : undefined,
+      search ? contains("name", search) : undefined,
       status ? eq("status", status) : undefined,
     ]);
 
@@ -181,6 +181,6 @@ export class GradingService {
 
   static async updateGradingName(id: string, name: string, token: string): Promise<void> {
     const configHeaders = this.buildHeaders(token);
-    return axios.put(`${GRADING_API_URL}/${id}/name`, { name }, configHeaders);
+    return axios.put(`${GRADING_API_URL}/${id}/info`, { name }, configHeaders);
   }
 }

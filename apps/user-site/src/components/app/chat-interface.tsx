@@ -105,7 +105,6 @@ const ChatInterface = memo(function ChatInterface({
 
     try {
       const agentResponse = await sendMessageCallback(newMessages);
-      console.log("Agent response:", agentResponse);
 
       if (controller.signal.aborted) return;
 

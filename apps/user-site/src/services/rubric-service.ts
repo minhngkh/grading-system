@@ -36,13 +36,10 @@ export class RubricService {
 
   private static ConvertToRubric(record: any): Rubric {
     return {
-      id: record.id,
-      rubricName: record.rubricName,
+      ...record,
       tags: record.tags ?? [],
       criteria: record.criteria ?? [],
       updatedOn: record.updatedOn ? new Date(record.updatedOn) : undefined,
-      status: record.status,
-      attachments: record.attachments ?? [],
     };
   }
 
@@ -98,6 +95,7 @@ export class RubricService {
 
   static async uploadContext(id: string, files: File[], token: string): Promise<void> {
     const formData = new FormData();
+
     files.forEach((file) => {
       formData.append("files", file);
     });

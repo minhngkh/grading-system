@@ -118,7 +118,7 @@ export function uploadContextMutationOptions(
   options?: Partial<UseMutationOptions<void, unknown, File[]>>,
 ): UseMutationOptions<void, unknown, File[]> {
   return {
-    mutationFn: async (files: File[]) => {
+    mutationFn: async (files) => {
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required");
       await RubricService.uploadContext(id, files, token);

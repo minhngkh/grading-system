@@ -13,7 +13,6 @@ export function useDebounce<T>(value: T, delay: number): T {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Only update if value changed (by shallow reference)
       if (previousValueRef.current !== value) {
         previousValueRef.current = value;
         setDebouncedValue(value);

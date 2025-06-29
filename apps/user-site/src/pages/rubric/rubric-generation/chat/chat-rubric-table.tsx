@@ -17,13 +17,34 @@ import { RubricService } from "@/services/rubric-service";
 import { useAuth } from "@clerk/clerk-react";
 import { lazy, Suspense } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { uploadContextMutationOptions } from "@/queries/rubric-queries";
+import {
+  updateRubricMutationOptions,
+  uploadContextMutationOptions,
+} from "@/queries/rubric-queries";
 
 const RubricView = lazy(() =>
   import("@/components/app/rubric-view").then((module) => ({
     default: module.RubricView,
   })),
 );
+
+function areRecordsEqual(
+  a: Record<string, string> | undefined,
+  b: Record<string, string> | undefined,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+
+  for (const key of aKeys) {
+    if (a[key] !== b[key]) return false;
+  }
+
+  return true;
+}
 
 interface RubricTableProps {
   rubricData: Rubric;
@@ -54,6 +75,10 @@ function ChatRubricTable({
     uploadContextMutationOptions(rubricData.id, auth),
   );
 
+  const updateRubricMutation = useMutation(
+    updateRubricMutationOptions(rubricData.id, auth),
+  );
+
   const handleOpenContextDialog = useCallback(() => setIsContextDialogOpen(true), []);
   const handleOpenEditDialog = useCallback(() => setIsEditingDialogOpen(true), []);
 
@@ -75,17 +100,31 @@ function ChatRubricTable({
   });
 
   const handleUploadContext = useCallback(
-    async (files: File[], newAttachments: string[]) => {
+    async (
+      files: File[],
+      newAttachments?: string[],
+      metadata?: Record<string, string>,
+    ) => {
       try {
+        if (!areRecordsEqual(rubricData.metadata, metadata)) {
+          await updateRubricMutation.mutateAsync({
+            metadata: metadata,
+          });
+
+          onUpdate?.({ metadata: metadata });
+        }
+
         let isChanged = false;
 
-        const removedAttachments = rubricData.attachments?.filter(
-          (file) => !newAttachments.includes(file),
-        );
+        if (newAttachments) {
+          const removedAttachments = rubricData.attachments?.filter(
+            (file) => !newAttachments?.includes(file),
+          );
 
-        if (removedAttachments?.length) {
-          await deleteAttachments(removedAttachments);
-          isChanged = true;
+          if (removedAttachments?.length) {
+            await deleteAttachments(removedAttachments);
+            isChanged = true;
+          }
         }
 
         if (files.length > 0) {
@@ -95,16 +134,16 @@ function ChatRubricTable({
 
         if (isChanged) {
           const updatedAttachments = [
-            ...newAttachments,
+            ...(newAttachments ?? []),
             ...files.map((file) => file.name),
           ];
 
           onUpdate?.({ attachments: updatedAttachments });
-          toast.success("Context files updated successfully.");
+          toast.success("Context updated successfully.");
         }
       } catch (error) {
-        console.error("Error updating context files:", error);
-        toast.error("Failed to update context files. Please try again.");
+        console.error("Error updating files:", error);
+        toast.error("Failed to update files. Please try again.");
       }
     },
     [auth, rubricData.id, rubricData.attachments, onUpdate],
@@ -159,6 +198,7 @@ function ChatRubricTable({
             <RubricContextUploadDialog
               isPending={isPending}
               attachments={rubricData.attachments}
+              metadata={rubricData.metadata}
               open={isContextDialogOpen}
               onOpenChange={setIsContextDialogOpen}
               onConfirm={handleUploadContext}

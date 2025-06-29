@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/clerk-react";
 import { useMutation } from "@tanstack/react-query";
 import { sendRubricMessageMutationOptions } from "@/queries/chat-queries";
+import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 interface EditRubricPageProps {
   rubric: Rubric;
   onUpdate: (rubric: Partial<Rubric>) => Promise<void>;
@@ -24,6 +25,7 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const auth = useAuth();
   const chatMutation = useMutation(sendRubricMessageMutationOptions(rubric, auth));
+  const updateRubricMutation = useMutation(updateRubricMutationOptions(rubric.id, auth));
 
   const handleSendMessage = useCallback(
     async (messages: ChatMessage[]) => {
@@ -36,7 +38,10 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
 
           setTimeout(async () => {
             try {
-              await onUpdate({ ...response.rubric });
+              await updateRubricMutation.mutateAsync({
+                ...response.rubric,
+              });
+              onUpdate({ ...response.rubric });
             } catch (error) {
               console.error("Error updating rubric:", error);
               return "Error updating rubric. Please try again.";

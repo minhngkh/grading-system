@@ -68,6 +68,7 @@ export const RubricSchema = z
     updatedOn: z.date().optional(),
     status: z.nativeEnum(RubricStatus).optional(),
     attachments: z.array(z.string().min(1, "Attachment name is required")).optional(),
+    metadata: z.record(z.string()).optional(),
   })
   .refine(
     (data) => {

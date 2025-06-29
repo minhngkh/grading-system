@@ -133,12 +133,14 @@ public class Grading
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, SubmissionAddedEvent> domainEvent, CancellationToken cancellationToken)
     {
-        var submission = domainEvent.AggregateEvent.Submission;
-        SubmissionPersistences.Add(new()
-        {
-            Reference = submission.Reference.Value,
-            Attachments = submission.Attachments.ConvertAll(a => a.Value)
-        });
+        var submissions = domainEvent.AggregateEvent.Submissions
+            .ConvertAll(submission => new SubmissionPersistence
+            {
+                Reference = submission.Reference.Value,
+                Attachments = submission.Attachments.ConvertAll(a => a.Value)
+            });
+
+        SubmissionPersistences.AddRange(submissions);
         
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
