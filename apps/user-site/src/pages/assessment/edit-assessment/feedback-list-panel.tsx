@@ -2,7 +2,7 @@ import React from "react";
 import { FeedbackItem } from "@/types/assessment";
 import { Badge } from "@/components/ui/badge";
 import { Trash, MessageSquare } from "lucide-react";
-import { getActiveTagColor, getHoverTagColor, getTagColor } from "./icon-utils";
+import { getTagColor } from "./icon-utils";
 
 interface FeedbackListPanelProps {
   feedbacks: FeedbackItem[];
@@ -30,8 +30,8 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
               <div
                 key={globalIndex}
                 className={
-                  `${getTagColor(feedback.tag)} border rounded-lg p-2 ${getHoverTagColor(feedback.tag)} cursor-pointer transition-all duration-200 hover:shadow-sm flex items-start gap-2 ` +
-                  (isActive ? `${getActiveTagColor(feedback.tag)}` : "")
+                  `border rounded-lg p-2 hover:bg-primary-foreground cursor-pointer transition-all duration-200 hover:shadow-sm flex items-start gap-2 ` +
+                  (isActive ? `bg-primary-foreground` : "")
                 }
                 onClick={() => {
                   onSelect(feedback, globalIndex);
@@ -57,6 +57,12 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                       }}
                     />
                   </div>
+                  <Badge
+                    className={`${getTagColor(feedback.tag)} text-accent-foreground`}
+                  >
+                    {feedback.tag}
+                  </Badge>
+
                   <p className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
                     {feedback.comment}
                   </p>

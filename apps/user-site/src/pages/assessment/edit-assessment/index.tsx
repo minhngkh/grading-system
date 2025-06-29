@@ -198,7 +198,7 @@ export function EditAssessmentUI({
   const handleSaveAssessment = async () => {
     console.log("Saving assessment data:", formData);
     await handleSaveFeedback();
-    // await handleSaveScore();
+    await handleSaveScore();
     return;
   };
 
@@ -434,12 +434,16 @@ export function EditAssessmentUI({
               </div>
               {isHighlightMode && selectedFile && (
                 <div className="mt-2 text-blue-700 text-sm font-medium">
-                  {selectedFile.type === "code" &&
-                    "Click and drag to highlight and add feedback. Click again to exit."}
+                  {selectedFile.type === "code" ||
+                    (selectedFile.type === "essay" &&
+                      "Click and drag to highlight and add feedback. Click again to exit.")}
                 </div>
               )}
             </div>
-            {selectedFile && selectedFile.type === "code" ?
+            {(
+              selectedFile &&
+              (selectedFile.type === "code" || selectedFile.type === "essay")
+            ) ?
               renderFileContent()
             : <div
                 className="flex-1 overflow-auto"

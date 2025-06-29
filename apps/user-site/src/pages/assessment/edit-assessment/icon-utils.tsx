@@ -26,20 +26,20 @@ export function getTestStatusIcon(status: string) {
   }
 }
 
-export function getTagColor(tag: string) {
-  switch (tag) {
-    case "notice":
-      return "border-green-100";
-    case "info":
-      return "border-blue-100";
-    case "tip":
-      return "border-yellow-100";
-    case "caution":
-      return "border-red-100";
-    default:
-      return "border-gray-100";
-  }
-}
+// export function getTagColor(tag: string) {
+//   switch (tag) {
+//     case "notice":
+//       return "border-green-200";
+//     case "info":
+//       return "border-blue-100";
+//     case "tip":
+//       return "border-yellow-100";
+//     case "caution":
+//       return "border-red-100";
+//     default:
+//       return "border-gray-100";
+//   }
+// }
 
 export function getHoverTagColor(tag: string) {
   switch (tag) {
@@ -56,17 +56,17 @@ export function getHoverTagColor(tag: string) {
   }
 }
 
-export function getActiveTagColor(tag: string) {
+export function getTagColor(tag: string) {
   switch (tag) {
     case "notice":
-      return "bg-green-300";
+      return "bg-green-200";
     case "info":
-      return "bg-blue-300";
+      return "bg-blue-200";
     case "tip":
-      return "bg-yellow-300";
+      return "bg-yellow-200";
     case "caution":
-      return "bg-red-300";
+      return "bg-red-200";
     default:
-      return "bg-gray-300";
+      return "bg-gray-200";
   }
 }

@@ -226,7 +226,7 @@ const HighlightableViewer = ({
   const handleAddFeedback = () => {
     if (!selectionRange || !newComment.trim() || !newCriterion) return;
     const { from, to } = selectionRange;
-    let fileRef = `${gradingId}/${submissionReference}/${file.relativePath || ""}`;
+    let fileRef = `${submissionReference}/${file.relativePath || ""}`;
     const newFeedback: FeedbackItem = {
       criterion: newCriterion,
       fileRef,
@@ -261,30 +261,48 @@ const HighlightableViewer = ({
       const fb = feedbacksAll[idx];
       if (
         fb &&
-        fb.fileRef === `${gradingId}/${submissionReference}/${file.relativePath || ""}` &&
+        fb.fileRef === `${submissionReference}/${file.relativePath || ""}` &&
         fb.locationData?.type === "text" &&
         typeof fb.locationData.fromLine === "number"
       ) {
         // Try to scroll, if not found, retry a few times (wait for DOM render)
         let tries = 9;
         const tryScroll = () => {
-          const root = document.getElementById(`shiki-container`);
           if (
-            root &&
             fb.locationData &&
             fb.locationData.type === "text" &&
             typeof fb.locationData.fromLine === "number"
           ) {
-            const lineEl = root.querySelector(
-              `.line[data-line="${fb.locationData.fromLine}"]`,
-            );
-
-            if (lineEl) {
-              root.scrollTo({
-                top: (lineEl as HTMLElement).offsetTop - root.offsetTop,
-                behavior: "smooth",
-              });
-              return;
+            if (file.type === "code") {
+              const root = document.getElementById(`shiki-container`);
+              let lineEl: Element | null = null;
+              if (!root) return;
+              lineEl = root.querySelector(
+                `.line[data-line="${fb.locationData.fromLine}"]`,
+              );
+              if (lineEl) {
+                root.scrollTo({
+                  top: (lineEl as HTMLElement).offsetTop - root.offsetTop,
+                  behavior: "smooth",
+                });
+                return;
+              }
+            } else if (file.type === "essay") {
+              const root = document.getElementById(`essay-container`);
+              console.log("essay-container", root);
+              let lineEl: Element | null = null;
+              if (!root) return;
+              lineEl = root.querySelector(
+                `div[data-line="${fb.locationData.fromLine - 1}"]`,
+              );
+              console.log(lineEl, fb.locationData.fromLine);
+              if (lineEl) {
+                root.scrollTo({
+                  top: (lineEl as HTMLElement).offsetTop - root.offsetTop,
+                  behavior: "smooth",
+                });
+                return;
+              }
             }
           }
           if (tries < 10) {
@@ -292,6 +310,7 @@ const HighlightableViewer = ({
             setTimeout(tryScroll, 100);
           }
         };
+
         setTimeout(tryScroll, 0);
       }
     }
@@ -403,16 +422,16 @@ const HighlightableViewer = ({
                   },
                 }));
               },
-              pre(node) {
-                node.properties = {
-                  overflow: "hidden",
-                  backgroundColor: "oklch(0.129 0.042 264.69)",
-                };
-              },
               line(node, lineIndex) {
                 node.properties = {
                   ...node.properties,
                   "data-line": lineIndex.toString(),
+                };
+              },
+              pre(node) {
+                node.properties = {
+                  ...node.properties,
+                  style: "var(--background)",
                 };
               },
             },
@@ -493,7 +512,10 @@ const HighlightableViewer = ({
     }
 
     return (
-      <div className="font-serif text-md leading-relaxed whitespace-pre-wrap p-3">
+      <div
+        className="font-serif text-md leading-relaxed whitespace-pre-wrap p-3 overflow-auto"
+        id="essay-container"
+      >
         {file.content.split("\n").map((line, i) => {
           if (line === "") {
             return (

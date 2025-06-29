@@ -113,7 +113,7 @@ export class AssessmentService {
 
     const response = await axios.put(
       `${ASSESSMENT_API_URL}/${id}/feedbacks`,
-      { feedbacks: feedbacks },
+      feedbacks,
       configHeaders,
     );
 
@@ -129,7 +129,7 @@ export class AssessmentService {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.post(
       `${ASSESSMENT_API_URL}/${id}/scores`,
-      { scoreBreakdowns: scoreBreakdowns },
+      scoreBreakdowns,
       configHeaders,
     );
     console.log("Score update response:", response);
