@@ -1,88 +1,85 @@
 import React from "react";
 import HighlightableViewer from "./code-viewer";
-import PDFViewer from "./pdf-view";
+import PDFViewer from "./pdf-viewer";
+import ImageViewer from "./image-viewer";
 import { FeedbackItem } from "@/types/assessment";
+import { FileItem } from "@/types/file";
 
 interface FileViewerProps {
-  fileType: string;
-  fileUrl: string;
-  content?: string; // Thêm content
+  file: FileItem;
   feedbacks: FeedbackItem[];
-  updateFeedback: (newFeedbacks: FeedbackItem[]) => void;
+  feedbacksAll: FeedbackItem[];
+  addFeedback: (newFeedback: FeedbackItem) => void;
+  updateFeedback: (index: number, adjustedFeedback: FeedbackItem) => void;
   isHighlightMode: boolean;
   onHighlightComplete: () => void;
   activeFeedbackId?: string | null;
-  imageHighlights?: any[];
-  onImageHighlightsChange?: (highlights: any[]) => void;
   rubricCriteria?: string[];
+  gradingId: string;
+  submissionReference: string;
 }
 
-const imageExtensions = ["jpg", "jpeg", "png", "gif", "bmp", "webp"];
-const pdfExtensions = ["pdf"];
-const textExtensions = [
-  "txt",
-  "md",
-  "js",
-  "ts",
-  "tsx",
-  "jsx",
-  "json",
-  "css",
-  "scss",
-  "html",
-  "c",
-  "cpp",
-  "java",
-  "py",
-  "go",
-  "rs",
-  "php",
-  "rb",
-  "cs",
-  "swift",
-  "kt",
-  "h",
-];
-
 const FileViewer: React.FC<FileViewerProps> = ({
-  fileType,
-  fileUrl,
-  content,
+  file,
   feedbacks,
+  feedbacksAll,
+  addFeedback,
   updateFeedback,
   isHighlightMode,
   onHighlightComplete,
   activeFeedbackId,
   rubricCriteria = [],
+  gradingId,
+  submissionReference,
 }) => {
-  if (imageExtensions.includes(fileType)) {
-    // Xây dựng URL đầy đủ cho blob image
-    const fullImageUrl =
-      fileUrl.startsWith("http") ? fileUrl : (
-        `http://127.0.0.1:27000/devstoreaccount1/submissions-store/${fileUrl}`
-      );
+  // Gộp logic xác định loại file
+  if (file.type === "image") {
     return (
-      <div className="flex justify-center items-center h-full">
-        <img src={fullImageUrl} alt={fileUrl} />
-      </div>
+      <ImageViewer
+        src={file.content}
+        file={file}
+        addFeedback={addFeedback}
+        // updateFeedback={updateFeedback}
+        isHighlightMode={isHighlightMode}
+        onHighlightComplete={onHighlightComplete}
+        rubricCriteria={rubricCriteria}
+        gradingId={gradingId}
+        submissionReference={submissionReference}
+      />
     );
   }
-  if (pdfExtensions.includes(fileType)) {
-    return <PDFViewer fileUrl={fileUrl} />;
+  if (file.type === "pdf") {
+    return (
+      <PDFViewer
+        fileUrl={file.content}
+        file={file}
+        feedbacks={feedbacks}
+        feedbacksAll={feedbacksAll}
+        addFeedback={addFeedback}
+        updateFeedback={updateFeedback}
+        isHighlightMode={isHighlightMode}
+        onHighlightComplete={onHighlightComplete}
+        rubricCriteria={rubricCriteria}
+        gradingId={gradingId}
+        submissionReference={submissionReference}
+        activeFeedbackId={activeFeedbackId} // truyền activeFeedbackId
+      />
+    );
   }
-  if (textExtensions.includes(fileType)) {
-    const viewerType = fileType === "txt" ? "essay" : "code";
+  if (file.type === "code" || file.type === "document" || file.type === "essay") {
     return (
       <HighlightableViewer
-        type={viewerType}
-        fileUrl={fileUrl}
-        content={content ?? ""}
+        file={file}
         feedbacks={feedbacks}
+        feedbacksAll={feedbacksAll}
+        addFeedback={addFeedback}
         updateFeedback={updateFeedback}
         isHighlightMode={isHighlightMode}
         onHighlightComplete={onHighlightComplete}
         activeFeedbackId={activeFeedbackId}
         rubricCriteria={rubricCriteria}
+        gradingId={gradingId}
+        submissionReference={submissionReference}
       />
     );
   }

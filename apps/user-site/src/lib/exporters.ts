@@ -347,74 +347,53 @@ export class GradingExporter implements DataExporter {
 export class AssessmentExporter implements DataExporter {
   constructor(private assessment: Assessment) {}
 
-  // Lấy fileRef cho mỗi criterion từ scoreBreakdowns (ưu tiên fileRef từ feedbacks nếu có)
-  private getFileRefsByCriterion() {
-    const map = new Map<string, Set<string>>();
-    this.assessment.scoreBreakdowns.forEach((sb) => {
-      const key = `${sb.criterionName}-${sb.performanceTag}`;
-      const feedbackRefs = this.assessment.feedbacks
-        .filter(
-          (fb) =>
-            (fb.criterion?.trim() || "") === (sb.criterionName?.trim() || "") &&
-            fb.fileRef &&
-            fb.fileRef !== "-",
-        )
-        .map((fb) => {
-          // Chỉ lấy tên file (không lấy path)
-          const parts = fb.fileRef.split("/");
-          return parts[parts.length - 1];
-        });
-      if (!map.has(key)) map.set(key, new Set());
-      feedbackRefs.forEach((ref) => map.get(key)!.add(ref));
-    });
-    return map;
-  }
-
   exportToPDF() {
     const doc = new jsPDF();
+
     doc.setFontSize(16);
-    doc.text(`Assessment Export`, 14, 20);
+    doc.text("Assessment Report", 14, 20);
 
     doc.setFontSize(12);
-    doc.text(`Submission Reference: ${this.assessment.submissionReference}`, 14, 30);
-    doc.text(`Total Score: ${this.assessment.rawScore}`, 14, 38);
-    doc.text(`Adjusted Count: ${this.assessment.adjustedCount ?? 0}`, 14, 46);
-
-    const fileRefMap = this.getFileRefsByCriterion();
-
-    const body = this.assessment.scoreBreakdowns.map((sb) => {
-      const key = `${sb.criterionName}-${sb.performanceTag}`;
-      const files = fileRefMap.get(key);
-      // LOG để kiểm tra mapping thực tế
-      console.log(
-        "DEBUG: key",
-        key,
-        "files",
-        files,
-        "all feedbacks",
-        this.assessment.feedbacks,
-      );
-      return [
-        sb.criterionName,
-        sb.performanceTag,
-        sb.rawScore.toString(),
-        files && files.size > 0 ? [...files].join(", ") : "-",
-      ];
-    });
-
-    // Table
-    const head = [["Criterion", "performanceTag", "Score", "File(s)"]];
+    doc.text(`Submission: ${this.assessment.submissionReference}`, 14, 30);
+    doc.text(`Total Score: ${this.assessment.rawScore}`, 14, 40);
+    doc.text(`Adjusted Count: ${this.assessment.adjustedCount ?? 0}`, 14, 50);
 
     autoTable(doc, {
       startY: 60,
-      head,
-      body,
-      styles: { fontSize: 10 },
+      head: [["Criterion", "Tag", "Score"]],
+      body: this.assessment.scoreBreakdowns.map((sb) => [
+        sb.criterionName,
+        sb.performanceTag,
+        sb.rawScore.toString(),
+      ]),
       headStyles: {
-        fillColor: [220, 220, 220],
+        fillColor: [200, 200, 200],
         textColor: [0, 0, 0],
         fontStyle: "bold",
       },
+      styles: { fontSize: 10 },
+    });
+
+    //
+    const yAfter = (doc as any).lastAutoTable?.finalY ?? 60;
+
+    autoTable(doc, {
+      startY: yAfter + 10,
+      head: [["Criterion", "Comment", "Tag", "File", "Lines", "Cols"]],
+      body: this.assessment.feedbacks.map((fb) => [
+        fb.criterion,
+        fb.comment,
+        fb.tag,
+        fb.fileRef.split("/").pop() ?? "",
+        `${fb.fromLine ?? "-"}–${fb.toLine ?? "-"}`,
+        `${fb.fromCol ?? "-"}–${fb.toCol ?? "-"}`,
+      ]),
+      headStyles: {
+        fillColor: [200, 200, 200],
+        textColor: [0, 0, 0],
+        fontStyle: "bold",
+      },
+      styles: { fontSize: 8 },
       margin: { left: 14, right: 14 },
     });
 
@@ -422,32 +401,92 @@ export class AssessmentExporter implements DataExporter {
   }
 
   exportToExcel() {
-    const fileRefMap = this.getFileRefsByCriterion();
+    const wsData: any[][] = [];
 
-    const worksheetData = [
-      ["Assessment Export"],
-      [`Submission Reference: ${this.assessment.submissionReference}`],
-      [`Total Score: ${this.assessment.rawScore}`],
-      [`Adjusted Count: ${this.assessment.adjustedCount ?? 0}`],
-      [],
-      ["Criterion", "performanceTag", "Score", "File(s)"],
-      ...this.assessment.scoreBreakdowns.map((sb) => {
-        const key = `${sb.criterionName}-${sb.performanceTag}`;
-        const files = fileRefMap.get(key);
-        return [
-          sb.criterionName,
-          sb.performanceTag,
-          sb.rawScore,
-          files && files.size > 0 ? [...files].join(", ") : "-",
-        ];
-      }),
-    ];
+    wsData.push(["Assessment Report"]);
+    wsData.push(["Submission", this.assessment.submissionReference]);
+    wsData.push(["Total Score", this.assessment.rawScore]);
+    wsData.push(["Adjusted Count", this.assessment.adjustedCount ?? 0]);
+    wsData.push([]);
 
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Assessment");
+    const scoreHeaderRow = wsData.length;
+    wsData.push(["Criterion", "Tag", "Score"]);
+    this.assessment.scoreBreakdowns.forEach((sb) =>
+      wsData.push([sb.criterionName, sb.performanceTag, sb.rawScore]),
+    );
+    wsData.push([]);
 
-    const fileName = `Assessment_${this.assessment.submissionReference}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    const feedbackHeaderRow = wsData.length;
+    wsData.push(["Criterion", "Comment", "Tag", "File", "Line", "Col"]);
+
+    this.assessment.feedbacks.forEach((fb) =>
+      wsData.push([
+        fb.criterion,
+        fb.comment,
+        fb.tag,
+        fb.fileRef.split("/").pop() ?? "",
+        `${fb.fromLine ?? "-"}–${fb.toLine ?? "-"}`,
+        `${fb.fromCol ?? "-"}–${fb.toCol ?? "-"}`,
+      ]),
+    );
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    const headerRows = [scoreHeaderRow, feedbackHeaderRow];
+    headerRows.forEach((rowIdx) => {
+      const colLen = wsData[rowIdx].length;
+      for (let c = 0; c < colLen; c++) {
+        const cellAddr = XLSX.utils.encode_cell({ r: rowIdx, c });
+        const cell = ws[cellAddr];
+        if (cell) {
+          cell.s = {
+            font: { bold: true, color: { rgb: "0000000" } },
+            fill: { fgColor: { rgb: "D9D9D9" } },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
+            border: {
+              top: { style: "thin", color: { rgb: "FFAAAAAA" } },
+              bottom: { style: "thin", color: { rgb: "FFAAAAAA" } },
+              left: { style: "thin", color: { rgb: "FFAAAAAA" } },
+              right: { style: "thin", color: { rgb: "FFAAAAAA" } },
+            },
+          };
+        }
+      }
+    });
+
+    for (let r = 0; r < wsData.length; r++) {
+      for (let c = 0; c < wsData[r].length; c++) {
+        const cellAddr = XLSX.utils.encode_cell({ r, c });
+        const cell = ws[cellAddr];
+        if (cell) {
+          cell.s = {
+            ...cell.s,
+            alignment: { ...cell.s?.alignment, wrapText: true, vertical: "top" },
+            border: {
+              top: { style: "thin", color: { rgb: "FFD9D9D9" } },
+              bottom: { style: "thin", color: { rgb: "FFD9D9D9" } },
+              left: { style: "thin", color: { rgb: "FFD9D9D9" } },
+              right: { style: "thin", color: { rgb: "FFD9D9D9" } },
+            },
+          };
+        }
+      }
+    }
+
+    const maxCol = Math.max(...wsData.map((row) => row.length));
+    const cols = [];
+    for (let c = 0; c < maxCol; c++) {
+      const maxLen = wsData.reduce((max, row) => {
+        const cell = String(row[c] ?? "");
+        return Math.max(max, cell.length);
+      }, 0);
+      cols.push({ wch: Math.min(maxLen + 5, 50) });
+    }
+    ws["!cols"] = cols;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Assessment");
+
+    XLSX.writeFile(wb, `Assessment_${this.assessment.submissionReference}.xlsx`);
   }
 }

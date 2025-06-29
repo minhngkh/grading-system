@@ -28,14 +28,33 @@ export class AssessmentService {
   });
 
   private static ConvertToAssessment(record: any): Assessment {
+    const feedbacks = (record.feedbacks ?? []).map((fb: any) => {
+      let location = {};
+      if (fb.locationData) {
+        location = fb.locationData;
+      } else if (fb.locationDataJson) {
+        try {
+          location = JSON.parse(fb.locationDataJson);
+        } catch {
+          location = {};
+        }
+      }
+      // Merge location fields lên cấp cao nhất, loại bỏ locationData và locationDataJson
+      const { locationData, locationDataJson, ...rest } = fb;
+      return {
+        ...rest,
+        locationData: location,
+      };
+    });
+
     return {
       id: record.id,
       gradingId: record.gradingId,
-      submissionReference: record.submissionReference ?? [],
+      submissionReference: record.submissionReference,
       rawScore: record.rawScore,
       adjustedCount: record.adjustedCount,
       scoreBreakdowns: record.scoreBreakdowns ?? [],
-      feedbacks: record.feedbacks ?? [],
+      feedbacks,
       status: record.status,
     };
   }
@@ -43,7 +62,8 @@ export class AssessmentService {
   static async getAssessmentById(id: string, token: string): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.get(`${ASSESSMENT_API_URL}/${id}`, configHeaders);
-    return this.assessmentDeserializer.deserialize(response.data);
+    const raw = await this.assessmentDeserializer.deserialize(response.data);
+    return this.ConvertToAssessment(raw);
   }
 
   static async getGradingAssessments(
@@ -86,16 +106,19 @@ export class AssessmentService {
 
   static async updateFeedback(
     id: string,
-    feedbacks: Partial<FeedbackItem>[],
+    feedbacks: FeedbackItem[],
     token: string,
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
+
     const response = await axios.put(
       `${ASSESSMENT_API_URL}/${id}/feedbacks`,
       { feedbacks: feedbacks },
       configHeaders,
     );
-    return this.ConvertToAssessment(response.data);
+
+    const raw = await this.assessmentDeserializer.deserialize(response.data);
+    return this.ConvertToAssessment(raw);
   }
 
   static async updateScore(
@@ -109,7 +132,7 @@ export class AssessmentService {
       { scoreBreakdowns: scoreBreakdowns },
       configHeaders,
     );
-    console.log("Score update response:", response.data);
+    console.log("Score update response:", response);
     return this.ConvertToAssessment(response.data);
   }
 

@@ -4,6 +4,8 @@ export const ScoreBreakdownSchema = z.object({
   criterionName: z.string(),
   performanceTag: z.string(),
   rawScore: z.number(),
+  metadata: z.array(z.string()).optional(),
+  status: z.enum(["graded", "notgraded"]).optional(),
 });
 
 const BaseFeedbackSchema = z.object({
@@ -14,41 +16,34 @@ const BaseFeedbackSchema = z.object({
   tag: z.string(),
 });
 
-const TextFeedbackSchema = BaseFeedbackSchema.extend({
+const TextLocationSchema = z.object({
   type: z.literal("text"),
   fromLine: z.number(),
   toLine: z.number(),
-  fromCol: z.number(),
-  toCol: z.number(),
-});
-
-const ImageFeedbackSchema = BaseFeedbackSchema.extend({
-  type: z.literal("image"),
-  x: z.number(),
-  y: z.number(),
-  width: z.number(),
-  height: z.number(),
-});
-
-const PdfFeedbackSchema = BaseFeedbackSchema.extend({
-  type: z.literal("pdf"),
-  page: z.number(),
-  x: z.number(),
-  y: z.number(),
-  width: z.number(),
-  height: z.number(),
-});
-
-const FeedbackSchema = z.object({
-  criterion: z.string(),
-  fileRef: z.string(),
-  fromLine: z.number().optional(),
-  toLine: z.number().optional(),
   fromCol: z.number().optional(),
   toCol: z.number().optional(),
-  comment: z.string(),
-  tag: z.string(),
 });
+
+const PdfLocationSchema = z.object({
+  type: z.literal("pdf"),
+  page: z.number(),
+});
+
+const ImageLocationSchema = z.object({
+  type: z.literal("image"),
+});
+
+export const LocationDataSchema = z.discriminatedUnion("type", [
+  TextLocationSchema,
+  PdfLocationSchema,
+  ImageLocationSchema,
+]);
+
+export const FeedbackSchema = BaseFeedbackSchema.extend({
+  locationData: LocationDataSchema,
+});
+
+export const FeedbackListSchema = z.array(FeedbackSchema);
 
 export enum AssessmentState {
   Created = "Created",
@@ -69,9 +64,8 @@ export const AssessmentSchema = z.object({
   status: z.nativeEnum(AssessmentState),
 });
 
+// 🎯 Types
 export type Assessment = z.infer<typeof AssessmentSchema>;
 export type FeedbackItem = z.infer<typeof FeedbackSchema>;
 export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;
-export type TextFeedback = z.infer<typeof TextFeedbackSchema>;
-export type ImageFeedback = z.infer<typeof ImageFeedbackSchema>;
-export type PdfFeedback = z.infer<typeof PdfFeedbackSchema>;
+export type LocationData = z.infer<typeof LocationDataSchema>;

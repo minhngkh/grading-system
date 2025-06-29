@@ -4,29 +4,35 @@ import { FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
 import { Button } from "@/components/ui/button";
 import "./viewer.css";
+import { FileItem } from "@/types/file";
 
 interface HighlightableViewerProps {
-  type: "code" | "essay";
-  content: string; // Nhận content trực tiếp
+  file: FileItem;
   feedbacks: FeedbackItem[];
-  updateFeedback: (newFeedbacks: FeedbackItem[]) => void;
+  feedbacksAll?: FeedbackItem[]; // Thêm prop này
+  updateFeedback: (index: number, adjustedFeedback: FeedbackItem) => void;
+  addFeedback: (newFeedback: FeedbackItem) => void;
   isHighlightMode: boolean;
   onHighlightComplete: () => void;
   activeFeedbackId?: string | null;
-  fileUrl?: string;
   rubricCriteria?: string[];
+  gradingId: string;
+  submissionReference: string;
 }
-export default function HighlightableViewer({
-  type,
-  content,
+
+const HighlightableViewer = ({
+  file,
   feedbacks,
+  feedbacksAll = [],
+  addFeedback,
   updateFeedback,
   isHighlightMode,
   onHighlightComplete,
   activeFeedbackId,
-  fileUrl,
   rubricCriteria = [],
-}: HighlightableViewerProps) {
+  gradingId,
+  submissionReference,
+}: HighlightableViewerProps) => {
   const { theme = "light" } = useTheme?.() || {};
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -39,8 +45,7 @@ export default function HighlightableViewer({
 
   // Determine language from fileUrl
   let language = "plaintext";
-  if (fileUrl) {
-    const ext = fileUrl.split(".").pop()?.toLowerCase() || "";
+  if (file.relativePath) {
     language =
       {
         js: "javascript",
@@ -65,8 +70,8 @@ export default function HighlightableViewer({
         md: "markdown",
         txt: "plaintext",
         h: "c",
-      }[ext] ||
-      ext ||
+      }[file.extension] ||
+      file.extension ||
       "plaintext";
   }
 
@@ -107,14 +112,14 @@ export default function HighlightableViewer({
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 0) return;
       const lineEl = (e.target as HTMLElement).closest(
-        type === "code" ? ".line" : "[data-line]",
+        file.type === "code" ? ".line" : "[data-line]",
       ) as HTMLElement;
       if (!lineEl) return;
       isMouseDown = true;
       mouseMoved = false;
       // Tách logic lấy số dòng cho code và essay
       const line =
-        type === "code" ?
+        file.type === "code" ?
           parseInt(lineEl.dataset.line || "0", 10) // code: zero-based
         : parseInt(lineEl.dataset.line || "0", 10) + 1; // essay: one-based
       const col = calculateColumn(e, lineEl); // col luôn từ 0
@@ -128,11 +133,11 @@ export default function HighlightableViewer({
     const onMouseUp = (e: MouseEvent) => {
       if (!isMouseDown) return;
       const lineEl = (e.target as HTMLElement).closest(
-        type === "code" ? ".line" : "[data-line]",
+        file.type === "code" ? ".line" : "[data-line]",
       ) as HTMLElement;
       if (lineEl && startPosition) {
         const line =
-          type === "code" ?
+          file.type === "code" ?
             parseInt(lineEl.dataset.line || "0", 10)
           : parseInt(lineEl.dataset.line || "0", 10) + 1;
         const col = calculateColumn(e, lineEl);
@@ -157,27 +162,86 @@ export default function HighlightableViewer({
       window.removeEventListener("mousemove", onMouseMove);
       // mouseup is once:true
     };
-  }, [isHighlightMode, type]);
+  }, [isHighlightMode, file.type]);
 
-  // --- Add feedback ---
-  const addFeedback = () => {
+  // Validate and adjust feedbacks of type "text"
+  function getAdjustedFeedbacks(
+    content: string,
+    feedbacks: FeedbackItem[],
+  ): FeedbackItem[] {
+    const rawLines = content.split(/\r?\n/);
+    const lines = rawLines.map((l) => l.trimEnd());
+    const totalLines = lines.length;
+    return feedbacks.map((fb) => {
+      if (fb.locationData?.type !== "text") return fb;
+      let { fromLine, toLine, fromCol, toCol } = fb.locationData;
+      fromCol = typeof fromCol === "number" ? fromCol : 0;
+      toCol = typeof toCol === "number" ? toCol : 0;
+      // Nếu chỉ có fromLine/toLine, thì fromCol = 0, toCol = chiều dài dòng toLine
+      if (
+        (fb.locationData.fromCol === undefined || fb.locationData.fromCol === 0) &&
+        (fb.locationData.toCol === undefined || fb.locationData.toCol === 0)
+      ) {
+        fromCol = 0;
+        toCol = lines[toLine - 1]?.length ?? 0;
+      }
+      if (typeof toLine === "number" && toLine > totalLines) {
+        toLine = totalLines;
+        toCol = lines[totalLines - 1]?.length ?? 0;
+      }
+      const fromLineLen = lines[fromLine! - 1]?.length ?? 0;
+      const toLineLen = lines[toLine! - 1]?.length ?? 0;
+      const adjustedFromCol = Math.max(0, Math.min(fromCol, fromLineLen));
+      const adjustedToCol = Math.max(0, Math.min(toCol, toLineLen));
+      return {
+        ...fb,
+        locationData: {
+          ...fb.locationData,
+          fromLine,
+          toLine,
+          fromCol: adjustedFromCol,
+          toCol: adjustedToCol,
+        },
+      };
+    });
+  }
+  useEffect(() => {
+    const adjusted = getAdjustedFeedbacks(file.content, feedbacks);
+    for (let i = 0; i < adjusted.length; i++) {
+      if (JSON.stringify(adjusted[i]) !== JSON.stringify(feedbacks[i])) {
+        const globalIdx = feedbacksAll.findIndex(
+          (f) =>
+            f.fileRef === feedbacks[i].fileRef &&
+            f.criterion === feedbacks[i].criterion &&
+            f.comment === feedbacks[i].comment &&
+            JSON.stringify(f.locationData) === JSON.stringify(feedbacks[i].locationData),
+        );
+
+        if (globalIdx !== -1) {
+          updateFeedback(globalIdx, adjusted[i]);
+        }
+      }
+    }
+  }, [file.content, feedbacks]);
+  const handleAddFeedback = () => {
     if (!selectionRange || !newComment.trim() || !newCriterion) return;
     const { from, to } = selectionRange;
-    let fileRef = "";
-    if (fileUrl) {
-      fileRef = fileUrl.split("/").pop() || "";
-    }
+    let fileRef = `${gradingId}/${submissionReference}/${file.relativePath || ""}`;
     const newFeedback: FeedbackItem = {
       criterion: newCriterion,
       fileRef,
-      fromLine: Math.min(from.line, to.line),
-      toLine: Math.max(from.line, to.line),
-      fromCol: Math.min(from.col, to.col),
-      toCol: Math.max(from.col, to.col),
       comment: newComment.trim(),
       tag: newFeedbackTag,
+      locationData: {
+        type: "text",
+        fromLine: Math.min(from.line, to.line),
+        toLine: Math.max(from.line, to.line),
+        fromCol: Math.min(from.col, to.col),
+        toCol: Math.max(from.col, to.col),
+      },
     };
-    updateFeedback([newFeedback]);
+    addFeedback(newFeedback);
+
     setNewComment("");
     setNewFeedbackTag("info");
     setNewCriterion("");
@@ -186,10 +250,58 @@ export default function HighlightableViewer({
     onHighlightComplete();
   };
 
+  useEffect(() => {
+    if (
+      activeFeedbackId !== undefined &&
+      activeFeedbackId !== null &&
+      feedbacksAll &&
+      feedbacksAll.length > 0
+    ) {
+      const idx = Number(activeFeedbackId);
+      const fb = feedbacksAll[idx];
+      if (
+        fb &&
+        fb.fileRef === `${gradingId}/${submissionReference}/${file.relativePath || ""}` &&
+        fb.locationData?.type === "text" &&
+        typeof fb.locationData.fromLine === "number"
+      ) {
+        // Try to scroll, if not found, retry a few times (wait for DOM render)
+        let tries = 9;
+        const tryScroll = () => {
+          const root = document.getElementById(`shiki-container`);
+          if (
+            root &&
+            fb.locationData &&
+            fb.locationData.type === "text" &&
+            typeof fb.locationData.fromLine === "number"
+          ) {
+            const lineEl = root.querySelector(
+              `.line[data-line="${fb.locationData.fromLine}"]`,
+            );
+
+            if (lineEl) {
+              root.scrollTo({
+                top: (lineEl as HTMLElement).offsetTop - root.offsetTop,
+                behavior: "smooth",
+              });
+              return;
+            }
+          }
+          if (tries < 10) {
+            tries++;
+            setTimeout(tryScroll, 100);
+          }
+        };
+        setTimeout(tryScroll, 0);
+      }
+    }
+  }, [activeFeedbackId, feedbacksAll, file.relativePath, gradingId, submissionReference]);
+
   // --- Render content ---
-  let visibleFeedbacks = feedbacks;
   const renderContent = () => {
-    if (type === "code") {
+    const validFeedbacks = getAdjustedFeedbacks(file.content, feedbacks);
+
+    if (file.type === "code") {
       const getShikiTheme = () => (theme === "dark" ? "github-dark" : "github-light");
       return (
         <ShikiHighlighter
@@ -197,58 +309,94 @@ export default function HighlightableViewer({
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
-          className="h-full overflow-y-auto"
+          className="h-full overflow-auto"
           transformers={[
             {
               preprocess(code, options) {
-                let decorations = visibleFeedbacks
-                  .map((fb, idx) => {
-                    // Nếu fromLine == toLine và fromCol == toCol thì tăng toLine lên 1
-                    let fromLine = fb.fromLine!;
-                    let toLine = fb.toLine!;
-                    let fromCol = fb.fromCol!;
-                    let toCol = fb.toCol!;
-                    if (
-                      typeof fromLine === "number" &&
-                      typeof toLine === "number" &&
-                      typeof fromCol === "number" &&
-                      typeof toCol === "number" &&
-                      fromLine === toLine &&
-                      fromCol === toCol
-                    ) {
+                let decorations = validFeedbacks
+                  .filter(
+                    (
+                      fb,
+                    ): fb is FeedbackItem & {
+                      locationData: {
+                        type: "text";
+                        fromLine: number;
+                        toLine: number;
+                        fromCol?: number;
+                        toCol?: number;
+                      };
+                    } =>
+                      fb.locationData?.type === "text" &&
+                      typeof fb.locationData.fromLine === "number" &&
+                      typeof fb.locationData.toLine === "number",
+                  )
+                  .map((fb) => {
+                    const globalIdx = feedbacksAll.findIndex(
+                      (item) =>
+                        item.fileRef === fb.fileRef &&
+                        item.criterion === fb.criterion &&
+                        item.comment === fb.comment &&
+                        item.locationData?.type === "text" &&
+                        JSON.stringify(item.locationData) ===
+                          JSON.stringify(fb.locationData),
+                    );
+                    // fallback về 0 nếu fromCol/toCol undefined
+                    let fromLine = fb.locationData.fromLine;
+                    let toLine = fb.locationData.toLine;
+                    let fromCol =
+                      typeof fb.locationData.fromCol === "number" ?
+                        fb.locationData.fromCol
+                      : 0;
+                    let toCol =
+                      typeof fb.locationData.toCol === "number" ?
+                        fb.locationData.toCol
+                      : 0;
+                    if (fromLine === toLine && fromCol === toCol) {
                       toLine = fromLine + 1;
                     }
-                    return { fb: { ...fb, fromLine, toLine, fromCol, toCol }, idx };
-                  })
-                  .filter(
-                    ({ fb }) =>
-                      typeof fb.fromLine === "number" &&
-                      typeof fb.toLine === "number" &&
-                      typeof fb.fromCol === "number" &&
-                      typeof fb.toCol === "number",
-                  );
-                // Nếu có activeFeedbackId, chỉ giữ decoration của feedback đó
+                    return {
+                      fb: {
+                        ...fb,
+                        locationData: {
+                          ...fb.locationData,
+                          fromLine,
+                          toLine,
+                          fromCol,
+                          toCol,
+                        },
+                      },
+                      globalIdx,
+                    };
+                  });
                 if (activeFeedbackId !== undefined && activeFeedbackId !== null) {
                   decorations = decorations.filter(
-                    ({ idx }) => String(idx) === String(activeFeedbackId),
+                    ({ globalIdx }) => String(globalIdx) === String(activeFeedbackId),
                   );
                 }
-                options.decorations = decorations.map(({ fb, idx }) => ({
+                options.decorations = decorations.map(({ fb, globalIdx }) => ({
                   start: {
-                    line: fb.fromLine! - 1,
-                    character: fb.fromCol!,
+                    line: fb.locationData.fromLine - 1,
+                    character:
+                      typeof fb.locationData.fromCol === "number" ?
+                        fb.locationData.fromCol
+                      : 0,
                   },
                   end: {
-                    line: fb.toLine! - 1,
-                    character: fb.toCol!,
+                    line: fb.locationData.toLine - 1,
+                    character:
+                      typeof fb.locationData.toCol === "number" ?
+                        fb.locationData.toCol
+                      : 0,
                   },
                   properties: {
                     class:
                       "annotation-span" +
-                      (activeFeedbackId && String(idx) === String(activeFeedbackId) ?
+                      ((
+                        activeFeedbackId && String(globalIdx) === String(activeFeedbackId)
+                      ) ?
                         " annotation-span-focused"
                       : ""),
-                    "data-id": String(idx),
+                    "data-id": String(globalIdx),
                     "data-comment": fb.comment,
                     "data-tag": fb.tag,
                     "data-criterion": fb.criterion,
@@ -257,6 +405,7 @@ export default function HighlightableViewer({
               },
               pre(node) {
                 node.properties = {
+                  overflow: "hidden",
                   backgroundColor: "oklch(0.129 0.042 264.69)",
                 };
               },
@@ -269,7 +418,7 @@ export default function HighlightableViewer({
             },
           ]}
         >
-          {content}
+          {file.content}
         </ShikiHighlighter>
       );
     }
@@ -279,37 +428,61 @@ export default function HighlightableViewer({
         pos: number;
         type: "start" | "end";
         fb: FeedbackItem;
-        idx: number;
+        globalIdx: number;
       }[] = [];
-      visibleFeedbacks.forEach((fb, idx) => {
-        if (
-          typeof fb.fromCol !== "number" ||
-          typeof fb.toCol !== "number" ||
-          typeof fb.fromLine !== "number"
-        ) {
-          return;
-        }
-        if (lineIdx + 1 !== fb.fromLine) return;
-        const start = fb.fromCol;
-        const end = fb.toCol;
-        if (start < end) {
-          boundaries.push({ pos: start, type: "start", fb, idx });
-          boundaries.push({ pos: end, type: "end", fb, idx });
-        }
-      });
+      validFeedbacks
+        .filter(
+          (
+            fb,
+          ): fb is FeedbackItem & {
+            locationData: {
+              type: "text";
+              fromLine: number;
+              toLine: number;
+              fromCol?: number;
+              toCol?: number;
+            };
+          } =>
+            fb.locationData?.type === "text" &&
+            typeof fb.locationData.fromLine === "number" &&
+            typeof fb.locationData.toLine === "number",
+        )
+        .forEach((fb) => {
+          if (fb.locationData?.type !== "text") return;
+          const globalIdx = feedbacksAll.findIndex(
+            (item) =>
+              item.fileRef === fb.fileRef &&
+              item.criterion === fb.criterion &&
+              item.comment === fb.comment &&
+              item.locationData?.type === "text" &&
+              JSON.stringify(item.locationData) === JSON.stringify(fb.locationData),
+          );
+          const fromCol =
+            typeof fb.locationData.fromCol === "number" ? fb.locationData.fromCol : 0;
+          const toCol =
+            typeof fb.locationData.toCol === "number" ? fb.locationData.toCol : 0;
+          const fromLine = fb.locationData.fromLine;
+          if (lineIdx + 1 !== fromLine) return;
+          const start = fromCol;
+          const end = toCol;
+          if (start < end) {
+            boundaries.push({ pos: start, type: "start", fb, globalIdx });
+            boundaries.push({ pos: end, type: "end", fb, globalIdx });
+          }
+        });
       boundaries.sort((a, b) => a.pos - b.pos || (a.type === "end" ? -1 : 1));
       const segments: {
         start: number;
         end: number;
-        feedbacks: { fb: FeedbackItem; idx: number }[];
+        feedbacks: { fb: FeedbackItem; globalIdx: number }[];
       }[] = [];
-      let active: { fb: FeedbackItem; idx: number }[] = [];
+      let active: { fb: FeedbackItem; globalIdx: number }[] = [];
       let lastPos = 0;
       for (const b of boundaries) {
         if (b.pos > lastPos) {
           segments.push({ start: lastPos, end: b.pos, feedbacks: [...active] });
         }
-        if (b.type === "start") active.push({ fb: b.fb, idx: b.idx });
+        if (b.type === "start") active.push({ fb: b.fb, globalIdx: b.globalIdx });
         else active = active.filter((f) => f.fb !== b.fb);
         lastPos = b.pos;
       }
@@ -321,7 +494,7 @@ export default function HighlightableViewer({
 
     return (
       <div className="font-serif text-md leading-relaxed whitespace-pre-wrap p-3">
-        {content.split("\n").map((line, i) => {
+        {file.content.split("\n").map((line, i) => {
           if (line === "") {
             return (
               <div key={i} data-line={i}>
@@ -338,22 +511,31 @@ export default function HighlightableViewer({
                 if (activeFeedbackId !== undefined && activeFeedbackId !== null) {
                   // Tìm feedback đang active trong seg.feedbacks
                   const activeFb = seg.feedbacks.find(
-                    (f) => String(f.idx) === String(activeFeedbackId),
+                    (f) => String(f.globalIdx) === String(activeFeedbackId),
                   );
                   if (activeFb) {
                     // Chỉ wrap đoạn text này bằng span actived cho feedback active
+                    const fb = activeFb.fb;
+                    let fromLine =
+                      fb.locationData?.type === "text" ?
+                        fb.locationData.fromLine
+                      : undefined;
+                    let toLine =
+                      fb.locationData?.type === "text" ?
+                        fb.locationData.toLine
+                      : undefined;
                     inner = (
                       <span
                         key={
-                          (activeFb.fb.fileRef || "") +
+                          (fb.fileRef || "") +
                           "-" +
-                          (activeFb.fb.fromLine ?? "") +
+                          (fromLine ?? "") +
                           "-" +
-                          (activeFb.fb.toLine ?? "") +
+                          (toLine ?? "") +
                           "-" +
-                          (activeFb.fb.criterion ?? "") +
+                          (fb.criterion ?? "") +
                           "-" +
-                          (activeFb.fb.comment ?? "") +
+                          (fb.comment ?? "") +
                           "-" +
                           idx +
                           "-active"
@@ -362,9 +544,9 @@ export default function HighlightableViewer({
                           "annotation-span actived annotation-span-focused " +
                           (seg.feedbacks.length === 1 ? "highlight-top" : "")
                         }
-                        data-id={String(activeFb.idx)}
-                        data-comment={activeFb.fb.comment}
-                        data-tag={activeFb.fb.tag}
+                        data-id={String(activeFb.globalIdx)}
+                        data-comment={fb.comment}
+                        data-tag={fb.tag}
                       >
                         {inner}
                       </span>
@@ -374,18 +556,27 @@ export default function HighlightableViewer({
                 } else {
                   // Không có feedback nào active, highlight tất cả như cũ
                   seg.feedbacks.forEach((f, fbIdx) => {
+                    const fb = f.fb;
+                    let fromLine =
+                      fb.locationData?.type === "text" ?
+                        fb.locationData.fromLine
+                      : undefined;
+                    let toLine =
+                      fb.locationData?.type === "text" ?
+                        fb.locationData.toLine
+                      : undefined;
                     inner = (
                       <span
                         key={
-                          (f.fb.fileRef || "") +
+                          (fb.fileRef || "") +
                           "-" +
-                          (f.fb.fromLine ?? "") +
+                          (fromLine ?? "") +
                           "-" +
-                          (f.fb.toLine ?? "") +
+                          (toLine ?? "") +
                           "-" +
-                          (f.fb.criterion ?? "") +
+                          (fb.criterion ?? "") +
                           "-" +
-                          (f.fb.comment ?? "") +
+                          (fb.comment ?? "") +
                           "-" +
                           idx +
                           "-" +
@@ -397,9 +588,9 @@ export default function HighlightableViewer({
                             "highlight-top"
                           : "highlight-under")
                         }
-                        data-id={String(f.idx)}
-                        data-comment={f.fb.comment}
-                        data-tag={f.fb.tag}
+                        data-id={String(f.globalIdx)}
+                        data-comment={fb.comment}
+                        data-tag={fb.tag}
                       >
                         {inner}
                       </span>
@@ -473,7 +664,7 @@ export default function HighlightableViewer({
                 Cancel
               </Button>
               <Button
-                onClick={addFeedback}
+                onClick={handleAddFeedback}
                 disabled={!newComment.trim() || !newCriterion}
               >
                 Add
@@ -484,4 +675,5 @@ export default function HighlightableViewer({
       )}
     </>
   );
-}
+};
+export default HighlightableViewer;

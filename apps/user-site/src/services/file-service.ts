@@ -2,17 +2,24 @@ import { BlobServiceClient } from "@azure/storage-blob";
 import { FileItem } from "@/types/file";
 
 const BLOB_ENDPOINT = "http://127.0.0.1:27000/devstoreaccount1";
-//http://127.0.0.1:56774/devstoreaccount1/submissions-store/grading-489a0d9a-adce-08dd-4450-8c914eb8a0c8/duy/main.cpp
+
 const SAS_TOKEN =
-  "sv=2023-01-03&ss=btqf&srt=sco&st=2025-06-18T03%3A00%3A03Z&se=2025-06-20T03%3A00%3A00Z&sp=rl&sig=mWuHTs7sXcmRasonPPWb7LJXmS3%2F5bvnY9ETS1ONOi0%3D";
-// const SAS_TOKEN = "sv=2023-01-03&ss=btqf&srt=sco&st=2025-06-17T19%3A46%3A22Z&se=2025-06-18T19%3A46%3A22Z&sp=rl&sig=IleZCQAnIcefUvUaNeF4PTDG2rYvm5e9Hz%2BkcPyPmPM%3D"; // Replace with your actual SAS token
+  "sv=2023-01-03&ss=btqf&srt=sco&st=2025-06-29T13%3A58%3A28Z&se=2025-10-08T13%3A58%3A00Z&sp=rl&sig=4FFusSSBp5eqWoZ2ahgafhFCUQfJW5mbkNXhIE4U6RY%3D";
+
 const blobServiceClient = new BlobServiceClient(`${BLOB_ENDPOINT}?${SAS_TOKEN}`);
 const containerClient = blobServiceClient.getContainerClient("submissions-store");
 
+function getExtension(name: string): string {
+  const parts = name.split(".");
+  return parts.length > 1 ? parts.pop()?.toLowerCase() || "" : "";
+}
+
 function inferFileType(name: string): FileItem["type"] {
-  if (/\.(jpg|jpeg|png|gif)$/i.test(name)) return "image";
-  if (/\.pdf$/i.test(name)) return "pdf";
-  if (/\.md$/i.test(name)) return "document";
+  const ext = getExtension(name);
+  if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext)) return "image";
+  if (ext === "pdf") return "pdf";
+  if (ext === "md") return "document";
+  if (ext === "txt") return "essay";
   return "code";
 }
 
@@ -30,23 +37,33 @@ export async function loadFileItems(prefix: string): Promise<FileItem[]> {
 
   for await (const blob of containerClient.listBlobsFlat({ prefix: dir })) {
     const name = blob.name.split("/").pop() || blob.name;
+    const extension = getExtension(name);
     const type = inferFileType(name);
-
     let content = "";
-    if (type === "code" || type === "document") {
+    if (type === "code" || type === "document" || type === "essay") {
       const blobClient = containerClient.getBlobClient(blob.name);
       const res = await blobClient.download();
       const browserBlob = await res.blobBody;
       content = (await browserBlob?.text()) ?? "";
+    } else if (type === "image" || type === "pdf") {
+      const blobClient = containerClient.getBlobClient(blob.name);
+      const res = await blobClient.download();
+      const browserBlob = await res.blobBody;
+      if (!browserBlob) throw new Error("Failed to download blob");
+      content = URL.createObjectURL(browserBlob);
     }
-
+    let relativePath = blob.name;
+    if (dir && blob.name.startsWith(dir)) {
+      relativePath = blob.name.substring(dir.length);
+    }
     items.push({
       id: String(idx++),
       name,
+      extension,
       type,
       content,
       path: name,
-      blobPath: blob.name,
+      relativePath,
     });
   }
 

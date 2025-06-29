@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FeedbackItem } from "@/types/assessment";
 import { FileItem } from "@/types/file";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 interface ImageViewerProps {
   src: string;
   file: FileItem;
-  feedbacksAll: FeedbackItem[];
-  updateFeedback: (newFeedbacks: FeedbackItem[]) => void;
+  addFeedback: (newFeedback: FeedbackItem) => void;
+  // updateFeedback: (newFeedbacks: FeedbackItem[]) => void;
   isHighlightMode: boolean;
   onHighlightComplete: () => void;
   rubricCriteria?: string[];
@@ -18,7 +18,8 @@ interface ImageViewerProps {
 export const ImageViewer: React.FC<ImageViewerProps> = ({
   src,
   file,
-  updateFeedback,
+  addFeedback,
+  // updateFeedback,
   isHighlightMode,
   onHighlightComplete,
   rubricCriteria = [],
@@ -30,9 +31,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   const [newComment, setNewComment] = useState("");
   const [newFeedbackTag, setNewFeedbackTag] = useState<string>("info");
   const [newCriterion, setNewCriterion] = useState<string>("");
-
+  const imageModalRef = useRef<HTMLImageElement>(null);
   // Function to handle adding feedback for image
-  const addFeedback = () => {
+  const handleAddFeedback = () => {
     if (!newComment.trim() || !newCriterion) return;
 
     // Format fileRef with gradingId and file.relativePath
@@ -48,7 +49,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
       },
     };
 
-    updateFeedback([newFeedback]);
+    addFeedback(newFeedback);
     setNewComment("");
     setNewFeedbackTag("info");
     setNewCriterion("");
@@ -61,6 +62,28 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
     if (isHighlightMode) setIsDialogOpen(true);
     else setIsDialogOpen(false);
   }, [isHighlightMode]);
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      // If modal is open and click is outside the image
+      if (
+        open &&
+        imageModalRef.current &&
+        !imageModalRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    // Add event listener when modal is open
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Clean up the event listener
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
@@ -70,30 +93,20 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
     if (onHighlightComplete) onHighlightComplete();
   };
 
-  // When in highlight mode, clicking the image opens the feedback dialog
-  const handleImageClick = () => {
-    setOpen(true);
-  };
-  console.log(open, "Image viewer open state");
   return (
     <>
-      <div
-        className={`flex justify-center items-center w-full`}
-        onClick={handleImageClick}
-      >
-        <img src={src} />
+      <div className={`flex justify-center items-center w-full`}>
+        <img className="hover:cursor-zoom-in" src={src} onClick={() => setOpen(true)} />
       </div>
-
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-          onClick={() => setOpen(false)}
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <img
+            ref={imageModalRef}
             src={src}
             style={{
               maxWidth: "96vw",
               maxHeight: "96vh",
+              objectFit: "contain",
               borderRadius: 12,
               background: "#222",
               boxShadow: "0 4px 32px rgba(0,0,0,0.4)",
@@ -106,16 +119,6 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
           <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-96 z-50">
             <h2 className="text-lg font-bold mb-4">Add Image Feedback</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Comment:</label>
-              <textarea
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
-                rows={4}
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Enter your feedback..."
-              />
-            </div>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">Select Criterion:</label>
               <select
@@ -144,13 +147,22 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
                 <option value="caution">Caution</option>
               </select>
             </div>
-
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Comment:</label>
+              <textarea
+                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                rows={4}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Enter your feedback..."
+              />
+            </div>
             <div className="flex justify-end mt-4">
               <Button variant="outline" className="mr-2" onClick={handleCloseDialog}>
                 Cancel
               </Button>
               <Button
-                onClick={addFeedback}
+                onClick={handleAddFeedback}
                 disabled={!newComment.trim() || !newCriterion}
               >
                 Add

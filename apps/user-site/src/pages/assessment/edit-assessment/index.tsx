@@ -1,19 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  Save,
-  Eye,
-  Edit3,
-  PanelLeftClose,
-  PanelLeftOpen,
-  EyeClosed,
-  MessageSquare,
-  Trash,
-} from "lucide-react";
+import equal from "fast-deep-equal";
+import { Save, Eye, Edit3, PanelLeftClose, PanelLeftOpen, EyeClosed } from "lucide-react";
 import { Assessment, AssessmentSchema, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
 import FileViewer from "./viewer/file-viewer";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -22,11 +13,13 @@ import { useAuth } from "@clerk/clerk-react";
 import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
 import { loadFileItems } from "@/services/file-service";
-import { getFileIcon, getTagColor } from "./icon-utils";
-import { FileExplorer } from "./file-explorer";
+import { getFileIcon } from "./icon-utils";
+import { FileExplorer } from "@/components/app/file-explorer";
 import { ScoringPanel } from "./scoring-panel";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { AssessmentExporter } from "@/lib/exporters";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { FeedbackListPanel } from "./feedback-list-panel";
 
 export function EditAssessmentUI({
   assessment,
@@ -42,7 +35,16 @@ export function EditAssessmentUI({
     defaultValues: assessment,
     mode: "onChange",
   });
+
   const formData = form.watch();
+  const [initialData, setInitialData] = useState<{
+    scoreBreakdowns: Assessment["scoreBreakdowns"];
+    feedbacks: Assessment["feedbacks"];
+  } | null>(null);
+  const isDirty =
+    initialData !== null &&
+    (!equal(formData.scoreBreakdowns, initialData.scoreBreakdowns) ||
+      !equal(formData.feedbacks, initialData.feedbacks));
   const [files, setFiles] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const auth = useAuth();
@@ -55,68 +57,37 @@ export function EditAssessmentUI({
   });
   const [activeTab, setActiveTab] = useState("scoring");
   const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(true);
-  const [bottomPanelHeight, setBottomPanelHeight] = useState(400);
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
   const [showBottomPanel, setShowBottomPanel] = useState(true);
   const [isHighlightMode, setIsHighlightMode] = useState(false);
   const [activeScoringTab, setActiveScoringTab] = useState<string>(
     rubric.criteria[0]?.name || "",
   );
-
+  const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">("file");
   useEffect(() => {
     async function load() {
       const items = await loadFileItems(`${grading.id}/${formData.submissionReference}`);
       setFiles(items);
       setSelectedFile(items[0] || null);
     }
-    if (formData.submissionReference) load();
-  }, [formData.submissionReference]);
 
+    if (formData.submissionReference) load();
+  }, [formData.submissionReference, grading.id]);
+  useEffect(() => {
+    if (!initialData) {
+      setInitialData({
+        scoreBreakdowns: formData.scoreBreakdowns,
+        feedbacks: formData.feedbacks,
+      });
+    }
+  }, [files, formData.feedbacks]);
   const totalScore = formData.scoreBreakdowns.reduce((sum, breakdown) => {
     const criterion = rubric.criteria.find((c) => c.name === breakdown.criterionName);
     const weight = criterion?.weight || 0;
     const scale = grading.scaleFactor ?? 10;
     return sum + ((breakdown.rawScore / weight) * (weight * scale)) / 100;
-    // return sum + (breakdown.rawScore * ((weight * scale) / 100)) / 100;
   }, 0);
-
-  const handleFeedbackClick = (feedback: FeedbackItem, index: number) => {
-    if (selectedFeedbackIndex === index) {
-      setSelectedFeedbackIndex(null);
-      setSelectedFeedback(null);
-      return;
-    }
-    setSelectedFeedbackIndex(index);
-    setSelectedFeedback(feedback);
-    const lines = [];
-    if (typeof feedback.fromLine === "number" && typeof feedback.toLine === "number") {
-      for (let i = feedback.fromLine; i <= feedback.toLine; i++) {
-        lines.push(i);
-      }
-    }
-
-    const normalizeFileRef = (fileRef: string) => {
-      const lastSlash = fileRef.lastIndexOf("/");
-      if (lastSlash !== -1) {
-        return fileRef.substring(lastSlash + 1);
-      }
-      return fileRef;
-    };
-    const file = files.find(
-      (f) =>
-        f.name === normalizeFileRef(feedback.fileRef) ||
-        f.path === normalizeFileRef(feedback.fileRef),
-    );
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  // Helper to get file extension
-  const getFileExtension = (fileName: string) => {
-    const parts = fileName.split(".");
-    return parts.length > 1 ? parts.pop()?.toLowerCase() || "" : "";
-  };
 
   // Add feedback handler (toggle highlight mode)
   const handleAddFeedbackClick = () => {
@@ -151,125 +122,94 @@ export function EditAssessmentUI({
 
     form.setValue("scoreBreakdowns", updated, { shouldValidate: true });
   };
-  // Update feedbacks from child viewer (merged with addFeedback)
-  const handleUpdateFeedback = (newFeedbacks: FeedbackItem[]) => {
-    if (!selectedFile) return;
-    const fileName = selectedFile.name;
-    const normalizeFileRef = (fileRef: string) => {
-      try {
-        const lastSlash = fileRef.lastIndexOf("/");
-        if (lastSlash !== -1) {
-          return fileRef.substring(lastSlash + 1);
-        }
-        return fileRef;
-      } catch {
-        return fileRef;
-      }
-    };
-    const current = formData.feedbacks;
-    newFeedbacks
-      .map((fb) => ({
-        ...fb,
-        fileRef: normalizeFileRef(fb.fileRef),
-      }))
-      .filter((fb) => fb.fileRef === fileName)
-      .forEach((newFb) => {
-        // Tránh thêm trùng comment cho cùng fileRef, fromLine, toLine, criterion
-        const isDuplicate = current.some(
-          (fb) =>
-            fb.fileRef === newFb.fileRef &&
-            fb.fromLine === newFb.fromLine &&
-            fb.toLine === newFb.toLine &&
-            fb.criterion === newFb.criterion &&
-            fb.comment === newFb.comment,
-        );
-        if (!isDuplicate) {
-          form.setValue("feedbacks", [...formData.feedbacks, newFb], {
-            shouldValidate: true,
-          });
-        }
-      });
+  const isFeedbackForFile = (fb: FeedbackItem, file: any) => {
+    try {
+      if (fb.fileRef && file.relativePath && fb.fileRef.endsWith(file.relativePath))
+        return true;
+    } catch {}
+    return false;
   };
+
+  const handleUpdateFeedback = (
+    index: number,
+    updatedFeedback: Partial<FeedbackItem>,
+  ) => {
+    const currentFeedbacks = [...formData.feedbacks];
+
+    if (index >= 0 && index < currentFeedbacks.length) {
+      currentFeedbacks[index] = {
+        ...currentFeedbacks[index],
+        ...updatedFeedback,
+      };
+
+      form.setValue("feedbacks", currentFeedbacks, { shouldValidate: true });
+      return true;
+    }
+
+    return false;
+  };
+
+  const handleAddNewFeedback = (newFeedback: FeedbackItem) => {
+    const currentFeedbacks = [...formData.feedbacks];
+    currentFeedbacks.push(newFeedback);
+
+    form.setValue("feedbacks", currentFeedbacks, { shouldValidate: true });
+    const newIndex = currentFeedbacks.length - 1;
+    setSelectedFeedbackIndex(newIndex);
+    setSelectedFeedback(newFeedback);
+
+    return newIndex;
+  };
+
   const handleDeleteFeedback = (index: number) => {
     const current = formData.feedbacks;
     const updated = current.filter((_, i) => i !== index);
     form.setValue("feedbacks", updated, { shouldValidate: true });
   };
-  const handleSave = async () => {
-    console.log("Saving assessment data:", formData);
 
+  const handleSaveFeedback = async () => {
     try {
       const token = await auth.getToken();
       if (!token) {
-        throw new Error("You must be logged in to save a rubric");
+        throw new Error("You must be logged in to update feedback");
       }
-
       await AssessmentService.updateFeedback(assessment.id, formData.feedbacks, token);
-      await AssessmentService.updateScore(assessment.id, formData.scoreBreakdowns, token);
+      toast.success("Feedback updated successfully");
     } catch (err) {
-      toast.error("Failed to update rubric");
+      toast.error("Failed to update feedback");
       console.error(err);
     }
+  };
 
+  const handleSaveScore = async () => {
+    try {
+      const token = await auth.getToken();
+      if (!token) {
+        throw new Error("You must be logged in to update score");
+      }
+      await AssessmentService.updateScore(assessment.id, formData.scoreBreakdowns, token);
+      toast.success("Score updated successfully");
+    } catch (err) {
+      toast.error("Failed to update score");
+      console.error(err);
+    }
+  };
+
+  const handleSaveAssessment = async () => {
+    console.log("Saving assessment data:", formData);
+    await handleSaveFeedback();
+    // await handleSaveScore();
     return;
   };
 
-  // Render file content with line numbers and highlights
-  const renderFileContent = () => {
-    if (!selectedFile) return <div className="text-gray-400 p-8">No file selected</div>;
-    let prefix = assessment.submissionReference;
-    const underscoreIdx = prefix.indexOf("_");
-    if (underscoreIdx !== -1) {
-      prefix = prefix.substring(0, underscoreIdx);
+  const handleExport = () => {
+    if (isDirty) {
+      toast.warning("You have unsaved changes. Please save before exporting.");
+      return;
     }
-    if (!prefix.endsWith("/")) {
-      prefix += "/";
-    }
-    const fileUrl = selectedFile.blobPath;
-    const ext = getFileExtension(selectedFile.name);
-    const fileName = selectedFile.name;
-    const normalizeFileRef = (fileRef: string) => {
-      if (!fileRef) return "";
-      try {
-        return fileRef.split("/").pop() || fileRef;
-      } catch {
-        return fileRef;
-      }
-    };
-    const fileFeedbacks = formData.feedbacks.filter(
-      (fb) =>
-        normalizeFileRef(fb.fileRef) === fileName ||
-        normalizeFileRef(fb.fileRef) === selectedFile.path,
-    );
-    // Lấy danh sách tiêu chí rubric
-    const rubricCriteria = rubric.criteria.map((c) => c.name);
-    return (
-      <FileViewer
-        fileType={ext}
-        fileUrl={fileUrl}
-        content={selectedFile.content} // truyền content
-        feedbacks={fileFeedbacks}
-        updateFeedback={handleUpdateFeedback}
-        isHighlightMode={isHighlightMode}
-        onHighlightComplete={() => setIsHighlightMode(false)}
-        activeFeedbackId={
-          selectedFeedbackIndex !== null ? String(selectedFeedbackIndex) : undefined
-        }
-        rubricCriteria={rubricCriteria}
-      />
-    );
+    setOpen(true);
   };
-
-  // Group files by folder (nếu muốn group theo prefix, có thể sửa lại)
-  const filesByFolder = files.reduce(
-    (acc, file) => {
-      const folder = file.path.includes("/") ? file.path.split("/")[0] : "root";
-      if (!acc[folder]) acc[folder] = [];
-      acc[folder].push(file);
-      return acc;
-    },
-    {} as Record<string, typeof files>,
-  );
+  // Render file content with line numbers and highlights
 
   // Handle mouse down on resize handle
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -277,27 +217,23 @@ export function EditAssessmentUI({
     e.preventDefault();
   };
 
-  // Handle mouse move for resizing
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizing) return;
-
-    // Lấy vị trí top của panel resize (so với viewport)
-    const mainPanel = document.querySelector(".flex-1.flex.flex-col.overflow-hidden");
-    let panelTop = 0;
-    let windowHeight = window.innerHeight;
-    if (mainPanel) {
-      const rect = (mainPanel as HTMLElement).getBoundingClientRect();
-      panelTop = rect.top;
-      windowHeight = rect.height;
-    }
+    const containerRect = document
+      .querySelector(".flex.flex-col.bg-background")
+      ?.getBoundingClientRect();
+    if (!containerRect) return;
 
     const minHeight = 120;
-    const maxHeight = windowHeight * 0.9;
+    const maxHeight = containerRect.height * 0.6;
 
-    // Tính chiều cao mới dựa trên vị trí chuột so với top của panel
-    const mouseY = e.clientY - panelTop;
-    const newHeight = windowHeight - mouseY;
-    setBottomPanelHeight(Math.min(Math.max(newHeight, minHeight), maxHeight));
+    const newHeight = containerRect.bottom - e.clientY;
+
+    const clampedHeight = Math.min(Math.max(newHeight, minHeight), maxHeight);
+
+    if (Math.abs(clampedHeight - bottomPanelHeight) > 2) {
+      setBottomPanelHeight(clampedHeight);
+    }
   };
 
   // Handle mouse up
@@ -327,49 +263,78 @@ export function EditAssessmentUI({
     };
   }, [isResizing]);
 
-  // Add custom CSS for slider
-  React.useEffect(() => {
-    const style = document.createElement("style");
-    style.textContent = `
-    .slider::-webkit-slider-thumb {
-      appearance: none;
-      height: 20px;
-      width: 20px;
-      border-radius: 50%;
-      background: #3b82f6;
-      cursor: pointer;
-      border: 2px solid #ffffff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  const handleFeedbackSelect = (feedback: FeedbackItem, index?: number) => {
+    if (
+      selectedFeedback &&
+      selectedFeedback.fileRef === feedback.fileRef &&
+      selectedFeedback.criterion === feedback.criterion &&
+      selectedFeedback.comment === feedback.comment &&
+      JSON.stringify(selectedFeedback.locationData) ===
+        JSON.stringify(feedback.locationData)
+    ) {
+      setSelectedFeedback(null);
+      setSelectedFeedbackIndex(null);
+      return;
     }
-    
-    .slider::-moz-range-thumb {
-      height: 20px;
-      width: 20px;
-      border-radius: 50%;
-      background: #3b82f6;
-      cursor: pointer;
-      border: 2px solid #ffffff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    const file = files.find((f) => isFeedbackForFile(feedback, f));
+    if (file) setSelectedFile(file);
+    setSelectedFeedback(feedback);
+    if (typeof index === "number") setSelectedFeedbackIndex(index);
+  };
+
+  // Hàm chuẩn hóa feedback giống code-viewer
+
+  useEffect(() => {
+    if (!initialData) {
+      setInitialData({
+        scoreBreakdowns: formData.scoreBreakdowns,
+        feedbacks: formData.feedbacks,
+      });
     }
-  `;
-    document.head.appendChild(style);
-
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
-  // Feedback overview placeholder
-  const feedbackOverview = "No overview available.";
+  }, [files, formData.feedbacks]);
+  const renderFileContent = () => {
+    if (!selectedFile) return <div className="text-gray-400 p-8">No file selected</div>;
+    let prefix = assessment.submissionReference;
+    const underscoreIdx = prefix.indexOf("_");
+    if (underscoreIdx !== -1) {
+      prefix = prefix.substring(0, underscoreIdx);
+    }
+    if (!prefix.endsWith("/")) {
+      prefix += "/";
+    }
+    const fileFeedbacks = formData.feedbacks.filter((fb) =>
+      isFeedbackForFile(fb, selectedFile),
+    );
+    return (
+      <FileViewer
+        rubricCriteria={rubric.criteria.map((c) => c.name)}
+        gradingId={grading.id}
+        submissionReference={formData.submissionReference}
+        file={selectedFile}
+        feedbacks={fileFeedbacks}
+        feedbacksAll={formData.feedbacks}
+        addFeedback={handleAddNewFeedback}
+        updateFeedback={handleUpdateFeedback}
+        isHighlightMode={isHighlightMode}
+        onHighlightComplete={() => setIsHighlightMode(false)}
+        activeFeedbackId={
+          selectedFeedbackIndex !== null ? String(selectedFeedbackIndex) : undefined
+        }
+      />
+    );
+  };
 
   return (
-    // Add className to root div to enable dark mode based on html/body class
     <div
-      className="flex flex-col dark:bg-background dark:text-foreground"
-      style={{ height: "110dvh", minHeight: "100vh" }} // <-- make the main container always fill viewport height
+      className="-mb-20 flex flex-col bg-background text-foreground"
+      style={{
+        height: "85vh",
+        maxHeight: "100vh",
+        position: "relative",
+      }}
     >
-      {/* Header */}
-      <div className="p-4">
+      {/* Header with fixed height */}
+      <div className="p-4 flex-shrink-0" style={{ height: "72px" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -397,7 +362,7 @@ export function EditAssessmentUI({
               : <Eye className="h-4 w-4 mr-2" />}
               {showBottomPanel ? "Hide Scoring" : "Show Scoring"}
             </Button>
-            <Button onClick={() => setOpen(true)} size="sm">
+            <Button onClick={handleExport} size="sm">
               <Save className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -407,7 +372,7 @@ export function EditAssessmentUI({
               exporterClass={AssessmentExporter}
               args={[formData]}
             />
-            <Button className="cursor-pointer" size="sm" onClick={handleSave}>
+            <Button className="cursor-pointer" size="sm" onClick={handleSaveAssessment}>
               <Save className="h-4 w-4 mr-2" />
               Save Assessment
             </Button>
@@ -415,169 +380,161 @@ export function EditAssessmentUI({
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* File Explorer */}
+      <div
+        className="flex"
+        style={{
+          height:
+            showBottomPanel ?
+              `calc(100% - 72px - ${bottomPanelHeight}px)`
+            : "calc(100% - 72px - 20px)",
+          minHeight: 0,
+        }}
+      >
+        {/* File Explorer với width cố định */}
         {isFileExplorerOpen && files.length > 0 && (
           <FileExplorer
-            filesByFolder={filesByFolder}
+            files={files}
             selectedFile={selectedFile}
             setSelectedFile={setSelectedFile}
             expandedFolders={expandedFolders}
             setExpandedFolders={setExpandedFolders}
             feedbacks={formData.feedbacks}
+            grading={grading}
           />
         )}
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* File Viewer */}
+        {/* Main Content + Feedback Panel */}
+        <div className="flex-1 flex flex-row" style={{ minWidth: 0 }}>
+          {/* File Viewer - không cần điều chỉnh height, luôn 100% */}
           <div
-            className="flex"
+            className="flex-1 flex flex-col h-full"
             style={{
-              height: 0,
-              flex: "1 1 auto",
-              minHeight: 0,
-              overflowX: "hidden",
-              overflowY: "visible",
+              minWidth: 0,
+              position: "relative",
             }}
           >
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="p-4 border-b ">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {selectedFile && getFileIcon(selectedFile)}
-                    <h2 className="text-lg font-medium">
-                      {selectedFile?.name || "No file selected"}
-                    </h2>
-                    <Badge variant="outline">{selectedFile?.type}</Badge>
-                  </div>
-                  <Button
-                    variant={isHighlightMode ? "default" : "outline"}
-                    size="sm"
-                    className={isHighlightMode ? "bg-blue-600 text-white" : ""}
-                    onClick={handleAddFeedbackClick}
-                  >
-                    <Edit3 className="h-4 w-4 mr-2" />
-                    {isHighlightMode ? "Exit Feedback" : "Add Feedback"}
-                  </Button>
+            <div className="p-4 border-b flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {selectedFile && getFileIcon(selectedFile)}
+                  <h2 className="text-lg font-medium">
+                    {selectedFile?.name || "No file selected"}
+                  </h2>
+                  <Badge variant="outline">{selectedFile?.type}</Badge>
                 </div>
-                {isHighlightMode && (
-                  <div className="mt-2 text-blue-700 text-sm font-medium">
-                    Click and drag to highlight and add feedback. Click again to exit.
-                  </div>
-                )}
+                <Button
+                  variant={isHighlightMode ? "default" : "outline"}
+                  size="sm"
+                  className={isHighlightMode ? "bg-blue-600 text-white" : ""}
+                  onClick={handleAddFeedbackClick}
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  {isHighlightMode ? "Exit Feedback" : "Add Feedback"}
+                </Button>
               </div>
-
-              <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              {isHighlightMode && selectedFile && (
+                <div className="mt-2 text-blue-700 text-sm font-medium">
+                  {selectedFile.type === "code" &&
+                    "Click and drag to highlight and add feedback. Click again to exit."}
+                </div>
+              )}
+            </div>
+            {selectedFile && selectedFile.type === "code" ?
+              renderFileContent()
+            : <div
+                className="flex-1 overflow-auto"
+                style={{
+                  minWidth: 0,
+                  minHeight: 0,
+                }}
+              >
                 {renderFileContent()}
               </div>
-            </div>
-
-            {/* Feedback Panel */}
-            <div className="w-80 border-l flex flex-col min-h-0">
-              <div className="p-4 flex-1 overflow-y-auto overflow-x-hidden">
-                <h3 className="text-sm font-medium mb-3">
-                  Feedback (
-                  {selectedFile ?
-                    formData.feedbacks.filter((f) => {
-                      // Normalize fileRef to just the filename
-                      const fileRefName = f.fileRef?.split("/").pop();
-                      return fileRefName === selectedFile.name;
-                    }).length
-                  : 0}
-                  )
-                </h3>
-
-                <div className="space-y-3 scroll-smooth">
-                  {selectedFile &&
-                    formData.feedbacks
-                      .filter((feedback) => {
-                        const fileRefName = feedback.fileRef?.split("/").pop();
-                        return fileRefName === selectedFile.name;
-                      })
-                      .map((feedback, index) => (
-                        <Card
-                          key={index}
-                          className={`cursor-pointer pt-1 text-muted-foreground ${
-                            (
-                              selectedFeedback &&
-                              selectedFeedback.fileRef === feedback.fileRef &&
-                              selectedFeedback.fromLine === feedback.fromLine &&
-                              selectedFeedback.toLine === feedback.toLine &&
-                              selectedFeedback.comment === feedback.comment &&
-                              selectedFeedback.criterion === feedback.criterion
-                            ) ?
-                              "ring-2 ring-blue-500 shadow-md"
-                            : "hover:shadow-md"
-                          }`}
-                          onClick={() => handleFeedbackClick(feedback, index)}
-                        >
-                          <CardContent className="p-3">
-                            <div className="flex items-start gap-2">
-                              <MessageSquare className="h-4 w-4  text-gray-500" />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-medium text-gray-600">
-                                    {feedback.criterion}
-                                  </span>
-                                  <Badge
-                                    className={`text-xs ${getTagColor(feedback.tag)}`}
-                                  >
-                                    {feedback.tag}
-                                  </Badge>
-                                  <Trash
-                                    className="h-4 w-4 text-gray-500 cursor-pointer hover:text-red-600"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteFeedback(index);
-                                    }}
-                                  />
-                                </div>
-                                <div className="text-xs text-gray-500 mb-1">
-                                  Lines {feedback.fromLine}-{feedback.toLine}
-                                </div>
-                                <p className="text-sm">{feedback.comment}</p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-
-                  {(!selectedFile ||
-                    formData.feedbacks.filter(
-                      (f) =>
-                        f.fileRef === selectedFile.name ||
-                        f.fileRef === selectedFile.path,
-                    ).length === 0) && (
-                    <div className="text-center py-8 text-gray-500">
-                      <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No feedback for this file</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            }
           </div>
 
-          {/* Resize Handle & Bottom Panel */}
-          {showBottomPanel && (
-            <ScoringPanel
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              activeScoringTab={activeScoringTab}
-              setActiveScoringTab={setActiveScoringTab}
-              rubric={rubric}
-              grading={grading}
-              formData={formData}
-              bottomPanelHeight={bottomPanelHeight}
-              isResizing={isResizing}
-              handleMouseDown={handleMouseDown}
-              feedbackOverview={feedbackOverview}
-              updateScore={handleUpdateScore}
-            />
-          )}
+          {/* Feedback Panel with View Mode Toggle */}
+          <div className="ml-4 w-70 max-w-60 text-wrap overflow-auto">
+            {/* Feedback View Mode Toggle + Content (shadcn Tabs) */}
+            <Tabs
+              value={feedbackViewMode}
+              onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
+            >
+              <TabsList className="w-full rounded-lg p-1 flex">
+                <TabsTrigger
+                  value="file"
+                  className="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
+                >
+                  By File
+                </TabsTrigger>
+                <TabsTrigger
+                  value="criterion"
+                  className="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
+                >
+                  By Criterion
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="file">
+                <h3 className="text-sm font-medium mb-3">
+                  Feedback for {selectedFile?.name}
+                </h3>
+                <FeedbackListPanel
+                  feedbacks={formData.feedbacks.filter((f) => {
+                    const fileRefName = f.fileRef?.split("/").pop();
+                    return fileRefName === selectedFile?.name;
+                  })}
+                  selectedFeedbackIndex={selectedFeedbackIndex}
+                  onSelect={handleFeedbackSelect}
+                  onDelete={handleDeleteFeedback}
+                  allFeedbacks={formData.feedbacks}
+                />
+              </TabsContent>
+              <TabsContent value="criterion">
+                <h3 className="text-sm font-medium mb-3">
+                  Feedback for {activeScoringTab}
+                </h3>
+                <FeedbackListPanel
+                  feedbacks={formData.feedbacks.filter(
+                    (f) => f.criterion === activeScoringTab,
+                  )}
+                  selectedFeedbackIndex={selectedFeedbackIndex}
+                  onSelect={handleFeedbackSelect}
+                  onDelete={handleDeleteFeedback}
+                  allFeedbacks={formData.feedbacks}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
+
+      {/* ScoringPanel với vị trí tuyệt đối, chiếm toàn bộ chiều rộng trang */}
+      {showBottomPanel && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: bottomPanelHeight,
+            zIndex: 20,
+            borderTop: "1px solid var(--border-color, #e5e7eb)",
+          }}
+        >
+          <ScoringPanel
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            activeScoringTab={activeScoringTab}
+            setActiveScoringTab={setActiveScoringTab}
+            rubric={rubric}
+            grading={grading}
+            formData={formData}
+            isResizing={isResizing}
+            handleMouseDown={handleMouseDown}
+            updateScore={handleUpdateScore}
+          />
+        </div>
+      )}
     </div>
   );
 }
