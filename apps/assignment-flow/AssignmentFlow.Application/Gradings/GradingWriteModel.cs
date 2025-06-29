@@ -3,6 +3,7 @@ using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
+using AssignmentFlow.Application.Gradings.UpdateInfo;
 using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
@@ -13,6 +14,8 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
 {
     public TeacherId TeacherId { get; private set; } = TeacherId.Empty;
     public RubricId RubricId { get; private set; } = RubricId.Empty;
+    public string Reference { get; private set; } = string.Empty;
+    public GradingName Name { get; private set; } = GradingName.Empty;
     public ScaleFactor ScaleFactor { get; private set; } = ScaleFactor.TenPoint;
     public List<Selector> Selectors { get; private set; } = [];
    
@@ -23,6 +26,12 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
     internal void Apply(GradingCreatedEvent @event)
     {
         TeacherId = @event.TeacherId;
+        Reference = @event.Reference;
+    }
+
+    internal void Apply(InfoUpdatedEvent @event)
+    {
+        Name = @event.GradingName;
     }
 
     internal void Apply(SelectorsUpdatedEvent @event)

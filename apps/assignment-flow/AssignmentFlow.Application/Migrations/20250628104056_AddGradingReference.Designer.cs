@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AssignmentFlow.Application.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AssignmentFlow.Application.Migrations
 {
     [DbContext(typeof(AssignmentFlowDbContext))]
-    partial class AssignmentFlowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250628104056_AddGradingReference")]
+    partial class AddGradingReference
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,9 +25,6 @@ namespace AssignmentFlow.Application.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.HasSequence("References_Sequence")
-                .IncrementsBy(10);
 
             modelBuilder.Entity("AssignmentFlow.Application.Assessments.Assessment", b =>
                 {
@@ -120,10 +120,6 @@ namespace AssignmentFlow.Application.Migrations
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Reference")
                         .IsRequired()
                         .HasColumnType("text");
@@ -152,23 +148,6 @@ namespace AssignmentFlow.Application.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Gradings");
-                });
-
-            modelBuilder.Entity("AssignmentFlow.Application.Shared.Sequence", b =>
-                {
-                    b.Property<long>("CurrentValue")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("CurrentValue"), "References_Sequence");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("CurrentValue");
-
-                    b.ToTable("Sequences");
                 });
 
             modelBuilder.Entity("AssignmentFlow.Application.Assessments.Assessment", b =>

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AssignmentFlow.Application.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AssignmentFlow.Application.Migrations
 {
     [DbContext(typeof(AssignmentFlowDbContext))]
-    partial class AssignmentFlowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250628113120_AddSequence")]
+    partial class AddSequence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -119,10 +122,6 @@ namespace AssignmentFlow.Application.Migrations
 
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("Reference")
                         .IsRequired()
