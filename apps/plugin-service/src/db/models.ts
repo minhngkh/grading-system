@@ -13,7 +13,7 @@ export class PluginCategory extends TimeStamps {
   @prop()
   public _id!: string;
 
-  @prop({ required: true, unique: true })
+  @prop({ required: true })
   public name!: string;
 
   @prop()
