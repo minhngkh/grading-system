@@ -28,9 +28,6 @@ export default function GradingProgressStep({
   const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
   const { mutateAsync: startGrading } = useMutation(
     startGradingMutationOptions(gradingAttemptValues.id, auth, {
-      onSuccess: () => {
-        gradingAttempt.setValue("status", GradingStatus.Started);
-      },
       onError: (error) => {
         gradingAttempt.setValue("status", GradingStatus.Failed);
         console.error("Failed to start grading:", error);
@@ -39,20 +36,15 @@ export default function GradingProgressStep({
     }),
   );
 
-  const handleGradingStatusChange = (isActive: boolean, newStatus: GradingStatus) => {
-    if (!isActive) return;
+  const handleGradingStatusChange = (newStatus: GradingStatus) => {
     gradingAttempt.setValue("status", newStatus);
   };
 
-  const handleStatusChange = (isActive: boolean, newStatus: AssessmentGradingStatus) => {
-    console.log("Received assessment status update:", newStatus);
-    if (!isActive) return;
-
+  const handleStatusChange = (newStatus: AssessmentGradingStatus) => {
     setAssessmentStatus((prev) => {
-      if (!prev) return [newStatus];
+      if (prev == null || prev.length === 0) return [newStatus];
 
       const exists = prev.some((item) => item.assessmentId === newStatus.assessmentId);
-
       if (!exists) {
         return [...prev, newStatus];
       }
@@ -78,10 +70,7 @@ export default function GradingProgressStep({
   const handleRegradeAssessment = async (assessmentId: string) => {
     try {
       await rerunAssessmentMutation.mutateAsync(assessmentId);
-      handleGradingStatusChange(
-        gradingAttemptValues.status !== GradingStatus.Started,
-        GradingStatus.Started,
-      );
+      handleGradingStatusChange(GradingStatus.Started);
     } catch (error) {
       console.error("Failed to regrade assessment:", error);
       toast.error(`Failed to regrade assessment. Please try again.`);
@@ -92,8 +81,6 @@ export default function GradingProgressStep({
   const hasInitializedRef = useRef(false);
 
   useEffect(() => {
-    let isActive = true;
-
     const initGrading = async () => {
       if (hubRef.current || hasInitializedRef.current) return;
       hasInitializedRef.current = true;
@@ -105,14 +92,12 @@ export default function GradingProgressStep({
         const hub = new SignalRService(() => token);
 
         hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
-          handleStatusChange(isActive, assessmentStatus),
+          handleStatusChange(assessmentStatus),
         );
-        hub.on("Complete", () =>
-          handleGradingStatusChange(isActive, GradingStatus.Graded),
-        );
+        hub.on("Complete", () => handleGradingStatusChange(GradingStatus.Graded));
 
         if (gradingAttemptValues.status === GradingStatus.Created) {
-          console.log("Starting grading attempt:", gradingAttemptValues.id);
+          gradingAttempt.setValue("status", GradingStatus.Started);
           await startGrading();
         }
 
@@ -131,7 +116,6 @@ export default function GradingProgressStep({
     initGrading();
 
     return () => {
-      isActive = false;
       if (hubRef.current) {
         hubRef.current.off("Complete");
         hubRef.current.off("ReceiveAssessmentProgress");
