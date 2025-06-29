@@ -24,22 +24,3 @@ public class AssessCriterionCommandHandler()
         return Task.CompletedTask;
     }
 }
-
-public class FinishAutoGradingCommand(AssessmentId id) : Command<AssessmentAggregate, AssessmentId>(id)
-{
-}
-
-public class FinishAutoGradingCommandHandler()
-    : CommandHandler<AssessmentAggregate, AssessmentId, FinishAutoGradingCommand>
-{
-    public override Task ExecuteAsync(AssessmentAggregate aggregate, FinishAutoGradingCommand command, CancellationToken cancellationToken)
-    {
-        if (aggregate.IsNew)
-        {
-            return Task.CompletedTask;
-        }
-
-        aggregate.FinishAutoGrading();
-        return Task.CompletedTask;
-    }
-}

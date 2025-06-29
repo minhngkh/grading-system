@@ -78,9 +78,9 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void Assess(AutoGrading.AssessCriterionCommand command)
     {
-        var scoreItem = command.ScoreBreakdownItem.Clone();
-        scoreItem.MarkAsCompleted();
-        if (command.ScoreBreakdownItem.Grader.IsAIGrader)
+        var scoreItem = command.ScoreBreakdownItem;
+
+        if (command.ScoreBreakdownItem.Grader.IsAIGrader && scoreItem.RawScore != 0m)
         {
             var rubric = rubricProtoService.GetRubric(new GetRubricRequest
             {
@@ -90,21 +90,23 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
             var criteria = rubric.Criteria;
             NormalizeScore(scoreItem, criteria);
         }
-
-        Emit(new UpdateFeedBack.FeedbacksUpdatedEvent { Feedbacks = command.Feedbacks });
+        ConditionalEmit(
+            command.Feedbacks.Count > 0,
+            () => new UpdateFeedBack.FeedbacksUpdatedEvent { Feedbacks = command.Feedbacks });
 
         Emit(new AutoGrading.CriterionAssessedEvent { ScoreBreakdownItem = scoreItem });
     }
 
     public void FinishAutoGrading()
     {
-        if (AutoGrading.AutoGradingCanBeFinishedSpecification.New().IsSatisfiedBy(State))
-        {
-            Emit(new AutoGrading.AutoGradingFinishedEvent
-            {
-                GradingId = State.GradingId
+        ConditionalEmit(
+            AutoGrading.AutoGradingCanBeFinishedSpecification.New().IsSatisfiedBy(State),
+            () => new AutoGrading.AutoGradingFinishedEvent { 
+                GradingId = State.GradingId,
+                Errors = State.ScoreBreakdowns.ToDictionary(
+                    item => item.CriterionName.Value,
+                    item => item.FailureReason)
             });
-        }
     }
 
     /// <summary>
@@ -145,6 +147,14 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         {
             Feedbacks = command.Feedbacks
         });
+    }
+
+    private void ConditionalEmit(bool condition, Func<AggregateEvent<AssessmentAggregate, AssessmentId>> eventPredicate)
+    {
+        if (condition)
+        {
+            Emit(eventPredicate());
+        }
     }
 }
 

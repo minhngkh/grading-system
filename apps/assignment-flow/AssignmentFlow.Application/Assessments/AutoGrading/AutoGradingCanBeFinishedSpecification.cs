@@ -8,7 +8,7 @@ public sealed class AutoGradingCanBeFinishedSpecification : Specification<Assess
     public static AutoGradingCanBeFinishedSpecification New() => new ();
     protected override IEnumerable<string> IsNotSatisfiedBecause(AssessmentWriteModel obj)
     {
-        if (!obj.ScoreBreakdowns.IsComplete())
+        if (!obj.ScoreBreakdowns.IsCompleted)
         {
             yield return "score breakdowns are not complete";
         }

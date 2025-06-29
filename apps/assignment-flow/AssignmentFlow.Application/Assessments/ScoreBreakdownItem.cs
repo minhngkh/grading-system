@@ -11,7 +11,7 @@ namespace AssignmentFlow.Application.Assessments;
 [JsonConverter(typeof(ScoreBreakdownItemConverter))]
 public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakdownItem>
 {
-    public static ScoreBreakdownItem Pending(CriterionName criterion) => new ScoreBreakdownItem(criterion) { Status = "Pending" };
+    public static ScoreBreakdownItem Pending(CriterionName criterion) => new(criterion) { Status = "Pending" };
 
     public Grader Grader { get; init; } = Grader.AIGrader;
 
@@ -30,8 +30,10 @@ public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakd
     /// Gets or sets the performance tag for this breakdown item.
     /// </summary>
     public PerformanceTag PerformanceTag { get; init; } = PerformanceTag.Default;
-
     public string MetadataJson { get; init; } = string.Empty;
+
+    public string Status { get; set; } = "Pending"; // Default status, can be updated based on grading logic
+    public string FailureReason { get; set; } = string.Empty; // Optional reason for failure, if applicable
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ScoreBreakdownItem"/> class with the specified criterion.
@@ -47,25 +49,17 @@ public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakd
         RawScore *= (factor / 100);
     }
 
-    public void MarkAsCompleted()
+    public bool IsCompleted => Status == "Graded" || Status == "Failed";
+
+    public void MarkAsGraded()
     {
-        Status = "Completed";
+        Status = "Graded";
     }
 
-    public string Status { get; set; } = "Pending"; // Default status, can be updated based on grading logic
-
-    /// <summary>
-    /// Provides the components used for equality comparison.
-    /// </summary>
-    /// <returns>An enumerable of equality components.</returns>
-    protected override IEnumerable<object> GetEqualityComponents()
+    public void MarkAsFailed(string reason)
     {
-        yield return CriterionName;
-        yield return RawScore;
-        yield return PerformanceTag;
-        yield return MetadataJson; // Include metadata in equality check
-        yield return Grader;
-        yield return Status; // Include status in equality check
+        Status = "Failed";
+        FailureReason = reason;
     }
 
     public ScoreBreakdownItem Clone()
@@ -76,7 +70,8 @@ public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakd
             PerformanceTag = PerformanceTag,
             MetadataJson = MetadataJson,
             Grader = Grader,
-            Status = Status // Clone the status as well
+            Status = Status,
+            FailureReason = FailureReason
         };
     }
 
@@ -89,10 +84,11 @@ public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakd
         return new ScoreBreakdownItem(a.CriterionName)
         {
             RawScore = a.RawScore + b.RawScore,
-            Grader = a.Grader, // Keep the Grader from the first item
+            Grader = a.Grader,
             PerformanceTag = a.PerformanceTag,
-            MetadataJson = a.MetadataJson, // Keep metadata from the first item
-            Status = a.Status // Keep status from the first item
+            MetadataJson = a.MetadataJson,
+            Status = a.Status,
+            FailureReason = a.FailureReason // This should be cleared since we're manually adding scores
         };
     }
 
@@ -107,9 +103,25 @@ public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakd
             RawScore = a.RawScore - b.RawScore,
             Grader = a.Grader,
             PerformanceTag = a.PerformanceTag,
-            MetadataJson = a.MetadataJson, // Keep metadata from the first item
-            Status = a.Status // Keep status from the first item
+            MetadataJson = a.MetadataJson,
+            Status = a.Status,
+            FailureReason = a.FailureReason // This should be cleared since we're manually subtracting scores
         };
+    }
+
+    /// <summary>
+    /// Provides the components used for equality comparison.
+    /// </summary>
+    /// <returns>An enumerable of equality components.</returns>
+    protected override IEnumerable<object> GetEqualityComponents()
+    {
+        yield return CriterionName;
+        yield return RawScore;
+        yield return PerformanceTag;
+        yield return MetadataJson;
+        yield return Grader;
+        yield return Status;
+        yield return FailureReason;
     }
 }
 
@@ -123,17 +135,19 @@ public sealed class ScoreBreakdownItemConverter : JsonConverter<ScoreBreakdownIt
         var criterionIdentity = jObject.GetRequired<CriterionName>("CriterionName");
         var score = jObject.GetRequired<Percentage>("RawScore");
         var performanceTag = jObject.GetRequired<PerformanceTag>("PerformanceTag");
+        var grader = jObject.GetRequired<Grader>("Grader");
+        var status = jObject.GetRequired<string>("Status");
         var metadataJson = jObject.Get<string>("MetadataJson") ?? string.Empty;
-        var grader = jObject.GetValue("Grader", StringComparison.OrdinalIgnoreCase)?.ToObject<Grader>() ?? Grader.AIGrader;
-        var status = jObject.Get<string>("Status") ?? "Pending";
+        var failureReason = jObject.Get<string>("FailureReason") ?? string.Empty;
 
         return new ScoreBreakdownItem(criterionIdentity)
         {
             RawScore = score,
+            Status = status,
+            Grader = grader,
             PerformanceTag = performanceTag,
             MetadataJson = metadataJson,
-            Grader = grader,
-            Status = status
+            FailureReason = failureReason
         };
     }
     public override bool CanWrite => false;
