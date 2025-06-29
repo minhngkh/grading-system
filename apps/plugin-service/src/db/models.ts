@@ -10,8 +10,8 @@ import { TimeStamps } from "@typegoose/typegoose/lib/defaultClasses";
 
 @modelOptions({ schemaOptions: { collection: "plugins.categories" } })
 export class PluginCategory extends TimeStamps {
-  @prop({ required: true, unique: true })
-  public alias!: string;
+  @prop()
+  public _id!: string;
 
   @prop({ required: true, unique: true })
   public name!: string;
@@ -24,8 +24,8 @@ export const PluginCategoryModel = getModelForClass(PluginCategory);
 
 @modelOptions({ schemaOptions: { collection: "plugins" } })
 export class Plugin extends TimeStamps {
-  @prop({ required: true, unique: true })
-  public alias!: string; // A unique identifier, e.g., "ai-rubric-generator", "python-code-runner"
+  @prop()
+  public _id!: string;
 
   @prop({ required: true })
   public name!: string; // User-friendly name, e.g., "AI Rubric Generator"
@@ -33,8 +33,8 @@ export class Plugin extends TimeStamps {
   @prop()
   public description?: string;
 
-  @prop({ ref: () => PluginCategory, default: [] })
-  public categories!: Ref<PluginCategory>[];
+  @prop({ ref: () => PluginCategory, type: () => String })
+  public categories!: Ref<PluginCategory, string>[];
 
   @prop({ default: true })
   public enabled!: boolean;
