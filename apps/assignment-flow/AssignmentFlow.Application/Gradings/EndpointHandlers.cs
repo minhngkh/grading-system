@@ -1,4 +1,5 @@
 ﻿using AssignmentFlow.Application.Gradings.Analytics;
+using AssignmentFlow.Application.Gradings.BulkSubmissionUpload;
 using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.RemoveSubmission;
@@ -24,6 +25,7 @@ internal static class EndpointHandlers
             .MapUpdateCriterionSelectors()
             .MapUpdateScaleFactor()
             .MapUploadSubmission()
+            .MapBulkUploadSubmissions()
             .MapRemoveSubmission()
             .MapChangeRubric()
             .MapStartGrading()

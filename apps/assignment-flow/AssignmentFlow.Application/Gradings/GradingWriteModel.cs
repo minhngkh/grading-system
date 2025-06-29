@@ -52,7 +52,7 @@ public class GradingWriteModel : AggregateState<GradingAggregate, GradingId, Gra
 
     internal void Apply(SubmissionAddedEvent @event)
     {
-        Submissions.Add(@event.Submission);
+        Submissions.AddRange(@event.Submissions);
     }
 
     internal void Apply(SubmissionRemovedEvent @event)
