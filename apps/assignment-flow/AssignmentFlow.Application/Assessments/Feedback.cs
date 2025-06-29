@@ -37,6 +37,9 @@ public sealed class Feedback : ValueObject
     public static Feedback New(CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
         => new(criterion, comment, highlight, tag);
 
+    public static Feedback Summary (CriterionName criterion, Comment comment)
+        => new(criterion, comment, Highlight.Empty, Tag.Summary);
+
     /// <summary>
     /// Provides the components used for equality comparison.
     /// </summary>
@@ -84,6 +87,7 @@ public sealed class Comment : StringValueObject
 public sealed class Tag : StringValueObject
 {
     public static Tag Empty => new();
+    public static Tag Summary => new("summary");
     public static Tag Info => new("info");
     public static Tag Success => new("success");
     public static Tag Notice => new("notice");
@@ -92,7 +96,7 @@ public sealed class Tag : StringValueObject
 
     private static readonly HashSet<string> ValidTags = new(StringComparer.OrdinalIgnoreCase)
     {
-        "info", "success", "notice", "tip", "caution"
+        "info", "success", "notice", "tip", "caution", "summary"
     };
 
     private Tag() { }
