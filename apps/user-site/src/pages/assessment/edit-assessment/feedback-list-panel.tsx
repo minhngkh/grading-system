@@ -45,7 +45,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
 
   return (
     <>
-      <div className="h-full space-y-2 overflow-auto">
+      <div className="space-y-2">
         {
           // Lọc bỏ summary feedback
           feedbacks.filter((feedback) => feedback.tag !== "summary").length > 0 ?

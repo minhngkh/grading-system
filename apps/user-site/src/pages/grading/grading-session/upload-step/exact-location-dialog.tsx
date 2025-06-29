@@ -57,7 +57,10 @@ export function ExactLocationDialog({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent aria-describedby={undefined} className="min-w-[60vw]">
+      <DialogContent
+        aria-describedby={undefined}
+        className="min-w-[60vw] overflow-y-auto max-h-[80vh]"
+      >
         <DialogHeader>
           <DialogTitle>Specify Exact Path for {criterionMapping.criterion}</DialogTitle>
         </DialogHeader>

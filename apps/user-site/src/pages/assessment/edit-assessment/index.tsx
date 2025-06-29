@@ -329,6 +329,7 @@ export function EditAssessmentUI({
     }
   }, [files, formData.feedbacks]);
   const renderFileContent = () => {
+    console.log("Rendering file content for:", selectedFile);
     if (!selectedFile) return <div className="text-gray-400 p-8">No file selected</div>;
     let prefix = assessment.submissionReference;
     const underscoreIdx = prefix.indexOf("_");
@@ -377,16 +378,16 @@ export function EditAssessmentUI({
 
   return (
     <div
-      className="-mb-20 flex flex-col bg-background text-foreground"
-      style={{
-        height: "85vh",
-        maxHeight: "100vh",
-        position: "relative",
-      }}
+      className="-mb-20 -mt-12 h-[92vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-auto "
+      // style={{
+      //   height: "92vh",
+      //   maxHeight: "100vh",
+      //   position: "relative",
+      // }}
     >
       {/* Header with fixed height */}
-      <div className="p-4 flex-shrink-0" style={{ height: "72px" }}>
-        <div className="flex items-center justify-between">
+      <div className="p-4" style={{ height: "72px" }}>
+        <div className="flex items-center md:justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -399,11 +400,15 @@ export function EditAssessmentUI({
               : <PanelLeftOpen className="h-4 w-4" />}
             </Button>
             <div>
-              <h1 className="text-xl font-bold">Review Assessment</h1>
-              <p className="text-sm text-gray-500">
-                {rubric.rubricName} • Total Score: {totalScore.toFixed(1)}/
-                {grading.scaleFactor}
-              </p>
+              <div className="flex">
+                <h1 className="text-xl font-bold">
+                  {formData.submissionReference} Score: {totalScore.toFixed(1)}/
+                  {grading.scaleFactor}
+                </h1>
+                <span className="text-xl font-bold"></span>
+              </div>
+
+              <p className="text-sm text-gray-500">Rubric: {rubric.rubricName}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -468,8 +473,8 @@ export function EditAssessmentUI({
               position: "relative",
             }}
           >
-            <div className="p-4 border-b flex-shrink-0">
-              <div className="flex items-center justify-between">
+            <div className="mt-2 border-b flex-shrink-0">
+              <div className="flex mb-2 items-center justify-between">
                 <div className="flex items-center gap-2">
                   {selectedFile && getFileIcon(selectedFile)}
                   <h2 className="text-lg font-medium">
@@ -499,24 +504,14 @@ export function EditAssessmentUI({
               (selectedFile.type === "code" || selectedFile.type === "essay")
             ) ?
               renderFileContent()
-            : <div
-                className="flex-1 overflow-auto"
-                style={{
-                  minWidth: 0,
-                  minHeight: 0,
-                }}
-              >
-                {renderFileContent()}
-              </div>
-            }
+            : <div className="flex-1 w-full overflow-auto">{renderFileContent()}</div>}
           </div>
 
-          {/* Feedback Panel with View Mode Toggle */}
-          <div className="ml-4 w-70 max-w-60 text-wrap overflow-auto">
-            {/* Feedback View Mode Toggle + Content (shadcn Tabs) */}
+          <div className="ml-4 w-60 py-4 text-wrap flex flex-col">
             <Tabs
               value={feedbackViewMode}
               onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
+              className="flex-1 flex flex-col min-h-0"
             >
               <TabsList className="w-full rounded-lg p-1 flex">
                 <TabsTrigger
@@ -532,7 +527,7 @@ export function EditAssessmentUI({
                   By Criterion
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="file">
+              <TabsContent value="file" className="flex-1 min-h-0 h-auto overflow-auto">
                 <h3 className="text-sm font-medium mb-3">
                   Feedback for {selectedFile?.name}
                 </h3>
@@ -548,7 +543,7 @@ export function EditAssessmentUI({
                   updateFeedback={handleUpdateFeedback}
                 />
               </TabsContent>
-              <TabsContent value="criterion">
+              <TabsContent value="criterion" className="flex-1 min-h-0 overflow-auto">
                 <h3 className="text-sm font-medium mb-3">
                   Feedback for {activeScoringTab}
                 </h3>

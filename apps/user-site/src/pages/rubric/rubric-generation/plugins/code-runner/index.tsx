@@ -58,21 +58,21 @@ export default function CodeRunnerConfigDialog({
 
   const createConfigMutation = useMutation(createCodeRunnerConfigMutationOptions(auth));
 
-  const { data: initialConfig, isLoading: isLoadingConfig } = useQuery(
-    getTestRunnerConfigQueryOptions(configId!, auth, {
-      staleTime: Infinity,
-      enabled: !!configId,
-    }),
-  );
+  // const { data: initialConfig, isLoading: isLoadingConfig } = useQuery(
+  //   getTestRunnerConfigQueryOptions(configId!, auth, {
+  //     staleTime: Infinity,
+  //     enabled: !!configId,
+  //   }),
+  // );
 
-  useEffect(() => {
-    if (!isLoadingConfig) return;
+  // useEffect(() => {
+  //   if (!isLoadingConfig) return;
 
-    if (initialConfig) {
-      setDefaultConfig(initialConfig);
-      reset(initialConfig);
-    }
-  }, [isLoadingConfig]);
+  //   if (initialConfig) {
+  //     setDefaultConfig(initialConfig);
+  //     reset(initialConfig);
+  //   }
+  // }, [isLoadingConfig]);
 
   const {
     data: languages,
@@ -203,13 +203,8 @@ export default function CodeRunnerConfigDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {isLoadingConfig ?
-          <div className="p-4 text-center">Loading configuration...</div>
-        : isFetchingConfigError ?
-          <div className="p-4 text-red-600">
-            Failed to load configuration. Please try again later.
-          </div>
-        : <>
+        {
+          <>
             <div className="p-1 max-h-[80vh] overflow-y-auto">
               <Form {...form}>
                 <form>
