@@ -6,25 +6,38 @@ namespace AssignmentFlow.Application.Gradings;
 public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
 {
     private readonly ILogger<GradingAggregate> logger;
+    private readonly ISequenceRepository<Grading> sequenceRepository;
     public TeacherId TeacherId => State.TeacherId;
     public readonly GradingWriteModel State;
     public GradingAggregate(
         GradingId id,
-        ILogger<GradingAggregate> logger)
+        ILogger<GradingAggregate> logger,
+        ISequenceRepository<Grading> sequenceRepository)
         : base(id)
     {
         State = new GradingWriteModel();
         this.logger = logger;
+        this.sequenceRepository = sequenceRepository;
         Register(State);
     }
 
     public void CreateGrading(Create.Command command)
     {
+        var reference = sequenceRepository.GenerateSequence().GetAwaiter().GetResult();
         Emit(new Create.GradingCreatedEvent
         {
-            TeacherId = command.TeacherId
+            TeacherId = command.TeacherId,
+            Reference = reference
         });
     }
+
+    public void UpdateInfo(UpdateInfo.Command command)
+    {
+        Emit(new UpdateInfo.InfoUpdatedEvent
+        {
+            GradingName = command.GradingName
+        });
+    }   
 
     public void UpdateSelectors(UpdateCriterionSelectors.Command command)
     {

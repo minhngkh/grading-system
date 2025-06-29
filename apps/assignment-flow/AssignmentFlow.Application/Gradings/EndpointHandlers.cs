@@ -6,6 +6,7 @@ using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.RestartAutoGrading;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
+using AssignmentFlow.Application.Gradings.UpdateInfo;
 using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
@@ -29,7 +30,8 @@ internal static class EndpointHandlers
             .MapChangeRubric()
             .MapStartGrading()
             .MapGradingAnalytics()
-            .MapRestartAutoGrading();
+            .MapRestartAutoGrading()
+            .MapUpdateInfo();
 
         return routeBuilder;
     }

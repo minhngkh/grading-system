@@ -29,6 +29,7 @@
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
 	<PackageReference Include="Scalar.AspNetCore" />
 	<PackageReference Include="SharpGrip.FluentValidation.AutoValidation.Endpoints" />
+	<PackageReference Include="Sqids" />
 	<PackageReference Include="Stateless" />
 	<PackageReference Include="System.Text.Json" />
   </ItemGroup>

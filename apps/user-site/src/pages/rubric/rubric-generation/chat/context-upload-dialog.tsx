@@ -1,4 +1,4 @@
-import { useState, useCallback, memo, useEffect } from "react";
+import { useState, useCallback, memo } from "react";
 import {
   Dialog,
   DialogClose,
@@ -8,16 +8,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Trash2, File, FileText, FileArchive, Image, Code } from "lucide-react";
+import { Trash2, File, FileText, FileArchive, Image, Code, Plus } from "lucide-react";
 import { FileUploader } from "@/components/app/file-uploader";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+
+interface KeyValuePair {
+  key: string;
+  value: string;
+}
 
 interface RubricContextUploadDialogProps {
   attachments?: string[];
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm?: (files: File[], attachments: string[]) => void;
+  keyValuePairs?: KeyValuePair[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onConfirm?: (
+    files: File[],
+    attachments: string[],
+    keyValuePairs: KeyValuePair[],
+  ) => Promise<void>;
   isPending?: boolean;
 }
 
@@ -27,18 +38,19 @@ export const RubricContextUploadDialog = memo(
     onOpenChange,
     onConfirm,
     attachments,
+    keyValuePairs,
     isPending,
   }: RubricContextUploadDialogProps) => {
     const [contextFiles, setContextFiles] = useState<File[]>([]);
-    const [currentAttachments, setCurrentAttachments] = useState<string[]>([]);
-
-    // Reset state when dialog opens/closes
-    useEffect(() => {
-      if (open) {
-        setCurrentAttachments(attachments || []);
-        setContextFiles([]);
-      }
-    }, [open, attachments]);
+    const [currentAttachments, setCurrentAttachments] = useState<string[]>(
+      attachments || [],
+    );
+    const [currentKeyValuePairs, setCurrentKeyValuePairs] = useState<KeyValuePair[]>(
+      keyValuePairs && keyValuePairs.length > 0 ?
+        keyValuePairs
+      : [{ key: "", value: "" }],
+    );
+    const [validationErrors, setValidationErrors] = useState<(string | null)[]>([]);
 
     const handleFileUpload = useCallback((files: File[]) => {
       if (files.length === 0) return;
@@ -50,57 +62,166 @@ export const RubricContextUploadDialog = memo(
       });
     }, []);
 
-    const handleDeleteFile = useCallback((index: number) => {
-      setContextFiles((prev) => prev.filter((_, i) => i !== index));
+    const handleRemoveKeyValuePair = useCallback((index: number) => {
+      setCurrentKeyValuePairs((prev) => {
+        if (prev.length <= 1) {
+          return [{ key: "", value: "" }];
+        }
+        return prev.filter((_, i) => i !== index);
+      });
     }, []);
 
-    const handleRemoveAttachment = useCallback((file: string) => {
-      setCurrentAttachments((prev) => prev.filter((f) => f !== file));
+    const handleUpdateKeyValuePair = useCallback(
+      (index: number, field: "key" | "value", newValue: string) => {
+        setCurrentKeyValuePairs((prev) =>
+          prev.map((pair, i) => (i === index ? { ...pair, [field]: newValue } : pair)),
+        );
+      },
+      [],
+    );
+
+    const resetState = useCallback(() => {
+      setContextFiles([]);
+      setCurrentAttachments([]);
+      setCurrentKeyValuePairs([{ key: "", value: "" }]);
+      setValidationErrors([]);
     }, []);
 
-    const handleConfirm = useCallback(() => {
-      onConfirm?.(contextFiles, currentAttachments);
-    }, [contextFiles, currentAttachments, onConfirm]);
+    const validateMetadata = useCallback(() => {
+      const errors: (string | null)[] = [];
+      let isValid = true;
+
+      currentKeyValuePairs.forEach((pair, index) => {
+        const hasKey = pair.key.trim() !== "";
+        const hasValue = pair.value.trim() !== "";
+
+        if (hasKey && !hasValue) {
+          errors[index] = "Value is required when key is provided";
+          isValid = false;
+        } else if (!hasKey && hasValue) {
+          errors[index] = "Key is required when value is provided";
+          isValid = false;
+        } else if (currentKeyValuePairs.length > 1 && !hasKey && !hasValue) {
+          errors[index] = "Both key and value are required";
+          isValid = false;
+        } else {
+          errors[index] = null;
+        }
+      });
+
+      setValidationErrors(errors);
+      return isValid;
+    }, [currentKeyValuePairs]);
+
+    const handleConfirm = useCallback(async () => {
+      if (!validateMetadata()) return;
+
+      const validKeyValuePairs = currentKeyValuePairs.filter(
+        (pair) => pair.key.trim() !== "" && pair.value.trim() !== "",
+      );
+      await onConfirm?.(contextFiles, currentAttachments, validKeyValuePairs);
+      onOpenChange?.(false);
+      resetState();
+    }, [
+      contextFiles,
+      currentAttachments,
+      currentKeyValuePairs,
+      onConfirm,
+      onOpenChange,
+      validateMetadata,
+      resetState,
+    ]);
+
+    const handleCancel = useCallback(() => {
+      onOpenChange?.(false);
+      resetState();
+    }, [attachments, keyValuePairs, onOpenChange]);
 
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={open} onOpenChange={handleCancel}>
+        <DialogContent className="max-w-[90vw] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Context Files</DialogTitle>
+            <DialogTitle>Add Context</DialogTitle>
             <DialogDescription>
-              Upload files to provide context when grading the rubric.
+              Upload files or add metadata to provide context when grading the rubric
             </DialogDescription>
           </DialogHeader>
-          <FileUploader onFileUpload={handleFileUpload} multiple />
-          {contextFiles.length > 0 && (
+
+          <div className="space-y-2">
+            <Label>Metadata</Label>
             <div className="space-y-2 border rounded-md p-4">
-              <Label htmlFor="context-files">Context Files to be added</Label>
-              {contextFiles.map((file, index) => (
-                <FileComponent
-                  key={`new-${file.name}-${index}`}
-                  file={file.name}
+              {currentKeyValuePairs.map((pair, index) => (
+                <KeyValueComponent
+                  key={`kv-${index}`}
+                  keyValue={pair}
                   index={index}
-                  onDelete={() => handleDeleteFile(index)}
+                  onDelete={() => handleRemoveKeyValuePair(index)}
+                  onUpdate={(field, value) =>
+                    handleUpdateKeyValuePair(index, field, value)
+                  }
+                  error={validationErrors[index]}
                 />
               ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentKeyValuePairs((prev) => [...prev, { key: "", value: "" }])
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Another
+              </Button>
             </div>
-          )}
-          {currentAttachments.length > 0 && (
-            <div className="space-y-2 border rounded-md p-4">
-              <Label htmlFor="current-attachments">Current Context Files</Label>
-              {currentAttachments.map((file, index) => (
-                <FileComponent
-                  key={`existing-${file}-${index}`}
-                  file={file}
-                  index={index}
-                  onDelete={() => handleRemoveAttachment(file)}
-                />
-              ))}
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Upload Files</Label>
+              <FileUploader onFileUpload={handleFileUpload} multiple />
             </div>
-          )}
+
+            {contextFiles.length > 0 && (
+              <div className="space-y-2 border rounded-md p-4">
+                <Label>Context Files to be added</Label>
+                <div>
+                  {contextFiles.map((file, index) => (
+                    <FileComponent
+                      key={`new-${file.name}-${index}`}
+                      file={file.name}
+                      index={index}
+                      onDelete={() =>
+                        setContextFiles((prev) => prev.filter((_, i) => i !== index))
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {currentAttachments.length > 0 && (
+              <div className="space-y-2 border rounded-md p-4">
+                <Label>Current Context Files</Label>
+                <div>
+                  {currentAttachments.map((file, index) => (
+                    <FileComponent
+                      key={`existing-${file}-${index}`}
+                      file={file}
+                      index={index}
+                      onDelete={() =>
+                        setCurrentAttachments((prev) => prev.filter((f) => f !== file))
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
             </DialogClose>
             {isPending ?
               <Button>Uploading</Button>
@@ -187,3 +308,50 @@ const FileComponent = memo(({ file, onDelete, index }: FileComponentProps) => {
     </div>
   );
 });
+
+interface KeyValueComponentProps {
+  keyValue: KeyValuePair;
+  index: number;
+  onDelete?: () => void;
+  onUpdate?: (field: "key" | "value", value: string) => void;
+  error?: string | null;
+}
+
+const KeyValueComponent = memo(
+  ({ keyValue, onDelete, index, onUpdate, error }: KeyValueComponentProps) => {
+    const keyId = `key-${index}`;
+    const valueId = `value-${index}`;
+
+    return (
+      <div key={index} className="space-y-1">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
+              <Input
+                id={keyId}
+                name={keyId}
+                value={keyValue.key}
+                onChange={(e) => onUpdate?.("key", e.target.value)}
+                className={`max-w-36 text-sm ${error ? "border-red-500" : ""}`}
+                placeholder="Option"
+              />
+              <Input
+                id={valueId}
+                name={valueId}
+                value={keyValue.value}
+                onChange={(e) => onUpdate?.("value", e.target.value)}
+                className={`text-sm ${error ? "border-red-500" : ""}`}
+                placeholder="Value"
+              />
+            </div>
+            <Button variant="destructive" size="icon" onClick={onDelete}>
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Delete</span>
+            </Button>
+          </div>
+        </div>
+        {error && <p className="text-sm text-red-500 ml-1">{error}</p>}
+      </div>
+    );
+  },
+);

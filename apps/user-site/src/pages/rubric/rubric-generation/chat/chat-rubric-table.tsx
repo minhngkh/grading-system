@@ -102,8 +102,6 @@ function ChatRubricTable({
           onUpdate?.({ attachments: updatedAttachments });
           toast.success("Context files updated successfully.");
         }
-
-        setIsContextDialogOpen(false);
       } catch (error) {
         console.error("Error updating context files:", error);
         toast.error("Failed to update context files. Please try again.");
