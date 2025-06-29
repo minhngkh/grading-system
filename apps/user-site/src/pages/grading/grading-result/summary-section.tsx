@@ -34,7 +34,9 @@ const SummarySection = memo(function SummarySection({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex flex-col items-center p-4 bg-muted rounded-lg">
               <span className="text-sm font-medium text-blue-600">Average Score</span>
-              <span className="text-3xl font-bold text-blue-600">{averageScore}</span>
+              <span className="text-3xl font-bold text-blue-600">
+                {averageScore.toFixed(2)}
+              </span>
               <div className="w-full mt-2 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                 <div
                   className="bg-blue-600 h-2.5 rounded-full"
@@ -46,7 +48,9 @@ const SummarySection = memo(function SummarySection({
             </div>
             <div className="flex flex-col items-center p-4 bg-muted rounded-lg">
               <span className="text-sm font-medium text-green-600">Highest Score</span>
-              <span className="text-3xl font-bold text-green-600">{highestScore}</span>
+              <span className="text-3xl font-bold text-green-600">
+                {highestScore.toFixed(2)}
+              </span>
               <div className="w-full mt-2 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                 <div
                   className="bg-green-600 h-2.5 rounded-full"
@@ -58,7 +62,9 @@ const SummarySection = memo(function SummarySection({
             </div>
             <div className="flex flex-col items-center p-4 bg-muted rounded-lg">
               <span className="text-sm font-medium text-red-600">Lowest Score</span>
-              <span className="text-3xl font-bold text-red-600">{lowestScore}</span>
+              <span className="text-3xl font-bold text-red-600">
+                {lowestScore.toFixed(2)}
+              </span>
               <div className="w-full mt-2 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                 <div
                   className="bg-red-600 h-2.5 rounded-full"

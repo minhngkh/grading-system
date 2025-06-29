@@ -212,9 +212,9 @@ export const RubricContextUploadDialog = memo(
             </div>
 
             {contextFiles.length > 0 && (
-              <div className="space-y-2 border rounded-md p-4">
+              <div className="space-y-4 border rounded-md p-4">
                 <Label>Context Files to be added</Label>
-                <div>
+                <div className="space-y-2">
                   {contextFiles.map((file, index) => (
                     <FileComponent
                       key={`new-${file.name}-${index}`}
