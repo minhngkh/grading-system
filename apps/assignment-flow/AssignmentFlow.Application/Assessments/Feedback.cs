@@ -37,6 +37,9 @@ public sealed class Feedback : ValueObject
     public static Feedback New(CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
         => new(criterion, comment, highlight, tag);
 
+    public static Feedback Summary (CriterionName criterion, Comment comment)
+        => new(criterion, comment, Highlight.Empty, Tag.Empty);
+
     /// <summary>
     /// Provides the components used for equality comparison.
     /// </summary>
