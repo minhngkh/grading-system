@@ -17,7 +17,7 @@ import {
 } from "@/pages/grading/grading-result/skeletons";
 import { SignalRService } from "@/services/realtime-service";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { rerunGradingMutationOptions } from "@/queries/grading-queries";
 import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
 import PendingComponent from "@/components/app/route-pending";
@@ -38,6 +38,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
   const auth = useAuth();
   const hubRef = useRef<SignalRService>();
   const [isRerunning, setIsRerunning] = useState(false);
+  const queryClient = useQueryClient();
 
   // invalidate assessments query after rerunning grading
   const { data: assessmentsData, isLoading } = useQuery(
@@ -91,7 +92,12 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
         hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
           handleStatusChange(assessmentStatus),
         );
-        hub.on("Complete", () => setIsRerunning(false));
+        hub.on("Complete", () => {
+          queryClient.invalidateQueries({
+            queryKey: ["allGradingAssessments", gradingAttempt.id],
+          });
+          setIsRerunning(false);
+        });
 
         await hub.start();
         hubRef.current = hub;
