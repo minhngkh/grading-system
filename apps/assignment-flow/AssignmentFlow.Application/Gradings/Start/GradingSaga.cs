@@ -214,12 +214,20 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             AssessmentId = assessmentId
         });
 
+        var errors = domainEvent.AggregateEvent.Errors;
+
         await PublishProgressUpdate(new AssessmentProgress
         {
             SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
             AssessmentId = assessmentId,
             Status = AssessmentState.AutoGradingFinished.ToString(),
-            ErrorMessage = null
+            ErrorMessage = string.Join(
+                Environment.NewLine,
+                domainEvent.AggregateEvent.Errors.Select(e => 
+                $$"""
+                Criterion: {{e.Key}}
+                 •Failure Reason: {{e.Value}}
+                """))
         });
 
         await HandleAutoGradingCompletion();

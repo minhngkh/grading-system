@@ -7,4 +7,5 @@ namespace AssignmentFlow.Application.Assessments.AutoGrading;
 public class AutoGradingFinishedEvent : AggregateEvent<AssessmentAggregate, AssessmentId>
 {
     public required GradingId GradingId { get; init; }
+    public Dictionary<string, string> Errors { get; init; } = [];
 }

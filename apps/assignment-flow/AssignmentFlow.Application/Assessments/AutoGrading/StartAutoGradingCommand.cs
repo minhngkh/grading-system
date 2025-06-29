@@ -43,7 +43,8 @@ public class StartAutoGradingCommandHandler(
     }
 
     private static Criterion[] MapCriteria(string gradingId, SubmissionApiContract submission, RubricModel rubric)
-        => [.. submission.CriteriaFiles.Join(rubric.Criteria,
+        => [.. submission.CriteriaFiles.Join(
+            rubric.Criteria.Where(criterion => criterion.Plugin != "None" ), // Filter out criteria with "None" plugin
             outerKeySelector: c => c.Criterion,
             innerKeySelector: c => c.Name,
             (submissionCriterion, rubricCriterion) => new Criterion

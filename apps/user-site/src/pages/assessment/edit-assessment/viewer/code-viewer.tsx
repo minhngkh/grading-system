@@ -288,6 +288,7 @@ const HighlightableViewer = ({
                 return;
               }
             } else if (file.type === "essay") {
+              console.log("essay scroll");
               const root = document.getElementById(`essay-container`);
               console.log("essay-container", root);
               let lineEl: Element | null = null;

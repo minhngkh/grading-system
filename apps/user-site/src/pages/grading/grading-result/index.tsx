@@ -17,7 +17,7 @@ import {
 } from "@/pages/grading/grading-result/skeletons";
 import { SignalRService } from "@/services/realtime-service";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { rerunGradingMutationOptions } from "@/queries/grading-queries";
 import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
 import PendingComponent from "@/components/app/route-pending";
@@ -38,7 +38,9 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
   const auth = useAuth();
   const hubRef = useRef<SignalRService>();
   const [isRerunning, setIsRerunning] = useState(false);
+  const queryClient = useQueryClient();
 
+  // invalidate assessments query after rerunning grading
   const { data: assessmentsData, isLoading } = useQuery(
     getAllGradingAssessmentsQueryOptions(gradingAttempt.id, auth),
   );
@@ -47,9 +49,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
     rerunGradingMutationOptions(gradingAttempt.id, auth),
   );
 
-  const handleStatusChange = (isActive: boolean, newStatus: AssessmentGradingStatus) => {
-    if (!isActive) return;
-
+  const handleStatusChange = (newStatus: AssessmentGradingStatus) => {
     setAssessments((prev) => {
       return prev.map((item) => {
         if (item.id === newStatus.assessmentId) {
@@ -64,12 +64,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
     });
   };
 
-  const handleRegister = (
-    isActive: boolean,
-    initialStatus: AssessmentGradingStatus[],
-  ) => {
-    if (!isActive) return;
-
+  const handleRegister = (initialStatus: AssessmentGradingStatus[]) => {
     const updatedAssessments =
       assessmentsData?.map((assessment) => {
         const status = initialStatus.find((s) => s.assessmentId === assessment.id);
@@ -88,8 +83,6 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
   useEffect(() => {
     if (isLoading || hubRef.current) return;
 
-    let isActive = true;
-
     (async () => {
       const token = await auth.getToken();
       if (!token) return;
@@ -97,15 +90,20 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
       try {
         const hub = new SignalRService(() => token);
         hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
-          handleStatusChange(isActive, assessmentStatus),
+          handleStatusChange(assessmentStatus),
         );
-        hub.on("Complete", () => setIsRerunning(false));
+        hub.on("Complete", () => {
+          queryClient.invalidateQueries({
+            queryKey: ["allGradingAssessments", gradingAttempt.id],
+          });
+          setIsRerunning(false);
+        });
 
         await hub.start();
         hubRef.current = hub;
 
         const initialState = await hub.invoke("Register", gradingAttempt.id);
-        handleRegister(isActive, initialState);
+        handleRegister(initialState);
       } catch (error) {
         console.error("Error starting SignalR hub:", error);
         toast.error("Failed to regrade assessments. Please try again later.");
@@ -113,7 +111,6 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
     })();
 
     return () => {
-      isActive = false;
       if (hubRef.current) {
         hubRef.current.off("ReceiveAssessmentProgress");
         hubRef.current.off("Complete");

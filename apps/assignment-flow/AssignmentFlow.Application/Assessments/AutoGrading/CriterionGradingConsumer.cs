@@ -19,6 +19,8 @@ public class CriterionGradingConsumer(
         var (breakdownItem, feedbackItems) = context.Message.ScoreBreakdown
             .ToValueObject(context.Message.CriterionName, Grader.AIGrader, context.Message.Metadata);
 
+        breakdownItem.MarkAsGraded();
+
         await commandBus.PublishAsync(
             new AssessCriterionCommand(assessmentId)
             {
@@ -30,15 +32,29 @@ public class CriterionGradingConsumer(
 }
 
 public class CriterionGradingFailedConsumer(
+    ICommandBus commandBus,
     ILogger<CriterionGradingFailedConsumer> logger)
     : IConsumer<ICriterionGradingFailed>
 {
-    public Task Consume(ConsumeContext<ICriterionGradingFailed> context)
+    public async Task Consume(ConsumeContext<ICriterionGradingFailed> context)
     {
         logger.LogError("received: {AssessmentId}, CriterionName: {CriterionName}, Error: {Error}",
             context.Message.AssessmentId,
             context.Message.CriterionName,
             context.Message.Error);
-        return Task.CompletedTask;
+
+        var assessmentId = AssessmentId.With(context.Message.AssessmentId);
+        var criterionName = CriterionName.New(context.Message.CriterionName);
+        var scoreBreakdownItem = ScoreBreakdownItem.Pending(criterionName);
+        scoreBreakdownItem.MarkAsFailed(context.Message.Error);
+        scoreBreakdownItem.FailureReason = context.Message.Error;
+
+        await commandBus.PublishAsync(
+            new AssessCriterionCommand(assessmentId)
+            {
+                ScoreBreakdownItem = scoreBreakdownItem,
+                Feedbacks = []
+            },
+            context.CancellationToken);
     }
 }

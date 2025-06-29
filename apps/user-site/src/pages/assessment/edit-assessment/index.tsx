@@ -180,6 +180,7 @@ export function EditAssessmentUI({
       console.error(err);
     }
   };
+  console.log("Saving feedbacks:", formData);
 
   const handleSaveScore = async () => {
     try {

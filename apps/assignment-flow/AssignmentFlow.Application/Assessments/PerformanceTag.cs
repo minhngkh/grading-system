@@ -18,7 +18,8 @@ public sealed class PerformanceTag : StringValueObject
     /// Gets the maximum allowed length for a performance tag.
     /// </summary>
     protected override int? MaxLength => ModelConstants.ShortMediumText;
-    
+    protected override bool AllowEmpty => true;
+
     /// <summary>
     /// Creates a new instance of <see cref="PerformanceTag"/> with the specified value.
     /// </summary>
