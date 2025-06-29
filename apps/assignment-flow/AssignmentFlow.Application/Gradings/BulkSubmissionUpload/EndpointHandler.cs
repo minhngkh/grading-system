@@ -1,14 +1,15 @@
 ﻿using EventFlow;
 using Microsoft.AspNetCore.Mvc;
+using System.IO.Compression;
 
-namespace AssignmentFlow.Application.Gradings.UploadSubmission;
+namespace AssignmentFlow.Application.Gradings.BulkSubmissionUpload;
 
 public static class EndpointHandler
 {
-    public static IEndpointRouteBuilder MapUploadSubmission(this IEndpointRouteBuilder endpoint)
+    public static IEndpointRouteBuilder MapBulkUploadSubmissions(this IEndpointRouteBuilder endpoint)
     {
-        endpoint.MapPost("/{id:required}/submissions", UploadSubmission)
-            .WithName("UploadSubmission")
+        endpoint.MapPost("/{id:required}/submissions/bulk-upload", BulkUploadSubmissions)
+            .WithName("BulkUploadSubmissions")
             .Produces<List<string>>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .DisableAntiforgery(); // Disable for now
@@ -17,15 +18,18 @@ public static class EndpointHandler
     }
 
     //[Authorize]
-    private static async Task<IResult> UploadSubmission(
+    private static async Task<IResult> BulkUploadSubmissions(
         [FromRoute] string id,
-        [FromForm] IFormFileCollection files,
+        [FromForm] IFormFile zipFile,
         ICommandBus commandBus,
         ISubmissionUploadService submissionUploadService,
         CancellationToken cancellationToken)
     {
         var gradingId = GradingId.With(id);
-        var submissions = await submissionUploadService.ExtractSubmissions(files, cancellationToken);
+        await submissionUploadService.Validate(zipFile);
+
+        using var archive = new ZipArchive(zipFile.OpenReadStream(), ZipArchiveMode.Read);
+        var submissions = await submissionUploadService.ExtractSubmissions(archive, cancellationToken);
 
         await commandBus.PublishAsync(
             new Command(gradingId, submissions),

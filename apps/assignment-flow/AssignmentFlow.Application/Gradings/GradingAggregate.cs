@@ -50,11 +50,11 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         });
     }
 
-    public void AddSubmission(Submission submission)
+    public void AddSubmissions(List<Submission> submissions)
     {
         UploadSubmission.SubmissionCanBeUploadedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
-        Emit(new UploadSubmission.SubmissionAddedEvent(submission));
+        Emit(new UploadSubmission.SubmissionAddedEvent(submissions));
     }
 
     public void RemoveSubmission(RemoveSubmission.Command command)
