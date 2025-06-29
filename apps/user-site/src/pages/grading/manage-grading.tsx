@@ -259,16 +259,6 @@ export default function ManageGradingsPage({
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {grading.status === GradingStatus.Graded && (
-                          <DropdownMenuItem asChild>
-                            <Link
-                              to="/gradings/$gradingId/analytics"
-                              params={{ gradingId: grading.id }}
-                            >
-                              View Analytics
-                            </Link>
-                          </DropdownMenuItem>
-                        )}
                         {grading.status !== GradingStatus.Created ?
                           <DropdownMenuItem asChild>
                             <Link
@@ -287,14 +277,26 @@ export default function ManageGradingsPage({
                             </Link>
                           </DropdownMenuItem>
                         }
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectGradingIndex(index);
-                            setExportGradingOpen(true);
-                          }}
-                        >
-                          Export Grading
-                        </DropdownMenuItem>
+                        {grading.status === GradingStatus.Graded && (
+                          <>
+                            <DropdownMenuItem asChild>
+                              <Link
+                                to="/gradings/$gradingId/analytics"
+                                params={{ gradingId: grading.id }}
+                              >
+                                View Analytics
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectGradingIndex(index);
+                                setExportGradingOpen(true);
+                              }}
+                            >
+                              Export Grading
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
