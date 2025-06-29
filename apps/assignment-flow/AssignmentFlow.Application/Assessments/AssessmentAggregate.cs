@@ -78,7 +78,7 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void Assess(AutoGrading.AssessCriterionCommand command)
     {
-        var scoreItem = command.ScoreBreakdownItem;
+        var scoreItem = command.ScoreBreakdownItem.Clone();
 
         if (command.ScoreBreakdownItem.Grader.IsAIGrader && scoreItem.RawScore != 0m)
         {
@@ -103,7 +103,8 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
             AutoGrading.AutoGradingCanBeFinishedSpecification.New().IsSatisfiedBy(State),
             () => new AutoGrading.AutoGradingFinishedEvent { 
                 GradingId = State.GradingId,
-                Errors = State.ScoreBreakdowns.ToDictionary(
+                Errors = State.ScoreBreakdowns
+                    .Where(item => !string.IsNullOrWhiteSpace(item.FailureReason)).ToDictionary(
                     item => item.CriterionName.Value,
                     item => item.FailureReason)
             });
