@@ -45,6 +45,7 @@ export default function GradingProgressStep({
   };
 
   const handleStatusChange = (isActive: boolean, newStatus: AssessmentGradingStatus) => {
+    console.log("Received assessment status update:", newStatus);
     if (!isActive) return;
 
     setAssessmentStatus((prev) => {
