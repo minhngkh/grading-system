@@ -176,9 +176,6 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         {
             AssessmentId = assessmentId
         });
-            
-        // Check if all assessments are now graded
-        await HandleAutoGradingCompletion();
         
         await PublishProgressUpdate(new AssessmentProgress
         {
@@ -187,6 +184,8 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             Status = AssessmentState.AutoGradingFinished.ToString(),
             ErrorMessage = null
         });
+
+        await HandleAutoGradingCompletion();
     }
 
     public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessmentFailedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
@@ -215,9 +214,6 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             AssessmentId = assessmentId
         });
 
-        // Check if all assessments are now graded
-        await HandleAutoGradingCompletion();
-
         await PublishProgressUpdate(new AssessmentProgress
         {
             SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
@@ -225,6 +221,8 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             Status = AssessmentState.AutoGradingFinished.ToString(),
             ErrorMessage = null
         });
+
+        await HandleAutoGradingCompletion();
     }
 
     private async Task HandleAutoGradingCompletion()
