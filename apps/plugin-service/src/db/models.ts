@@ -10,10 +10,10 @@ import { TimeStamps } from "@typegoose/typegoose/lib/defaultClasses";
 
 @modelOptions({ schemaOptions: { collection: "plugins.categories" } })
 export class PluginCategory extends TimeStamps {
-  @prop({ required: true, unique: true })
-  public alias!: string;
+  @prop()
+  public _id!: string;
 
-  @prop({ required: true, unique: true })
+  @prop({ required: true })
   public name!: string;
 
   @prop()
@@ -24,8 +24,8 @@ export const PluginCategoryModel = getModelForClass(PluginCategory);
 
 @modelOptions({ schemaOptions: { collection: "plugins" } })
 export class Plugin extends TimeStamps {
-  @prop({ required: true, unique: true })
-  public alias!: string; // A unique identifier, e.g., "ai-rubric-generator", "python-code-runner"
+  @prop()
+  public _id!: string;
 
   @prop({ required: true })
   public name!: string; // User-friendly name, e.g., "AI Rubric Generator"
@@ -33,8 +33,8 @@ export class Plugin extends TimeStamps {
   @prop()
   public description?: string;
 
-  @prop({ ref: () => PluginCategory, default: [] })
-  public categories!: Ref<PluginCategory>[];
+  @prop({ ref: () => PluginCategory, type: () => String })
+  public categories!: Ref<PluginCategory, string>[];
 
   @prop({ default: true })
   public enabled!: boolean;
@@ -42,10 +42,20 @@ export class Plugin extends TimeStamps {
 
 export const PluginModel = getModelForClass(Plugin);
 
-export abstract class BasePluginConfig {}
+@modelOptions({
+  schemaOptions: {
+    _id: false,
+    discriminatorKey: "type",
+  },
+})
+export abstract class BasePluginConfig {
+  @prop({ required: true })
+  public type!: string;
+}
 
 enum PluginConfigType {
   AI = "ai",
+  TestRunner = "test-runner",
 }
 
 export class AIPluginConfig extends BasePluginConfig {
@@ -63,15 +73,41 @@ export class AIPluginConfig extends BasePluginConfig {
   public additionalSettings?: Record<string, any>; // e.g., temperature, max tokens
 }
 
+class TestCase {
+  @prop({ required: true })
+  public input!: string; // stdin input for the test case
+
+  @prop({ required: true })
+  public output!: string; // expected stdout output
+
+  @prop()
+  public description?: string; // optional description of the test case
+}
+
+export class TestRunnerConfig extends BasePluginConfig {
+  @prop({ required: true })
+  public runCommand!: string;
+
+  @prop()
+  public initCommand!: string;
+
+  @prop({ _id: false, type: TestCase })
+  public testCases!: TestCase[];
+}
+
 @modelOptions({ schemaOptions: { collection: "plugins.configs" } })
 export class PluginConfig extends TimeStamps {
-  @prop({ ref: () => Plugin, required: true })
-  public plugin!: Ref<Plugin>;
+  // @prop({ ref: () => Plugin, type: () => String, required: true })
+  // public plugin!: Ref<Plugin>;
 
   @prop({
+    _id: false,
     required: true,
-    type: () => BasePluginConfig,
-    discriminators: () => [{ type: AIPluginConfig, value: PluginConfigType.AI }],
+    type: BasePluginConfig,
+    discriminators: () => [
+      { type: AIPluginConfig, value: "ai" },
+      { type: TestRunnerConfig, value: "test-runner" },
+    ],
   })
   public config!: BasePluginConfig;
 }

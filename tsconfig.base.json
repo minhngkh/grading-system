@@ -20,5 +20,8 @@
     // typegoose
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+
+    // swc-fix
+    "inlineSourceMap": true,
   }
 }
