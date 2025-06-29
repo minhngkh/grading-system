@@ -127,21 +127,9 @@ export class AssessmentService {
     token: string,
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
-
-    // Chuyển đổi scoreBreakdowns về dạng backend yêu cầu
-    const scoreBreakdownsForApi = scoreBreakdowns.map((sb) => {
-      const { metadata, ...rest } = sb as any;
-      return {
-        ...rest,
-        metadata,
-        metadataJson: JSON.stringify(metadata ?? {}),
-      };
-    });
-    console.log(scoreBreakdownsForApi);
-
     const response = await axios.post(
       `${ASSESSMENT_API_URL}/${id}/scores`,
-      { scoreBreakdowns: scoreBreakdownsForApi },
+      { scoreBreakdowns: scoreBreakdowns },
       configHeaders,
     );
     console.log("Score update response:", response);
