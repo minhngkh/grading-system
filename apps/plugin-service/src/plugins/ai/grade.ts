@@ -112,6 +112,7 @@ function createGradingSystemPrompt(partOfRubric: Criterion[]) {
     - Here are some more detailed specs of the output:
       - You must grade all of the criteria
       - You must grade each criterion by reading each level description then choose the level (its tag) that satisfies it based on the input
+        - Note that if you feels like the input to grade is so bad it doesn't satisfy even the lowest level (and the lowest level is greater than 0), you must give it an empty \`tag\` and \`score\` of 0
       - After selecting the level, you must provide the score in the range from "the current level's weight" to less than (not equal to) "the next higher level's weight. If it is the highest level, then the score must be equal to the level's weight
         - For example, you choose level with tag "1" that have weight 50, and the next level is "2" with weight 75, then the score must be in range 50 < score <= 75
         - If you choose the highest level with tag "5" that have weight 100, then the score must be exactly 100

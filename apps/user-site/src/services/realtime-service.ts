@@ -2,6 +2,7 @@ import {
   HubConnection,
   HubConnectionBuilder,
   HubConnectionState,
+  LogLevel,
 } from "@microsoft/signalr";
 
 type SignalREventCallback = (...args: any[]) => void;
@@ -16,6 +17,7 @@ export class SignalRService {
       .withUrl(HUB_URL, {
         accessTokenFactory: this.accessTokenFactory,
       })
+      .configureLogging(LogLevel.Information)
       .withAutomaticReconnect([0, 2000, 5000, 10000, 10000])
       .build();
   }

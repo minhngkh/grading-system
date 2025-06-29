@@ -104,7 +104,7 @@ export default function UploadStep({ form }: UploadStepProps) {
       return { criterion: criterion.name, pattern: "*" };
     });
 
-    setValue("selectors", selectors);
+    handleSelectorsChange(selectors);
   };
 
   const handleFileUpload = async (files: File[]) => {

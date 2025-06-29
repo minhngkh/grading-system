@@ -41,6 +41,7 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
               await updateRubricMutation.mutateAsync({
                 ...response.rubric,
               });
+
               onUpdate({ ...response.rubric });
             } catch (error) {
               console.error("Error updating rubric:", error);

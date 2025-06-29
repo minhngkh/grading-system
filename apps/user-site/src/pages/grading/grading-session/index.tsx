@@ -48,11 +48,6 @@ export default function UploadAssignmentPage({
     if (initialGradingAttempt.status === GradingStatus.Started) {
       stepper.goTo(steps[1].id);
       sessionStorage.setItem("gradingStep", steps[1].id);
-    } else if (initialGradingAttempt.status === GradingStatus.Graded) {
-      navigate({
-        to: "/gradings/$gradingId/result",
-        params: { gradingId: gradingAttemptValues.id },
-      });
     }
   }, []);
 

@@ -92,7 +92,7 @@ export const AssessmentStatusCard = ({
           })}
         </div>
         {!isUndergoingGrading && (
-          <Button onClick={() => onRegrade?.(status.id)}>Re-grade</Button>
+          <Button onClick={() => onRegrade?.(status.assessmentId)}>Re-grade</Button>
         )}
       </CardContent>
     </Card>
