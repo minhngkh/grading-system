@@ -62,11 +62,7 @@ export default function GradingProgressStep({
     });
   };
 
-  const handleRegister = (
-    isActive: boolean,
-    initialStatus: AssessmentGradingStatus[],
-  ) => {
-    if (!isActive) return;
+  const handleRegister = (initialStatus: AssessmentGradingStatus[]) => {
     setAssessmentStatus(initialStatus);
 
     if (
@@ -115,6 +111,7 @@ export default function GradingProgressStep({
         );
 
         if (gradingAttemptValues.status === GradingStatus.Created) {
+          console.log("Starting grading attempt:", gradingAttemptValues.id);
           await startGrading();
         }
 
@@ -122,7 +119,7 @@ export default function GradingProgressStep({
         hubRef.current = hub;
 
         const initialState = await hub.invoke("Register", gradingAttemptValues.id);
-        handleRegister(isActive, initialState);
+        handleRegister(initialState);
       } catch (error) {
         gradingAttempt.setValue("status", GradingStatus.Failed);
         console.error("Failed to start grading:", error);
