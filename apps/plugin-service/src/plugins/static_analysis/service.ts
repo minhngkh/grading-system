@@ -1,9 +1,10 @@
 import type { Context } from 'moleculer';
-import { defineTypedService2 } from '@/utils/typed-moleculer';
+import { defineTypedService2 } from '@grading-system/typed-moleculer/service';
 import { ZodParams } from 'moleculer-zod-validator';
 import { z } from 'zod';
 import { analyzeFiles } from './core';
 import { AnalysisRequest } from './types';
+import { analyzeZipBuffer } from './grade-zip';
 
 const fileSchema = z.object({
   filename: z.string().min(1),
@@ -15,7 +16,12 @@ const analyzeParams = new ZodParams({
   rules: z.string().optional(),
 });
 
-export const staticAnalysisService = defineTypedService2('static_analysis', {
+const analyzeZipParams = new ZodParams({
+  zip: z.instanceof(Buffer),
+});
+
+export const staticAnalysisService = defineTypedService2({
+  name: 'static_analysis',
   version: 1,
   actions: {
     analyze: {
@@ -26,6 +32,12 @@ export const staticAnalysisService = defineTypedService2('static_analysis', {
           rules: ctx.params.rules,
         };
         return analyzeFiles(req);
+      },
+    },
+    analyzeZip: {
+      params: analyzeZipParams.schema,
+      async handler(ctx: Context<typeof analyzeZipParams.context>) {
+        return analyzeZipBuffer(ctx.params.zip);
       },
     },
     test: {

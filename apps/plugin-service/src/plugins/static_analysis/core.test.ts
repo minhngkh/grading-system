@@ -1,6 +1,8 @@
 import { analyzeFiles } from './core';
 import * as fs from 'fs';
 import * as path from 'path';
+import { analyzeZipBuffer } from './grade-zip';
+import AdmZip from 'adm-zip';
 
 const testFiles = [
   { filename: 'python_test.py', language: 'python' },
@@ -10,47 +12,35 @@ const testFiles = [
   { filename: 'javascript_test.js', language: 'javascript' },
 ];
 
-// ESM-compatible __dirname
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
-async function runAllLanguageTests() {
-  for (const { filename, language } of testFiles) {
-    // Single-file test
+
+async function runZipAnalysisTest() {
+  const zip = new AdmZip();
+  // Add all test files to the zip
+  for (const { filename } of testFiles) {
     const filePath = path.join(__dirname, 'code_test', filename);
-    const singleFile = [{ filename, content: fs.readFileSync(filePath, 'utf-8') }];
-    const singleReq = { files: singleFile };
-    const singleResult = await analyzeFiles(singleReq);
-    console.log(`\n===== ${language.toUpperCase()} Single-file Test Results =====`);
-    console.log(JSON.stringify(singleResult, null, 2));
-
-    // Multi-file test (if exists)
-    const multifileDir = path.join(__dirname, 'code_test', `multifile_${language}`);
-    if (fs.existsSync(multifileDir)) {
-      const multifileFiles = fs.readdirSync(multifileDir)
-        .filter(f => f.endsWith(getFileExtension(language)))
-        .map(f => ({
-          filename: f,
-          content: fs.readFileSync(path.join(multifileDir, f), 'utf-8'),
-        }));
-      if (multifileFiles.length > 0) {
-        const multiReq = { files: multifileFiles };
-        const multiResult = await analyzeFiles(multiReq);
-        console.log(`\n===== ${language.toUpperCase()} Multi-file Test Results =====`);
-        console.log(JSON.stringify(multiResult, null, 2));
-      }
+    if (fs.existsSync(filePath)) {
+      zip.addFile(filename, fs.readFileSync(filePath));
     }
   }
+  const zipBuffer = zip.toBuffer();
+  const result = await analyzeZipBuffer(zipBuffer);
+  console.log('\n===== ZIP Analysis Test Results =====');
+  console.log(JSON.stringify(result, null, 2));
 }
 
-function getFileExtension(language: string): string {
-  switch (language) {
-    case 'python': return '.py';
-    case 'c': return '.c';
-    case 'cpp': return '.cpp';
-    case 'csharp': return '.cs';
-    case 'javascript': return '.js';
-    default: return '';
+async function runCustomZipFileTest() {
+  const dirname = path.dirname(new URL(import.meta.url).pathname);
+  const zipPath = path.join(dirname, 'code_test', 'GK-21120022.zip');
+  if (!fs.existsSync(zipPath)) {
+    console.error('Custom zip file not found:', zipPath);
+    return;
   }
+  const zipBuffer = fs.readFileSync(zipPath);
+  const result = await analyzeZipBuffer(zipBuffer);
+  console.log('\n===== Custom ZIP File Analysis Results =====');
+  console.log(JSON.stringify(result, null, 2));
 }
 
-runAllLanguageTests();
+// runZipAnalysisTest();
+runCustomZipFileTest();

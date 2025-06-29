@@ -1,47 +1,39 @@
-import fs from 'fs/promises';
-import path from 'path';
 import AdmZip from 'adm-zip';
 import { analyzeFiles } from './core';
+import type { AnalysisFile, AnalysisResponse } from './types';
+import fs from 'fs';
+import path from 'path';
 
-async function gradeZip(zipFilePath: string) {
-  // 1. Extract zip
-  const extractDir = path.join('/tmp', `extract_${Date.now()}`);
-  await fs.mkdir(extractDir, { recursive: true });
-  const zip = new AdmZip(zipFilePath);
-  zip.extractAllTo(extractDir, true);
+/**
+ * Analyze a zip file buffer: extract, detect language, grade with Semgrep, return JSON result.
+ * @param zipBuffer Buffer of the zip file
+ * @returns Promise<AnalysisResponse>
+ */
+export async function analyzeZipBuffer(zipBuffer: Buffer): Promise<AnalysisResponse> {
+  const zip = new AdmZip(zipBuffer);
+  const entries = zip.getEntries();
+  const files: AnalysisFile[] = [];
 
-  // 2. Read all files in the extracted directory (non-recursive for simplicity)
-  const files = [];
-  for (const fileName of await fs.readdir(extractDir)) {
-    const filePath = path.join(extractDir, fileName);
-    const stat = await fs.stat(filePath);
-    if (stat.isFile()) {
-      files.push({
-        filename: fileName,
-        content: await fs.readFile(filePath, 'utf-8'),
-      });
+  for (const entry of entries) {
+    if (entry.isDirectory) continue;
+    // Only analyze code files (filter by extension)
+    const filename = entry.entryName;
+    // Supported extensions (add more as needed)
+    if (!/\.(py|js|ts|java|c|cpp|go|rb|php|cs)$/i.test(filename)) continue;
+    const content = entry.getData().toString('utf-8');
+    files.push({ filename, content });
+    // Ensure directory exists in /tmp before writing
+    const tempFilePath = path.join('/tmp', filename);
+    const tempDir = path.dirname(tempFilePath);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
     }
   }
 
-  // 3. Run Semgrep grading
-  const result = await analyzeFiles({ files });
-  return result;
-}
-
-// CLI usage: tsx grade-zip.ts path/to/your.zip
-if (require.main === module) {
-  const zipFilePath = process.argv[2];
-  if (!zipFilePath) {
-    console.error('Usage: tsx grade-zip.ts <zip-file-path>');
-    process.exit(1);
+  if (files.length === 0) {
+    return { results: [], error: 'No supported code files found in zip.' };
   }
-  gradeZip(zipFilePath)
-    .then((result) => {
-      console.log('Semgrep grading result:');
-      console.log(JSON.stringify(result, null, 2));
-    })
-    .catch((err) => {
-      console.error('Error grading zip:', err);
-      process.exit(1);
-    });
+
+  // Use existing analysis logic
+  return await analyzeFiles({ files });
 } 
