@@ -1,5 +1,5 @@
-import React, { useRef } from "react";
-import HighlightableViewer, { HighlightableViewerHandle } from "./code-viewer";
+import React from "react";
+import HighlightableViewer from "./code-viewer";
 import PDFViewer from "./pdf-viewer";
 import ImageViewer from "./image-viewer";
 import { FeedbackItem } from "@/types/assessment";
@@ -17,7 +17,6 @@ interface FileViewerProps {
   rubricCriteria?: string[];
   gradingId: string;
   submissionReference: string;
-  bottomPanelHeight: number; // Thêm prop này nếu cần thiết
 }
 
 const FileViewer: React.FC<FileViewerProps> = ({
@@ -32,10 +31,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   rubricCriteria = [],
   gradingId,
   submissionReference,
-  bottomPanelHeight, // Thêm giá trị mặc định nếu cần thiết
 }) => {
-  const codeViewerRef = useRef<HighlightableViewerHandle>(null);
-
   // Gộp logic xác định loại file
   if (file.type === "image") {
     return (
@@ -49,7 +45,6 @@ const FileViewer: React.FC<FileViewerProps> = ({
         rubricCriteria={rubricCriteria}
         gradingId={gradingId}
         submissionReference={submissionReference}
-        bottomPanelHeight={bottomPanelHeight} // Truyền giá trị này nếu cần
       />
     );
   }
@@ -74,7 +69,6 @@ const FileViewer: React.FC<FileViewerProps> = ({
   if (file.type === "code" || file.type === "document" || file.type === "essay") {
     return (
       <HighlightableViewer
-        ref={codeViewerRef}
         file={file}
         feedbacks={feedbacks}
         feedbacksAll={feedbacksAll}

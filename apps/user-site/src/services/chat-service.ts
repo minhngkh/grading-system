@@ -41,8 +41,9 @@ export class ChatService {
       ],
     }));
 
+    // Weight in range is a boolean, but the API expects it as a string, fix this later
     const data = {
-      rubric: rubric,
+      rubric: { ...rubric, weightInRange: "false" },
       messages: formattedMessages,
     };
 

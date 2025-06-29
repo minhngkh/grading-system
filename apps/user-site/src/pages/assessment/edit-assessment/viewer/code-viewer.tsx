@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef } from "react";
+import React, { useState, useEffect } from "react";
 import ShikiHighlighter from "react-shiki";
 import { FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
@@ -20,15 +20,7 @@ interface HighlightableViewerProps {
   submissionReference: string;
 }
 
-// Thêm interface cho ref
-export interface HighlightableViewerHandle {
-  scrollToLine: (line: number) => void;
-}
-
-const HighlightableViewer = forwardRef<
-  HighlightableViewerHandle,
-  HighlightableViewerProps
->(function HighlightableViewer({
+const HighlightableViewer = ({
   file,
   feedbacks,
   feedbacksAll = [],
@@ -40,7 +32,7 @@ const HighlightableViewer = forwardRef<
   rubricCriteria = [],
   gradingId,
   submissionReference,
-}) {
+}: HighlightableViewerProps) => {
   const { theme = "light" } = useTheme?.() || {};
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -683,5 +675,5 @@ const HighlightableViewer = forwardRef<
       )}
     </>
   );
-});
+};
 export default HighlightableViewer;

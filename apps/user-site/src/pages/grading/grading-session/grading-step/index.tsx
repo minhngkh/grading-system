@@ -25,10 +25,18 @@ export default function GradingProgressStep({
   const [assessmentStatus, setAssessmentStatus] = useState<
     AssessmentGradingStatus[] | null
   >(null);
-  const hubRef = useRef<SignalRService | null>(null);
   const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
-  const { isSuccess: isStartGradingSuccess, mutateAsync: startGrading } = useMutation(
-    startGradingMutationOptions(gradingAttemptValues.id, auth),
+  const { mutateAsync: startGrading } = useMutation(
+    startGradingMutationOptions(gradingAttemptValues.id, auth, {
+      onSuccess: () => {
+        gradingAttempt.setValue("status", GradingStatus.Started);
+      },
+      onError: (error) => {
+        gradingAttempt.setValue("status", GradingStatus.Failed);
+        console.error("Failed to start grading:", error);
+        toast.error("Failed to start grading. Please try again.");
+      },
+    }),
   );
 
   const handleGradingStatusChange = (isActive: boolean, newStatus: GradingStatus) => {
@@ -42,13 +50,15 @@ export default function GradingProgressStep({
     setAssessmentStatus((prev) => {
       if (!prev) return [newStatus];
 
-      const exists = prev.some((item) => item.id === newStatus.id);
+      const exists = prev.some((item) => item.assessmentId === newStatus.assessmentId);
 
       if (!exists) {
         return [...prev, newStatus];
       }
 
-      return prev.map((item) => (item.id === newStatus.id ? newStatus : item));
+      return prev.map((item) =>
+        item.assessmentId === newStatus.assessmentId ? newStatus : item,
+      );
     });
   };
 
@@ -81,17 +91,22 @@ export default function GradingProgressStep({
     }
   };
 
+  const hubRef = useRef<SignalRService | null>(null);
+  const hasInitializedRef = useRef(false);
+
   useEffect(() => {
     let isActive = true;
 
-    (async () => {
-      if (hubRef.current) return;
+    const initGrading = async () => {
+      if (hubRef.current || hasInitializedRef.current) return;
+      hasInitializedRef.current = true;
 
       const token = await auth.getToken();
       if (!token) return;
 
       try {
         const hub = new SignalRService(() => token);
+
         hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
           handleStatusChange(isActive, assessmentStatus),
         );
@@ -101,12 +116,6 @@ export default function GradingProgressStep({
 
         if (gradingAttemptValues.status === GradingStatus.Created) {
           await startGrading();
-          if (isStartGradingSuccess) {
-            gradingAttempt.setValue("status", GradingStatus.Started);
-          } else {
-            gradingAttempt.setValue("status", GradingStatus.Failed);
-            return;
-          }
         }
 
         await hub.start();
@@ -119,7 +128,9 @@ export default function GradingProgressStep({
         console.error("Failed to start grading:", error);
         toast.error("Failed to start grading. Please try again.");
       }
-    })();
+    };
+
+    initGrading();
 
     return () => {
       isActive = false;
@@ -127,6 +138,7 @@ export default function GradingProgressStep({
         hubRef.current.off("Complete");
         hubRef.current.off("ReceiveAssessmentProgress");
         hubRef.current.stop();
+        hubRef.current = null;
       }
     };
   }, []);

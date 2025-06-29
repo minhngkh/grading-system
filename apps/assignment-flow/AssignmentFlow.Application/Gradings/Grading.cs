@@ -5,6 +5,7 @@ using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
+using AssignmentFlow.Application.Gradings.UpdateInfo;
 using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
@@ -26,7 +27,8 @@ public class Grading
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionRemovedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, AutoGradingStartedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, AutoGradingFinishedEvent>,
-    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingRestartedEvent>
+    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingRestartedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, InfoUpdatedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -39,6 +41,12 @@ public class Grading
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
     public string RubricId { get; set; } = string.Empty;
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public string Name { get; set; } = string.Empty;
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public string Reference { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public decimal ScaleFactor { get; set; }
@@ -86,6 +94,8 @@ public class Grading
         CancellationToken cancellationToken)
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
+        Reference = domainEvent.AggregateEvent.Reference;
+        Name = domainEvent.AggregateEvent.Reference; // Reference is used as the name by default
 
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
@@ -160,10 +170,16 @@ public class Grading
         UpdateLastModifiedData(domainEvent);
     }
 
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, InfoUpdatedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        Name = domainEvent.AggregateEvent.GradingName;
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
     private void UpdateLastModifiedData(IDomainEvent domainEvent)
     {
         LastModified = domainEvent.Timestamp.ToUniversalTime();
         Version = domainEvent.AggregateSequenceNumber;
     }
-
 }

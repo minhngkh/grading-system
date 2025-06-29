@@ -1,20 +1,18 @@
-import { AssessmentStatusCard } from "@/pages/grading/grading-session/grading-step/status-card";
-import { AssessmentState } from "@/types/assessment";
+import { Button } from "@/components/ui/button";
+import { RubricContextUploadDialog } from "@/pages/rubric/rubric-generation/chat/context-upload-dialog";
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/test")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const [open, setOpen] = useState(false);
   return (
-    <AssessmentStatusCard
-      status={{
-        id: "123",
-        submissionReference: "Test Assessment",
-        errorMessage: undefined,
-        status: AssessmentState.AutoGradingStarted,
-      }}
-    />
+    <div>
+      <Button onClick={() => setOpen(true)}>Open Dialog</Button>
+      <RubricContextUploadDialog open={open} onOpenChange={setOpen} />
+    </div>
   );
 }

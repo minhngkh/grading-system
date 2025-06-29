@@ -16,6 +16,7 @@ import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { Moon, Search, Sun, User } from "lucide-react";
 import { useState } from "react";
 import { NotificationButton } from "@/components/app/notification-button";
+import { NavigationItems } from "@/consts/navigations";
 
 const UnauthenticatedNavBar = () => {
   const navigate = useNavigate();
@@ -73,7 +74,11 @@ const AuthenticatedNavBar = () => {
             <span className="text-xs">⌘</span>K
           </kbd>
         </Button>
-        <CommandMenu open={commandOpen} setOpen={setCommandOpen} />
+        <CommandMenu
+          navigationItems={NavigationItems}
+          open={commandOpen}
+          setOpen={setCommandOpen}
+        />
         <NotificationButton />
         <Button
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}

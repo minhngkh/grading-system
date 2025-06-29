@@ -56,7 +56,6 @@ export async function loadFileItems(prefix: string): Promise<FileItem[]> {
     if (dir && blob.name.startsWith(dir)) {
       relativePath = blob.name.substring(dir.length);
     }
-
     items.push({
       id: String(idx++),
       name,

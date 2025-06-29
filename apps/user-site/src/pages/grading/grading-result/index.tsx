@@ -20,6 +20,7 @@ import { AssessmentGradingStatus } from "@/types/grading-progress";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { rerunGradingMutationOptions } from "@/queries/grading-queries";
 import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
+import PendingComponent from "@/components/app/route-pending";
 
 const SummarySection = lazy(() => import("./summary-section"));
 const ReviewResults = lazy(() => import("./review-results"));
@@ -51,7 +52,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
 
     setAssessments((prev) => {
       return prev.map((item) => {
-        if (item.id === newStatus.id) {
+        if (item.id === newStatus.assessmentId) {
           return {
             ...item,
             status: newStatus.status,
@@ -69,16 +70,17 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
   ) => {
     if (!isActive) return;
 
-    const updatedAssessments = assessments.map((assessment) => {
-      const status = initialStatus.find((s) => s.id === assessment.id);
+    const updatedAssessments =
+      assessmentsData?.map((assessment) => {
+        const status = initialStatus.find((s) => s.assessmentId === assessment.id);
 
-      if (!status) return assessment;
+        if (!status) return assessment;
 
-      return {
-        ...assessment,
-        status: status.status,
-      };
-    });
+        return {
+          ...assessment,
+          status: status.status,
+        };
+      }) || [];
 
     setAssessments(updatedAssessments);
   };
@@ -86,7 +88,6 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
   useEffect(() => {
     if (isLoading || hubRef.current) return;
 
-    setAssessments(assessmentsData ?? []);
     let isActive = true;
 
     (async () => {
@@ -139,6 +140,10 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
     return 0;
   });
 
+  if (isLoading || isRerunning) {
+    return <PendingComponent message="Loading assessments..." />;
+  }
+
   return (
     <div className="space-y-6">
       <section className="flex">
@@ -186,15 +191,11 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
         </div>
       </section>
       <Suspense fallback={<SummaryCardSkeleton />}>
-        {isLoading || isRerunning ?
-          <SummaryCardSkeleton />
-        : <SummarySection assessments={sortedAssessments} scaleFactor={scaleFactor} />}
+        {<SummarySection assessments={sortedAssessments} scaleFactor={scaleFactor} />}
       </Suspense>
 
       <Suspense fallback={<ResultCardSkeleton />}>
-        {isLoading || isRerunning ?
-          <ResultCardSkeleton />
-        : <ReviewResults assessments={sortedAssessments} scaleFactor={scaleFactor} />}
+        {<ReviewResults assessments={sortedAssessments} scaleFactor={scaleFactor} />}
       </Suspense>
       {viewRubricOpen && (
         <ViewRubricDialog

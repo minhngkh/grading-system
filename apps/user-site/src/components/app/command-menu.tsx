@@ -6,16 +6,17 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { NavigationItems } from "@/consts/navigations";
+import { NavigationData } from "@/types/navigation";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
 
 interface CommandMenuProps {
   open: boolean;
   setOpen: (open: boolean) => void;
+  navigationItems?: NavigationData[];
 }
 
-export function CommandMenu({ open, setOpen }: CommandMenuProps) {
+export function CommandMenu({ open, setOpen, navigationItems }: CommandMenuProps) {
   const navigate = useNavigate();
 
   const handleKeyDown = useCallback(
@@ -52,7 +53,7 @@ export function CommandMenu({ open, setOpen }: CommandMenuProps) {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Quick Actions">
-          {NavigationItems.map((item) => (
+          {navigationItems?.map((item) => (
             <CommandItem
               key={item.to} // Use unique identifier instead of index
               onSelect={() => handleSelect(item.to)}

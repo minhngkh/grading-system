@@ -24,7 +24,6 @@ export const Route = createFileRoute(
     if (grading.rubricId === undefined) {
       throw new Error("This assessment does not have a rubric associated with it.");
     }
-
     const rubric = await RubricService.getRubric(grading.rubricId, token);
     return { assessment, grading, rubric };
   },

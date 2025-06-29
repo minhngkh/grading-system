@@ -20,7 +20,6 @@ import { ExportDialog } from "@/components/app/export-dialog";
 import { AssessmentExporter } from "@/lib/exporters";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FeedbackListPanel } from "./feedback-list-panel";
-import { s } from "node_modules/framer-motion/dist/types.d-CtuPurYT";
 
 export function EditAssessmentUI({
   assessment,
@@ -31,7 +30,6 @@ export function EditAssessmentUI({
   grading: GradingAttempt;
   rubric: Rubric;
 }) {
-  // Lưu dữ liệu gốc khi mount
   const form = useForm<Assessment>({
     resolver: zodResolver(AssessmentSchema),
     defaultValues: assessment,
@@ -67,16 +65,23 @@ export function EditAssessmentUI({
     rubric.criteria[0]?.name || "",
   );
   const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">("file");
-  console.log("EditAssessmentUI rendered with formData:", formData);
   useEffect(() => {
     async function load() {
       const items = await loadFileItems(`${grading.id}/${formData.submissionReference}`);
       setFiles(items);
       setSelectedFile(items[0] || null);
     }
-    if (formData.submissionReference) load();
-  }, [formData.submissionReference]);
 
+    if (formData.submissionReference) load();
+  }, [formData.submissionReference, grading.id]);
+  useEffect(() => {
+    if (!initialData) {
+      setInitialData({
+        scoreBreakdowns: formData.scoreBreakdowns,
+        feedbacks: formData.feedbacks,
+      });
+    }
+  }, [files, formData.feedbacks]);
   const totalScore = formData.scoreBreakdowns.reduce((sum, breakdown) => {
     const criterion = rubric.criteria.find((c) => c.name === breakdown.criterionName);
     const weight = criterion?.weight || 0;
@@ -124,15 +129,6 @@ export function EditAssessmentUI({
     } catch {}
     return false;
   };
-
-  useEffect(() => {
-    if (!initialData) {
-      setInitialData({
-        scoreBreakdowns: formData.scoreBreakdowns,
-        feedbacks: formData.feedbacks,
-      });
-    }
-  }, [files, formData.feedbacks]);
 
   const handleUpdateFeedback = (
     index: number,
@@ -202,7 +198,7 @@ export function EditAssessmentUI({
   const handleSaveAssessment = async () => {
     console.log("Saving assessment data:", formData);
     await handleSaveFeedback();
-    await handleSaveScore();
+    // await handleSaveScore();
     return;
   };
 
@@ -443,7 +439,7 @@ export function EditAssessmentUI({
                 </div>
               )}
             </div>
-            {selectedFile.type === "code" ?
+            {selectedFile && selectedFile.type === "code" ?
               renderFileContent()
             : <div
                 className="flex-1 overflow-auto"

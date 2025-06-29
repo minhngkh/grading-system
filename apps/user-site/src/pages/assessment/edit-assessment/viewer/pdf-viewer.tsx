@@ -90,10 +90,7 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
     useEffect(() => {
       if (activeFeedbackId != null && feedbacksAll && Array.isArray(feedbacksAll)) {
         const idx = Number(activeFeedbackId);
-        console.log("Active feedback index:", idx);
         const fb = feedbacksAll[idx];
-        console.log("Feedbacks length:", feedbacksAll);
-        console.log("Active feedback:", fb);
         if (
           fb &&
           fb.locationData?.type === "pdf" &&

@@ -10,8 +10,15 @@ public class AssignmentFlowDbContext(DbContextOptions<AssignmentFlowDbContext> o
     public DbSet<Assessment> Assessments => Set<Assessment>();
     public DbSet<ScoreAdjustment> ScoreAdjustments => Set<ScoreAdjustment>();
 
+    public DbSet<Sequence> Sequences => Set<Sequence>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(GetType().Assembly);
+
+        modelBuilder
+            .Entity<Sequence>()
+            .Property(s => s.CurrentValue)
+            .UseHiLo<long>(name: "References_Sequence");
     }
 }

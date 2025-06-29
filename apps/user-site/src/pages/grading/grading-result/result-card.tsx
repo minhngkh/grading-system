@@ -23,9 +23,11 @@ export function AssessmentResultCard({
   criteriaColorMap,
 }: AssessmentResultCardProps) {
   const auth = useAuth();
-  const { isPending: isRerunning, mutateAsync: rerunAssessment } = useMutation(
-    rerunAssessmentMutationOptions(auth),
-  );
+  const {
+    isPending: isRerunning,
+    isError,
+    mutateAsync: rerunAssessment,
+  } = useMutation(rerunAssessmentMutationOptions(auth));
 
   const handleRerun = async () => {
     try {
@@ -38,10 +40,10 @@ export function AssessmentResultCard({
     }
   };
 
-  if (item.status <= AssessmentState.AutoGradingStarted || isRerunning)
+  if (item.status === AssessmentState.AutoGradingStarted || isRerunning)
     return <ResultCardSkeleton />;
 
-  const isGradingFailed = item.status === AssessmentState.AutoGradingFailed;
+  const isGradingFailed = item.status === AssessmentState.AutoGradingFailed || isError;
   return (
     <Card className="overflow-hidden py-0">
       <div className="flex flex-col md:flex-row">
@@ -50,11 +52,11 @@ export function AssessmentResultCard({
             <h3 className="text-lg font-semibold flex items-center gap-2">
               {item.submissionReference}
             </h3>
-            {isGradingFailed ?
+            {!isGradingFailed && (
               <span className="text-2xl font-bold">
                 {(item.rawScore * scaleFactor) / 100} point(s)
               </span>
-            : <span className="text-2xl font-bold text-destructive">Failed</span>}
+            )}
           </div>
 
           <div className="space-y-3">
@@ -89,6 +91,7 @@ export function AssessmentResultCard({
 
         <div className="flex md:flex-col justify-end p-4 bg-muted">
           <Button
+            disabled={isRerunning}
             onClick={handleRerun}
             variant="outline"
             className="flex items-center gap-2 mb-2 w-full"

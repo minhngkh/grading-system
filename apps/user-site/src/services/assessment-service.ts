@@ -111,21 +111,9 @@ export class AssessmentService {
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
 
-    // Chuyển đổi feedbacks về dạng backend yêu cầu
-    const feedbacksForApi = feedbacks.map((fb) => {
-      // Đảm bảo locationData đúng shape
-      const { locationData, ...rest } = fb;
-      return {
-        ...rest,
-        locationData,
-        locationDataJson: JSON.stringify(locationData ?? {}),
-      };
-    });
-    console.log("Feedbacks for API:", feedbacksForApi);
-
     const response = await axios.put(
       `${ASSESSMENT_API_URL}/${id}/feedbacks`,
-      { feedbacks: feedbacksForApi },
+      { feedbacks: feedbacks },
       configHeaders,
     );
 

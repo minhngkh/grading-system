@@ -1,11 +1,11 @@
 import { z } from "zod";
 
-// 🎯 Breakdown
 export const ScoreBreakdownSchema = z.object({
   criterionName: z.string(),
   performanceTag: z.string(),
   rawScore: z.number(),
   metadata: z.array(z.string()).optional(),
+  status: z.enum(["graded", "notgraded"]).optional(),
 });
 
 const BaseFeedbackSchema = z.object({
