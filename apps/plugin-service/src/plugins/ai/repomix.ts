@@ -2,7 +2,7 @@ import type { CliOptions } from "repomix";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { CustomError, wrapError } from "@grading-system/utils/error";
-import { deleteFile } from "@grading-system/utils/file";
+import { deleteDirectory, deleteFile } from "@grading-system/utils/file";
 import logger from "@grading-system/utils/logger";
 import fg from "fast-glob";
 import { okAsync, ResultAsync, safeTry } from "neverthrow";
@@ -48,8 +48,8 @@ function packFiles(options: {
       (error) => wrapError(error, `Failed to read packed file`),
     ).andTee(() => {
       if (DELETE_PACKED_FILE) {
-        deleteFile(outputFilePath).orTee((error) => {
-          logger.info(`Failed to delete packed file after packing`, error);
+        deleteDirectory(options.outputDirectory).orTee((error) => {
+          logger.info(`Failed to delete packed directory after packing`, error);
         });
       }
     });
@@ -92,7 +92,8 @@ export function packFilesSubsets(
   return safeTry(async function* () {
     let outputDir: string;
     if (tag) {
-      outputDir = yield* createDirectoryOnSystemTemp(`pack-results-${tag}`);
+      // outputDir = yield* createDirectoryOnSystemTemp(`pack-results-${tag}`);
+      outputDir = yield* createTempDirectory(`pack-results-${tag}`);
     } else {
       outputDir = yield* createTempDirectory(`pack-results-${sourceId}`);
     }
