@@ -3,9 +3,10 @@ import "zod-openapi/extend";
 import type { ServiceBroker } from "moleculer";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
-import { resolver } from "hono-openapi/zod";
+import { resolver, validator } from "hono-openapi/zod";
 import z from "zod";
 import * as categoryService from "@/services/category";
+import * as configService from "@/services/config";
 import * as pluginService from "@/services/plugin";
 
 // Schema definitions
@@ -133,7 +134,7 @@ export function route(_broker?: ServiceBroker) {
     },
   );
 
-  // Get plugin by ID or alias
+  // Get plugin by ID
   app.get(
     "/plugins/:id",
     describeRoute({
@@ -156,7 +157,6 @@ export function route(_broker?: ServiceBroker) {
     async (c) => {
       const id = c.req.param("id");
 
-      // Try to find by ID first, then by alias
       const plugin = await pluginService.getPluginById(id);
 
       if (!plugin) {
@@ -172,6 +172,111 @@ export function route(_broker?: ServiceBroker) {
       } satisfies z.infer<typeof pluginResponseSchema>;
 
       return c.json(response);
+    },
+  );
+
+  // Get plugin config by ID
+  const getPluginConfigResponseSchema = configService.pluginConfigSchema;
+
+  app.get(
+    "/configs/:id",
+    describeRoute({
+      tags: ["General"],
+      description: "Get plugin config by ID",
+      responses: {
+        200: {
+          description: "Config details",
+          content: {
+            "application/json": {
+              schema: resolver(getPluginConfigResponseSchema),
+            },
+          },
+        },
+        404: {
+          description: "Plugin config not found",
+        },
+      },
+    }),
+    async (c) => {
+      const id = c.req.param("id");
+
+      const plugin = await configService.getConfig(id);
+
+      if (!plugin) {
+        return c.json({ error: "Plugin config not found" }, 404);
+      }
+
+      const response = plugin.config;
+
+      return c.json(response);
+    },
+  );
+
+  // Create plugin config
+  const createPluginConfigSchema = configService.pluginConfigSchema;
+  const createPluginConfigResponseSchema = z.object({
+    id: z.string(),
+  });
+
+  app.post(
+    "/configs",
+    describeRoute({
+      tags: ["General"],
+      description: "Create a new plugin config",
+      responses: {
+        201: {
+          description: "Config created",
+          content: {
+            "application/json": {
+              schema: resolver(createPluginConfigResponseSchema),
+            },
+          },
+        },
+      },
+    }),
+    validator("json", createPluginConfigSchema),
+    async (c) => {
+      const data = c.req.valid("json");
+
+      const config = await configService.createConfig(data);
+
+      const response = {
+        id: config._id.toString(),
+      } satisfies z.infer<typeof createPluginConfigResponseSchema>;
+
+      return c.json(response, 201);
+    },
+  );
+
+  // Update plugin config
+  const updatePluginConfigSchema = configService.pluginConfigSchema;
+
+  app.put(
+    "/configs/:id",
+    describeRoute({
+      tags: ["General"],
+      description: "Update plugin config by ID",
+      responses: {
+        200: {
+          description: "Config updated",
+        },
+        404: {
+          description: "Plugin config not found",
+        },
+      },
+    }),
+    validator("json", updatePluginConfigSchema),
+    async (c) => {
+      const id = c.req.param("id");
+      const data = c.req.valid("json");
+
+      const config = await configService.updateConfig(id, data);
+
+      if (!config) {
+        return c.json({ error: "Plugin config not found" }, 404);
+      }
+
+      return c.status(200);
     },
   );
 

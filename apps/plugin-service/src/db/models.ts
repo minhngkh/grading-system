@@ -42,10 +42,20 @@ export class Plugin extends TimeStamps {
 
 export const PluginModel = getModelForClass(Plugin);
 
-export abstract class BasePluginConfig {}
+@modelOptions({
+  schemaOptions: {
+    _id: false,
+    discriminatorKey: "type",
+  },
+})
+export abstract class BasePluginConfig {
+  @prop({ required: true })
+  public type!: string;
+}
 
 enum PluginConfigType {
   AI = "ai",
+  TestRunner = "test-runner",
 }
 
 export class AIPluginConfig extends BasePluginConfig {
@@ -63,15 +73,41 @@ export class AIPluginConfig extends BasePluginConfig {
   public additionalSettings?: Record<string, any>; // e.g., temperature, max tokens
 }
 
+class TestCase {
+  @prop({ required: true })
+  public input!: string; // stdin input for the test case
+
+  @prop({ required: true })
+  public output!: string; // expected stdout output
+
+  @prop()
+  public description?: string; // optional description of the test case
+}
+
+export class TestRunnerConfig extends BasePluginConfig {
+  @prop({ required: true })
+  public runCommand!: string;
+
+  @prop()
+  public initCommand!: string;
+
+  @prop({ _id: false, type: TestCase })
+  public testCases!: TestCase[];
+}
+
 @modelOptions({ schemaOptions: { collection: "plugins.configs" } })
 export class PluginConfig extends TimeStamps {
-  @prop({ ref: () => Plugin, required: true })
-  public plugin!: Ref<Plugin>;
+  // @prop({ ref: () => Plugin, type: () => String, required: true })
+  // public plugin!: Ref<Plugin>;
 
   @prop({
+    _id: false,
     required: true,
-    type: () => BasePluginConfig,
-    discriminators: () => [{ type: AIPluginConfig, value: PluginConfigType.AI }],
+    type: BasePluginConfig,
+    discriminators: () => [
+      { type: AIPluginConfig, value: "ai" },
+      { type: TestRunnerConfig, value: "test-runner" },
+    ],
   })
   public config!: BasePluginConfig;
 }
