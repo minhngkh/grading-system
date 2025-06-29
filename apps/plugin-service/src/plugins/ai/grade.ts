@@ -361,11 +361,12 @@ export function gradeSubmission(data: {
               ...r,
               feedback: r.feedback.map((fb) => ({
                 ...fb,
-                // FIXME: handle this case
-                fileRef: `${blobNameRoot}/${fb.fileRef}`,
+                // FIXME: handle cases where fileRef is not in the blobNameRoot
+                // fileRef: `${blobNameRoot}/${fb.fileRef}`,
+                fileRef: `${submissionRef}/${fb.fileRef}`,
               })),
               ignoredFiles: value.mediaData.ignoredNameRestList.map(
-                (nameRest) => `${blobNameRoot}/${nameRest}`,
+                (nameRest) => `${submissionRef}/${nameRest}`,
               ),
             })),
           );
