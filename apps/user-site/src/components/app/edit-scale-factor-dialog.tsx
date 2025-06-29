@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useDebounce } from "@/hooks/use-debounce";
 import { useState, useCallback, useEffect, useMemo } from "react";
 
 interface ChangeScaleFactorDialogProps {
@@ -31,8 +30,6 @@ export const ChangeScaleFactorDialog = ({
   maxValue = 100,
 }: ChangeScaleFactorDialogProps) => {
   const [scaleFactor, setScaleFactor] = useState<number>(initialScaleFactor);
-
-  const debouncedScaleFactor = useDebounce(scaleFactor, 500);
 
   useEffect(() => {
     if (open) {
@@ -66,7 +63,7 @@ export const ChangeScaleFactorDialog = ({
   const handleSave = useCallback(() => {
     onChangeScaleFactor(scaleFactor);
     onOpenChange?.(false);
-  }, [debouncedScaleFactor, onChangeScaleFactor, onOpenChange]);
+  }, [onChangeScaleFactor, onOpenChange]);
 
   // Handle dialog close
   const handleOpenChange = useCallback(

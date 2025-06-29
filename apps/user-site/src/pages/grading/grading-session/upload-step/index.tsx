@@ -21,6 +21,13 @@ import { GradingService } from "@/services/grading-service";
 import CriteriaMapper from "./criteria-mapping";
 import { FileList } from "./file-list";
 import { getInfiniteRubricsQueryOptions } from "@/queries/rubric-queries";
+import { useMutation } from "@tanstack/react-query";
+import {
+  updateGradingNameMutationOptions,
+  updateGradingRubricMutationOptions,
+  updateGradingScaleFactorMutationOptions,
+  updateGradingSelectorsMutationOptions,
+} from "@/queries/grading-queries";
 
 interface UploadStepProps {
   form: UseFormReturn<GradingAttempt>;
@@ -49,91 +56,55 @@ export default function UploadStep({ form }: UploadStepProps) {
       setFocus(fields[0] as any);
     }
   }, [errors]);
+
+  const updateNameMutation = useMutation(
+    updateGradingNameMutationOptions(gradingAttempt.id, auth),
+  );
+  const updateScaleFactorMutation = useMutation(
+    updateGradingScaleFactorMutationOptions(gradingAttempt.id, auth),
+  );
+
+  const updateRubricMutation = useMutation(
+    updateGradingRubricMutationOptions(gradingAttempt.id, auth),
+  );
+
+  const updateSelectorsMutation = useMutation(
+    updateGradingSelectorsMutationOptions(gradingAttempt.id, auth),
+  );
+
   const name = watch("name", gradingAttempt.name);
   const debouncedName = useDebounce(name, 500);
   const scaleFactor = watch("scaleFactor", gradingAttempt.scaleFactor ?? 10);
   const debouncedScaleFactor = useDebounce(scaleFactor, 500);
 
   useEffect(() => {
-    if (debouncedName !== undefined) {
-      // (async () => {
-      //   const token = await auth.getToken();
-      //   if (!token)
-      //     return toast.error(
-      //       "Unauthorized: You must be logged in to update grading name",
-      //     );
-      //   try {
-      //     await GradingService.updateGradingName(gradingAttempt.id, debouncedName, token);
-      //   } catch {
-      //     toast.error("Failed to update grading name");
-      //   }
-      // })();
+    if (debouncedName !== name) {
+      updateNameMutation.mutate(debouncedName);
     }
   }, [debouncedName]);
 
   useEffect(() => {
-    if (debouncedScaleFactor !== undefined) {
-      (async () => {
-        const token = await auth.getToken();
-        if (!token)
-          return toast.error(
-            "Unauthorized: You must be logged in to update scale factor",
-          );
-        try {
-          await GradingService.updateGradingScaleFactor(
-            gradingAttempt.id,
-            debouncedScaleFactor,
-            token,
-          );
-        } catch {
-          toast.error("Failed to update scale factor");
-        }
-      })();
+    if (debouncedScaleFactor !== scaleFactor) {
+      updateScaleFactorMutation.mutate(debouncedScaleFactor);
     }
   }, [debouncedScaleFactor]);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
-    const token = await auth.getToken();
-    if (!token) {
-      console.error("Error updating rubric: No token found");
-      toast.error("Unauthorized: You must be logged in to update rubric");
-      return;
-    }
-
-    try {
-      await GradingService.updateGradingSelectors(gradingAttempt.id, selectors, token);
-      setValue("selectors", selectors);
-    } catch (error) {
-      console.error("Error generating selectors:", error);
-      toast.error("Failed to update selectors");
-    }
+    await updateSelectorsMutation.mutateAsync(selectors);
+    setValue("selectors", selectors);
   };
 
   const handleSelectRubric = async (rubric: Rubric) => {
-    if (gradingAttempt.rubricId !== undefined && gradingAttempt.rubricId === rubric.id)
-      return;
+    if (gradingAttempt.rubricId === rubric.id) return;
 
-    const token = await auth.getToken();
-    if (!token) {
-      console.error("Error updating rubric: No token found");
-      toast.error("Unauthorized: You must be logged in to update rubric");
-      return;
-    }
-
-    try {
-      await GradingService.updateGradingRubric(gradingAttempt.id, rubric.id, token);
-      setValue("rubricId", rubric.id);
-    } catch (error) {
-      console.error("Error updating rubric:", error);
-      toast.error("Failed to select rubric");
-      return;
-    }
+    await updateRubricMutation.mutateAsync(rubric.id);
+    setValue("rubricId", rubric.id);
 
     const selectors = rubric.criteria.map((criterion) => {
       return { criterion: criterion.name, pattern: "*" };
     });
 
-    handleSelectorsChange(selectors);
+    setValue("selectors", selectors);
   };
 
   const handleFileUpload = async (files: File[]) => {

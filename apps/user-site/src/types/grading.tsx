@@ -20,18 +20,14 @@ export const SubmissionSchema = z.object({
 
 export const GradingSchema = z.object({
   id: z.string({ required_error: "Grading ID is required" }),
-  name: z.string().optional(),
+  name: z.string({ required_error: "Grading name is required" }),
   rubricId: z.string().nonempty({
     message: "Rubric is required",
   }),
   scaleFactor: z.number().min(1, {
     message: "Scale factor must be at least 1",
   }),
-  selectors: z
-    .array(SelectorSchema, {
-      invalid_type_error: "Selectors must be an array",
-    })
-    .min(1, { message: "Selectors cannot be empty" }),
+  selectors: z.array(SelectorSchema).min(1, { message: "Selectors cannot be empty" }),
   status: z.nativeEnum(GradingStatus),
   lastModified: z.date().optional(),
   submissions: z.array(SubmissionSchema).min(1, {

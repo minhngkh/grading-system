@@ -21,13 +21,13 @@ interface KeyValuePair {
 
 interface RubricContextUploadDialogProps {
   attachments?: string[];
-  keyValuePairs?: KeyValuePair[];
+  metadata?: Record<string, string>;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onConfirm?: (
     files: File[],
-    attachments: string[],
-    keyValuePairs: KeyValuePair[],
+    attachments?: string[],
+    metadata?: Record<string, string>,
   ) => Promise<void>;
   isPending?: boolean;
 }
@@ -38,16 +38,16 @@ export const RubricContextUploadDialog = memo(
     onOpenChange,
     onConfirm,
     attachments,
-    keyValuePairs,
+    metadata,
     isPending,
   }: RubricContextUploadDialogProps) => {
     const [contextFiles, setContextFiles] = useState<File[]>([]);
-    const [currentAttachments, setCurrentAttachments] = useState<string[]>(
-      attachments || [],
+    const [currentAttachments, setCurrentAttachments] = useState<string[] | undefined>(
+      attachments,
     );
     const [currentKeyValuePairs, setCurrentKeyValuePairs] = useState<KeyValuePair[]>(
-      keyValuePairs && keyValuePairs.length > 0 ?
-        keyValuePairs
+      metadata && Object.entries(metadata).length > 0 ?
+        Object.entries(metadata).map(([key, value]) => ({ key, value }))
       : [{ key: "", value: "" }],
     );
     const [validationErrors, setValidationErrors] = useState<(string | null)[]>([]);
@@ -69,6 +69,7 @@ export const RubricContextUploadDialog = memo(
         }
         return prev.filter((_, i) => i !== index);
       });
+      setValidationErrors((prev) => prev.filter((_, i) => i !== index));
     }, []);
 
     const handleUpdateKeyValuePair = useCallback(
@@ -76,6 +77,11 @@ export const RubricContextUploadDialog = memo(
         setCurrentKeyValuePairs((prev) =>
           prev.map((pair, i) => (i === index ? { ...pair, [field]: newValue } : pair)),
         );
+        setValidationErrors((prev) => {
+          const newErrors = [...prev];
+          newErrors[index] = null;
+          return newErrors;
+        });
       },
       [],
     );
@@ -90,10 +96,12 @@ export const RubricContextUploadDialog = memo(
     const validateMetadata = useCallback(() => {
       const errors: (string | null)[] = [];
       let isValid = true;
+      const seenKeys = new Set<string>();
 
       currentKeyValuePairs.forEach((pair, index) => {
         const hasKey = pair.key.trim() !== "";
         const hasValue = pair.value.trim() !== "";
+        const trimmedKey = pair.key.trim();
 
         if (hasKey && !hasValue) {
           errors[index] = "Value is required when key is provided";
@@ -104,8 +112,14 @@ export const RubricContextUploadDialog = memo(
         } else if (currentKeyValuePairs.length > 1 && !hasKey && !hasValue) {
           errors[index] = "Both key and value are required";
           isValid = false;
+        } else if (hasKey && seenKeys.has(trimmedKey)) {
+          errors[index] = "Duplicate key is not allowed";
+          isValid = false;
         } else {
           errors[index] = null;
+          if (hasKey) {
+            seenKeys.add(trimmedKey);
+          }
         }
       });
 
@@ -116,10 +130,26 @@ export const RubricContextUploadDialog = memo(
     const handleConfirm = useCallback(async () => {
       if (!validateMetadata()) return;
 
-      const validKeyValuePairs = currentKeyValuePairs.filter(
-        (pair) => pair.key.trim() !== "" && pair.value.trim() !== "",
-      );
-      await onConfirm?.(contextFiles, currentAttachments, validKeyValuePairs);
+      const validKeyValuePairs = currentKeyValuePairs
+        .filter((pair) => pair.key.trim() !== "" && pair.value.trim() !== "")
+        .reduce(
+          (acc, pair) => {
+            acc[pair.key] = pair.value;
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
+
+      const finalMetadata =
+        (
+          currentKeyValuePairs.length === 1 &&
+          currentKeyValuePairs[0].key.trim() === "" &&
+          currentKeyValuePairs[0].value.trim() === ""
+        ) ?
+          {}
+        : validKeyValuePairs;
+
+      await onConfirm?.(contextFiles, currentAttachments, finalMetadata);
       onOpenChange?.(false);
       resetState();
     }, [
@@ -135,7 +165,7 @@ export const RubricContextUploadDialog = memo(
     const handleCancel = useCallback(() => {
       onOpenChange?.(false);
       resetState();
-    }, [attachments, keyValuePairs, onOpenChange]);
+    }, [onOpenChange]);
 
     return (
       <Dialog open={open} onOpenChange={handleCancel}>
@@ -199,7 +229,7 @@ export const RubricContextUploadDialog = memo(
               </div>
             )}
 
-            {currentAttachments.length > 0 && (
+            {currentAttachments && currentAttachments.length > 0 && (
               <div className="space-y-2 border rounded-md p-4">
                 <Label>Current Context Files</Label>
                 <div>
@@ -209,7 +239,7 @@ export const RubricContextUploadDialog = memo(
                       file={file}
                       index={index}
                       onDelete={() =>
-                        setCurrentAttachments((prev) => prev.filter((f) => f !== file))
+                        setCurrentAttachments((prev) => prev?.filter((f) => f !== file))
                       }
                     />
                   ))}

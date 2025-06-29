@@ -12,8 +12,6 @@ import { useCallback } from "react";
 import ChatWindow from "./chat";
 import FinalRubricTable from "./review-step";
 import PluginRubricTable from "./plugins";
-import { useMutation } from "@tanstack/react-query";
-import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 
 type StepData = {
   title: string;
@@ -48,9 +46,6 @@ export default function RubricGenerationPage({
   const stepper = useStepper({ initialStep: rubricStep });
   const currentIndex = utils.getIndex(stepper.current.id);
   const { location } = useRouterState();
-  const updateRubricMutation = useMutation(
-    updateRubricMutationOptions(initialRubric.id, auth),
-  );
   const form = useForm<Rubric>({
     resolver: zodResolver(RubricSchema),
     defaultValues: initialRubric,
@@ -71,11 +66,10 @@ export default function RubricGenerationPage({
   const handleNext = async () => {
     if (stepper.isLast) {
       try {
-        await updateRubricMutation.mutateAsync(formValues);
         navigate({ to: location.search?.redirect ?? "/rubrics/view", replace: true });
       } catch (err) {
         toast.error("Failed to update rubric");
-        console.error(err);
+        console.error("Failed to update rubric: ", err);
       }
 
       return;
@@ -97,7 +91,6 @@ export default function RubricGenerationPage({
         throw result.error;
       }
 
-      await updateRubricMutation.mutateAsync(updatedRubric);
       form.reset(updatedRubric);
     },
     [formValues, auth],

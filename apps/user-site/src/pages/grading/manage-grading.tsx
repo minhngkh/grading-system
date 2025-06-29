@@ -47,7 +47,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
 
 type SortConfig = {
-  key: "id" | "lastModified" | "status" | null;
+  key: "name" | "lastModified" | "status" | null;
   direction: "asc" | "desc";
 };
 
@@ -63,7 +63,7 @@ export default function ManageGradingsPage({
   results,
 }: ManageGradingsPageProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: "id",
+    key: "name",
     direction: "desc",
   });
   const { page, perPage, status } = searchParams;
@@ -151,7 +151,7 @@ export default function ManageGradingsPage({
   };
 
   const clearFilters = () => {
-    setSearchTerm("");
+    setSearchParam({ search: undefined, status: undefined, page: 1 });
   };
 
   return (
@@ -186,9 +186,9 @@ export default function ManageGradingsPage({
           )}
         </div>
         <Select
-          value={status}
+          value={status ?? "All"}
           onValueChange={(value) => {
-            setSearchParam({ status: value, page: 1 });
+            setSearchParam({ status: value === "All" ? undefined : value, page: 1 });
           }}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
@@ -204,7 +204,7 @@ export default function ManageGradingsPage({
           </SelectContent>
         </Select>
         {status != undefined && (
-          <Button variant="ghost" onClick={clearFilters} className="w-full sm:w-auto">
+          <Button onClick={clearFilters} className="w-full sm:w-auto">
             Clear Filters
           </Button>
         )}
@@ -214,9 +214,9 @@ export default function ManageGradingsPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => requestSort("id")} className="w-[40%]">
+              <TableHead onClick={() => requestSort("name")} className="w-[40%]">
                 <div className="flex items-center cursor-pointer">
-                  ID {getSortIcon("id")}
+                  Name {getSortIcon("name")}
                 </div>
               </TableHead>
               <TableHead onClick={() => requestSort("lastModified")} className="w-[20%]">
@@ -241,7 +241,7 @@ export default function ManageGradingsPage({
               </TableRow>
             : sortedGradings.map((grading, index) => (
                 <TableRow key={index}>
-                  <TableCell className="font-semibold">{grading.id}</TableCell>
+                  <TableCell className="font-semibold">{grading.name}</TableCell>
                   <TableCell>
                     {grading.lastModified ?
                       format(grading.lastModified, "MMM d, yyyy")
