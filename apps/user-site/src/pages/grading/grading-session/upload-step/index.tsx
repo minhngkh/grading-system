@@ -78,15 +78,11 @@ export default function UploadStep({ form }: UploadStepProps) {
   const debouncedScaleFactor = useDebounce(scaleFactor, 500);
 
   useEffect(() => {
-    if (debouncedName !== name) {
-      updateNameMutation.mutate(debouncedName);
-    }
+    updateNameMutation.mutate(debouncedName);
   }, [debouncedName]);
 
   useEffect(() => {
-    if (debouncedScaleFactor !== scaleFactor) {
-      updateScaleFactorMutation.mutate(debouncedScaleFactor);
-    }
+    updateScaleFactorMutation.mutate(debouncedScaleFactor);
   }, [debouncedScaleFactor]);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
