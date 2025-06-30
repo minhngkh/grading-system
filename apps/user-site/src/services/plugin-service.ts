@@ -1,7 +1,7 @@
 import { CodeRunnerConfig, Plugin } from "@/types/plugin";
 import axios, { AxiosRequestConfig } from "axios";
 
-const API_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/plugins`;
+const API_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1`;
 
 export class PluginService {
   private static async buildHeaders(token: string): Promise<AxiosRequestConfig> {
@@ -14,19 +14,28 @@ export class PluginService {
     };
   }
 
-  static async createCodeRunnerConfig(config: CodeRunnerConfig, token: string) {
+  static async getAll(token: string): Promise<Plugin[]> {
     const configHeaders = await this.buildHeaders(token);
-    const response = await axios.post(
-      `${API_URL}/code-runner/config`,
-      config,
-      configHeaders,
-    );
+    const response = await axios.get(`${API_URL}/plugins`, configHeaders);
     return response.data;
   }
 
-  static async getAll(token: string): Promise<Plugin[]> {
+  static async configTestRunner(
+    config: CodeRunnerConfig,
+    token: string,
+  ): Promise<string> {
     const configHeaders = await this.buildHeaders(token);
-    const response = await axios.get(API_URL, configHeaders);
+    const response = await axios.post(`${API_URL}/configs`, config, configHeaders);
+    console.log("Config response:", response.data);
+    return response.data.id;
+  }
+
+  static async getTestRunnerConfig(
+    configId: string,
+    token: string,
+  ): Promise<CodeRunnerConfig> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(`${API_URL}/configs/${configId}`, configHeaders);
     return response.data;
   }
 }

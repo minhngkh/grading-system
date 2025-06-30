@@ -1,7 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Plugin } from "@/types/plugin";
-import { Criteria } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -12,7 +11,7 @@ import { getAllPluginsQueryOptions } from "@/queries/plugin-queries";
 
 interface PluginSelectDialogProps {
   open: boolean;
-  criterion: Criteria;
+  currentPlugin?: string;
   onOpenChange: (open: boolean) => void;
   onSelect: (plugin: string) => void;
 }
@@ -46,12 +45,16 @@ const PluginItem = React.memo<PluginItemProps>(({ plugin, isSelected, onSelect }
 
 export function PluginSelectDialog({
   open,
-  criterion,
+  currentPlugin,
   onOpenChange,
   onSelect,
 }: PluginSelectDialogProps) {
   const auth = useAuth();
-  const { isLoading, data: plugins } = useQuery(getAllPluginsQueryOptions(auth));
+  const { isLoading, data: plugins } = useQuery(
+    getAllPluginsQueryOptions(auth, {
+      staleTime: Infinity,
+    }),
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,8 +80,8 @@ export function PluginSelectDialog({
         : <div className="grid grid-cols-3 gap-4 py-4">
             {plugins.map((plugin, index) => {
               const isSelected =
-                (!criterion.plugin && plugin.alias === "ai") ||
-                criterion.plugin === plugin.name;
+                (!currentPlugin && plugin.alias === "ai") ||
+                currentPlugin === plugin.name;
               return (
                 <PluginItem
                   key={`${plugin.name}-${index}`}

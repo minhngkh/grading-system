@@ -43,6 +43,7 @@ function RouteComponent() {
   const { data: grading } = useQuery(
     getGradingAttemptQueryOptions(gradingAnalytics?.gradingId ?? "", auth, {
       placeholderData: keepPreviousData,
+      staleTime: Infinity,
     }),
   );
 

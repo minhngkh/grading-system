@@ -201,7 +201,7 @@ export function ViewRubricDialog({
     if (validationState.showLoading) return "Loading Rubric";
     if (validationState.showError) return "Error Loading Rubric";
     if (validationState.showNoRubric) return "Rubric Not Found";
-    if (rubric) return rubric.name;
+    if (rubric) return rubric.rubricName;
     return "View Rubric";
   };
 
@@ -225,7 +225,7 @@ export function ViewRubricDialog({
         aria-describedby={undefined}
         className="min-w-[80%] max-w-[95%] max-h-[90vh] flex flex-col"
       >
-        <DialogHeader className="border-b pb-4">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {getDialogTitle()}
           </DialogTitle>
@@ -233,10 +233,6 @@ export function ViewRubricDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden mt-4">{renderContent}</div>
-
-        <div className="border-t pt-4 text-xs text-muted-foreground text-center">
-          Tip: Press Escape to close{error && ", Ctrl+R to retry"}
-        </div>
       </DialogContent>
     </Dialog>
   );

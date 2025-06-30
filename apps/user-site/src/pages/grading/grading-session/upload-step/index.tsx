@@ -55,6 +55,7 @@ export default function UploadStep({ form }: UploadStepProps) {
   const { data: rubricData } = useQuery(
     getRubricQueryOptions(gradingAttempt.rubricId, auth, {
       placeholderData: keepPreviousData,
+      staleTime: Infinity,
     }),
   );
 

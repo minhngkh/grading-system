@@ -63,10 +63,8 @@ export default function PluginRubricTable({
 
       const component = PluginConfigDialogs[plugin];
       if (component) {
-        setTimeout(() => {
-          setActivePluginConfigDialog(() => component);
-          setPluginDialogConfigOpen(true);
-        }, 100);
+        setActivePluginConfigDialog(() => component);
+        setPluginDialogConfigOpen(true);
       }
     } catch (error) {
       console.error("Error selecting plugin:", error);
@@ -118,9 +116,9 @@ export default function PluginRubricTable({
             onCriterionConfigChange={handleConfigChange}
           />
         )}
-        {pluginDialogOpen && selectedCriterionIndex !== undefined && (
+        {selectedCriterionIndex !== undefined && (
           <PluginSelectDialog
-            criterion={rubricData.criteria[selectedCriterionIndex]}
+            currentPlugin={rubricData?.criteria[selectedCriterionIndex]?.plugin}
             open={pluginDialogOpen}
             onOpenChange={setPluginDialogOpen}
             onSelect={onPluginSelect}

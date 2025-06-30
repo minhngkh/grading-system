@@ -105,6 +105,7 @@ export default function ManageGradingsPage({
   const { data: gradingAssessments = [], isLoading: isGettingAssessments } = useQuery(
     getAllGradingAssessmentsQueryOptions(gradingId, auth, {
       enabled: exportGradingOpen && selectGradingIndex != null,
+      staleTime: 5 * 60 * 1000,
     }),
   );
 
