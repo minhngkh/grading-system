@@ -11,4 +11,5 @@ public class AssessmentCreatedEvent : AggregateEvent<AssessmentAggregate, Assess
     public required TeacherId TeacherId { get; init; }
     public required RubricId RubricId { get; init; }
     public required ScoreBreakdowns InitialScoreBreakdowns { get; init; }
+    public required HashSet<Criterion> Criteria { get; init; }
 }

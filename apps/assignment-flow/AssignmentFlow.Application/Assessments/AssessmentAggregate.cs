@@ -39,7 +39,8 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
             GradingId = command.GradingId,
             TeacherId = command.TeacherId,
             RubricId = command.RubricId,
-            InitialScoreBreakdowns = initialScoreBreakdowns
+            InitialScoreBreakdowns = initialScoreBreakdowns,
+            Criteria = command.Criteria
         });
     }
 

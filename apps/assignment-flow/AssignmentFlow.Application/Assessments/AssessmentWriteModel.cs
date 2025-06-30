@@ -29,6 +29,7 @@ public class AssessmentWriteModel
         Reference = @event.SubmissionReference;
         RubricId = @event.RubricId;
         ScoreBreakdowns = @event.InitialScoreBreakdowns;
+        Criteria = @event.Criteria;
     }
 
     internal void Apply(AutoGrading.AutoGradingStartedEvent _)
