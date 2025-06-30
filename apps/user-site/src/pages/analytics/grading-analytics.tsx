@@ -26,7 +26,7 @@ export function GradingAnalyticsPage({ gradingAnalytics }: GradingAnalyticsPageP
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="gap-0">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium">Scale Factor</CardTitle>
+            <CardTitle className="text-sm font-medium">Grade</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{scaleFactor}</div>

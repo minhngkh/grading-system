@@ -132,7 +132,6 @@ export class AssessmentService {
       scoreBreakdowns,
       configHeaders,
     );
-    console.log("Score update response:", response);
     return this.ConvertToAssessment(response.data);
   }
 

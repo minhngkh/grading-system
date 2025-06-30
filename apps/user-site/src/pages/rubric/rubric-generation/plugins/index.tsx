@@ -12,9 +12,12 @@ import { PluginDialogComponent } from "./type";
 import CodeRunnerConfigDialog from "./code-runner";
 import { toast } from "sonner";
 import { PluginSelectDialog } from "./plugin-select-dialog";
+import { useMutation } from "@tanstack/react-query";
+import { updateRubricMutationOptions } from "@/queries/rubric-queries";
+import { useAuth } from "@clerk/clerk-react";
 
 const PluginConfigDialogs: Record<string, PluginDialogComponent> = {
-  "code-runner": CodeRunnerConfigDialog,
+  "Test Runner": CodeRunnerConfigDialog,
   // add other plugins here
 };
 
@@ -27,21 +30,25 @@ export default function PluginRubricTable({
   rubricData,
   onUpdate,
 }: PluginRubricTableProps) {
+  const auth = useAuth();
   const [pluginDialogOpen, setPluginDialogOpen] = useState(false);
   const [pluginDialogConfigOpen, setPluginDialogConfigOpen] = useState(false);
   const [ActivePluginConfigDialog, setActivePluginConfigDialog] =
     useState<PluginDialogComponent>();
   const [selectedCriterionIndex, setSelectedCriterionIndex] = useState<number>();
+  const updateRubricMutation = useMutation(
+    updateRubricMutationOptions(rubricData.id, auth),
+  );
 
   const openPluginDialog = (criterionIndex: number) => {
     setSelectedCriterionIndex(criterionIndex);
     setPluginDialogOpen(true);
   };
 
-  const onPluginSelect = async (plugin: string, criterionIndex: number) => {
+  const onPluginSelect = async (plugin: string) => {
     try {
       const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
-        if (idx === criterionIndex) {
+        if (idx === selectedCriterionIndex) {
           return {
             ...criterion,
             plugin: criterion.plugin === plugin ? undefined : plugin,
@@ -50,9 +57,13 @@ export default function PluginRubricTable({
         return criterion;
       });
 
-      await onUpdate?.({ criteria: updatedCriteria });
-      if (PluginConfigDialogs[plugin]) {
-        setActivePluginConfigDialog(PluginConfigDialogs[plugin]);
+      await updateRubricMutation.mutateAsync({ criteria: updatedCriteria });
+      onUpdate?.({ criteria: updatedCriteria });
+      setPluginDialogOpen(false);
+
+      const component = PluginConfigDialogs[plugin];
+      if (component) {
+        setActivePluginConfigDialog(() => component);
         setPluginDialogConfigOpen(true);
       }
     } catch (error) {
@@ -61,10 +72,10 @@ export default function PluginRubricTable({
     }
   };
 
-  const handleConfigChange = async (config: string, criterionIndex: number) => {
+  const handleConfigChange = async (config: string) => {
     try {
       const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
-        if (idx === criterionIndex) {
+        if (idx === selectedCriterionIndex) {
           return {
             ...criterion,
             configuration: config,
@@ -73,7 +84,8 @@ export default function PluginRubricTable({
         return criterion;
       });
 
-      await onUpdate?.({ criteria: updatedCriteria });
+      await updateRubricMutation.mutateAsync({ criteria: updatedCriteria });
+      onUpdate?.({ criteria: updatedCriteria });
       setPluginDialogConfigOpen(false);
     } catch (error) {
       console.error("Error updating Code Runner configuration:", error);
@@ -97,20 +109,19 @@ export default function PluginRubricTable({
           editPlugin
           onPluginSelect={openPluginDialog}
         />
-        {ActivePluginConfigDialog && pluginDialogConfigOpen && (
+        {ActivePluginConfigDialog && selectedCriterionIndex !== undefined && (
           <ActivePluginConfigDialog
-            criterionIndex={selectedCriterionIndex!}
             open={pluginDialogConfigOpen}
             onOpenChange={setPluginDialogConfigOpen}
             onCriterionConfigChange={handleConfigChange}
           />
         )}
-        {pluginDialogOpen && (
+        {selectedCriterionIndex !== undefined && (
           <PluginSelectDialog
-            criterion={rubricData.criteria[selectedCriterionIndex!]}
+            currentPlugin={rubricData?.criteria[selectedCriterionIndex]?.plugin}
             open={pluginDialogOpen}
             onOpenChange={setPluginDialogOpen}
-            onSelect={(plugin) => onPluginSelect(plugin, selectedCriterionIndex!)}
+            onSelect={onPluginSelect}
           />
         )}
       </CardContent>

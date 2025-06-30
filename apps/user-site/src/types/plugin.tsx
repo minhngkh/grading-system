@@ -14,8 +14,8 @@ export const CodeRunnerTestCaseSchema = z.object({
 });
 
 export const CodeRunnerConfigSchema = z.object({
-  language: z.string().min(1, "Language is required"),
-  installCommand: z.string().min(1, "Install command is required"),
+  type: z.string().min(1, "Language is required"),
+  initCommand: z.string().min(1, "Install command is required"),
   runCommand: z.string().min(1, "Run command is required"),
   environmentVariables: z.record(z.string(), z.string()).optional().default({}),
   testCases: z

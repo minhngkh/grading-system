@@ -24,16 +24,18 @@ export const GradingSchema = z.object({
   rubricId: z.string().nonempty({
     message: "Rubric is required",
   }),
-  scaleFactor: z.number().min(1, {
-    message: "Scale factor must be at least 1",
-  }),
+  scaleFactor: z
+    .number()
+    .min(1, {
+      message: "Scale factor must be at least 1",
+    })
+    .default(10),
   selectors: z.array(SelectorSchema).min(1, { message: "Selectors cannot be empty" }),
   status: z.nativeEnum(GradingStatus),
   lastModified: z.date().optional(),
   submissions: z.array(SubmissionSchema).min(1, {
     message: "At least one submission is required",
   }),
-  moodleMode: z.boolean().optional(),
 });
 
 export type CriteriaSelector = z.infer<typeof SelectorSchema>;

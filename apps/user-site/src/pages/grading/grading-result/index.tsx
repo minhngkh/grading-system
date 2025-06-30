@@ -1,7 +1,6 @@
-import { lazy, Suspense, useRef } from "react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { GradingAttempt } from "@/types/grading";
-import { Assessment, AssessmentState } from "@/types/assessment";
+import { AssessmentState } from "@/types/assessment";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
@@ -17,10 +16,15 @@ import {
 } from "@/pages/grading/grading-result/skeletons";
 import { SignalRService } from "@/services/realtime-service";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { rerunGradingMutationOptions } from "@/queries/grading-queries";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
-import PendingComponent from "@/components/app/route-pending";
+import { rerunGradingMutationOptions } from "@/queries/grading-queries";
+import { getRubricQueryOptions } from "@/queries/rubric-queries";
 
 const SummarySection = lazy(() => import("./summary-section"));
 const ReviewResults = lazy(() => import("./review-results"));
@@ -30,80 +34,69 @@ interface GradingResultProps {
 }
 
 export default function GradingResult({ gradingAttempt }: GradingResultProps) {
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [assessments, setAssessments] = useState<AssessmentGradingStatus[]>([]);
   const [scaleFactor, setScaleFactor] = useState(gradingAttempt.scaleFactor ?? 10);
   const [viewRubricOpen, setViewRubricOpen] = useState(false);
   const [changeScaleFactorOpen, setChangeScaleFactorOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const auth = useAuth();
-  const hubRef = useRef<SignalRService>();
-  const [isRerunning, setIsRerunning] = useState(false);
-  const queryClient = useQueryClient();
+  const [isGrading, setIsGrading] = useState(false);
 
-  // invalidate assessments query after rerunning grading
-  const { data: assessmentsData, isLoading } = useQuery(
-    getAllGradingAssessmentsQueryOptions(gradingAttempt.id, auth),
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const hubRef = useRef<SignalRService>();
+
+  const { data: rubricData } = useQuery(
+    getRubricQueryOptions(gradingAttempt.rubricId, auth, {
+      staleTime: Infinity,
+    }),
+  );
+
+  const { data: assessmentsData, isFetching } = useQuery(
+    getAllGradingAssessmentsQueryOptions(gradingAttempt.id, auth, {
+      placeholderData: keepPreviousData,
+      staleTime: 1000 * 60 * 5,
+    }),
   );
 
   const { mutateAsync: rerunGrading } = useMutation(
     rerunGradingMutationOptions(gradingAttempt.id, auth),
   );
 
-  const handleStatusChange = (newStatus: AssessmentGradingStatus) => {
+  const handleStatusChange = useCallback((newStatus: AssessmentGradingStatus) => {
     setAssessments((prev) => {
-      return prev.map((item) => {
-        if (item.id === newStatus.assessmentId) {
-          return {
-            ...item,
-            status: newStatus.status,
-          };
-        }
+      const index = prev.findIndex((a) => a.assessmentId === newStatus.assessmentId);
+      if (index === -1 || prev[index].status === newStatus.status) return prev;
 
-        return item;
-      });
+      const updated = [...prev];
+      updated[index] = { ...updated[index], status: newStatus.status };
+      return updated;
     });
-  };
-
-  const handleRegister = (initialStatus: AssessmentGradingStatus[]) => {
-    const updatedAssessments =
-      assessmentsData?.map((assessment) => {
-        const status = initialStatus.find((s) => s.assessmentId === assessment.id);
-
-        if (!status) return assessment;
-
-        return {
-          ...assessment,
-          status: status.status,
-        };
-      }) || [];
-
-    setAssessments(updatedAssessments);
-  };
+  }, []);
 
   useEffect(() => {
-    if (isLoading || hubRef.current) return;
+    let isMounted = true;
 
     (async () => {
       const token = await auth.getToken();
-      if (!token) return;
+      if (!token || !isMounted) return;
 
       try {
         const hub = new SignalRService(() => token);
-        hub.on("ReceiveAssessmentProgress", (assessmentStatus) =>
-          handleStatusChange(assessmentStatus),
-        );
+
+        hub.on("ReceiveAssessmentProgress", handleStatusChange);
         hub.on("Complete", () => {
           queryClient.invalidateQueries({
             queryKey: ["allGradingAssessments", gradingAttempt.id],
           });
-          setIsRerunning(false);
+          setIsGrading(false);
         });
 
         await hub.start();
-        hubRef.current = hub;
+        if (!isMounted) return;
 
+        hubRef.current = hub;
         const initialState = await hub.invoke("Register", gradingAttempt.id);
-        handleRegister(initialState);
+        setAssessments(initialState);
       } catch (error) {
         console.error("Error starting SignalR hub:", error);
         toast.error("Failed to regrade assessments. Please try again later.");
@@ -111,41 +104,51 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
     })();
 
     return () => {
+      isMounted = false;
       if (hubRef.current) {
         hubRef.current.off("ReceiveAssessmentProgress");
         hubRef.current.off("Complete");
         hubRef.current.stop();
+        hubRef.current = undefined;
       }
     };
-  }, [isLoading]);
+  }, []);
 
-  const handleRegradeAll = async () => {
+  const handleRegradeAll = useCallback(async () => {
     try {
+      setIsGrading(true);
       await rerunGrading();
-      setIsRerunning(true);
     } catch (error) {
+      setIsGrading(false);
       console.error("Error regrading all assessments:", error);
       toast.error("Failed to regrade all assessments. Please try again later.");
     }
-  };
+  }, [rerunGrading]);
 
-  const sortedAssessments = [...assessments].sort((a, b) => {
-    const aIsFailed = a.status === AssessmentState.AutoGradingFailed;
-    const bIsFailed = b.status === AssessmentState.AutoGradingFailed;
-    if (aIsFailed && !bIsFailed) return -1;
-    if (!aIsFailed && bIsFailed) return 1;
-    return 0;
-  });
+  const sortedAssessments = useMemo(() => {
+    if (!assessmentsData) return [];
 
-  if (isLoading || isRerunning) {
-    return <PendingComponent message="Loading assessments..." />;
-  }
+    return assessmentsData
+      .map((assessment) => {
+        const live = assessments.find((a) => a.assessmentId === assessment.id);
+        return live ? { ...assessment, status: live.status } : assessment;
+      })
+      .sort((a, b) => {
+        const aFailed = a.status === AssessmentState.AutoGradingFailed;
+        const bFailed = b.status === AssessmentState.AutoGradingFailed;
+        return (
+          aFailed === bFailed ? 0
+          : aFailed ? -1
+          : 1
+        );
+      });
+  }, [assessmentsData, assessments]);
 
   return (
     <div className="space-y-6">
       <section className="flex">
         <div className="flex items-center gap-2 p-2 border rounded-lg shadow-sm">
-          <p className="ms-1 text-sm font-semibold">Actions: </p>
+          <p className="ms-1 text-sm font-semibold">Actions:</p>
           <Button variant="outline" size="sm" onClick={() => setViewRubricOpen(true)}>
             <Eye className="w-4 h-4" />
             View Rubric
@@ -153,7 +156,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
           <Button
             variant="outline"
             size="sm"
-            disabled={isLoading || isRerunning}
+            disabled={isFetching || isGrading}
             onClick={() => setChangeScaleFactorOpen(true)}
           >
             <Scale className="w-4 h-4" />
@@ -162,7 +165,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
           <Button
             variant="outline"
             size="sm"
-            disabled={isLoading || isRerunning}
+            disabled={isFetching || isGrading}
             onClick={() => setExportOpen(true)}
           >
             <Download className="w-4 h-4" />
@@ -172,51 +175,45 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
             to="/gradings/$gradingId/analytics"
             params={{ gradingId: gradingAttempt.id }}
           >
-            <Button size="sm" variant="outline" disabled={isLoading || isRerunning}>
+            <Button variant="outline" size="sm" disabled={isFetching || isGrading}>
               <ChartColumn className="w-4 h-4" />
               View Analytics
             </Button>
           </Link>
-          <Button
-            size="sm"
-            disabled={isLoading || isRerunning}
-            onClick={handleRegradeAll}
-          >
+          <Button size="sm" disabled={isFetching || isGrading} onClick={handleRegradeAll}>
             <RefreshCw className="w-4 h-4" />
             Regrade All
           </Button>
         </div>
       </section>
+
       <Suspense fallback={<SummaryCardSkeleton />}>
-        {<SummarySection assessments={sortedAssessments} scaleFactor={scaleFactor} />}
+        <SummarySection assessments={sortedAssessments} scaleFactor={scaleFactor} />
       </Suspense>
 
       <Suspense fallback={<ResultCardSkeleton />}>
-        {<ReviewResults assessments={sortedAssessments} scaleFactor={scaleFactor} />}
+        <ReviewResults assessments={sortedAssessments} scaleFactor={scaleFactor} />
       </Suspense>
-      {viewRubricOpen && (
-        <ViewRubricDialog
-          open={viewRubricOpen}
-          onOpenChange={setViewRubricOpen}
-          rubricId={gradingAttempt.rubricId}
-        />
-      )}
-      {changeScaleFactorOpen && (
-        <ChangeScaleFactorDialog
-          open={changeScaleFactorOpen}
-          onOpenChange={setChangeScaleFactorOpen}
-          initialScaleFactor={scaleFactor}
-          onChangeScaleFactor={setScaleFactor}
-        />
-      )}
-      {exportOpen && (
-        <ExportDialog
-          exporterClass={GradingExporter}
-          args={[gradingAttempt, assessments]}
-          open={exportOpen}
-          onOpenChange={setExportOpen}
-        />
-      )}
+
+      <ViewRubricDialog
+        open={viewRubricOpen}
+        onOpenChange={setViewRubricOpen}
+        initialRubric={rubricData}
+      />
+
+      <ChangeScaleFactorDialog
+        open={changeScaleFactorOpen}
+        onOpenChange={setChangeScaleFactorOpen}
+        initialScaleFactor={scaleFactor}
+        onChangeScaleFactor={setScaleFactor}
+      />
+
+      <ExportDialog
+        exporterClass={GradingExporter}
+        args={[gradingAttempt, assessmentsData || []]}
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+      />
     </div>
   );
 }

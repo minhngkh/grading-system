@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,22 +33,24 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { createCodeRunnerConfigMutationOptions } from "@/queries/plugin-queries";
+import { useMutation } from "@tanstack/react-query";
 
 export default function CodeRunnerConfigDialog({
   open,
   onOpenChange,
   onCriterionConfigChange,
-  criterionIndex,
 }: PluginDialogConfigProps) {
   const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultConfig, setDefaultConfig] = useState<CodeRunnerConfig>({
-    language: "",
-    installCommand: "",
+    type: "",
+    initCommand: "",
     runCommand: "",
     testCases: [],
     environmentVariables: {},
   });
+  const createConfigMutation = useMutation(createCodeRunnerConfigMutationOptions(auth));
 
   const form = useForm<CodeRunnerConfig>({
     resolver: zodResolver(CodeRunnerConfigSchema),
@@ -63,14 +65,8 @@ export default function CodeRunnerConfigDialog({
     reset,
     formState: { errors },
   } = form;
-  const config = watch();
 
-  useEffect(() => {
-    // Reset form to default config when dialog opens
-    if (open) {
-      reset(defaultConfig);
-    }
-  }, [open, reset, defaultConfig]);
+  const config = watch();
 
   const updateCell = (
     index: number,
@@ -90,7 +86,6 @@ export default function CodeRunnerConfigDialog({
       setValue("testCases", updatedTestCases);
     }
 
-    // Trigger validation for testCases field
     trigger("testCases");
   };
 
@@ -154,9 +149,8 @@ export default function CodeRunnerConfigDialog({
 
       if (!isValid) return setIsSubmitting(false);
 
-      toast.success("Code Runner configuration saved successfully!");
-      onCriterionConfigChange?.("config", criterionIndex);
-      onOpenChange?.(false);
+      const configId = await createConfigMutation.mutateAsync(config);
+      onCriterionConfigChange?.(configId);
       setDefaultConfig(config);
     } catch (error) {
       toast.error("Failed to save Code Runner configuration. Please try again.");
@@ -167,25 +161,31 @@ export default function CodeRunnerConfigDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(open) => {
+        onOpenChange?.(open);
+        reset(defaultConfig);
+      }}
+    >
       <DialogContent className="min-w-2xl">
         <DialogHeader>
-          <DialogTitle>Code Runner Plugin Configuration</DialogTitle>
+          <DialogTitle>Test Runner Configuration</DialogTitle>
           <DialogDescription>
-            Configure the Code Runner plugin for this criterion. Specify the programming
+            Configure the Test Runner plugin for this criterion. Specify the programming
             language, commands to install dependencies, and run the code. You can also
             define test cases and environment variables.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-2 max-h-[80vh] overflow-y-auto">
+        <div className="p-1 max-h-[80vh] overflow-y-auto">
           <Form {...form}>
             <form>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-4">
                   <FormField
                     control={control}
-                    name="language"
+                    name="type"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Language</FormLabel>
@@ -213,7 +213,7 @@ export default function CodeRunnerConfigDialog({
 
                   <FormField
                     control={control}
-                    name="installCommand"
+                    name="initCommand"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Install Dependencies Command</FormLabel>

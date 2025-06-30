@@ -8,8 +8,12 @@ import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { useCallback } from "react";
 import PendingComponent from "@/components/app/route-pending";
 import ErrorComponent from "@/components/app/route-error";
-import { getInfiniteGradingAttemptsQueryOptions } from "@/queries/grading-queries";
+import {
+  getGradingAttemptQueryOptions,
+  getInfiniteGradingAttemptsQueryOptions,
+} from "@/queries/grading-queries";
 import { useAuth } from "@clerk/clerk-react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 const searchParams = z.object({
   id: z.string().optional(),
@@ -36,6 +40,12 @@ function RouteComponent() {
   const gradingAnalytics = Route.useLoaderData();
   const navigate = Route.useNavigate();
   const auth = useAuth();
+  const { data: grading } = useQuery(
+    getGradingAttemptQueryOptions(gradingAnalytics?.gradingId ?? "", auth, {
+      placeholderData: keepPreviousData,
+      staleTime: Infinity,
+    }),
+  );
 
   const setSearchParam = useCallback(
     (newId?: string) => {
@@ -66,12 +76,12 @@ function RouteComponent() {
         <div className="flex items-center space-x-2">
           <Label>View grading:</Label>
           <ScrollableSelectMemo<GradingAttempt>
-            value={gradingAnalytics?.gradingId}
+            value={grading}
             onValueChange={(grading) => setSearchParam(grading.id)}
             queryOptionsFn={getInfiniteGradingAttemptsQueryOptions(auth, {
               status: GradingStatus.Graded,
             })}
-            selectFn={(grading) => grading.id}
+            selectFn={(grading) => grading.name}
           />
         </div>
       </div>

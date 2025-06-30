@@ -150,7 +150,8 @@ public static class ScoreBreakdownsExtension
             PerformanceTag = scoreBreakdownItem.PerformanceTag,
             RawScore = scoreBreakdownItem.RawScore,
             MetadataJson = scoreBreakdownItem.MetadataJson,
-            Status = scoreBreakdownItem.Status
+            Status = scoreBreakdownItem.Status,
+            Grader = scoreBreakdownItem.Grader
         };
     }
 

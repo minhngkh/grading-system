@@ -3,14 +3,15 @@ import "zod-openapi/extend";
 import type { ServiceBroker } from "moleculer";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
-import { resolver } from "hono-openapi/zod";
+import { resolver, validator } from "hono-openapi/zod";
 import z from "zod";
 import * as categoryService from "@/services/category";
+import * as configService from "@/services/config";
 import * as pluginService from "@/services/plugin";
 
 // Schema definitions
 const pluginResponseSchema = z.object({
-  alias: z.string(),
+  id: z.string(),
   name: z.string(),
   description: z.string().optional(),
   categories: z.array(z.string()),
@@ -20,7 +21,7 @@ const pluginResponseSchema = z.object({
 const pluginsResponseSchema = z.array(pluginResponseSchema);
 
 const categoryResponseSchema = z.object({
-  alias: z.string(),
+  id: z.string(),
   name: z.string(),
   description: z.string().optional(),
 });
@@ -50,7 +51,7 @@ export function route(_broker?: ServiceBroker) {
     async (c) => {
       const categories = await categoryService.getAllCategories();
       const response = categories.map((cat) => ({
-        alias: cat.alias,
+        id: cat._id,
         name: cat.name,
         description: cat.description,
       })) satisfies z.infer<typeof categoriesResponseSchema>;
@@ -61,16 +62,16 @@ export function route(_broker?: ServiceBroker) {
 
   // Get category by ID
   app.get(
-    "/categories/:alias",
+    "/categories/:id",
     describeRoute({
       tags: ["General"],
-      description: "Get category by Alias",
+      description: "Get category by ID",
       responses: {
         200: {
           description: "Category details",
           content: {
             "application/json": {
-              schema: resolver(categoriesResponseSchema),
+              schema: resolver(categoryResponseSchema),
             },
           },
         },
@@ -80,15 +81,15 @@ export function route(_broker?: ServiceBroker) {
       },
     }),
     async (c) => {
-      const alias = c.req.param("alias");
-      const category = await categoryService.getCategoryByAlias(alias);
+      const id = c.req.param("id");
+      const category = await categoryService.getCategoryById(id);
 
       if (!category) {
         return c.json({ error: "Category not found" }, 404);
       }
 
       const response = {
-        alias: category.alias,
+        id: category._id,
         name: category.name,
         description: category.description,
       } satisfies z.infer<typeof categoryResponseSchema>;
@@ -108,7 +109,7 @@ export function route(_broker?: ServiceBroker) {
           description: "List of plugins",
           content: {
             "application/json": {
-              schema: resolver(z.array(pluginsResponseSchema)),
+              schema: resolver(pluginsResponseSchema),
             },
           },
         },
@@ -121,15 +122,10 @@ export function route(_broker?: ServiceBroker) {
 
       const response = plugins.map((plugin) => {
         return {
-          alias: plugin.alias,
+          id: plugin._id,
           name: plugin.name,
           description: plugin.description,
-          categories: plugin.categories.map((cat) => {
-            if (!("alias" in cat)) {
-              throw new Error("Should never happen");
-            }
-            return cat.alias;
-          }),
+          categories: plugin.categories as string[],
           enabled: plugin.enabled,
         };
       }) satisfies z.infer<typeof pluginsResponseSchema>;
@@ -138,66 +134,12 @@ export function route(_broker?: ServiceBroker) {
     },
   );
 
-  // // Get plugins grouped by category
-  // app.get(
-  //   "/grouped",
-  //   describeRoute({
-  //     tags: ["Plugins"],
-  //     description: "Get plugins grouped by category",
-  //     responses: {
-  //       200: {
-  //         description: "Plugins grouped by category",
-  //         content: {
-  //           "application/json": {
-  //             schema: resolver(z.record(z.string(), z.array(pluginSchema))),
-  //           },
-  //         },
-  //       },
-  //     },
-  //   }),
-  //   async (c) => {
-  //     const grouped = await pluginService.getPluginsGroupedByCategory();
-  //     return c.json(grouped);
-  //   }
-  // );
-
-  // // Search plugins
-  // app.get(
-  //   "/search",
-  //   describeRoute({
-  //     tags: ["Plugins"],
-  //     description: "Search plugins by name, alias, or description",
-  //     responses: {
-  //       200: {
-  //         description: "Search results",
-  //         content: {
-  //           "application/json": {
-  //             schema: resolver(z.array(pluginSchema)),
-  //           },
-  //         },
-  //       },
-  //       400: validationErrorResponse,
-  //     },
-  //   }),
-  //   async (c) => {
-  //     const query = c.req.query("q");
-  //     if (!query) {
-  //       return c.json({ error: "Query parameter 'q' is required" }, 400);
-  //     }
-
-  //     const enabledOnly = c.req.query("enabled") === "true";
-  //     const results = await pluginService.searchPlugins(query, enabledOnly);
-
-  //     return c.json(results);
-  //   }
-  // );
-
-  // Get plugin by ID or alias
+  // Get plugin by ID
   app.get(
-    "/plugins/:alias",
+    "/plugins/:id",
     describeRoute({
       tags: ["General"],
-      description: "Get plugin by alias",
+      description: "Get plugin by ID",
       responses: {
         200: {
           description: "Plugin details",
@@ -213,29 +155,128 @@ export function route(_broker?: ServiceBroker) {
       },
     }),
     async (c) => {
-      const alias = c.req.param("alias");
+      const id = c.req.param("id");
 
-      // Try to find by ID first, then by alias
-      const plugin = await pluginService.getPluginByAlias(alias);
+      const plugin = await pluginService.getPluginById(id);
 
       if (!plugin) {
         return c.json({ error: "Plugin not found" }, 404);
       }
 
       const response = {
-        alias: plugin.alias,
+        id: plugin._id,
         name: plugin.name,
         description: plugin.description,
-        categories: plugin.categories.map((cat) => {
-          if (!("alias" in cat)) {
-            throw new Error("Should never happen");
-          }
-          return cat.alias;
-        }),
+        categories: plugin.categories as string[],
         enabled: plugin.enabled,
       } satisfies z.infer<typeof pluginResponseSchema>;
 
       return c.json(response);
+    },
+  );
+
+  // Get plugin config by ID
+  const getPluginConfigResponseSchema = configService.pluginConfigSchema;
+
+  app.get(
+    "/configs/:id",
+    describeRoute({
+      tags: ["General"],
+      description: "Get plugin config by ID",
+      responses: {
+        200: {
+          description: "Config details",
+          content: {
+            "application/json": {
+              schema: resolver(getPluginConfigResponseSchema),
+            },
+          },
+        },
+        404: {
+          description: "Plugin config not found",
+        },
+      },
+    }),
+    async (c) => {
+      const id = c.req.param("id");
+
+      const plugin = await configService.getConfig(id);
+
+      if (!plugin) {
+        return c.json({ error: "Plugin config not found" }, 404);
+      }
+
+      const response = plugin.config;
+
+      return c.json(response);
+    },
+  );
+
+  // Create plugin config
+  const createPluginConfigSchema = configService.pluginConfigSchema;
+  const createPluginConfigResponseSchema = z.object({
+    id: z.string(),
+  });
+
+  app.post(
+    "/configs",
+    describeRoute({
+      tags: ["General"],
+      description: "Create a new plugin config",
+      responses: {
+        201: {
+          description: "Config created",
+          content: {
+            "application/json": {
+              schema: resolver(createPluginConfigResponseSchema),
+            },
+          },
+        },
+      },
+    }),
+    validator("json", createPluginConfigSchema),
+    async (c) => {
+      const data = c.req.valid("json");
+
+      const config = await configService.createConfig(data);
+
+      const response = {
+        id: config._id.toString(),
+      } satisfies z.infer<typeof createPluginConfigResponseSchema>;
+
+      return c.json(response, 201);
+    },
+  );
+
+  // Update plugin config
+  const updatePluginConfigSchema = configService.pluginConfigSchema;
+
+  app.put(
+    "/configs/:id",
+    describeRoute({
+      tags: ["General"],
+      description: "Update plugin config by ID",
+      responses: {
+        200: {
+          description: "Config updated",
+        },
+        404: {
+          description: "Plugin config not found",
+        },
+      },
+    }),
+    validator("json", updatePluginConfigSchema),
+    async (c) => {
+      const id = c.req.param("id");
+      const data = c.req.valid("json");
+
+      const config = await configService.updateConfig(id, data);
+
+      if (!config) {
+        return c.json({ error: "Plugin config not found" }, 404);
+      }
+
+      return c.status(200);
     },
   );
 

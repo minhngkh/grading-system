@@ -4,7 +4,6 @@ import { RubricStatus, type Rubric } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { FileUploader } from "@/components/app/file-uploader";
 import { InfoToolTip } from "@/components/app/info-tooltip";
@@ -16,17 +15,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { useDebounce } from "@/hooks/use-debounce";
-import { GradingService } from "@/services/grading-service";
+import { useDebounceUpdate } from "@/hooks/use-debounce";
 import CriteriaMapper from "./criteria-mapping";
 import { FileList } from "./file-list";
-import { getInfiniteRubricsQueryOptions } from "@/queries/rubric-queries";
-import { useMutation } from "@tanstack/react-query";
 import {
+  getInfiniteRubricsQueryOptions,
+  getRubricQueryOptions,
+} from "@/queries/rubric-queries";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
+import {
+  deleteSubmissionMutationOptions,
   updateGradingNameMutationOptions,
   updateGradingRubricMutationOptions,
   updateGradingScaleFactorMutationOptions,
   updateGradingSelectorsMutationOptions,
+  uploadSubmissionMutationOptions,
 } from "@/queries/grading-queries";
 
 interface UploadStepProps {
@@ -40,15 +43,23 @@ export default function UploadStep({ form }: UploadStepProps) {
   const [isFileDialogOpen, setFileDialogOpen] = useState(false);
   const [fileDialogAction, setFileDialogAction] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [moodleMode, setMoodleMode] = useState(false);
+
   const {
     register,
-    watch,
     setValue,
     setFocus,
     formState: { errors },
   } = form;
 
   const gradingAttempt = form.watch();
+
+  const { data: rubricData } = useQuery(
+    getRubricQueryOptions(gradingAttempt.rubricId, auth, {
+      placeholderData: keepPreviousData,
+      staleTime: Infinity,
+    }),
+  );
 
   useEffect(() => {
     const fields = Object.keys(errors);
@@ -72,18 +83,16 @@ export default function UploadStep({ form }: UploadStepProps) {
     updateGradingSelectorsMutationOptions(gradingAttempt.id, auth),
   );
 
-  const name = watch("name", gradingAttempt.name);
-  const debouncedName = useDebounce(name, 500);
-  const scaleFactor = watch("scaleFactor", gradingAttempt.scaleFactor ?? 10);
-  const debouncedScaleFactor = useDebounce(scaleFactor, 500);
+  const uploadFileMutation = useMutation(
+    uploadSubmissionMutationOptions(gradingAttempt.id, auth),
+  );
 
-  useEffect(() => {
-    updateNameMutation.mutate(debouncedName);
-  }, [debouncedName]);
+  const removeFileMutation = useMutation(
+    deleteSubmissionMutationOptions(gradingAttempt.id, auth),
+  );
 
-  useEffect(() => {
-    updateScaleFactorMutation.mutate(debouncedScaleFactor);
-  }, [debouncedScaleFactor]);
+  useDebounceUpdate(gradingAttempt.name, 500, updateNameMutation.mutate);
+  useDebounceUpdate(gradingAttempt.scaleFactor, 500, updateScaleFactorMutation.mutate);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
     await updateSelectorsMutation.mutateAsync(selectors);
@@ -107,12 +116,6 @@ export default function UploadStep({ form }: UploadStepProps) {
     if (isUploading) return;
     setIsUploading(true);
 
-    const token = await auth.getToken();
-    if (!token) {
-      console.error("Error updating rubric: No token found");
-      return toast.error("Unauthorized: You must be logged in to update rubric");
-    }
-
     const newFiles = files.filter(
       (file) => !uploadedFiles.some((existing) => existing.name === file.name),
     );
@@ -125,7 +128,7 @@ export default function UploadStep({ form }: UploadStepProps) {
       await Promise.all(
         newFiles.map(async (file, index) => {
           try {
-            await GradingService.uploadSubmission(gradingAttempt.id, file, token);
+            await uploadFileMutation.mutateAsync(file);
             const updatedFiles = [...uploadedFiles, file];
             setUploadedFiles(updatedFiles);
           } catch (error) {
@@ -148,31 +151,14 @@ export default function UploadStep({ form }: UploadStepProps) {
       ];
 
       setValue("submissions", newSubmissions);
-
       setIsUploading(false);
       setFileDialogOpen(false);
     }
   };
 
-  const handleRemoveSubmission = async (
-    submission: Submission,
-    token?: string | null,
-  ) => {
-    if (!token) {
-      token = await auth.getToken();
-    }
-
-    if (!token) {
-      console.error("Error updating rubric: No token found");
-      return toast.error("Unauthorized: You must be logged in to update rubric");
-    }
-
+  const handleRemoveSubmission = async (submission: Submission) => {
     try {
-      await GradingService.deleteSubmission(
-        gradingAttempt.id,
-        submission.reference,
-        token,
-      );
+      await removeFileMutation.mutateAsync(submission.reference);
 
       const updatedFiles = uploadedFiles.filter((file) => {
         return file.name !== `${submission.reference}.zip`;
@@ -192,19 +178,13 @@ export default function UploadStep({ form }: UploadStepProps) {
   };
 
   const handleRemoveAllSubmissions = async () => {
-    const token = await auth.getToken();
-    if (!token) {
-      console.error("Error updating rubric: No token found");
-      return toast.error("Unauthorized: You must be logged in to update rubric");
-    }
-
     setFileDialogAction("Removing");
     setProgress(0);
     setFileDialogOpen(true);
 
     await Promise.all(
       form.getValues("submissions").map(async (submission: Submission, index: number) => {
-        await handleRemoveSubmission(submission, token);
+        await handleRemoveSubmission(submission);
         const updatedProgress = Math.round(
           ((index + 1) * 100) / gradingAttempt.submissions.length,
         );
@@ -227,10 +207,6 @@ export default function UploadStep({ form }: UploadStepProps) {
             <Spinner />
             <Progress value={progress} className="w-full" />
             <span className="text-sm text-muted-foreground">{progress}% complete</span>
-            <div className="text-sm text-muted-foreground">
-              {fileDialogAction} {uploadedFiles.length + 1} of {uploadedFiles.length + 1}{" "}
-              files...
-            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -255,7 +231,7 @@ export default function UploadStep({ form }: UploadStepProps) {
         </div>
         <div className="flex items-center w-full gap-4">
           <ScrollableSelectMemo<Rubric>
-            value={gradingAttempt.rubricId}
+            value={rubricData}
             onValueChange={handleSelectRubric}
             queryOptionsFn={getInfiniteRubricsQueryOptions(auth, {
               status: RubricStatus.Draft,
@@ -306,24 +282,22 @@ export default function UploadStep({ form }: UploadStepProps) {
               <Label className="text-lg font-semibold">Upload Files</Label>
               <InfoToolTip description="Choose files to upload for grading. Only .zip files are accepted." />
             </div>
-            <Controller
-              control={form.control}
-              name="moodleMode"
-              render={({ field }) => (
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="moodleMode"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                  <Label htmlFor="moodleMode">Using Moodle Format</Label>
-                  <InfoToolTip description="Allow to upload files in Moodle format" />
-                </div>
-              )}
-            />
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="moodleMode"
+                checked={moodleMode}
+                onCheckedChange={() => setMoodleMode((prev) => !prev)}
+              />
+              <Label htmlFor="moodleMode">Using Moodle Format</Label>
+              <InfoToolTip description="Allow to upload files in Moodle format" />
+            </div>
           </div>
         </div>
-        <FileUploader onFileUpload={handleFileUpload} accept=".zip" multiple />
+        <FileUploader
+          onFileUpload={handleFileUpload}
+          accept=".zip"
+          multiple={!moodleMode}
+        />
       </div>
 
       <div className="space-y-1">
@@ -341,6 +315,9 @@ export default function UploadStep({ form }: UploadStepProps) {
           )}
         </div>
         <FileList gradingAttempt={gradingAttempt} onDelete={handleRemoveSubmission} />
+        {errors.submissions?.message && (
+          <p className="text-sm text-destructive">{errors.submissions.message}</p>
+        )}
         {gradingAttempt.submissions.length > 0 && (
           <CriteriaMapper
             gradingAttempt={gradingAttempt}
@@ -350,9 +327,6 @@ export default function UploadStep({ form }: UploadStepProps) {
         )}
         {errors.selectors?.message && (
           <p className="text-sm text-destructive">{errors.selectors.message}</p>
-        )}
-        {errors.submissions?.message && (
-          <p className="text-sm text-destructive">{errors.submissions.message}</p>
         )}
       </div>
     </div>
