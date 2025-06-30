@@ -25,7 +25,11 @@ export class PluginService {
     token: string,
   ): Promise<string> {
     const configHeaders = await this.buildHeaders(token);
-    const response = await axios.post(`${API_URL}/configs`, config, configHeaders);
+    const response = await axios.post(
+      `${API_URL}/test-runner/config`,
+      config,
+      configHeaders,
+    );
     return response.data.id;
   }
 
@@ -34,7 +38,19 @@ export class PluginService {
     token: string,
   ): Promise<CodeRunnerConfig> {
     const configHeaders = await this.buildHeaders(token);
-    const response = await axios.get(`${API_URL}/configs/${configId}`, configHeaders);
+    const response = await axios.get(
+      `${API_URL}/test-runner/config/${configId}`,
+      configHeaders,
+    );
+    return response.data;
+  }
+
+  static async getTestRunnerSupportedLanguages(token: string): Promise<string[]> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(
+      `${API_URL}/test-runner/config/languages`,
+      configHeaders,
+    );
     return response.data;
   }
 }
