@@ -1,10 +1,14 @@
-export function getScoreDistribution(scores: number[]): number[] {
-  const bins = new Array(10).fill(0);
+export function getScoreDistribution(
+  scores: number[],
+  max: number = 100,
+  binsCount: number = 10,
+): number[] {
+  const bins = new Array(binsCount).fill(0);
 
   scores.forEach((score) => {
-    const percentage = score; // assuming out of 100
-    let index = Math.floor(percentage / 10);
-    if (index === 10) index = 9; // handle edge case for 100
+    const percentage = (score / max) * 100;
+    let index = Math.floor((percentage / 100) * binsCount);
+    if (index === binsCount) index = binsCount - 1; // handle edge case for 100%
     bins[index]++;
   });
 
