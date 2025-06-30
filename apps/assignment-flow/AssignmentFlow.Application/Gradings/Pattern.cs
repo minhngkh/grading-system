@@ -94,7 +94,7 @@ public sealed class Pattern : StringValueObject
             return true;
             
         // Use the direct matching method
-        return _matcher.Match(value).HasMatches;
+        return _matcher.Match(rootDir, value).HasMatches;
     }
     
     /// <summary>
