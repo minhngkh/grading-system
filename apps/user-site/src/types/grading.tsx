@@ -36,7 +36,6 @@ export const GradingSchema = z.object({
   submissions: z.array(SubmissionSchema).min(1, {
     message: "At least one submission is required",
   }),
-  moodleMode: z.boolean().optional(),
 });
 
 export type CriteriaSelector = z.infer<typeof SelectorSchema>;
