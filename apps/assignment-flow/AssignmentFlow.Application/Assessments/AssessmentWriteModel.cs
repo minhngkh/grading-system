@@ -15,6 +15,9 @@ public class AssessmentWriteModel
     public ScaleFactor ScaleFactor { get; private set; } = ScaleFactor.TenPoint;
 
     public ScoreBreakdowns ScoreBreakdowns { get; private set; } = ScoreBreakdowns.Empty;
+
+    public HashSet<Criterion> Criteria { get; private set; } = [];
+
     public List<Feedback> Feedbacks { get; private set; } = [];
 
     public AssessmentStateMachine StateMachine { get; private set; } = new();
