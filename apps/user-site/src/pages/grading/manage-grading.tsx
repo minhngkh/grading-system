@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,7 +36,7 @@ import {
   Search,
   X,
 } from "lucide-react";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useDebounceUpdate } from "@/hooks/use-debounce";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { Link } from "@tanstack/react-router";
@@ -75,13 +75,10 @@ export default function ManageGradingsPage({
   const [searchTerm, setSearchTerm] = useState<string>(searchParams.search ?? "");
   const [exportGradingOpen, setExportGradingOpen] = useState(false);
   const [selectGradingIndex, setSelectGradingIndex] = useState<number | null>(null);
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
-
-  useEffect(() => {
-    if (searchParams.search !== debouncedSearchTerm) {
-      setSearchParam({ search: debouncedSearchTerm, page: 1 });
-    }
-  }, [debouncedSearchTerm, searchParams.search]);
+  useDebounceUpdate(searchTerm, 500, (value) => {
+    if (value === searchParams.search) return;
+    setSearchParam({ search: value, page: 1 });
+  });
 
   const sortedGradings = [...gradings].sort((a, b) => {
     if (!sortConfig.key) return 0;

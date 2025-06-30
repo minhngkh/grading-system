@@ -226,3 +226,19 @@ export const updateGradingNameMutationOptions = (
   },
   ...options,
 });
+
+export const getAssessmentSASTokenQueryOptions = (
+  id: string,
+  attachment: string,
+  auth: Auth,
+  options?: Partial<UseQueryOptions<string>>,
+): UseQueryOptions<string> => ({
+  queryKey: ["assessmentSASToken", id, attachment],
+  queryFn: async () => {
+    const token = await auth.getToken();
+    if (!token) throw new Error("Authentication token is required");
+    return GradingService.getAssessmentSASToken(id, attachment, token);
+  },
+  enabled: Boolean(id && attachment),
+  ...options,
+});

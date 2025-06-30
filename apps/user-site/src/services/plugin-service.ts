@@ -26,7 +26,6 @@ export class PluginService {
   ): Promise<string> {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.post(`${API_URL}/configs`, config, configHeaders);
-    console.log("Config response:", response.data);
     return response.data.id;
   }
 

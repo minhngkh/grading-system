@@ -12,7 +12,7 @@ import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useCallback, useState, memo } from "react";
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useDebounceUpdate } from "@/hooks/use-debounce";
 import type { SearchParams } from "@/types/search-params";
 import { InfiniteQueryOption } from "@/types/query";
 
@@ -45,7 +45,7 @@ function ScrollableSelect<T extends Item>({
 }: ScrollableSelectProps<T>) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearchTerm = useDebounce(searchTerm, DEBOUNCE_DELAY);
+  const debouncedSearchTerm = useDebounceUpdate(searchTerm, DEBOUNCE_DELAY);
 
   const { data, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery(

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Rubric } from "@/types/rubric";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,7 +36,7 @@ import {
   Search,
   X,
 } from "lucide-react";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useDebounceUpdate } from "@/hooks/use-debounce";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
 import { ExportDialog } from "@/components/app/export-dialog";
@@ -73,14 +73,10 @@ export default function ManageRubricsPage({
   const [selectedRubricIndex, setSelectedRubricIndex] = useState<number | null>(null);
   const [exportRubricOpen, setExportRubricOpen] = useState<boolean>(false);
   const router = useRouter();
-
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
-  useEffect(() => {
-    // only reset to page 1 when search term actually changed
-    if (searchParams.search !== debouncedSearchTerm) {
-      setSearchParam({ search: debouncedSearchTerm, page: 1 });
-    }
-  }, [debouncedSearchTerm, searchParams.search]);
+  useDebounceUpdate(searchTerm, 500, (value) => {
+    if (value === searchParams.search) return;
+    setSearchParam({ search: value, page: 1 });
+  });
 
   // Remove client filtering - use rubrics directly
   const sortedRubrics = [...rubrics].sort((a, b) => {

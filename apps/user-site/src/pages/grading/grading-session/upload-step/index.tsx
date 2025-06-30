@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useDebounceUpdate } from "@/hooks/use-debounce";
 import { GradingService } from "@/services/grading-service";
 import CriteriaMapper from "./criteria-mapping";
 import { FileList } from "./file-list";
@@ -82,17 +82,9 @@ export default function UploadStep({ form }: UploadStepProps) {
   );
 
   const name = watch("name", gradingAttempt.name);
-  const debouncedName = useDebounce(name, 500);
+  useDebounceUpdate(name, 500, updateNameMutation.mutate);
   const scaleFactor = watch("scaleFactor", gradingAttempt.scaleFactor ?? 10);
-  const debouncedScaleFactor = useDebounce(scaleFactor, 500);
-
-  useEffect(() => {
-    updateNameMutation.mutate(debouncedName);
-  }, [debouncedName]);
-
-  useEffect(() => {
-    updateScaleFactorMutation.mutate(debouncedScaleFactor);
-  }, [debouncedScaleFactor]);
+  useDebounceUpdate(scaleFactor, 500, updateScaleFactorMutation.mutate);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
     await updateSelectorsMutation.mutateAsync(selectors);
