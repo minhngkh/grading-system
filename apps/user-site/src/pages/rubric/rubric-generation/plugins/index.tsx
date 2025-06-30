@@ -111,6 +111,7 @@ export default function PluginRubricTable({
         />
         {ActivePluginConfigDialog && selectedCriterionIndex !== undefined && (
           <ActivePluginConfigDialog
+            configId={rubricData.criteria[selectedCriterionIndex]?.configuration}
             open={pluginDialogConfigOpen}
             onOpenChange={setPluginDialogConfigOpen}
             onCriterionConfigChange={handleConfigChange}

@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,10 +33,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { createCodeRunnerConfigMutationOptions } from "@/queries/plugin-queries";
-import { useMutation } from "@tanstack/react-query";
+import {
+  createCodeRunnerConfigMutationOptions,
+  getTestRunnerConfigQueryOptions,
+  getTestRunnerSupportedLanguagesQueryOptions,
+} from "@/queries/plugin-queries";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export default function CodeRunnerConfigDialog({
+  configId,
   open,
   onOpenChange,
   onCriterionConfigChange,
@@ -44,13 +49,40 @@ export default function CodeRunnerConfigDialog({
   const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultConfig, setDefaultConfig] = useState<CodeRunnerConfig>({
-    type: "",
+    language: "",
     initCommand: "",
     runCommand: "",
     testCases: [],
     environmentVariables: {},
   });
+
   const createConfigMutation = useMutation(createCodeRunnerConfigMutationOptions(auth));
+
+  const { data: initialConfig, isLoading: isLoadingConfig } = useQuery(
+    getTestRunnerConfigQueryOptions(configId!, auth, {
+      staleTime: Infinity,
+      enabled: !!configId,
+    }),
+  );
+
+  useEffect(() => {
+    if (!isLoadingConfig) return;
+
+    if (initialConfig) {
+      setDefaultConfig(initialConfig);
+      reset(initialConfig);
+    }
+  }, [isLoadingConfig]);
+
+  const {
+    data: languages,
+    isFetching: isFetchingLanguages,
+    isError: isFetchingConfigError,
+  } = useQuery(
+    getTestRunnerSupportedLanguagesQueryOptions(auth, {
+      staleTime: Infinity,
+    }),
+  );
 
   const form = useForm<CodeRunnerConfig>({
     resolver: zodResolver(CodeRunnerConfigSchema),
@@ -137,17 +169,10 @@ export default function CodeRunnerConfigDialog({
   };
 
   const onSubmit = async () => {
-    const token = await auth.getToken();
-    if (!token) {
-      return toast.error("You must be logged in to configure plugins.");
-    }
-
     setIsSubmitting(true);
     try {
-      // Validate the entire form
       const isValid = await trigger();
-
-      if (!isValid) return setIsSubmitting(false);
+      if (!isValid) return;
 
       const configId = await createConfigMutation.mutateAsync(config);
       onCriterionConfigChange?.(configId);
@@ -178,109 +203,120 @@ export default function CodeRunnerConfigDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-1 max-h-[80vh] overflow-y-auto">
-          <Form {...form}>
-            <form>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <FormField
-                    control={control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Language</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select a language" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="javascript">JavaScript</SelectItem>
-                            <SelectItem value="python">Python</SelectItem>
-                            <SelectItem value="java">Java</SelectItem>
-                            <SelectItem value="cpp">C++</SelectItem>
-                            <SelectItem value="c">C</SelectItem>
-                            <SelectItem value="csharp">C#</SelectItem>
-                            <SelectItem value="go">Go</SelectItem>
-                            <SelectItem value="rust">Rust</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
+        {isLoadingConfig ?
+          <div className="p-4 text-center">Loading configuration...</div>
+        : isFetchingConfigError ?
+          <div className="p-4 text-red-600">
+            Failed to load configuration. Please try again later.
+          </div>
+        : <>
+            <div className="p-1 max-h-[80vh] overflow-y-auto">
+              <Form {...form}>
+                <form>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-4">
+                      <FormField
+                        control={control}
+                        name="language"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Language</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select a language" />
+                                </SelectTrigger>
+                              </FormControl>
+                              {isFetchingLanguages ?
+                                <div>Loading languages...</div>
+                              : <SelectContent>
+                                  {languages?.map((lang) => (
+                                    <SelectItem key={lang} value={lang}>
+                                      {lang}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              }
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={control}
+                        name="initCommand"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Install Dependencies Command</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="e.g., npm install, pip install -r requirements.txt"
+                                className="w-full"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={control}
+                        name="runCommand"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Run Command</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="e.g., node main.js, python main.py"
+                                className="w-full"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <TestCasesTable
+                      testCases={config.testCases}
+                      onUpdateCell={updateCell}
+                      onDeleteRow={deleteRow}
+                    />
+                    {errors.testCases && (
+                      <p className="text-sm text-red-600">
+                        {errors.testCases.message || errors.testCases.root?.message}
+                      </p>
                     )}
-                  />
-
-                  <FormField
-                    control={control}
-                    name="initCommand"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Install Dependencies Command</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="e.g., npm install, pip install -r requirements.txt"
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    {errors.testCases?.root && (
+                      <p className="text-sm text-red-600">
+                        {errors.testCases.root.message}
+                      </p>
                     )}
-                  />
 
-                  <FormField
-                    control={control}
-                    name="runCommand"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Run Command</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="e.g., node main.js, python main.py"
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <TestCasesTable
-                  testCases={config.testCases}
-                  onUpdateCell={updateCell}
-                  onDeleteRow={deleteRow}
-                />
-                {errors.testCases && (
-                  <p className="text-sm text-red-600">
-                    {errors.testCases.message || errors.testCases.root?.message}
-                  </p>
-                )}
-                {errors.testCases?.root && (
-                  <p className="text-sm text-red-600">{errors.testCases.root.message}</p>
-                )}
-
-                <EnvironmentVariablesTable
-                  environmentVariables={config.environmentVariables}
-                  onUpdateEnvVar={updateEnvVar}
-                  onDeleteEnvVar={deleteEnvVar}
-                />
-              </div>
-            </form>
-          </Form>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline" disabled={isSubmitting}>
-              Cancel
-            </Button>
-          </DialogClose>
-          <Button onClick={onSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Confirm"}
-          </Button>
-        </DialogFooter>
+                    <EnvironmentVariablesTable
+                      environmentVariables={config.environmentVariables}
+                      onUpdateEnvVar={updateEnvVar}
+                      onDeleteEnvVar={deleteEnvVar}
+                    />
+                  </div>
+                </form>
+              </Form>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" disabled={isSubmitting}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button onClick={onSubmit} disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Confirm"}
+              </Button>
+            </DialogFooter>
+          </>
+        }
       </DialogContent>
     </Dialog>
   );
