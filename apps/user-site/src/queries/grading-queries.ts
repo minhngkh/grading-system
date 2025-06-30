@@ -153,12 +153,12 @@ export const updateGradingSelectorsMutationOptions = (
 export const uploadSubmissionMutationOptions = (
   id: string,
   auth: Auth,
-  options?: Partial<UseMutationOptions<unknown, unknown, File>>,
-): UseMutationOptions<unknown, unknown, File> => ({
-  mutationFn: async (file: File) => {
+  options?: Partial<UseMutationOptions<string[], unknown, File[]>>,
+): UseMutationOptions<string[], unknown, File[]> => ({
+  mutationFn: async (files: File[]) => {
     const token = await auth.getToken();
     if (!token) throw new Error("Authentication token is required");
-    return GradingService.uploadSubmission(id, file, token);
+    return GradingService.uploadSubmission(id, files, token);
   },
   ...options,
 });

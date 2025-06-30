@@ -14,7 +14,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { useDebounceUpdate } from "@/hooks/use-debounce";
 import CriteriaMapper from "./criteria-mapping";
 import { FileList } from "./file-list";
@@ -39,7 +38,6 @@ interface UploadStepProps {
 export default function UploadStep({ form }: UploadStepProps) {
   const auth = useAuth();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [progress, setProgress] = useState(0);
   const [isFileDialogOpen, setFileDialogOpen] = useState(false);
   const [fileDialogAction, setFileDialogAction] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -122,30 +120,14 @@ export default function UploadStep({ form }: UploadStepProps) {
 
     if (newFiles.length > 0) {
       setFileDialogAction("Uploading");
-      setProgress(0);
       setFileDialogOpen(true);
 
-      await Promise.all(
-        newFiles.map(async (file, index) => {
-          try {
-            await uploadFileMutation.mutateAsync(file);
-            const updatedFiles = [...uploadedFiles, file];
-            setUploadedFiles(updatedFiles);
-          } catch (error) {
-            toast.error(`Failed to upload ${file.name}`);
-            console.error("Error uploading file:", error);
-          } finally {
-            const updatedProgress = Math.round(((index + 1) * 100) / newFiles.length);
-            setProgress(updatedProgress);
-          }
-        }),
-      );
-
+      const uploadRefs = await uploadFileMutation.mutateAsync(newFiles);
       const newSubmissions = [
         ...gradingAttempt.submissions,
-        ...newFiles.map((file) => {
+        ...uploadRefs.map((ref) => {
           return {
-            reference: file.name.replace(/\.[^/.]+$/, ""),
+            reference: ref,
           };
         }),
       ];
@@ -179,18 +161,16 @@ export default function UploadStep({ form }: UploadStepProps) {
 
   const handleRemoveAllSubmissions = async () => {
     setFileDialogAction("Removing");
-    setProgress(0);
     setFileDialogOpen(true);
 
     await Promise.all(
-      form.getValues("submissions").map(async (submission: Submission, index: number) => {
+      form.getValues("submissions").map(async (submission: Submission) => {
         await handleRemoveSubmission(submission);
-        const updatedProgress = Math.round(
-          ((index + 1) * 100) / gradingAttempt.submissions.length,
-        );
-        setProgress(updatedProgress);
       }),
     );
+
+    setValue("submissions", []);
+    setUploadedFiles([]);
 
     setFileDialogOpen(false);
   };
@@ -205,8 +185,7 @@ export default function UploadStep({ form }: UploadStepProps) {
           </DialogHeader>
           <div className="flex flex-col items-center justify-center gap-4 py-4">
             <Spinner />
-            <Progress value={progress} className="w-full" />
-            <span className="text-sm text-muted-foreground">{progress}% complete</span>
+            <span className="text-sm text-muted-foreground">Please wait...</span>
           </div>
         </DialogContent>
       </Dialog>
