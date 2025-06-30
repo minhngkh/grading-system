@@ -2,6 +2,7 @@ using EventFlow.ValueObjects;
 using Google.Protobuf;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Numerics;
 
 namespace AssignmentFlow.Application.Assessments;
 
@@ -11,7 +12,8 @@ namespace AssignmentFlow.Application.Assessments;
 [JsonConverter(typeof(ScoreBreakdownItemConverter))]
 public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakdownItem>
 {
-    public static ScoreBreakdownItem Pending(CriterionName criterion) => new(criterion) { Status = "Pending" };
+    public static ScoreBreakdownItem Pending(string criterion) => new(CriterionName.New(criterion)) { Status = "Pending" };
+    public static ScoreBreakdownItem Mannual(string criterion) => new(CriterionName.New(criterion)) { Status = "Mannual" };
 
     public Grader Grader { get; init; } = Grader.AIGrader;
 
@@ -44,12 +46,7 @@ public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakd
         CriterionName = criterionName;
     }
 
-    public void NormalizeRawScore(decimal factor)
-    {
-        RawScore *= (factor / 100);
-    }
-
-    public bool IsCompleted => Status == "Graded" || Status == "Failed";
+    public bool IsCompleted => Status == "Graded" || Status == "Failed" || Status == "Mannual";
 
     public void MarkAsGraded()
     {
@@ -73,6 +70,14 @@ public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakd
             Status = Status,
             FailureReason = FailureReason
         };
+    }
+
+    public ScoreBreakdownItem NormalizedScore(IEnumerable<Criterion> criteria)
+    {
+        var item = Clone();
+        var criterion = criteria.FirstOrDefault(c => c.Name == CriterionName);
+        item.RawScore *= (criterion?.Weight ?? 0) / 100m; // Normalize score based on criterion weight
+        return item;
     }
 
     // Adds RawScores if other item matches the CriterionName and PerformanceTag
