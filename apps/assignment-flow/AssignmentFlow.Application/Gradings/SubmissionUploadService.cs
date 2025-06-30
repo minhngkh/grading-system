@@ -103,12 +103,11 @@ public class SubmissionUploadService(BlobServiceClient client) : ISubmissionUplo
             var (submissionReference, entry) = submission;
             using var stream = entry.Open(); // Open the stream for the zip entry
             var blobEntries = await ProcessAttachments(
-                gradingId,
-                entry.Name,
-                "application/zip",
-                stream,
-                submissionReference,
-                container,
+                baseBlobPath: $"{gradingId}/{submissionReference}/",
+                fileName: entry.Name,
+                contentType: "application/zip",
+                fileStream: stream,
+                container: container,
                 cancellationToken
             ).ToListAsync(cancellationToken: cancellationToken);
 
@@ -129,13 +128,13 @@ public class SubmissionUploadService(BlobServiceClient client) : ISubmissionUplo
         {
             var (submissionReference, file) = submission;
             using var stream = file.OpenReadStream(); // Open the stream for the file
+
             var blobEntries = await ProcessAttachments(
-                gradingId,
-                file.FileName,
-                file.ContentType,
-                stream,
-                submissionReference,
-                container,
+                baseBlobPath: $"{gradingId}/{submissionReference}/",
+                fileName: file.FileName,
+                contentType: file.ContentType,
+                fileStream: stream,
+                container: container,
                 cancellationToken
             ).ToListAsync(cancellationToken: cancellationToken);
 
@@ -145,19 +144,15 @@ public class SubmissionUploadService(BlobServiceClient client) : ISubmissionUplo
         return [.. result];
     }
     
-    private async IAsyncEnumerable<Attachment> ProcessAttachments(
-        GradingId gradingId,
+    private static async IAsyncEnumerable<Attachment> ProcessAttachments(
+        string baseBlobPath,
         string fileName,
         string contentType,
         Stream fileStream,
-        SubmissionReference submissionReference,
         BlobContainerClient container,
         [EnumeratorCancellation] CancellationToken cancellationToken
     )
     {
-        var baseBlobPath = $"{gradingId}/{submissionReference}/";
-        var submissionBlobBasePath = $"{submissionReference}/";
-
         if (!SupportedZipMimeTypes.Contains(contentType))
         {
             // Single file upload
@@ -165,7 +160,7 @@ public class SubmissionUploadService(BlobServiceClient client) : ISubmissionUplo
             var blob = container.GetBlobClient(blobName);
             await blob.UploadAsync(fileStream, cancellationToken);
 
-            yield return Attachment.New(submissionBlobBasePath + fileName);
+            yield return Attachment.New(fileName);
         }
         else
         {
@@ -196,7 +191,7 @@ public class SubmissionUploadService(BlobServiceClient client) : ISubmissionUplo
 
                 await blob.UploadAsync(entryStream, uploadOptions, cancellationToken);
 
-                yield return Attachment.New(submissionBlobBasePath + entry.FullName);
+                yield return Attachment.New(entry.FullName);
             }
         }
     }

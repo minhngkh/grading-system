@@ -50,7 +50,7 @@ public class StartAutoGradingCommandHandler(
             (submissionCriterion, rubricCriterion) => new Criterion
             {
                 CriterionName = rubricCriterion.Name,
-                FileRefs = [.. submissionCriterion.Files.Select(path => $"{gradingId}/{path}")],
+                FileRefs = [.. submissionCriterion.Files.Select(path => $"{gradingId}/{submission.Reference}/{path}")],
                 Levels = [.. rubricCriterion.Levels.Select(l => new Level
                 {
                     Tag = l.Tag,

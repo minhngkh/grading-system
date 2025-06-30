@@ -12,5 +12,7 @@ public sealed class Attachment : StringValueObject
 
     protected override int? MaxLength => ModelConstants.VeryLongText;
 
+    protected override bool AllowEmpty => true;
+
     public static Attachment New(string value) => new(value);
 }
