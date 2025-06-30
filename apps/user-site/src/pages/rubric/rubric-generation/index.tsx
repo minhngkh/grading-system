@@ -112,10 +112,10 @@ export default function RubricGenerationPage({
             Back
           </Button>
           <Button disabled={isNextDisabled()} onClick={handleNext}>
-            {location.search?.redirect ?
-              "Back to grading"
-            : stepper.isLast ?
-              "Save"
+            {stepper.isLast ?
+              location.search?.redirect ?
+                "Back to grading"
+              : "Save"
             : "Next"}
           </Button>
         </div>

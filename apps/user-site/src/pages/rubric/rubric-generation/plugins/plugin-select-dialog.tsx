@@ -24,7 +24,7 @@ interface PluginItemProps {
 
 const PluginItem = React.memo<PluginItemProps>(({ plugin, isSelected, onSelect }) => (
   <Card
-    onClick={() => onSelect(plugin.name)}
+    onClick={() => onSelect(plugin.alias)}
     className={cn(
       "cursor-pointer transition-shadow hover:shadow-md border rounded-md gap-2",
       isSelected && "bg-muted",
@@ -50,11 +50,22 @@ export function PluginSelectDialog({
   onSelect,
 }: PluginSelectDialogProps) {
   const auth = useAuth();
-  const { isLoading, data: plugins } = useQuery(
+  const { isLoading, data } = useQuery(
     getAllPluginsQueryOptions(auth, {
       staleTime: Infinity,
     }),
   );
+
+  const plugins: Plugin[] = [
+    ...(data || []),
+    {
+      alias: "None",
+      name: "Manual Grading",
+      description: "Leave this criterion ungraded and manually grade later",
+      enabled: true,
+      categories: [],
+    },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -81,7 +92,7 @@ export function PluginSelectDialog({
             {plugins.map((plugin, index) => {
               const isSelected =
                 (!currentPlugin && plugin.alias === "ai") ||
-                currentPlugin === plugin.name;
+                currentPlugin === plugin.alias;
               return (
                 <PluginItem
                   key={`${plugin.name}-${index}`}

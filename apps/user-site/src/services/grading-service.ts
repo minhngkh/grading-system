@@ -1,11 +1,6 @@
 import { buildFilterExpr, contains, eq } from "@/lib/json-api-query";
 import { GradingAnalytics, OverallGradingAnalytics } from "@/types/analytics";
-import {
-  CriteriaSelector,
-  GradingAttempt,
-  GradingStatus,
-  Submission,
-} from "@/types/grading";
+import { CriteriaSelector, GradingAttempt, GradingStatus } from "@/types/grading";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import axios, { AxiosRequestConfig } from "axios";
 import { Deserializer } from "jsonapi-serializer";
@@ -129,19 +124,17 @@ export class GradingService {
 
   static async uploadSubmission(
     id: string,
-    file: File,
+    files: File[],
     token: string,
-  ): Promise<Submission> {
+  ): Promise<string[]> {
     const configHeaders = this.buildFileHeaders(token);
-    const response = await axios.post(
+    const responses = await axios.post(
       `${GRADING_API_URL}/${id}/submissions`,
-      {
-        file,
-      },
+      { files },
       configHeaders,
     );
 
-    return { reference: response.data };
+    return responses.data.map((ref: any) => ref.value);
   }
 
   static async startGrading(id: string, token: string) {

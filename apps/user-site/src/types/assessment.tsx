@@ -3,6 +3,7 @@ import { z } from "zod";
 export const ScoreBreakdownSchema = z.object({
   criterionName: z.string(),
   performanceTag: z.string(),
+  grader: z.string(),
   rawScore: z.number(),
   metadata: z.array(z.string()).optional(),
   status: z.enum(["graded", "notgraded"]).optional(),
