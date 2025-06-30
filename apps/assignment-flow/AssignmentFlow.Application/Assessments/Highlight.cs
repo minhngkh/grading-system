@@ -10,6 +10,8 @@ namespace AssignmentFlow.Application.Assessments;
 [JsonConverter(typeof(HighlightConverter))]
 public sealed class Highlight : ValueObject
 {
+    public static readonly Highlight Empty = new(Attachment.Empty, string.Empty);
+
     public Attachment Attachment { get; private set; }
 
     /// <summary>

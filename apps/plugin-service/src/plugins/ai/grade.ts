@@ -1,6 +1,5 @@
 import type { FilePart } from "ai";
 import type { LanguageModelWithOptions } from "@/core/llm/types";
-import { fstat } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -207,6 +206,24 @@ export function gradeSubmission(data: {
       );
     }
 
+    let firstFileRef;
+    for (const critData of data.criterionDataList) {
+      if (critData.fileRefs.length === 0) {
+        continue;
+      }
+      firstFileRef = critData.fileRefs[0];
+      break;
+    }
+
+    if (firstFileRef === undefined) {
+      return errAsync(
+        new EmptyListError({
+          message: "No file to grade",
+          data: undefined,
+        }),
+      );
+    }
+
     const rubricContext = yield* generateRubricContext({
       blobNameList: data.attachments,
       metadata: data.metadata,
@@ -221,9 +238,7 @@ export function gradeSubmission(data: {
     //   return `${root}-${dir}`;
     // });
 
-    const { root: gradingRef, rest } = getBlobNameParts(
-      data.criterionDataList[0].fileRefs[0],
-    );
+    const { root: gradingRef, rest } = getBlobNameParts(firstFileRef);
     const { root: submissionRef } = getBlobNameParts(rest);
     const sourceId = `${gradingRef}-${submissionRef}`;
     const blobNameRoot = `${gradingRef}/${submissionRef}`;
@@ -346,11 +361,12 @@ export function gradeSubmission(data: {
               ...r,
               feedback: r.feedback.map((fb) => ({
                 ...fb,
-                // FIXME: handle this case
-                fileRef: `${blobNameRoot}/${fb.fileRef}`,
+                // FIXME: handle cases where fileRef is not in the blobNameRoot
+                // fileRef: `${blobNameRoot}/${fb.fileRef}`,
+                fileRef: `${submissionRef}/${fb.fileRef}`,
               })),
               ignoredFiles: value.mediaData.ignoredNameRestList.map(
-                (nameRest) => `${blobNameRoot}/${nameRest}`,
+                (nameRest) => `${submissionRef}/${nameRest}`,
               ),
             })),
           );

@@ -41,7 +41,11 @@ public static class ValueObjectExtensions
             MetadataJson = JsonSerializer.Serialize(metadata),
             Grader = grader
         };
-        var feedbackItems = apiContract.FeedbackItems.ConvertAll(fb => fb.ToValueObject(criterionName));
+
+        List<Feedback> feedbackItems = [
+            Feedback.Summary(criterionName, Comment.New(apiContract.Summary)),
+            ..apiContract.FeedbackItems.Select(fb => fb.ToValueObject(criterionName))
+        ];
 
         return (breakdownItem, feedbackItems);
     }
