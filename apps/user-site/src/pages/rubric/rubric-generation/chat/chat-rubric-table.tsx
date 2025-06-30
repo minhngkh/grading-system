@@ -29,8 +29,8 @@ const RubricView = lazy(() =>
 );
 
 function areRecordsEqual(
-  a: Record<string, string> | undefined,
-  b: Record<string, string> | undefined,
+  a: Record<string, string> | undefined | null,
+  b: Record<string, string> | undefined | null,
 ): boolean {
   if (a === b) return true;
   if (!a || !b) return false;

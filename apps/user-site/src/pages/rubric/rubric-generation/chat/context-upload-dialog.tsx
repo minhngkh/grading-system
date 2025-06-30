@@ -20,8 +20,8 @@ interface KeyValuePair {
 }
 
 interface RubricContextUploadDialogProps {
-  attachments?: string[];
-  metadata?: Record<string, string>;
+  attachments?: string[] | null;
+  metadata?: Record<string, string> | null;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onConfirm?: (
@@ -43,7 +43,7 @@ export const RubricContextUploadDialog = memo(
   }: RubricContextUploadDialogProps) => {
     const [contextFiles, setContextFiles] = useState<File[]>([]);
     const [currentAttachments, setCurrentAttachments] = useState<string[] | undefined>(
-      attachments,
+      attachments ?? [],
     );
     const [currentKeyValuePairs, setCurrentKeyValuePairs] = useState<KeyValuePair[]>(
       metadata && Object.entries(metadata).length > 0 ?

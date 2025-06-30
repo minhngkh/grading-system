@@ -38,7 +38,6 @@ export default function CodeRunnerConfigDialog({
   open,
   onOpenChange,
   onCriterionConfigChange,
-  criterionIndex,
 }: PluginDialogConfigProps) {
   const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -155,7 +154,7 @@ export default function CodeRunnerConfigDialog({
       if (!isValid) return setIsSubmitting(false);
 
       toast.success("Code Runner configuration saved successfully!");
-      onCriterionConfigChange?.("config", criterionIndex);
+      onCriterionConfigChange?.(JSON.stringify(config));
       onOpenChange?.(false);
       setDefaultConfig(config);
     } catch (error) {

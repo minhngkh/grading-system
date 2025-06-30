@@ -57,6 +57,7 @@ export const getGradingAttemptQueryOptions = (
     const token = await auth.getToken();
     return GradingService.getGradingAttempt(id, token!);
   },
+  enabled: Boolean(id),
   ...options,
 });
 

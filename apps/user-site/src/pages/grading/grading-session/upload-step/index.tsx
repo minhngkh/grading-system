@@ -20,8 +20,11 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { GradingService } from "@/services/grading-service";
 import CriteriaMapper from "./criteria-mapping";
 import { FileList } from "./file-list";
-import { getInfiniteRubricsQueryOptions } from "@/queries/rubric-queries";
-import { useMutation } from "@tanstack/react-query";
+import {
+  getInfiniteRubricsQueryOptions,
+  getRubricQueryOptions,
+} from "@/queries/rubric-queries";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import {
   updateGradingNameMutationOptions,
   updateGradingRubricMutationOptions,
@@ -47,8 +50,13 @@ export default function UploadStep({ form }: UploadStepProps) {
     setFocus,
     formState: { errors },
   } = form;
-
   const gradingAttempt = form.watch();
+
+  const { data: rubricData } = useQuery(
+    getRubricQueryOptions(gradingAttempt.rubricId, auth, {
+      placeholderData: keepPreviousData,
+    }),
+  );
 
   useEffect(() => {
     const fields = Object.keys(errors);
@@ -148,7 +156,6 @@ export default function UploadStep({ form }: UploadStepProps) {
       ];
 
       setValue("submissions", newSubmissions);
-
       setIsUploading(false);
       setFileDialogOpen(false);
     }
@@ -255,7 +262,7 @@ export default function UploadStep({ form }: UploadStepProps) {
         </div>
         <div className="flex items-center w-full gap-4">
           <ScrollableSelectMemo<Rubric>
-            value={gradingAttempt.rubricId}
+            value={rubricData}
             onValueChange={handleSelectRubric}
             queryOptionsFn={getInfiniteRubricsQueryOptions(auth, {
               status: RubricStatus.Draft,

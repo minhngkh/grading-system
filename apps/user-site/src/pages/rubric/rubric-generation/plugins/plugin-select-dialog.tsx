@@ -1,14 +1,14 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { PluginService } from "@/services/plugin-service";
 import { Plugin } from "@/types/plugin";
 import { Criteria } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { toast } from "sonner";
+import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Check } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getAllPluginsQueryOptions } from "@/queries/plugin-queries";
 
 interface PluginSelectDialogProps {
   open: boolean;
@@ -50,68 +50,8 @@ export function PluginSelectDialog({
   onOpenChange,
   onSelect,
 }: PluginSelectDialogProps) {
-  const [plugins, setPlugins] = useState<Plugin[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const auth = useAuth();
-
-  useEffect(() => {
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, []);
-
-  const fetchPlugins = useCallback(async () => {
-    try {
-      setIsLoading(true);
-
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = new AbortController();
-
-      const token = await auth.getToken();
-      if (!token) {
-        throw new Error("Unauthorized: No token found");
-      }
-
-      const plugins = await PluginService.getAll(token);
-      if (!abortControllerRef.current.signal.aborted) {
-        setPlugins([
-          ...plugins,
-          {
-            alias: "none",
-            name: "No Plugin",
-            description: "Select this option if you don't want to use a plugin.",
-            categories: [],
-            enabled: true,
-          },
-        ]);
-      }
-    } catch (error) {
-      if (!abortControllerRef.current?.signal.aborted) {
-        toast.error("Failed to fetch plugins. Please try again later.");
-        console.error("Error fetching plugins:", error);
-        setPlugins([
-          {
-            alias: "none",
-            name: "No Plugin",
-            description: "Select this option if you don't want to use a plugin.",
-            categories: [],
-            enabled: true,
-          },
-        ]);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      fetchPlugins();
-    } else {
-      abortControllerRef.current?.abort();
-    }
-  }, [open, fetchPlugins]);
+  const { isLoading, data: plugins } = useQuery(getAllPluginsQueryOptions(auth));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -125,6 +65,10 @@ export function PluginSelectDialog({
         {isLoading ?
           <div className="flex justify-center items-center py-8">
             <div className="text-muted-foreground">Loading plugins...</div>
+          </div>
+        : plugins === undefined ?
+          <div className="flex justify-center items-center py-8">
+            <div className="text-red-500">Failed to load plugins. Please try again.</div>
           </div>
         : plugins.length === 0 ?
           <div className="flex justify-center items-center py-8">

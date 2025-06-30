@@ -201,7 +201,7 @@ export function ViewRubricDialog({
     if (validationState.showLoading) return "Loading Rubric";
     if (validationState.showError) return "Error Loading Rubric";
     if (validationState.showNoRubric) return "Rubric Not Found";
-    if (rubric) return rubric.rubricName;
+    if (rubric) return rubric.name;
     return "View Rubric";
   };
 

@@ -252,7 +252,7 @@ const EditRubric = memo(function EditRubric({
             </Label>
             <Input
               id="rubric-name"
-              value={formData.rubricName}
+              value={formData.name}
               onChange={(e) => handleRubricNameChange(e.target.value)}
               className="font-bold"
               placeholder="Enter rubric name"
