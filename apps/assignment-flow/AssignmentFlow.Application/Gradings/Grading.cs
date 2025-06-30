@@ -65,8 +65,7 @@ public class Grading
             {
                 Criterion = selector.Criterion,
                 Files = [.. s.Attachments.Where(attachment => {
-                    //"<submission-reference>/**"
-                    return Pattern.New(selector.Pattern).Match($"{s.Reference}/", attachment);
+                    return Pattern.New(selector.Pattern).Match(attachment);
                 })]
             })
         });
