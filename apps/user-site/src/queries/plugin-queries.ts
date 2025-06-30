@@ -21,7 +21,7 @@ export function getAllPluginsQueryOptions(
   };
 }
 
-export function getPluginConfigQueryOptions(
+export function getTestRunnerConfigQueryOptions(
   configId: string,
   auth: Auth,
   options?: Partial<UseQueryOptions<TestRunnerConfig, unknown>>,
@@ -47,6 +47,21 @@ export function createCodeRunnerConfigMutationOptions(
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required");
       return PluginService.configTestRunner(config, token);
+    },
+    ...options,
+  };
+}
+
+export function getTestRunnerSupportedLanguagesQueryOptions(
+  auth: Auth,
+  options?: Partial<UseQueryOptions<string[], unknown>>,
+): UseQueryOptions<string[], unknown> {
+  return {
+    queryKey: ["test-runner", "languages"],
+    queryFn: async () => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication token is required");
+      return PluginService.getTestRunnerSupportedLanguages(token);
     },
     ...options,
   };
