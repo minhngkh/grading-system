@@ -24,7 +24,7 @@ export function getInfiniteRubricsQueryOptions(
   number
 > {
   return (params: SearchParams) => ({
-    queryKey: ["gradingAttempts", { ...params, ...baseParams }],
+    queryKey: ["rubrics", { ...params, ...baseParams }],
     queryFn: async ({ pageParam }) => {
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required");

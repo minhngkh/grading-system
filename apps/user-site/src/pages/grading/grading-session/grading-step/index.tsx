@@ -199,10 +199,10 @@ export default function GradingProgressStep({
         </div>
       ))}
       {gradingAttemptValues.status === GradingStatus.Started && (
-        <div className="flex justify-center">
-          <p>
-            You can go home and come back later to check the grading progress. We'll
-            notify you when it's done.
+        <div className="flex flex-col w-full items-center gap-2">
+          <p className="text-center">
+            You can go home and come back later to check the grading progress. <br />{" "}
+            We'll notify you when it's done.
           </p>
           <Button
             onClick={() =>
