@@ -54,7 +54,7 @@ export function AssessmentResultCard({
             </h3>
             {!isGradingFailed && (
               <span className="text-2xl font-bold">
-                {(item.rawScore * scaleFactor) / 100} point(s)
+                {((item.rawScore * scaleFactor) / 100).toFixed(2)} point(s)
               </span>
             )}
           </div>
