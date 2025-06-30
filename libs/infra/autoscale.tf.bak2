@@ -1,0 +1,112 @@
+# Autoscale Settings for Judge0 Server and Workers
+# Zero-cost scaling configuration
+
+# Server Autoscale Setting
+resource "azurerm_monitor_autoscale_setting" "judge0_server_autoscale" {
+  name                = "judge0-server-autoscale"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  target_resource_id  = azurerm_container_app.judge0_server.id
+  enabled             = true
+
+  profile {
+    name = "default-profile"
+
+    capacity {
+      default = 1
+      minimum = 0
+      maximum = var.max_servers
+    }
+
+    # Scale UP Rules
+    rule {
+      metric_trigger {
+        metric_name        = "Requests"
+        metric_resource_id = azurerm_container_app.judge0_server.id
+        time_grain         = "PT1M"
+        statistic          = "Average"
+        time_window        = "PT5M"
+        time_aggregation   = "Average"
+        operator           = "GreaterThan"
+        threshold          = 5
+      }
+
+      scale_action {
+        direction = "Increase"
+        type      = "ChangeCount"
+        value     = "1"
+        cooldown  = "PT2M"
+      }
+    }
+
+    rule {
+      metric_trigger {
+        metric_name        = "Http2xx"
+        metric_resource_id = azurerm_container_app.judge0_server.id
+        time_grain         = "PT1M"
+        statistic          = "Average"
+        time_window        = "PT2M"
+        time_aggregation   = "Average"
+        operator           = "GreaterThan"
+        threshold          = 0
+      }
+
+      scale_action {
+        direction = "Increase"
+        type      = "ExactCount"
+        value     = "1"
+        cooldown  = "PT1M"
+      }
+    }
+
+    # Scale DOWN Rules
+    rule {
+      metric_trigger {
+        metric_name        = "Requests"
+        metric_resource_id = azurerm_container_app.judge0_server.id
+        time_grain         = "PT1M"
+        statistic          = "Average"
+        time_window        = "PT10M"
+        time_aggregation   = "Average"
+        operator           = "LessThan"
+        threshold          = 1
+      }
+
+      scale_action {
+        direction = "Decrease"
+        type      = "ChangeCount"
+        value     = "1"
+        cooldown  = "PT5M"
+      }
+    }
+
+    rule {
+      metric_trigger {
+        metric_name        = "Requests"
+        metric_resource_id = azurerm_container_app.judge0_server.id
+        time_grain         = "PT1M"
+        statistic          = "Average"
+        time_window        = "PT15M"
+        time_aggregation   = "Total"
+        operator           = "LessThan"
+        threshold          = 1
+      }
+
+      scale_action {
+        direction = "Decrease"
+        type      = "ExactCount"
+        value     = "0"
+        cooldown  = "PT10M"
+      }
+    }
+  }
+
+  tags = {
+    Environment = "production"
+    Application = "judge0"
+    Component   = "server-autoscale"
+  }
+}
+
+# Note: Container Instances do not support autoscaling
+# For demonstration purposes, we use a single always-running worker instance
