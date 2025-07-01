@@ -17,7 +17,7 @@ import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 import { useAuth } from "@clerk/clerk-react";
 
 const PluginConfigDialogs: Record<string, PluginDialogComponent> = {
-  "Test Runner": CodeRunnerConfigDialog,
+  "test-runner": CodeRunnerConfigDialog,
   // add other plugins here
 };
 
@@ -62,6 +62,7 @@ export default function PluginRubricTable({
       setPluginDialogOpen(false);
 
       const component = PluginConfigDialogs[plugin];
+      console.log(plugin);
       if (component) {
         setActivePluginConfigDialog(() => component);
         setPluginDialogConfigOpen(true);
