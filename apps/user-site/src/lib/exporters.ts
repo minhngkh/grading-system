@@ -23,7 +23,7 @@ export class RubricExporter implements DataExporter {
 
     // Header
     doc.setFontSize(16);
-    doc.text(`Rubric: ${this.rubric.name}`, 14, 20);
+    doc.text(`Rubric: ${this.rubric.rubricName}`, 14, 20);
     doc.setFontSize(10);
 
     // Build table head
@@ -78,7 +78,7 @@ export class RubricExporter implements DataExporter {
       tableLineColor: [80, 80, 80], // Dark gray border
     });
 
-    doc.save(`${this.rubric.name.replace(/\s+/g, "_")}_Rubric.pdf`);
+    doc.save(`${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.pdf`);
   }
 
   exportToExcel() {
@@ -151,7 +151,7 @@ export class RubricExporter implements DataExporter {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rubric");
 
     // Write to file and save
-    const fileName = `${this.rubric.name.replace(/\s+/g, "_")}_Rubric.xlsx`;
+    const fileName = `${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.xlsx`;
     XLSX.writeFile(workbook, fileName);
   }
 }
@@ -350,6 +350,24 @@ export class AssessmentExporter implements DataExporter {
   exportToPDF() {
     const doc = new jsPDF();
 
+    // Thêm font Unicode (ví dụ DejaVuSans)
+    // 1. Import font file đã convert sang js (xem hướng dẫn dưới)
+    // 2. doc.addFileToVFS("DejaVuSans.ttf", ...); doc.addFont("DejaVuSans.ttf", "DejaVuSans", "normal");
+    // 3. doc.setFont("DejaVuSans");
+
+    // Nếu bạn đã import font:
+    // doc.addFileToVFS("DejaVuSans.ttf", DejaVuSansFontBase64);
+    // doc.addFont("DejaVuSans.ttf", "DejaVuSans", "normal");
+    // doc.setFont("DejaVuSans");
+
+    // Nếu chưa có font, bạn cần convert font .ttf sang js bằng công cụ: https://github.com/simonbengtsson/jsPDF-AutoTable#use-custom-fonts
+
+    // Ví dụ:
+    // import DejaVuSansFont from './fonts/DejaVuSans-normal.js';
+    // doc.addFileToVFS("DejaVuSans.ttf", DejaVuSansFont);
+    // doc.addFont("DejaVuSans.ttf", "DejaVuSans", "normal");
+    // doc.setFont("DejaVuSans");
+
     doc.setFontSize(16);
     doc.text("Assessment Report", 14, 20);
 
@@ -371,7 +389,7 @@ export class AssessmentExporter implements DataExporter {
         textColor: [0, 0, 0],
         fontStyle: "bold",
       },
-      styles: { fontSize: 10 },
+      styles: { fontSize: 10, font: "DejaVuSans" }, // set font cho bảng
     });
 
     //
@@ -379,21 +397,28 @@ export class AssessmentExporter implements DataExporter {
 
     autoTable(doc, {
       startY: yAfter + 10,
-      head: [["Criterion", "Comment", "Tag", "File", "Lines", "Cols"]],
-      body: this.assessment.feedbacks.map((fb) => [
-        fb.criterion,
-        fb.comment,
-        fb.tag,
-        fb.fileRef.split("/").pop() ?? "",
-        `${fb.fromLine ?? "-"}–${fb.toLine ?? "-"}`,
-        `${fb.fromCol ?? "-"}–${fb.toCol ?? "-"}`,
-      ]),
+      head: [["Criterion", "Comment", "Tag", "File", "Position"]],
+      body: this.assessment.feedbacks.map((fb) => {
+        let position = "";
+        if (fb.locationData?.type === "text") {
+          position = `line: ${fb.locationData.fromLine ?? "-"}-${fb.locationData.toLine ?? "-"} col: ${fb.locationData.fromCol ?? "-"}-${fb.locationData.toCol ?? "-"}`;
+        } else if (fb.locationData?.type === "pdf") {
+          position = `page: ${fb.locationData.page ?? "-"}`;
+        } // image: để trống
+        return [
+          fb.criterion,
+          fb.comment,
+          fb.tag,
+          fb.fileRef.split("/").pop() ?? "",
+          position,
+        ];
+      }),
       headStyles: {
         fillColor: [200, 200, 200],
         textColor: [0, 0, 0],
         fontStyle: "bold",
       },
-      styles: { fontSize: 8 },
+      styles: { fontSize: 8, font: "DejaVuSans" }, // set font cho bảng
       margin: { left: 14, right: 14 },
     });
 
@@ -410,25 +435,42 @@ export class AssessmentExporter implements DataExporter {
     wsData.push([]);
 
     const scoreHeaderRow = wsData.length;
-    wsData.push(["Criterion", "Tag", "Score"]);
-    this.assessment.scoreBreakdowns.forEach((sb) =>
-      wsData.push([sb.criterionName, sb.performanceTag, sb.rawScore]),
-    );
+    wsData.push(["Criterion", "Tag", "Score", "Summary"]);
+    this.assessment.scoreBreakdowns.forEach((sb) => {
+      // Tìm summary feedback cho criterion này
+      const summaryFb = this.assessment.feedbacks.find(
+        (fb) => fb.tag === "summary" && fb.criterion === sb.criterionName,
+      );
+      wsData.push([
+        sb.criterionName,
+        sb.performanceTag,
+        sb.rawScore,
+        summaryFb ? summaryFb.comment : "",
+      ]);
+    });
     wsData.push([]);
 
     const feedbackHeaderRow = wsData.length;
-    wsData.push(["Criterion", "Comment", "Tag", "File", "Line", "Col"]);
+    wsData.push(["Criterion", "Comment", "Tag", "File", "Position"]);
 
-    this.assessment.feedbacks.forEach((fb) =>
-      wsData.push([
-        fb.criterion,
-        fb.comment,
-        fb.tag,
-        fb.fileRef.split("/").pop() ?? "",
-        `${fb.fromLine ?? "-"}–${fb.toLine ?? "-"}`,
-        `${fb.fromCol ?? "-"}–${fb.toCol ?? "-"}`,
-      ]),
-    );
+    this.assessment.feedbacks
+      .filter((fb) => fb.tag !== "summary")
+      .forEach((fb) => {
+        let position = "";
+        if (fb.locationData?.type === "text") {
+          position = `line: ${fb.locationData.fromLine ?? "-"}-${fb.locationData.toLine ?? "-"} col: ${fb.locationData.fromCol ?? "-"}-${fb.locationData.toCol ?? "-"}`;
+        } else if (fb.locationData?.type === "pdf") {
+          position = `page: ${fb.locationData.page ?? "-"}`;
+        }
+        // image: để trống
+        wsData.push([
+          fb.criterion,
+          fb.comment,
+          fb.tag,
+          fb.fileRef.split("/").pop() ?? "",
+          position,
+        ]);
+      });
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 

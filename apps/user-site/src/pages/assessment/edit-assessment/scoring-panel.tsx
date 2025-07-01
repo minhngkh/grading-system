@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { getTagColor } from "./icon-utils";
-import { Assessment } from "@/types/assessment";
+import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
 
@@ -18,6 +18,9 @@ interface ScoringPanelProps {
   isResizing: boolean;
   handleMouseDown: (e: React.MouseEvent) => void;
   updateScore: (criterionName: string, newScore: number) => void;
+  addFeedback?: (feedback: FeedbackItem) => void;
+  updateFeedback?: (index: number, updatedFeedback: Partial<FeedbackItem>) => void;
+  feedbacks?: FeedbackItem[];
 }
 
 export const ScoringPanel: React.FC<ScoringPanelProps> = ({
@@ -31,6 +34,9 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   isResizing,
   handleMouseDown,
   updateScore,
+  addFeedback,
+  updateFeedback,
+  feedbacks,
 }) => {
   // const tests: TestCase[] = [
   //   { input: "1\n2\n3\n", expectedOutput: "6\n", actualOutput: "6\n", status: "pass" },
@@ -71,6 +77,11 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
     return ((rawScore / weight) * (weight * scale)) / 100;
   };
 
+  // State for editing summary feedback comment inline
+  const [editingSummaryIdx, setEditingSummaryIdx] = useState<number | null>(null);
+  const [editingSummaryComment, setEditingSummaryComment] = useState("");
+  const [addingSummary, setAddingSummary] = useState<string | null>(null);
+
   return (
     <div className="flex flex-col bg-background w-full h-full overflow-hidden">
       <div
@@ -93,7 +104,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
             <TabsList className=" w-full h-auto rounded-lg">
               <TabsTrigger value="scoring">Rubric Scoring</TabsTrigger>
               <TabsTrigger value="summary">Score Summary</TabsTrigger>
-              <TabsTrigger value="tests">Test Results</TabsTrigger>
             </TabsList>
           </div>
           <TabsContent value="scoring" className="flex-1 overflow-auto px-4 pb-4">
@@ -124,6 +134,50 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                   ((grading.scaleFactor ?? 10) * (criterion.weight ?? 0)) / 100;
                 // Tính điểm giống bên index
                 const points = calcScore(rawScore, criterion.weight ?? 0);
+
+                // Tìm summary feedback cho criterion này
+                const summaryFb = feedbacks?.find(
+                  (f) => f.tag === "summary" && f.criterion === criterion.name,
+                );
+                const summaryFbIdx = feedbacks?.findIndex(
+                  (f) => f.tag === "summary" && f.criterion === criterion.name,
+                );
+
+                const handleEditSummary = () => {
+                  if (!summaryFb || summaryFbIdx === undefined || summaryFbIdx < 0)
+                    return;
+                  setEditingSummaryIdx(summaryFbIdx);
+                  setEditingSummaryComment(summaryFb.comment);
+                };
+                const handleSaveSummary = () => {
+                  if (
+                    editingSummaryIdx === null ||
+                    !updateFeedback ||
+                    !editingSummaryComment.trim()
+                  )
+                    return;
+                  updateFeedback(editingSummaryIdx, {
+                    comment: editingSummaryComment,
+                  });
+                  setEditingSummaryIdx(null);
+                };
+
+                // Thêm summary feedback mới
+                const handleAddSummary = () => {
+                  setAddingSummary("");
+                };
+                const handleSaveAddSummary = () => {
+                  if (!addFeedback || !addingSummary || !addingSummary.trim()) return;
+                  addFeedback({
+                    criterion: criterion.name,
+                    fileRef: "",
+                    comment: addingSummary.trim(),
+                    tag: "summary",
+                    locationData: {},
+                  } as FeedbackItem);
+                  setAddingSummary(null);
+                };
+
                 return (
                   <TabsContent
                     key={criterion.id}
@@ -173,6 +227,79 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                           </div>
                         </span>
                       </div>
+                      {/* Hiển thị hoặc thêm summary feedback */}
+                      {summaryFb ?
+                        <div className="text-xs font-medium flex items-center gap-2">
+                          {editingSummaryIdx === summaryFbIdx ?
+                            <>
+                              <input
+                                className="border rounded px-2 py-1 text-xs w-full"
+                                value={editingSummaryComment}
+                                onChange={(e) => setEditingSummaryComment(e.target.value)}
+                              />
+                              <button
+                                className="text-blue-500 underline text-xs"
+                                type="button"
+                                onClick={handleSaveSummary}
+                                disabled={!editingSummaryComment.trim()}
+                              >
+                                Save
+                              </button>
+                              <button
+                                className="text-gray-500 underline text-xs"
+                                type="button"
+                                onClick={() => setEditingSummaryIdx(null)}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          : <>
+                              <span>Summary: {summaryFb.comment}</span>
+                              <button
+                                className="text-blue-500 underline text-xs"
+                                type="button"
+                                onClick={handleEditSummary}
+                              >
+                                Edit
+                              </button>
+                            </>
+                          }
+                        </div>
+                      : <div className="text-xs font-medium flex items-center gap-2">
+                          {addingSummary !== null ?
+                            <>
+                              <input
+                                className="border rounded px-2 py-1 text-xs w-full"
+                                value={addingSummary}
+                                onChange={(e) => setAddingSummary(e.target.value)}
+                                placeholder="Add summary feedback..."
+                              />
+                              <button
+                                className="text-blue-500 underline text-xs"
+                                type="button"
+                                onClick={handleSaveAddSummary}
+                                disabled={!addingSummary.trim()}
+                              >
+                                Save
+                              </button>
+                              <button
+                                className="text-gray-500 underline text-xs"
+                                type="button"
+                                onClick={() => setAddingSummary(null)}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          : <button
+                              className="text-blue-500 underline text-xs"
+                              type="button"
+                              onClick={handleAddSummary}
+                            >
+                              + Add summary feedback
+                            </button>
+                          }
+                        </div>
+                      }
                       <div className="flex gap-4">
                         {criterion.levels
                           .slice()
@@ -250,9 +377,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                 })}
               </div>
             </div>
-          </TabsContent>
-          <TabsContent value="tests" className="flex-1 overflow-auto px-4 pb-4">
-            {/* <TestResult testCases={tests} /> */}
           </TabsContent>
         </Tabs>
       </div>

@@ -5,7 +5,7 @@ export const ScoreBreakdownSchema = z.object({
   performanceTag: z.string(),
   rawScore: z.number(),
   metadata: z.array(z.string()).optional(),
-  status: z.enum(["graded", "notgraded"]).optional(),
+  status: z.string(),
 });
 
 const BaseFeedbackSchema = z.object({

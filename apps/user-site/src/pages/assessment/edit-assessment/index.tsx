@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import equal from "fast-deep-equal";
-import { Save, Eye, Edit3, PanelLeftClose, PanelLeftOpen, EyeClosed } from "lucide-react";
+import {
+  Save,
+  Eye,
+  Edit3,
+  PanelLeftClose,
+  PanelLeftOpen,
+  EyeClosed,
+  History,
+} from "lucide-react";
 import { Assessment, AssessmentSchema, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
@@ -41,10 +49,29 @@ export function EditAssessmentUI({
     scoreBreakdowns: Assessment["scoreBreakdowns"];
     feedbacks: Assessment["feedbacks"];
   } | null>(null);
+  // isDirty chỉ so sánh với lần lưu gần nhất (không phải initialData)
+  const [lastSavedData, setLastSavedData] = useState<{
+    scoreBreakdowns: Assessment["scoreBreakdowns"];
+    feedbacks: Assessment["feedbacks"];
+  } | null>(null);
+
+  // Khi mount lần đầu, lastSavedData là dữ liệu gốc
+  useEffect(() => {
+    if (lastSavedData === null) {
+      setLastSavedData({
+        scoreBreakdowns: assessment.scoreBreakdowns,
+        feedbacks: assessment.feedbacks,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // chỉ phụ thuộc files để đảm bảo đã load xong file
+
+  // isDirty so sánh với lastSavedData
   const isDirty =
-    initialData !== null &&
-    (!equal(formData.scoreBreakdowns, initialData.scoreBreakdowns) ||
-      !equal(formData.feedbacks, initialData.feedbacks));
+    lastSavedData !== null &&
+    (!equal(formData.scoreBreakdowns, lastSavedData.scoreBreakdowns) ||
+      !equal(formData.feedbacks, lastSavedData.feedbacks));
+
   const [files, setFiles] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const auth = useAuth();
@@ -74,14 +101,17 @@ export function EditAssessmentUI({
 
     if (formData.submissionReference) load();
   }, [formData.submissionReference, grading.id]);
+  // Đảm bảo chỉ set initialData đúng 1 lần duy nhất khi vào trang (không update lại sau này)
   useEffect(() => {
-    if (!initialData) {
+    if (initialData === null) {
       setInitialData({
-        scoreBreakdowns: formData.scoreBreakdowns,
-        feedbacks: formData.feedbacks,
+        scoreBreakdowns: assessment.scoreBreakdowns,
+        feedbacks: assessment.feedbacks,
       });
     }
-  }, [files, formData.feedbacks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // chỉ phụ thuộc files để đảm bảo đã load xong file
+
   const totalScore = formData.scoreBreakdowns.reduce((sum, breakdown) => {
     const criterion = rubric.criteria.find((c) => c.name === breakdown.criterionName);
     const weight = criterion?.weight || 0;
@@ -200,6 +230,11 @@ export function EditAssessmentUI({
     console.log("Saving assessment data:", formData);
     await handleSaveFeedback();
     await handleSaveScore();
+    // Sau khi lưu thành công, cập nhật lastSavedData để reset isDirty
+    setLastSavedData({
+      scoreBreakdowns: form.getValues("scoreBreakdowns"),
+      feedbacks: form.getValues("feedbacks"),
+    });
     return;
   };
 
@@ -325,6 +360,21 @@ export function EditAssessmentUI({
     );
   };
 
+  // Khi revert, trả về đúng dữ liệu gốc ban đầu
+  const handleRevertAdjustment = () => {
+    if (!initialData) return;
+    form.setValue("scoreBreakdowns", initialData.scoreBreakdowns, {
+      shouldValidate: true,
+    });
+    form.setValue("feedbacks", initialData.feedbacks, { shouldValidate: true });
+    form.reset({
+      ...form.getValues(),
+      scoreBreakdowns: initialData.scoreBreakdowns,
+      feedbacks: initialData.feedbacks,
+    });
+    toast.success("Reverted to original data.");
+  };
+
   return (
     <div
       className="-mb-20 flex flex-col bg-background text-foreground"
@@ -373,6 +423,10 @@ export function EditAssessmentUI({
               exporterClass={AssessmentExporter}
               args={[formData]}
             />
+            <Button className="cursor-pointer" size="sm" onClick={handleRevertAdjustment}>
+              <History className="h-4 w-4 mr-2" />
+              Revert Adjustment
+            </Button>
             <Button className="cursor-pointer" size="sm" onClick={handleSaveAssessment}>
               <Save className="h-4 w-4 mr-2" />
               Save Assessment
@@ -382,7 +436,7 @@ export function EditAssessmentUI({
       </div>
 
       <div
-        className="flex"
+        className="flex justify-between"
         style={{
           height:
             showBottomPanel ?
@@ -408,7 +462,7 @@ export function EditAssessmentUI({
         <div className="flex-1 flex flex-row" style={{ minWidth: 0 }}>
           {/* File Viewer - không cần điều chỉnh height, luôn 100% */}
           <div
-            className="flex-1 flex flex-col h-full"
+            className="flex-1 flex flex-col h-full w-80"
             style={{
               minWidth: 0,
               position: "relative",
@@ -435,9 +489,8 @@ export function EditAssessmentUI({
               </div>
               {isHighlightMode && selectedFile && (
                 <div className="mt-2 text-blue-700 text-sm font-medium">
-                  {selectedFile.type === "code" ||
-                    (selectedFile.type === "essay" &&
-                      "Click and drag to highlight and add feedback. Click again to exit.")}
+                  {(selectedFile.type === "code" || selectedFile.type === "essay") &&
+                    "Click and drag to highlight and add feedback. Click again to exit."}
                 </div>
               )}
             </div>
@@ -492,6 +545,7 @@ export function EditAssessmentUI({
                   onSelect={handleFeedbackSelect}
                   onDelete={handleDeleteFeedback}
                   allFeedbacks={formData.feedbacks}
+                  updateFeedback={handleUpdateFeedback}
                 />
               </TabsContent>
               <TabsContent value="criterion">
@@ -506,6 +560,9 @@ export function EditAssessmentUI({
                   onSelect={handleFeedbackSelect}
                   onDelete={handleDeleteFeedback}
                   allFeedbacks={formData.feedbacks}
+                  activeCriterion={activeScoringTab}
+                  addFeedback={handleAddNewFeedback}
+                  updateFeedback={handleUpdateFeedback}
                 />
               </TabsContent>
             </Tabs>
@@ -537,6 +594,9 @@ export function EditAssessmentUI({
             isResizing={isResizing}
             handleMouseDown={handleMouseDown}
             updateScore={handleUpdateScore}
+            addFeedback={handleAddNewFeedback}
+            updateFeedback={handleUpdateFeedback}
+            feedbacks={formData.feedbacks}
           />
         </div>
       )}

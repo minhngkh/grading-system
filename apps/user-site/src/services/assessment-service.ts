@@ -110,10 +110,10 @@ export class AssessmentService {
     token: string,
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
-
+    const payload = { feedbacks };
     const response = await axios.put(
       `${ASSESSMENT_API_URL}/${id}/feedbacks`,
-      feedbacks,
+      payload,
       configHeaders,
     );
 
@@ -127,9 +127,10 @@ export class AssessmentService {
     token: string,
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
+    const payload = { scoreBreakdowns };
     const response = await axios.post(
       `${ASSESSMENT_API_URL}/${id}/scores`,
-      scoreBreakdowns,
+      payload,
       configHeaders,
     );
     return this.ConvertToAssessment(response.data);
