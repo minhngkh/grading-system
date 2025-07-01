@@ -177,16 +177,10 @@ export class GradingService {
     return axios.put(`${GRADING_API_URL}/${id}/info`, { name }, configHeaders);
   }
 
-  static async getAssessmentSASToken(
-    id: string,
-    attachment: string,
-    token: string,
-  ): Promise<string> {
+  static async getAssessmentSASToken(token: string): Promise<string> {
     const configHeaders = this.buildHeaders(token);
-    const response = await axios.get(
-      `${GRADING_API_URL}/${id}/sasToken?attachment=${attachment}`,
-      configHeaders,
-    );
-    return response.data.sasToken;
+    const response = await axios.get(`${GRADING_API_URL}/sasToken`, configHeaders);
+    console.log("SAS Token:", response.data);
+    return response.data;
   }
 }
