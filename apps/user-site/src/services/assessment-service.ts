@@ -9,7 +9,8 @@ import { GetAllResult, SearchParams } from "@/types/search-params";
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { Deserializer } from "jsonapi-serializer";
 
-const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
+const BASE_URL = import.meta.env.VITE_ASSIGNMENT_FLOW_URL;
+const ASSIGNMENT_FLOW_API_URL = `${BASE_URL}/api/v1`;
 const ASSESSMENT_API_URL = `${ASSIGNMENT_FLOW_API_URL}/assessments`;
 
 export class AssessmentService {
@@ -92,13 +93,14 @@ export class AssessmentService {
 
     const filter = eq("gradingId", gradingId);
     const configHeaders = await this.buildHeaders(token);
-    let nextUrl: string | null = `${ASSESSMENT_API_URL}?filter=${filter}`;
+    let nextUrl: string | null = `${BASE_URL}/api/v1/assessments?filter=${filter}`;
 
     while (nextUrl) {
       const response: AxiosResponse = await axios.get(nextUrl, configHeaders);
       const data = await this.assessmentDeserializer.deserialize(response.data);
       allData.push(...data);
-      nextUrl = data.links?.next ?? null;
+      nextUrl =
+        response.data.links?.next ? `${BASE_URL}${response.data.links.next}` : null;
     }
 
     return allData;

@@ -6,6 +6,8 @@ using EventFlow.Aggregates;
 using EventFlow.Sagas;
 using EventFlow.Sagas.AggregateSagas;
 using Microsoft.AspNetCore.SignalR;
+using RubricEngine.Application.Protos;
+using static RubricEngine.Application.Protos.RubricProtoService;
 namespace AssignmentFlow.Application.Gradings.Start;
 
 public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSagaLocator>,
@@ -19,6 +21,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
 {
     private readonly ILogger<GradingSaga> logger;
     private readonly GradingRepository repository;
+    private readonly RubricProtoServiceClient rubricProtoService;
     private readonly IHubContext<GradingsHub, IGradingClient> hubContext;
 
     private readonly GradingSagaWriteModel aggregateState;
@@ -27,10 +30,12 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         GradingSagaId id,
         ILogger<GradingSaga> logger,
         GradingRepository repository,
+        RubricProtoServiceClient rubricProtoService,
         IHubContext<GradingsHub, IGradingClient> hubContext) : base(id)
     {
         this.logger = logger;
         this.repository = repository;
+        this.rubricProtoService = rubricProtoService;
         this.hubContext = hubContext;
 
         aggregateState = new GradingSagaWriteModel();
@@ -44,6 +49,11 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
     {
         var gradingSummary = await repository
             .GetGradingSummary(domainEvent.AggregateIdentity.Value, cancellationToken);
+
+        var rubric = await rubricProtoService.GetRubricAsync(new GetRubricRequest
+        {
+            RubricId = gradingSummary.RubricId
+        }, cancellationToken: cancellationToken);
 
         Emit(new GradingSagaStartedEvent
         {
@@ -66,7 +76,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
                 GradingId = Shared.GradingId.With(gradingSummary.Id),
                 TeacherId = TeacherId.With(gradingSummary.TeacherId),
                 RubricId = RubricId.With(gradingSummary.RubricId),
-                Criteria = [.. submission.CriteriaFiles.Select(cf => CriterionName.New(cf.Criterion))]
+                Criteria = [.. rubric.Criteria.Select(c => Criterion.Parse(c))]
             });
         }
 

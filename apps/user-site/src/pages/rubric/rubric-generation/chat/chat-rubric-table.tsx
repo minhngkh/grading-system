@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { RubricService } from "@/services/rubric-service";
 import { useAuth } from "@clerk/clerk-react";
 import { lazy, Suspense } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   updateRubricMutationOptions,
   uploadContextMutationOptions,
@@ -74,6 +74,8 @@ function ChatRubricTable({
   const { isPending, mutateAsync: uploadContext } = useMutation(
     uploadContextMutationOptions(rubricData.id, auth),
   );
+
+  const queryClient = useQueryClient();
 
   const updateRubricMutation = useMutation(
     updateRubricMutationOptions(rubricData.id, auth),
@@ -149,6 +151,23 @@ function ChatRubricTable({
     [auth, rubricData.id, rubricData.attachments, onUpdate],
   );
 
+  const handleEditRubric = useCallback(
+    async (updatedRubric: Partial<Rubric>) => {
+      try {
+        await updateRubricMutation.mutateAsync(updatedRubric);
+        queryClient.invalidateQueries({
+          queryKey: ["rubric", rubricData.id],
+        });
+        onUpdate?.(updatedRubric);
+        toast.success("Rubric updated successfully.");
+      } catch (error) {
+        console.error("Error updating rubric:", error);
+        toast.error("Failed to update rubric. Please try again.");
+      }
+    },
+    [updateRubricMutation, onUpdate],
+  );
+
   return (
     <div className="flex flex-col size-full gap-4">
       <Card className="flex-1">
@@ -191,7 +210,7 @@ function ChatRubricTable({
               open={isEditingDialogOpen}
               onOpenChange={setIsEditingDialogOpen}
               rubricData={rubricData}
-              onUpdate={onUpdate}
+              onUpdate={handleEditRubric}
             />
           )}
           {isContextDialogOpen && (

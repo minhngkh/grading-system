@@ -29,25 +29,29 @@ public class StartAutoGradingCommandHandler(
         var metadata = !string.IsNullOrWhiteSpace(rubric.MetadataJson) ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(rubric.MetadataJson) : [];
 
         command.Submission ??= await repository.GetSubmissionAsync(aggregate.State.GradingId, aggregate.State.Reference, cancellationToken);
+        var criteria = MapCriteria(aggregate.State.GradingId, command.Submission, rubric);
 
-        await publishEndpoint.Publish<ISubmissionGradingStarted>(new
+        if (criteria.Length > 0)
         {
-            AssessmentId = aggregate.Id,
-            Criteria = MapCriteria(aggregate.State.GradingId, command.Submission, rubric),
-            Metadata = metadata,
-            Attachments = rubric.Attachments.Select(a => $"{rubric.Id}/{a}").ToArray()
-        },
-        cancellationToken);
+            await publishEndpoint.Publish<ISubmissionGradingStarted>(new
+            {
+                AssessmentId = aggregate.Id,
+                Criteria = criteria,
+                Metadata = metadata,
+                Attachments = rubric.Attachments.Select(a => $"{rubric.Id}/{a}").ToArray()
+            },
+            cancellationToken);
+        }
 
         aggregate.StartAutoGrading();
     }
 
-    private static Criterion[] MapCriteria(string gradingId, SubmissionApiContract submission, RubricModel rubric)
+    private static IntegrationEvents.Criterion[] MapCriteria(string gradingId, SubmissionApiContract submission, RubricModel rubric)
         => [.. submission.CriteriaFiles.Join(
             rubric.Criteria.Where(criterion => criterion.Plugin != "None" ), // Filter out criteria with "None" plugin
             outerKeySelector: c => c.Criterion,
             innerKeySelector: c => c.Name,
-            (submissionCriterion, rubricCriterion) => new Criterion
+            (submissionCriterion, rubricCriterion) => new IntegrationEvents.Criterion
             {
                 CriterionName = rubricCriterion.Name,
                 FileRefs = [.. submissionCriterion.Files.Select(path => $"{gradingId}/{submission.Reference}/{path}")],
