@@ -121,6 +121,7 @@ function createGradingSystemPrompt(partOfRubric: Criterion[]) {
           - Note that the \`fileRef\` must be the original file path if you are referring to uploaded files that you can get by using the multimodal file manifest below (if present)
           - Text file output by repomix have the line number included at the start of each line, so use that to highlight correctly if your feedback is for a text file
           - Use the correct \`locationData\` type based on the file type, if it is a text file provided by repomix output, then use \`text\` type. If it is a multimodal uploaded file (should be listed in the manifest below if any), check the extension, then use \`pdf\` type if it is a PDF file, or \`other\` type if it is any other file type. Don't use \`text\` type for multimodal files
+        - is 0, you must provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the file that you based your decision on on \`locationData\`, and on which file, if applicable
   `;
 }
 
