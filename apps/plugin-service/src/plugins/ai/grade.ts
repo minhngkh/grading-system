@@ -41,6 +41,13 @@ const textLocationDataSchema = z
     "Position of part of the files to highlight the reason why you conclude to that comment, this is relative to the file itself",
   );
 
+const testLocationDataSchema = z.object({
+  type: z.literal("test"),
+  input: z.string(),
+  expectedOutput: z.string(),
+  actualOutput: z.string(),
+});
+
 const pdfLocationDataSchema = z
   .object({
     type: z.literal("pdf"),

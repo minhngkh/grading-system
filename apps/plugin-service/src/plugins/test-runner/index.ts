@@ -1,6 +1,9 @@
 // Judge0 API Client for Test Runner Plugin
 // This module provides a complete TypeScript client for the Judge0 API
 
+// Grade submission functionality
+export { gradeSubmission } from "./grade";
+
 // Main API client and types
 export {
   isErrorStatus,

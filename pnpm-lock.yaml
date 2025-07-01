@@ -35,6 +35,9 @@ importers:
       dotenv:
         specifier: ^16.5.0
         version: 16.5.0
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.2
       hono:
         specifier: ^4.7.10
         version: 4.7.11
