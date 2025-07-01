@@ -6,6 +6,16 @@ import { getTagColor } from "./icon-utils";
 import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+
+// Thêm type TestCase
+type TestCase = {
+  input: string;
+  expectedOutput: string;
+  actualOutput: string;
+};
 
 interface ScoringPanelProps {
   activeTab: string;
@@ -38,38 +48,34 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   updateFeedback,
   feedbacks,
 }) => {
-  // const tests: TestCase[] = [
-  //   { input: "1\n2\n3\n", expectedOutput: "6\n", actualOutput: "6\n", status: "pass" },
-  //   { input: "5\n10\n", expectedOutput: "15\n", actualOutput: "", status: "pending" },
-  //   { input: "4 5\n", expectedOutput: "20\n", actualOutput: "19\n", status: "fail" },
-  //   {
-  //     input: "100\n200\n300\n",
-  //     expectedOutput: "600\n",
-  //     actualOutput: "600\n",
-  //     status: "pass",
-  //   },
-  //   { input: "-1\n1\n", expectedOutput: "0\n", actualOutput: "0\n", status: "pass" },
-  //   { input: "0\n0\n0\n", expectedOutput: "0\n", actualOutput: "0\n", status: "pass" },
-  //   { input: "a b\n", expectedOutput: "error\n", actualOutput: "", status: "pending" },
-  //   {
-  //     input: "999999\n1\n",
-  //     expectedOutput: "1000000\n",
-  //     actualOutput: "",
-  //     status: "pending",
-  //   },
-  //   {
-  //     input: "3\n-3\n3\n-3\n",
-  //     expectedOutput: "0\n",
-  //     actualOutput: "0\n",
-  //     status: "fail",
-  //   },
-  //   {
-  //     input: "123456789\n987654321\n",
-  //     expectedOutput: "1111111110\n",
-  //     actualOutput: "",
-  //     status: "pending",
-  //   },
-  // ];
+  const tests: TestCase[] = [
+    { input: "1\n2\n3\n", expectedOutput: "6\n", actualOutput: "6\n" },
+    { input: "5\n10\n", expectedOutput: "15\n", actualOutput: "" },
+    { input: "4 5\n", expectedOutput: "20\n", actualOutput: "19\n" },
+    {
+      input: "100\n200\n300\n",
+      expectedOutput: "600\n",
+      actualOutput: "600\n",
+    },
+    { input: "-1\n1\n", expectedOutput: "0\n", actualOutput: "0\n" },
+    { input: "0\n0\n0\n", expectedOutput: "0\n", actualOutput: "0\n" },
+    { input: "a b\n", expectedOutput: "error\n", actualOutput: "" },
+    {
+      input: "999999\n1\n",
+      expectedOutput: "1000000\n",
+      actualOutput: "",
+    },
+    {
+      input: "3\n-3\n3\n-3\n",
+      expectedOutput: "0\n",
+      actualOutput: "0\n",
+    },
+    {
+      input: "123456789\n987654321\n",
+      expectedOutput: "1111111110\n",
+      actualOutput: "",
+    },
+  ];
 
   // Tính điểm giống bên index
   const calcScore = (rawScore: number, weight: number) => {
@@ -81,6 +87,10 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   const [editingSummaryIdx, setEditingSummaryIdx] = useState<number | null>(null);
   const [editingSummaryComment, setEditingSummaryComment] = useState("");
   const [addingSummary, setAddingSummary] = useState<string | null>(null);
+
+  // Dialog state
+  const [openTestCaseDialog, setOpenTestCaseDialog] = useState(false);
+  const [currentCriterion, setCurrentCriterion] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col bg-background w-full h-full overflow-hidden">
@@ -186,9 +196,22 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                   >
                     <div className="rounded-lg border p-4 flex flex-col gap-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">
+                        <span className="text-sm flex gap-3 items-center font-medium text-muted-foreground">
                           {criterion.name} - {criterion.weight}%
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setCurrentCriterion(criterion.name);
+                                setOpenTestCaseDialog(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                              Test case
+                            </Button>
+                          </div>
                         </span>
+
                         <span className="text-xs text-gray-500">
                           <div className="flex items-center gap-3">
                             <span className="text-xs text-gray-400">Custom Score:</span>
@@ -328,6 +351,41 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                           ))}
                       </div>
                     </div>
+                    {/* Dialog hiển thị test case */}
+                    <Dialog open={openTestCaseDialog && currentCriterion === criterion.name} onOpenChange={setOpenTestCaseDialog}>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Test Cases for {criterion.name}</DialogTitle>
+                        </DialogHeader>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-xs border font-mono">
+                            <thead>
+                              <tr>
+                                <th className="border px-2 py-1">#</th>
+                                <th className="border px-2 py-1">Input</th>
+                                <th className="border px-2 py-1">Expected Output</th>
+                                <th className="border px-2 py-1">Actual Output</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {tests.map((tc, idx) => (
+                                <tr key={idx}>
+                                  <td className="border px-2 py-1 text-center">{idx + 1}</td>
+                                  <td className="border px-2 py-1 whitespace-pre font-mono">{tc.input}</td>
+                                  <td className="border px-2 py-1 whitespace-pre font-mono">{tc.expectedOutput}</td>
+                                  <td className="border px-2 py-1 whitespace-pre font-mono">{tc.actualOutput}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <DialogClose asChild>
+                          <button className="mt-4 px-4 py-1 rounded bg-gray-200 hover:bg-gray-300 text-xs" type="button">
+                            Close
+                          </button>
+                        </DialogClose>
+                      </DialogContent>
+                    </Dialog>
                   </TabsContent>
                 );
               })}

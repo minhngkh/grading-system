@@ -169,7 +169,7 @@ function renderTree(
         return (
           <div key={fullPath}>
             <div
-              className="flex items-center gap-2 px-2 rounded-md cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+              className="flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer hover:bg-gray-100 transition-colors duration-150"
               onClick={() =>
                 setExpandedFolders((prev) => ({
                   ...prev,
@@ -209,7 +209,7 @@ function renderTree(
             .map((file: any) => (
               <div
                 key={file.id}
-                className={`flex items-center gap-2 px-2 rounded-md cursor-pointer transition-all duration-150 ${
+                className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-all duration-150 ${
                   selectedFile?.id === file.id ?
                     "bg-blue-100 text-blue-900 shadow-sm"
                   : "hover:bg-gray-100"

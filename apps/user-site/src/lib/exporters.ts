@@ -410,7 +410,7 @@ export class AssessmentExporter implements DataExporter {
           fb.comment,
           fb.tag,
           fb.fileRef.split("/").pop() ?? "",
-          position,
+          String(fb.locationData), // || position,
         ];
       }),
       headStyles: {
@@ -468,7 +468,7 @@ export class AssessmentExporter implements DataExporter {
           fb.comment,
           fb.tag,
           fb.fileRef.split("/").pop() ?? "",
-          position,
+          fb.locationData ? JSON.stringify(fb.locationData) : position,
         ]);
       });
 
