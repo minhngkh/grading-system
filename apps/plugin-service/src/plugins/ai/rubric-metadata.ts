@@ -1,5 +1,5 @@
 import { getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
-import { deleteFile } from "@grading-system/utils/file";
+import { deleteDirectory, deleteFile } from "@grading-system/utils/file";
 import logger from "@grading-system/utils/logger";
 import dedent from "dedent";
 import { okAsync, safeTry } from "neverthrow";
@@ -52,7 +52,7 @@ export function generateRubricContext(data: {
         }),
       )
       .andTee(() => {
-        deleteFile(downloadDirectory).orTee((error) => {
+        deleteDirectory(downloadDirectory).orTee((error) => {
           logger.info(`Failed to delete rubric context files`, error);
         });
       });
