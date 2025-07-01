@@ -122,19 +122,42 @@ export default function UploadStep({ form }: UploadStepProps) {
       setFileDialogAction("Uploading");
       setFileDialogOpen(true);
 
-      const uploadRefs = await uploadFileMutation.mutateAsync(newFiles);
-      const newSubmissions = [
-        ...gradingAttempt.submissions,
-        ...uploadRefs.map((ref) => {
-          return {
-            reference: ref,
-          };
-        }),
-      ];
+      try {
+        // Split files into chunks of 10
+        const chunkSize = 10;
+        const chunks = [];
+        for (let i = 0; i < newFiles.length; i += chunkSize) {
+          chunks.push(newFiles.slice(i, i + chunkSize));
+        }
 
-      setValue("submissions", newSubmissions);
-      setIsUploading(false);
-      setFileDialogOpen(false);
+        const allUploadRefs = [];
+
+        // Upload each chunk sequentially
+        for (let i = 0; i < chunks.length; i++) {
+          const chunk = chunks[i];
+          setFileDialogAction(`Uploading chunk ${i + 1} of ${chunks.length}`);
+
+          const uploadRefs = await uploadFileMutation.mutateAsync(chunk);
+          allUploadRefs.push(...uploadRefs);
+        }
+
+        const newSubmissions = [
+          ...gradingAttempt.submissions,
+          ...allUploadRefs.map((ref) => {
+            return {
+              reference: ref,
+            };
+          }),
+        ];
+
+        setValue("submissions", newSubmissions);
+      } catch (error) {
+        console.error("Error uploading files:", error);
+        toast.error("Failed to upload some files");
+      } finally {
+        setIsUploading(false);
+        setFileDialogOpen(false);
+      }
     }
   };
 
@@ -276,6 +299,7 @@ export default function UploadStep({ form }: UploadStepProps) {
           onFileUpload={handleFileUpload}
           accept=".zip"
           multiple={!moodleMode}
+          maxSize={10} // 10 MB
         />
       </div>
 
