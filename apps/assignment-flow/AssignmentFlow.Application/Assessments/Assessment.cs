@@ -67,6 +67,9 @@ public class Assessment
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public DateTimeOffset LastModified { get; set; }
 
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public DateTimeOffset CreatedAt { get; set; }
+
     [Attr(Capabilities = AllowView)]
     public int Version { get; private set; }
 
@@ -87,6 +90,7 @@ public class Assessment
         ScoreBreakdowns = domainEvent.AggregateEvent.InitialScoreBreakdowns.ToApiContracts();
         RawScore = domainEvent.AggregateEvent.InitialScoreBreakdowns.TotalRawScore;
 
+        CreatedAt = domainEvent.Timestamp.ToUniversalTime();
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
