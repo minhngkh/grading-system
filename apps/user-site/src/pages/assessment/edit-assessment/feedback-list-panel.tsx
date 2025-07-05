@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 
 interface FeedbackListPanelProps {
   feedbacks: FeedbackItem[];
-  selectedFeedbackIndex: number | null;
-  onSelect: (feedback: FeedbackItem, index: number) => void;
-  onDelete: (index: number) => void;
+  selectedFeedbackId: string | null;
+  onSelect: (feedback: FeedbackItem) => void;
+  onDelete: (feedbackId: string) => void;
   allFeedbacks: FeedbackItem[];
   activeCriterion?: string; // optional, for criterion tab
   addFeedback?: (feedback: FeedbackItem) => void; // callback for adding feedback
@@ -18,7 +18,7 @@ interface FeedbackListPanelProps {
 
 export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
   feedbacks,
-  selectedFeedbackIndex,
+  selectedFeedbackId,
   onSelect,
   onDelete,
   allFeedbacks,
@@ -28,11 +28,15 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
   const [editComment, setEditComment] = useState("");
   const [editTag, setEditTag] = useState("info");
   const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editFeedbackId, setEditFeedbackId] = useState<string | null>(null);
 
-  const handleEditClick = (feedback: FeedbackItem, index: number) => {
+  const handleEditClick = (feedback: FeedbackItem) => {
     setEditComment(feedback.comment);
     setEditTag(feedback.tag);
-    setEditIndex(index);
+    // Find the index of this feedback in the allFeedbacks array
+    const index = allFeedbacks.findIndex((fb) => fb.id === feedback.id);
+    setEditIndex(index >= 0 ? index : null);
+    setEditFeedbackId(feedback.id ?? null);
     setEditDialogOpen(true);
   };
 
@@ -41,6 +45,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
     updateFeedback(editIndex, { comment: editComment, tag: editTag });
     setEditDialogOpen(false);
     setEditIndex(null);
+    setEditFeedbackId(null);
   };
 
   return (
@@ -52,17 +57,16 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
             feedbacks
               .filter((feedback) => feedback.tag !== "summary")
               .map((feedback) => {
-                const globalIndex = allFeedbacks.findIndex((fb) => fb === feedback);
-                const isActive = selectedFeedbackIndex === globalIndex;
+                const isActive = selectedFeedbackId === feedback.id;
                 return (
                   <div
-                    key={globalIndex}
+                    key={feedback.id}
                     className={
                       `border rounded-lg p-2 hover:bg-primary-foreground cursor-pointer transition-all duration-200 hover:shadow-sm flex items-start gap-2 ` +
                       (isActive ? `bg-primary-foreground` : "")
                     }
                     onClick={() => {
-                      onSelect(feedback, globalIndex);
+                      onSelect(feedback);
                     }}
                   >
                     <div className="flex-1 min-w-0">
@@ -81,14 +85,14 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                           className="h-4 w-4 text-gray-500 cursor-pointer hover:text-red-600"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDelete(globalIndex);
+                            onDelete(feedback.id ?? "");
                           }}
                         />
                         <Pen
                           className="h-4 w-4 text-gray-500 cursor-pointer hover:text-blue-600"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleEditClick(feedback, globalIndex);
+                            handleEditClick(feedback);
                           }}
                         />
                       </div>

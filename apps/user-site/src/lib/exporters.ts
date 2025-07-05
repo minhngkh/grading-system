@@ -24,7 +24,6 @@ export class RubricExporter implements DataExporter {
     // Header
     doc.setFontSize(16);
     doc.text(`Rubric: ${this.rubric.rubricName}`, 14, 20);
-    doc.text(`Rubric: ${this.rubric.rubricName}`, 14, 20);
     doc.setFontSize(10);
 
     // Build table head
@@ -79,7 +78,6 @@ export class RubricExporter implements DataExporter {
       tableLineColor: [80, 80, 80], // Dark gray border
     });
 
-    doc.save(`${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.pdf`);
     doc.save(`${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.pdf`);
   }
 
@@ -351,6 +349,7 @@ export class AssessmentExporter implements DataExporter {
 
   exportToPDF() {
     const doc = new jsPDF();
+
     doc.setFontSize(16);
     doc.text("Assessment Report", 14, 20);
 
@@ -431,25 +430,29 @@ export class AssessmentExporter implements DataExporter {
         summaryFb ? summaryFb.comment : "",
       ]);
     });
-    wsData.push(["Criterion", "Tag", "Score", "Summary"]);
-    this.assessment.scoreBreakdowns.forEach((sb) => {
-      // Tìm summary feedback cho criterion này
-      const summaryFb = this.assessment.feedbacks.find(
-        (fb) => fb.tag === "summary" && fb.criterion === sb.criterionName,
-      );
-      wsData.push([
-        sb.criterionName,
-        sb.performanceTag,
-        sb.rawScore,
-        summaryFb ? summaryFb.comment : "",
-      ]);
-    });
     wsData.push([]);
 
     const feedbackHeaderRow = wsData.length;
     wsData.push(["Criterion", "Comment", "Tag", "File", "Position"]);
-    wsData.push(["Criterion", "Comment", "Tag", "File", "Position"]);
 
+    this.assessment.feedbacks
+      .filter((fb) => fb.tag !== "summary")
+      .forEach((fb) => {
+        let position = "";
+        if (fb.locationData?.type === "text") {
+          position = `line: ${fb.locationData.fromLine ?? "-"}-${fb.locationData.toLine ?? "-"} col: ${fb.locationData.fromCol ?? "-"}-${fb.locationData.toCol ?? "-"}`;
+        } else if (fb.locationData?.type === "pdf") {
+          position = `page: ${fb.locationData.page ?? "-"}`;
+        }
+        // image: để trống
+        wsData.push([
+          fb.criterion,
+          fb.comment,
+          fb.tag,
+          fb.fileRef.split("/").pop() ?? "",
+          position,
+        ]);
+      });
     this.assessment.feedbacks
       .filter((fb) => fb.tag !== "summary")
       .forEach((fb) => {

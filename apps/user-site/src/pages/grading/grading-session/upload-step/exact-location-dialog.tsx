@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { CriteriaSelector } from "@/types/grading";
+import { Info } from "lucide-react";
 
 interface ExactDialogProps {
   open: boolean;
@@ -65,46 +66,60 @@ export function ExactLocationDialog({
           <DialogTitle>Specify Exact Path for {criterionMapping.criterion}</DialogTitle>
         </DialogHeader>
         <div className="space-y-2">
-          {" "}
-          <div className="rounded bg-muted p-3 text-sm text-muted-foreground">
-            <div className="font-semibold mb-1">How to specify paths:</div>
-            <ul className="list-disc list-inside space-y-1">
+          <div className="rounded-lg border border-muted bg-muted/50 p-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 mb-2 font-semibold text-foreground">
+              <Info className="w-4 h-4 text-primary" />
+              How to specify paths
+            </div>
+            <ul className="list-none space-y-3 pl-1">
               <li>
-                Use <code>*</code> to match any characters in a single folder.
-                <ul className="list-disc list-inside ml-4">
+                <span className="font-medium text-foreground">
+                  Wildcard <code>*</code>:
+                </span>{" "}
+                Matches any characters in a single folder.
+                <ul className="list-disc list-inside pl-5 mt-1 space-y-1">
                   <li>
-                    <code>*.txt</code> matches all <code>.txt</code> files in the current
-                    folder.
+                    <code>*.txt</code> → All <code>.txt</code> files in the current folder
                   </li>
                   <li>
-                    <code>src/*.js</code> matches all <code>.js</code> files in the 'src'
-                    folder.
-                  </li>
-                </ul>
-              </li>
-              <li>
-                Use <code>**</code> to match folders recursively.
-                <ul className="list-disc list-inside ml-4">
-                  <li>
-                    <code>**/*.json</code> matches all <code>.json</code> files in all
-                    subfolders.
-                  </li>
-                  <li>
-                    <code>src/**/*.ts</code> matches all <code>.ts</code> files in 'src'
-                    and all its subfolders.
+                    <code>src/*.js</code> → All <code>.js</code> files in the{" "}
+                    <code>src</code> folder
                   </li>
                 </ul>
               </li>
               <li>
-                Use forward slashes (<code>/</code>) for paths, even on Windows.
+                <span className="font-medium text-foreground">
+                  Recursive <code>**</code>:
+                </span>{" "}
+                Matches files in all subfolders.
+                <ul className="list-disc list-inside pl-5 mt-1 space-y-1">
+                  <li>
+                    <code>**/*.json</code> → All <code>.json</code> files in all folders
+                  </li>
+                  <li>
+                    <code>src/**/*.ts</code> → All <code>.ts</code> files in{" "}
+                    <code>src</code> and subfolders
+                  </li>
+                </ul>
               </li>
               <li>
-                Press <b>Enter</b> to add the current path to the list.
+                <span className="font-medium text-foreground">
+                  Use <code>/</code> as the path separator
+                </span>{" "}
+                — even on Windows
               </li>
-              <li>You can add multiple paths and they will be combined.</li>
+              <li>
+                <span className="font-medium text-foreground">
+                  Press <kbd>Enter</kbd>
+                </span>{" "}
+                to add the current path
+              </li>
+              <li>
+                <span className="font-medium text-foreground">Multiple patterns</span>{" "}
+                will be combined
+              </li>
             </ul>
           </div>
-          {/* End Guide Section */}{" "}
           <div className="space-y-2">
             <div className="text-sm font-medium">Path Input</div>
             <div className="flex items-center space-x-2">

@@ -10,6 +10,7 @@ namespace AssignmentFlow.Application.Assessments;
 [JsonConverter(typeof(FeedbackConverter))]
 public sealed class Feedback : ValueObject
 {
+    public FeedbackIdentity Identity { get; private set; }
     public CriterionName Criterion { get; private set; }
     /// <summary>
     /// Gets the comment associated with the feedback.
@@ -26,19 +27,20 @@ public sealed class Feedback : ValueObject
     /// </summary>
     public Highlight Highlight { get; private set; }
 
-    private Feedback(CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
+    private Feedback(FeedbackIdentity identity, CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
     {
+        Identity = identity;
         Criterion = criterion;
         Comment = comment;
         Highlight = highlight;
         Tag = tag;
     }
 
-    public static Feedback New(CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
-        => new(criterion, comment, highlight, tag);
+    public static Feedback New(FeedbackIdentity identity, CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
+        => new(identity, criterion, comment, highlight, tag);
 
-    public static Feedback Summary (CriterionName criterion, Comment comment)
-        => new(criterion, comment, Highlight.Empty, Tag.Summary);
+    public static Feedback Summary (FeedbackIdentity identity, CriterionName criterion, Comment comment)
+        => new(identity, criterion, comment, Highlight.Empty, Tag.Summary);
 
     /// <summary>
     /// Provides the components used for equality comparison.
@@ -46,6 +48,7 @@ public sealed class Feedback : ValueObject
     /// <returns>An enumerable of equality components.</returns>
     protected override IEnumerable<object> GetEqualityComponents()
     {
+        yield return Identity;
         yield return Criterion;
         yield return Comment;
         yield return Highlight;
@@ -60,16 +63,30 @@ public sealed class FeedbackConverter : JsonConverter<Feedback>
         if (reader.TokenType == JsonToken.Null)
             return null;
         var jObject = JObject.Load(reader);
+        var identity = jObject.GetRequired<FeedbackIdentity>("Identity");
         var criterion = jObject.GetRequired<CriterionName>("Criterion");
         var comment = jObject.GetRequired<Comment>("Comment");
         var highlight = jObject.GetRequired<Highlight>("Highlight");
         var tag = jObject.GetRequired<Tag>("Tag");
-        return Feedback.New(criterion, comment, highlight, tag);
+
+        return Feedback.New(identity, criterion, comment, highlight, tag);
     }
     public override bool CanWrite => false;
     public override void WriteJson(JsonWriter writer, Feedback? value, JsonSerializer serializer) => throw new NotSupportedException();
 }
 
+public sealed class FeedbackIdentity : StringValueObject
+{
+    public static FeedbackIdentity Empty => new();
+    private FeedbackIdentity() { }
+    [JsonConstructor]
+    public FeedbackIdentity(string value) : base(value) { }
+
+    // FIXME: Why hard limit
+    // protected override int? MaxLength => ModelConstants.VeryLongText;
+    protected override int? MaxLength => ModelConstants.TinyText;
+    public static FeedbackIdentity New(string value) => new(value);
+}
 
 public sealed class Comment : StringValueObject
 {

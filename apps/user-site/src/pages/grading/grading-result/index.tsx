@@ -23,7 +23,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
-import { rerunGradingMutationOptions } from "@/queries/grading-queries";
+import {
+  rerunGradingMutationOptions,
+  updateGradingScaleFactorMutationOptions,
+} from "@/queries/grading-queries";
 import { getRubricQueryOptions } from "@/queries/rubric-queries";
 
 const SummarySection = lazy(() => import("./summary-section"));
@@ -60,6 +63,26 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
 
   const { mutateAsync: rerunGrading } = useMutation(
     rerunGradingMutationOptions(gradingAttempt.id, auth),
+  );
+
+  const { mutateAsync: updateScaleFactor } = useMutation(
+    updateGradingScaleFactorMutationOptions(gradingAttempt.id, auth),
+  );
+
+  const handleScaleFactorChange = useCallback(
+    async (newScaleFactor: number) => {
+      if (newScaleFactor === scaleFactor) return;
+
+      try {
+        await updateScaleFactor(newScaleFactor);
+        setScaleFactor(newScaleFactor);
+        toast.success("Grade scale factor updated successfully.");
+      } catch (error) {
+        console.error("Error updating scale factor:", error);
+        toast.error("Failed to update grade scale factor. Please try again later.");
+      }
+    },
+    [scaleFactor, updateScaleFactor],
   );
 
   const handleStatusChange = useCallback((newStatus: AssessmentGradingStatus) => {
@@ -205,12 +228,12 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
         open={changeScaleFactorOpen}
         onOpenChange={setChangeScaleFactorOpen}
         initialScaleFactor={scaleFactor}
-        onChangeScaleFactor={setScaleFactor}
+        onChangeScaleFactor={handleScaleFactorChange}
       />
 
       <ExportDialog
         exporterClass={GradingExporter}
-        args={[gradingAttempt, assessmentsData || []]}
+        args={[gradingAttempt, sortedAssessments]}
         open={exportOpen}
         onOpenChange={setExportOpen}
       />

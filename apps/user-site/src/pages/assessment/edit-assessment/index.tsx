@@ -20,7 +20,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@clerk/clerk-react";
 import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
-import { loadFileItems } from "@/services/file-service";
 import { getFileIcon } from "./icon-utils";
 import { FileExplorer } from "@/components/app/file-explorer";
 import { ScoringPanel } from "./scoring-panel";
@@ -36,6 +35,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { FileService } from "@/services/file-service";
 
 export function EditAssessmentUI({
   assessment,
@@ -96,7 +96,7 @@ export function EditAssessmentUI({
   const auth = useAuth();
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
-  const [selectedFeedbackIndex, setSelectedFeedbackIndex] = useState<number | null>(null);
+  const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
     src: true,
     tests: true,
@@ -113,7 +113,9 @@ export function EditAssessmentUI({
   const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">("file");
   useEffect(() => {
     async function load() {
-      const items = await loadFileItems(`${grading.id}/${formData.submissionReference}`);
+      const items = await FileService.loadFileItems(
+        `${grading.id}/${formData.submissionReference}`,
+      );
       setFiles(items);
       setSelectedFile(items[0] || null);
     }
@@ -203,17 +205,23 @@ export function EditAssessmentUI({
     currentFeedbacks.push(newFeedback);
 
     form.setValue("feedbacks", currentFeedbacks, { shouldValidate: true });
-    const newIndex = currentFeedbacks.length - 1;
-    setSelectedFeedbackIndex(newIndex);
+    // Use the new feedback's ID instead of array index
+    setSelectedFeedbackId(newFeedback.id ?? null);
     setSelectedFeedback(newFeedback);
 
-    return newIndex;
+    return newFeedback.id;
   };
 
-  const handleDeleteFeedback = (index: number) => {
+  const handleDeleteFeedback = (feedbackId: string) => {
     const current = formData.feedbacks;
-    const updated = current.filter((_, i) => i !== index);
+    const updated = current.filter((f) => f.id !== feedbackId);
     form.setValue("feedbacks", updated, { shouldValidate: true });
+
+    // Clear selection if deleted feedback was selected
+    if (selectedFeedbackId === feedbackId) {
+      setSelectedFeedbackId(null);
+      setSelectedFeedback(null);
+    }
   };
 
   const handleSaveFeedback = async () => {
@@ -337,23 +345,16 @@ export function EditAssessmentUI({
     };
   }, [isResizing]);
 
-  const handleFeedbackSelect = (feedback: FeedbackItem, index?: number) => {
-    if (
-      selectedFeedback &&
-      selectedFeedback.fileRef === feedback.fileRef &&
-      selectedFeedback.criterion === feedback.criterion &&
-      selectedFeedback.comment === feedback.comment &&
-      JSON.stringify(selectedFeedback.locationData) ===
-        JSON.stringify(feedback.locationData)
-    ) {
+  const handleFeedbackSelect = (feedback: FeedbackItem) => {
+    if (selectedFeedback && selectedFeedback.id === feedback.id) {
       setSelectedFeedback(null);
-      setSelectedFeedbackIndex(null);
+      setSelectedFeedbackId(null);
       return;
     }
     const file = files.find((f) => isFeedbackForFile(feedback, f));
     if (file) setSelectedFile(file);
     setSelectedFeedback(feedback);
-    if (typeof index === "number") setSelectedFeedbackIndex(index);
+    setSelectedFeedbackId(feedback.id ?? null);
   };
 
   // Hàm chuẩn hóa feedback giống code-viewer
@@ -392,9 +393,7 @@ export function EditAssessmentUI({
         updateFeedback={handleUpdateFeedback}
         isHighlightMode={isHighlightMode}
         onHighlightComplete={() => setIsHighlightMode(false)}
-        activeFeedbackId={
-          selectedFeedbackIndex !== null ? String(selectedFeedbackIndex) : undefined
-        }
+        activeFeedbackId={selectedFeedbackId}
       />
     );
   };
@@ -577,14 +576,17 @@ export function EditAssessmentUI({
                     const fileRefName = f.fileRef?.split("/").pop();
                     return fileRefName === selectedFile?.name;
                   })}
-                  selectedFeedbackIndex={selectedFeedbackIndex}
+                  selectedFeedbackId={selectedFeedbackId}
                   onSelect={handleFeedbackSelect}
                   onDelete={handleDeleteFeedback}
                   allFeedbacks={formData.feedbacks}
                   updateFeedback={handleUpdateFeedback}
                 />
               </TabsContent>
-              <TabsContent value="criterion" className="min-h-0">
+              <TabsContent
+                value="criterion"
+                className="flex flex-col flex-1 overflow-hidden"
+              >
                 <h3 className="text-sm font-medium mb-3">
                   Feedback for {activeScoringTab}
                 </h3>
@@ -592,7 +594,7 @@ export function EditAssessmentUI({
                   feedbacks={formData.feedbacks.filter(
                     (f) => f.criterion === activeScoringTab,
                   )}
-                  selectedFeedbackIndex={selectedFeedbackIndex}
+                  selectedFeedbackId={selectedFeedbackId}
                   onSelect={handleFeedbackSelect}
                   onDelete={handleDeleteFeedback}
                   allFeedbacks={formData.feedbacks}

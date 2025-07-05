@@ -1,4 +1,5 @@
-﻿using EventFlow.Aggregates;
+﻿using AssignmentFlow.Application.Assessments;
+using EventFlow.Aggregates;
 using EventFlow.Core;
 
 namespace AssignmentFlow.Application.Gradings;
@@ -28,6 +29,23 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         {
             TeacherId = command.TeacherId,
             Reference = reference
+        });
+
+        Emit(new UpdateScaleFactor.ScaleFactorUpdatedEvent
+        {
+            ScaleFactor = command.ScaleFactor
+        });
+
+        ConditionalEmit(command.RubricId is not null,
+        () => new ChangeRubric.RubricChangedEvent
+        {
+            RubricId = command.RubricId!
+        });
+
+        ConditionalEmit(command.Name is not null,
+        () => new UpdateInfo.InfoUpdatedEvent
+        {
+            GradingName = command.Name!
         });
     }
 
@@ -96,6 +114,14 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
     {
         //TODO: Add specification to check if grading is in a state that allows re-starting auto-grading
         Emit(new Start.AutoGradingRestartedEvent());
+    }
+
+    private void ConditionalEmit(bool condition, Func<AggregateEvent<GradingAggregate, GradingId>> eventPredicate)
+    {
+        if (condition)
+        {
+            Emit(eventPredicate());
+        }
     }
 }
 

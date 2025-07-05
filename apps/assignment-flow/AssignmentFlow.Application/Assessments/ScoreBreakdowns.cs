@@ -181,6 +181,7 @@ public static class ScoreBreakdownsExtension
     {
         return feedbacks.ConvertAll(fb => new FeedbackItemApiContract
         {
+            Id = fb.Identity.Value,
             Criterion = fb.Criterion,
             Comment = fb.Comment,
             FileRef = fb.Highlight.Attachment,

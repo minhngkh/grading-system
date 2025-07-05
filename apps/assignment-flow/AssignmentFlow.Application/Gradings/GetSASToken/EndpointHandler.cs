@@ -36,7 +36,7 @@ public static class EndpointHandler
         };
 
         // set the required permissions on the SAS token
-        sasBuilder.SetPermissions(BlobSasPermissions.Read | BlobSasPermissions.Write);
+        sasBuilder.SetPermissions(BlobSasPermissions.Read | BlobSasPermissions.Write | BlobSasPermissions.List);
 
         sasBuilder.Resource = "c";
         var sasToken = containerClient.GenerateSasUri(sasBuilder).Query;

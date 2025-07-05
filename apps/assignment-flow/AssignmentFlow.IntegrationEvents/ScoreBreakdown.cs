@@ -1,5 +1,6 @@
 ﻿namespace AssignmentFlow.IntegrationEvents;
 
+[Obsolete("Use ScoreBreakdownV2 instead. This class will be removed in a future version.")]
 public class ScoreBreakdown
 {
     public required string CriterionName { get; set; }
