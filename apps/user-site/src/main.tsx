@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const queryClient = new QueryClient();
 
 const router = createRouter({
   routeTree,
@@ -16,6 +17,7 @@ const router = createRouter({
   scrollRestoration: true,
   context: {
     auth: undefined!,
+    queryClient,
   },
 });
 
@@ -24,8 +26,6 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
-
-const queryClient = new QueryClient();
 
 function App() {
   const auth = useAuth();

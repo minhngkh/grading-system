@@ -46,6 +46,22 @@ export function getInfiniteRubricsQueryOptions(
   });
 }
 
+export function getRubricsQueryOptions(
+  searchParams: SearchParams,
+  auth: Auth,
+  options?: Partial<UseQueryOptions<GetAllResult<Rubric>>>,
+): UseQueryOptions<GetAllResult<Rubric>> {
+  return {
+    queryKey: ["rubrics", searchParams],
+    queryFn: async () => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication token is required");
+      return RubricService.getRubrics(searchParams, token);
+    },
+    ...options,
+  };
+}
+
 // Query options for fetching a single rubric by id
 export function getRubricQueryOptions(
   id: string,

@@ -1,20 +1,14 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import UploadAssignmentPage from "@/pages/grading/grading-session";
-import { GradingService } from "@/services/grading-service";
+import { getGradingAttemptQueryOptions } from "@/queries/grading-queries";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/gradings/$gradingId/")({
   component: RouteComponent,
   loaderDeps: (ctx) => ctx.search,
-  loader: async ({ params: { gradingId }, context: { auth } }) => {
-    const token = await auth.getToken();
-    if (!token) {
-      throw new Error("You must be logged in to view grading session.");
-    }
-
-    return await GradingService.getGradingAttempt(gradingId, token);
-  },
+  loader: async ({ params: { gradingId }, context: { auth, queryClient } }) =>
+    queryClient.ensureQueryData(getGradingAttemptQueryOptions(gradingId, auth)),
   onLeave: () => {
     sessionStorage.removeItem("gradingStep");
   },

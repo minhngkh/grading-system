@@ -135,7 +135,7 @@ export default function UploadStep({ form }: UploadStepProps) {
         // Upload each chunk sequentially
         for (let i = 0; i < chunks.length; i++) {
           const chunk = chunks[i];
-          setFileDialogAction(`Uploading chunk ${i + 1} of ${chunks.length}`);
+          setFileDialogAction(`Uploading ${chunk.length} files of ${newFiles.length}`);
 
           const uploadRefs = await uploadFileMutation.mutateAsync(chunk);
           allUploadRefs.push(...uploadRefs);

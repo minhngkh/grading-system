@@ -1,30 +1,28 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import { EditAssessmentUI } from "@/pages/assessment/edit-assessment";
-import { AssessmentService } from "@/services/assessment-service";
-import { GradingService } from "@/services/grading-service";
-import { RubricService } from "@/services/rubric-service";
+import { getAssessmentQueryOptions } from "@/queries/assessment-queries";
+import { getGradingAttemptQueryOptions } from "@/queries/grading-queries";
+import { getRubricQueryOptions } from "@/queries/rubric-queries";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute(
   "/_authenticated/gradings/$gradingId/assessments/$assessmentId",
 )({
   component: RouteComponent,
-  loader: async ({ params: { assessmentId, gradingId }, context: { auth } }) => {
-    const token = await auth.getToken();
-    if (!token) {
-      throw new Error("Unauthorized: No token found");
-    }
-
+  loader: async ({
+    params: { assessmentId, gradingId },
+    context: { auth, queryClient },
+  }) => {
     const [grading, assessment] = await Promise.all([
-      GradingService.getGradingAttempt(gradingId, token),
-      AssessmentService.getAssessmentById(assessmentId, token),
+      queryClient.ensureQueryData(getGradingAttemptQueryOptions(gradingId, auth)),
+      queryClient.ensureQueryData(getAssessmentQueryOptions(assessmentId, auth)),
     ]);
 
-    if (grading.rubricId === undefined) {
-      throw new Error("This assessment does not have a rubric associated with it.");
-    }
-    const rubric = await RubricService.getRubric(grading.rubricId, token);
+    const rubric = await queryClient.ensureQueryData(
+      getRubricQueryOptions(grading.rubricId, auth),
+    );
+
     return { assessment, grading, rubric };
   },
   errorComponent: () => <ErrorComponent message="Failed to load assessment" />,

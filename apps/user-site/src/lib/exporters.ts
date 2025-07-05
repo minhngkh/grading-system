@@ -186,12 +186,10 @@ export class GradingExporter implements DataExporter {
     doc.text(`Lowest Score: ${this.gradingHelper.getLowestScore().toFixed(2)}`, 14, 50);
     doc.text(`Highest Score: ${this.gradingHelper.getHighestScore().toFixed(2)}`, 14, 55);
 
-    // Add last updated time
-    const lastUpdated =
-      this.grading.lastModified ?
-        this.grading.lastModified.toLocaleString()
-      : "Not available";
-    doc.text(`Last Updated: ${lastUpdated}`, 14, 60);
+    // Add created time
+    const createdAt =
+      this.grading.createdAt ? this.grading.createdAt.toLocaleString() : "Not available";
+    doc.text(`Created At: ${createdAt}`, 14, 60);
 
     // Selectors section
     doc.setFontSize(14);
@@ -241,13 +239,13 @@ export class GradingExporter implements DataExporter {
       margin: { left: 14, right: 14 },
     });
 
-    // Generate filename with grading name and updated time
-    const updatedTime =
-      this.grading.lastModified ?
-        this.grading.lastModified.toISOString().slice(0, 16).replace(/[T:]/g, "_")
+    // Generate filename with grading name and created time
+    const createdTime =
+      this.grading.createdAt ?
+        this.grading.createdAt.toISOString().slice(0, 16).replace(/[T:]/g, "_")
       : new Date().toISOString().slice(0, 16).replace(/[T:]/g, "_");
 
-    const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${updatedTime}.pdf`;
+    const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${createdTime}.pdf`;
     doc.save(fileName);
   }
 
@@ -255,15 +253,13 @@ export class GradingExporter implements DataExporter {
     const scaleFactor = this.grading.scaleFactor ?? 10;
 
     // Create grading info worksheet data
-    const lastUpdated =
-      this.grading.lastModified ?
-        this.grading.lastModified.toLocaleString()
-      : "Not available";
+    const createdAt =
+      this.grading.createdAt ? this.grading.createdAt.toLocaleString() : "Not available";
 
     const gradingInfoData = [
       ["Grading Name", this.grading.name],
       ["Grade Scale", `${scaleFactor}`],
-      ["Last Updated", lastUpdated],
+      ["Created At", createdAt],
       ["Average Score", this.gradingHelper.getAverageScore().toFixed(2)],
       ["Lowest Score", this.gradingHelper.getLowestScore().toFixed(2)],
       ["Highest Score", this.gradingHelper.getHighestScore().toFixed(2)],
@@ -442,12 +438,12 @@ export class GradingExporter implements DataExporter {
     XLSXUtils.book_append_sheet(workbook, assessmentsSheet, "Assessment Summary");
 
     // Write to file and save
-    const updatedTime =
-      this.grading.lastModified ?
-        this.grading.lastModified.toISOString().slice(0, 16).replace(/[T:]/g, "_")
+    const createdTime =
+      this.grading.createdAt ?
+        this.grading.createdAt.toISOString().slice(0, 16).replace(/[T:]/g, "_")
       : new Date().toISOString().slice(0, 16).replace(/[T:]/g, "_");
 
-    const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${updatedTime}.xlsx`;
+    const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${createdTime}.xlsx`;
     XLSXWriteFile(workbook, fileName);
   }
 }
