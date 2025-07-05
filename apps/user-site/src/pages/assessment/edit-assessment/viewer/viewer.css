@@ -6,7 +6,6 @@ code {
   font-family: monospace;
   display: grid;
   font-size: large;
-  position: relative; /* Ensure proper positioning for line numbers */
   padding-left: 1em; /* Add space between line numbers and content */
 }
 
@@ -46,22 +45,6 @@ code {
 
 .annotation-span[data-tag="caution"] {
   background-color: rgba(220, 53, 69, 0.15); /* Red for caution */
-}
-
-.annotation-span::after {
-  content: attr(data-comment);
-  position: absolute; /* Position relative to the span */
-  top: 100%; /* Position below the span */
-  left: 0%;
-  background: #333;
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-  pointer-events: none;
-  z-index: 1000; /* Ensure it appears above other elements */
 }
 
 .annotation-span.actived {

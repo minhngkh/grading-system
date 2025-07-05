@@ -89,8 +89,8 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
     // Auto jump to page of active feedback
     useEffect(() => {
       if (activeFeedbackId != null && feedbacksAll && Array.isArray(feedbacksAll)) {
-        const idx = Number(activeFeedbackId);
-        const fb = feedbacksAll[idx];
+        // Find feedback by ID instead of index
+        const fb = feedbacksAll.find((f) => f.id === activeFeedbackId);
         if (
           fb &&
           fb.locationData?.type === "pdf" &&
@@ -186,18 +186,11 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
         // Check for changes and update
         for (let i = 0; i < adjustedFeedbacks.length; i++) {
           if (JSON.stringify(adjustedFeedbacks[i]) !== JSON.stringify(feedbacks[i])) {
-            // Find the global index
-            const globalIdx = feedbacksAll.findIndex(
-              (f) =>
-                f.fileRef === feedbacks[i].fileRef &&
-                f.criterion === feedbacks[i].criterion &&
-                f.comment === feedbacks[i].comment &&
-                JSON.stringify(f.locationData) ===
-                  JSON.stringify(feedbacks[i].locationData),
-            );
+            // Find the feedback index by matching ID
+            const feedbackIndex = feedbacksAll.findIndex((f) => f.id === feedbacks[i].id);
 
-            if (globalIdx !== -1) {
-              updateFeedback(globalIdx, adjustedFeedbacks[i]);
+            if (feedbackIndex !== -1) {
+              updateFeedback(feedbackIndex, adjustedFeedbacks[i]);
             }
           }
         }
@@ -332,5 +325,4 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
     );
   },
 );
-
 export default PDFViewer;

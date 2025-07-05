@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import equal from "fast-deep-equal";
-import { Save, Eye, Edit3, PanelLeftClose, PanelLeftOpen, EyeClosed } from "lucide-react";
+import {
+  Save,
+  Eye,
+  Edit3,
+  PanelLeftClose,
+  PanelLeftOpen,
+  EyeClosed,
+  History,
+} from "lucide-react";
 import { Assessment, AssessmentSchema, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
@@ -12,7 +20,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@clerk/clerk-react";
 import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
-import { loadFileItems } from "@/services/file-service";
 import { getFileIcon } from "./icon-utils";
 import { FileExplorer } from "@/components/app/file-explorer";
 import { ScoringPanel } from "./scoring-panel";
@@ -20,6 +27,15 @@ import { ExportDialog } from "@/components/app/export-dialog";
 import { AssessmentExporter } from "@/lib/exporters";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FeedbackListPanel } from "./feedback-list-panel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { FileService } from "@/services/file-service";
 
 export function EditAssessmentUI({
   assessment,
@@ -41,16 +57,46 @@ export function EditAssessmentUI({
     scoreBreakdowns: Assessment["scoreBreakdowns"];
     feedbacks: Assessment["feedbacks"];
   } | null>(null);
+  // isDirty chỉ so sánh với lần lưu gần nhất (không phải initialData)
+  const [lastSavedData, setLastSavedData] = useState<{
+    scoreBreakdowns: Assessment["scoreBreakdowns"];
+    feedbacks: Assessment["feedbacks"];
+  } | null>(null);
+
+  // Add state for revert confirmation dialog
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
+
+  // Khi mount lần đầu, lastSavedData và initialData là dữ liệu gốc
+  useEffect(() => {
+    if (lastSavedData === null) {
+      const initialState = {
+        scoreBreakdowns: assessment.scoreBreakdowns,
+        feedbacks: assessment.feedbacks,
+      };
+      setLastSavedData(initialState);
+      setInitialData(initialState);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // isDirty so sánh với lastSavedData
   const isDirty =
+    lastSavedData !== null &&
+    (!equal(formData.scoreBreakdowns, lastSavedData.scoreBreakdowns) ||
+      !equal(formData.feedbacks, lastSavedData.feedbacks));
+
+  // Calculate if revert is possible (compare current with initial)
+  const canRevert =
     initialData !== null &&
     (!equal(formData.scoreBreakdowns, initialData.scoreBreakdowns) ||
       !equal(formData.feedbacks, initialData.feedbacks));
+
   const [files, setFiles] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const auth = useAuth();
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
-  const [selectedFeedbackIndex, setSelectedFeedbackIndex] = useState<number | null>(null);
+  const [selectedFeedbackId, setSelectedFeedbackId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
     src: true,
     tests: true,
@@ -67,21 +113,26 @@ export function EditAssessmentUI({
   const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">("file");
   useEffect(() => {
     async function load() {
-      const items = await loadFileItems(`${grading.id}/${formData.submissionReference}`);
+      const items = await FileService.loadFileItems(
+        `${grading.id}/${formData.submissionReference}`,
+      );
       setFiles(items);
       setSelectedFile(items[0] || null);
     }
 
     if (formData.submissionReference) load();
   }, [formData.submissionReference, grading.id]);
+  // Đảm bảo chỉ set initialData đúng 1 lần duy nhất khi vào trang (không update lại sau này)
   useEffect(() => {
-    if (!initialData) {
+    if (initialData === null) {
       setInitialData({
-        scoreBreakdowns: formData.scoreBreakdowns,
-        feedbacks: formData.feedbacks,
+        scoreBreakdowns: assessment.scoreBreakdowns,
+        feedbacks: assessment.feedbacks,
       });
     }
-  }, [files, formData.feedbacks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // chỉ phụ thuộc files để đảm bảo đã load xong file
+
   const totalScore = formData.scoreBreakdowns.reduce((sum, breakdown) => {
     const criterion = rubric.criteria.find((c) => c.name === breakdown.criterionName);
     const weight = criterion?.weight || 0;
@@ -154,17 +205,23 @@ export function EditAssessmentUI({
     currentFeedbacks.push(newFeedback);
 
     form.setValue("feedbacks", currentFeedbacks, { shouldValidate: true });
-    const newIndex = currentFeedbacks.length - 1;
-    setSelectedFeedbackIndex(newIndex);
+    // Use the new feedback's ID instead of array index
+    setSelectedFeedbackId(newFeedback.id ?? null);
     setSelectedFeedback(newFeedback);
 
-    return newIndex;
+    return newFeedback.id;
   };
 
-  const handleDeleteFeedback = (index: number) => {
+  const handleDeleteFeedback = (feedbackId: string) => {
     const current = formData.feedbacks;
-    const updated = current.filter((_, i) => i !== index);
+    const updated = current.filter((f) => f.id !== feedbackId);
     form.setValue("feedbacks", updated, { shouldValidate: true });
+
+    // Clear selection if deleted feedback was selected
+    if (selectedFeedbackId === feedbackId) {
+      setSelectedFeedbackId(null);
+      setSelectedFeedback(null);
+    }
   };
 
   const handleSaveFeedback = async () => {
@@ -174,6 +231,22 @@ export function EditAssessmentUI({
         throw new Error("You must be logged in to update feedback");
       }
       await AssessmentService.updateFeedback(assessment.id, formData.feedbacks, token);
+
+      // Update lastSavedData and initialData with the current feedback values
+      if (lastSavedData) {
+        setLastSavedData({
+          ...lastSavedData,
+          feedbacks: form.getValues("feedbacks"),
+        });
+      }
+
+      if (initialData) {
+        setInitialData({
+          ...initialData,
+          feedbacks: form.getValues("feedbacks"),
+        });
+      }
+
       toast.success("Feedback updated successfully");
     } catch (err) {
       toast.error("Failed to update feedback");
@@ -188,18 +261,27 @@ export function EditAssessmentUI({
         throw new Error("You must be logged in to update score");
       }
       await AssessmentService.updateScore(assessment.id, formData.scoreBreakdowns, token);
+
+      // Update lastSavedData and initialData with the current score values
+      if (lastSavedData) {
+        setLastSavedData({
+          ...lastSavedData,
+          scoreBreakdowns: form.getValues("scoreBreakdowns"),
+        });
+      }
+
+      if (initialData) {
+        setInitialData({
+          ...initialData,
+          scoreBreakdowns: form.getValues("scoreBreakdowns"),
+        });
+      }
+
       toast.success("Score updated successfully");
     } catch (err) {
       toast.error("Failed to update score");
       console.error(err);
     }
-  };
-
-  const handleSaveAssessment = async () => {
-    console.log("Saving assessment data:", formData);
-    await handleSaveFeedback();
-    // await handleSaveScore();
-    return;
   };
 
   const handleExport = () => {
@@ -263,23 +345,16 @@ export function EditAssessmentUI({
     };
   }, [isResizing]);
 
-  const handleFeedbackSelect = (feedback: FeedbackItem, index?: number) => {
-    if (
-      selectedFeedback &&
-      selectedFeedback.fileRef === feedback.fileRef &&
-      selectedFeedback.criterion === feedback.criterion &&
-      selectedFeedback.comment === feedback.comment &&
-      JSON.stringify(selectedFeedback.locationData) ===
-        JSON.stringify(feedback.locationData)
-    ) {
+  const handleFeedbackSelect = (feedback: FeedbackItem) => {
+    if (selectedFeedback && selectedFeedback.id === feedback.id) {
       setSelectedFeedback(null);
-      setSelectedFeedbackIndex(null);
+      setSelectedFeedbackId(null);
       return;
     }
     const file = files.find((f) => isFeedbackForFile(feedback, f));
     if (file) setSelectedFile(file);
     setSelectedFeedback(feedback);
-    if (typeof index === "number") setSelectedFeedbackIndex(index);
+    setSelectedFeedbackId(feedback.id ?? null);
   };
 
   // Hàm chuẩn hóa feedback giống code-viewer
@@ -293,6 +368,7 @@ export function EditAssessmentUI({
     }
   }, [files, formData.feedbacks]);
   const renderFileContent = () => {
+    console.log("Rendering file content for:", selectedFile);
     if (!selectedFile) return <div className="text-gray-400 p-8">No file selected</div>;
     let prefix = assessment.submissionReference;
     const underscoreIdx = prefix.indexOf("_");
@@ -317,25 +393,38 @@ export function EditAssessmentUI({
         updateFeedback={handleUpdateFeedback}
         isHighlightMode={isHighlightMode}
         onHighlightComplete={() => setIsHighlightMode(false)}
-        activeFeedbackId={
-          selectedFeedbackIndex !== null ? String(selectedFeedbackIndex) : undefined
-        }
+        activeFeedbackId={selectedFeedbackId}
       />
     );
   };
 
+  // Khi revert, trả về đúng dữ liệu gốc ban đầu
+  const handleRevertAdjustment = () => {
+    if (!initialData || !canRevert) return;
+    setRevertDialogOpen(true);
+  };
+
+  // Function to actually perform the revert after confirmation
+  const confirmRevert = () => {
+    if (!initialData) return;
+    form.setValue("scoreBreakdowns", initialData.scoreBreakdowns, {
+      shouldValidate: true,
+    });
+    form.setValue("feedbacks", initialData.feedbacks, { shouldValidate: true });
+    form.reset({
+      ...form.getValues(),
+      scoreBreakdowns: initialData.scoreBreakdowns,
+      feedbacks: initialData.feedbacks,
+    });
+    setRevertDialogOpen(false);
+    toast.success("Reverted to saved data.");
+  };
+
   return (
-    <div
-      className="-mb-20 flex flex-col bg-background text-foreground"
-      style={{
-        height: "85vh",
-        maxHeight: "100vh",
-        position: "relative",
-      }}
-    >
+    <div className="-mb-20 -mt-12 h-[92vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-auto ">
       {/* Header with fixed height */}
-      <div className="p-4 flex-shrink-0" style={{ height: "72px" }}>
-        <div className="flex items-center justify-between">
+      <div className="p-4" style={{ height: "72px" }}>
+        <div className="flex items-center md:justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -348,11 +437,15 @@ export function EditAssessmentUI({
               : <PanelLeftOpen className="h-4 w-4" />}
             </Button>
             <div>
-              <h1 className="text-xl font-bold">Review Assessment</h1>
-              <p className="text-sm text-gray-500">
-                {rubric.rubricName} • Total Score: {totalScore.toFixed(1)}/
-                {grading.scaleFactor}
-              </p>
+              <div className="flex">
+                <h1 className="text-xl font-bold">
+                  {formData.submissionReference} Score: {totalScore.toFixed(1)}/
+                  {grading.scaleFactor}
+                </h1>
+                <span className="text-xl font-bold"></span>
+              </div>
+
+              <p className="text-sm text-gray-500">Rubric: {rubric.rubricName}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -372,16 +465,29 @@ export function EditAssessmentUI({
               exporterClass={AssessmentExporter}
               args={[formData]}
             />
-            <Button className="cursor-pointer" size="sm" onClick={handleSaveAssessment}>
+            <Button
+              className="cursor-pointer"
+              size="sm"
+              onClick={handleRevertAdjustment}
+              disabled={!canRevert}
+            >
+              <History className="h-4 w-4 mr-2" />
+              Revert Changes
+            </Button>
+            <Button className="cursor-pointer" size="sm" onClick={handleSaveFeedback}>
               <Save className="h-4 w-4 mr-2" />
-              Save Assessment
+              Save Feedback
+            </Button>
+            <Button className="cursor-pointer" size="sm" onClick={handleSaveScore}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Scoring
             </Button>
           </div>
         </div>
       </div>
 
       <div
-        className="flex"
+        className="flex justify-between"
         style={{
           height:
             showBottomPanel ?
@@ -407,14 +513,14 @@ export function EditAssessmentUI({
         <div className="flex-1 flex flex-row" style={{ minWidth: 0 }}>
           {/* File Viewer - không cần điều chỉnh height, luôn 100% */}
           <div
-            className="flex-1 flex flex-col h-full"
+            className="flex-1 flex flex-col h-full w-80"
             style={{
               minWidth: 0,
               position: "relative",
             }}
           >
-            <div className="p-4 border-b flex-shrink-0">
-              <div className="flex items-center justify-between">
+            <div className="mt-2 border-b flex-shrink-0">
+              <div className="flex mb-2 items-center justify-between">
                 <div className="flex items-center gap-2">
                   {selectedFile && getFileIcon(selectedFile)}
                   <h2 className="text-lg font-medium">
@@ -434,48 +540,35 @@ export function EditAssessmentUI({
               </div>
               {isHighlightMode && selectedFile && (
                 <div className="mt-2 text-blue-700 text-sm font-medium">
-                  {selectedFile.type === "code" &&
+                  {(selectedFile.type === "code" || selectedFile.type === "essay") &&
                     "Click and drag to highlight and add feedback. Click again to exit."}
                 </div>
               )}
             </div>
-            {selectedFile && selectedFile.type === "code" ?
+            {(
+              selectedFile &&
+              (selectedFile.type === "code" || selectedFile.type === "essay")
+            ) ?
               renderFileContent()
-            : <div
-                className="flex-1 overflow-auto"
-                style={{
-                  minWidth: 0,
-                  minHeight: 0,
-                }}
-              >
-                {renderFileContent()}
-              </div>
-            }
+            : <div className="flex-1 w-full overflow-auto">{renderFileContent()}</div>}
           </div>
 
-          {/* Feedback Panel with View Mode Toggle */}
-          <div className="ml-4 w-70 max-w-60 text-wrap overflow-auto">
-            {/* Feedback View Mode Toggle + Content (shadcn Tabs) */}
+          <div className="ml-4 w-60 pt-4 flex flex-col h-full">
             <Tabs
               value={feedbackViewMode}
               onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
+              className="flex flex-col h-full"
             >
-              <TabsList className="w-full rounded-lg p-1 flex">
-                <TabsTrigger
-                  value="file"
-                  className="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
-                >
+              <TabsList className="text-xs font-medium rounded-md w-full shrink-0">
+                <TabsTrigger value="file" className="text-xs">
                   By File
                 </TabsTrigger>
-                <TabsTrigger
-                  value="criterion"
-                  className="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
-                >
+                <TabsTrigger value="criterion" className="text-xs">
                   By Criterion
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="file">
-                <h3 className="text-sm font-medium mb-3">
+              <TabsContent value="file" className="flex flex-col flex-1 overflow-hidden">
+                <h3 className="text-sm font-medium mb-3 shrink-0">
                   Feedback for {selectedFile?.name}
                 </h3>
                 <FeedbackListPanel
@@ -483,13 +576,17 @@ export function EditAssessmentUI({
                     const fileRefName = f.fileRef?.split("/").pop();
                     return fileRefName === selectedFile?.name;
                   })}
-                  selectedFeedbackIndex={selectedFeedbackIndex}
+                  selectedFeedbackId={selectedFeedbackId}
                   onSelect={handleFeedbackSelect}
                   onDelete={handleDeleteFeedback}
                   allFeedbacks={formData.feedbacks}
+                  updateFeedback={handleUpdateFeedback}
                 />
               </TabsContent>
-              <TabsContent value="criterion">
+              <TabsContent
+                value="criterion"
+                className="flex flex-col flex-1 overflow-hidden"
+              >
                 <h3 className="text-sm font-medium mb-3">
                   Feedback for {activeScoringTab}
                 </h3>
@@ -497,10 +594,13 @@ export function EditAssessmentUI({
                   feedbacks={formData.feedbacks.filter(
                     (f) => f.criterion === activeScoringTab,
                   )}
-                  selectedFeedbackIndex={selectedFeedbackIndex}
+                  selectedFeedbackId={selectedFeedbackId}
                   onSelect={handleFeedbackSelect}
                   onDelete={handleDeleteFeedback}
                   allFeedbacks={formData.feedbacks}
+                  activeCriterion={activeScoringTab}
+                  addFeedback={handleAddNewFeedback}
+                  updateFeedback={handleUpdateFeedback}
                 />
               </TabsContent>
             </Tabs>
@@ -532,9 +632,33 @@ export function EditAssessmentUI({
             isResizing={isResizing}
             handleMouseDown={handleMouseDown}
             updateScore={handleUpdateScore}
+            addFeedback={handleAddNewFeedback}
+            updateFeedback={handleUpdateFeedback}
+            feedbacks={formData.feedbacks}
           />
         </div>
       )}
+
+      {/* Replace custom dialog with Shadcn Dialog */}
+      <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Revert</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to revert to the last saved state? All current changes
+              will be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setRevertDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmRevert}>
+              Revert
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

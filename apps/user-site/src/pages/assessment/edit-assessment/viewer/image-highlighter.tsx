@@ -11,7 +11,6 @@ interface ImageViewerProps {
   isHighlightMode: boolean;
   onHighlightComplete: () => void;
   rubricCriteria?: string[];
-  gradingId: string;
   submissionReference: string;
 }
 
@@ -22,7 +21,6 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   isHighlightMode,
   onHighlightComplete,
   rubricCriteria = [],
-  gradingId,
   submissionReference,
 }) => {
   const [open, setOpen] = useState(false);
@@ -36,7 +34,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
     if (!newComment.trim() || !newCriterion) return;
 
     // Format fileRef with gradingId and file.relativePath
-    let fileRef = `${gradingId}/${submissionReference}/${file.relativePath || ""}`;
+    let fileRef = `${submissionReference}/${file.relativePath || ""}`;
 
     const newFeedback: FeedbackItem = {
       criterion: newCriterion,

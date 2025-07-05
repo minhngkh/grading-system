@@ -22,11 +22,11 @@ import { generateRubricContext } from "@/plugins/ai/rubric-metadata";
 
 const llmOptions: LanguageModelWithOptions = {
   model: registry.languageModel("google:gemini-2.5-flash-preview"),
-  providerOptions: googleProviderOptions["gemini-2.5-flash-preview"]({
-    thinking: {
-      mode: "disabled",
-    },
-  }),
+  // providerOptions: googleProviderOptions["gemini-2.5-flash-preview"]({
+  //   // thinking: {
+  //   //   mode: "disabled",
+  //   // },
+  // }),
 };
 
 const textLocationDataSchema = z
