@@ -5,6 +5,7 @@ using MassTransit;
 namespace AssignmentFlow.Application.Assessments.AutoGrading;
 
 public class CriterionGradingConsumer(
+    ISequenceRepository<Feedback> sequenceRepository,
     ICommandBus commandBus,
     ILogger<CriterionGradingConsumer> logger)
     : IConsumer<ICriterionGraded>
@@ -17,7 +18,11 @@ public class CriterionGradingConsumer(
 
         var assessmentId = AssessmentId.With(context.Message.AssessmentId);
         var (breakdownItem, feedbackItems) = context.Message.ScoreBreakdown
-            .ToValueObject(context.Message.CriterionName, Grader.AIGrader, context.Message.Metadata);
+            .ToValueObject(
+            context.Message.CriterionName,
+            Grader.AIGrader,
+            context.Message.Metadata,
+            sequenceRepository);
 
         breakdownItem.MarkAsGraded();
 

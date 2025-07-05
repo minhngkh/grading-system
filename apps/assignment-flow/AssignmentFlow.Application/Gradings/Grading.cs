@@ -6,7 +6,6 @@ using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
 using AssignmentFlow.Application.Gradings.UpdateInfo;
 using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
-using AssignmentFlow.Application.Shared;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Resources;
@@ -75,6 +74,9 @@ public class Grading
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public DateTimeOffset LastModified { get; set; }
 
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public DateTimeOffset CreatedAt { get; set; }
+
     [Attr(Capabilities = AllowView)]
     public int Version { get; private set; }
     
@@ -96,7 +98,7 @@ public class Grading
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
         Reference = domainEvent.AggregateEvent.Reference;
         Name = domainEvent.AggregateEvent.Reference; // Reference is used as the name by default
-
+        CreatedAt = domainEvent.Timestamp.ToUniversalTime();
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }

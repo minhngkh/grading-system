@@ -22,6 +22,7 @@ public static class ValueObjectExtensions
 
     public static Feedback ToValueObject(this FeedbackItemApiContract apiContract)
         => Feedback.New(
+            FeedbackIdentity.New(apiContract.Id),
             CriterionName.New(apiContract.Criterion),
             Comment.New(apiContract.Comment),
             Highlight.New(
@@ -30,7 +31,12 @@ public static class ValueObjectExtensions
             ),
             Tag.New(apiContract.Tag));
 
-    public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(this ScoreBreakdownV2 apiContract, string criterion, Grader grader, Dictionary<string, object?> metadata)
+    public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(
+        this ScoreBreakdownV2 apiContract,
+        string criterion,
+        Grader grader,
+        Dictionary<string, object?> metadata,
+        ISequenceRepository<Feedback> sequenceRepository)
     {
         var criterionName = CriterionName.New(criterion);
 
@@ -42,16 +48,26 @@ public static class ValueObjectExtensions
             Grader = grader
         };
 
+        var summary = Feedback.Summary(
+                FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result),
+                criterionName,
+                Comment.New(apiContract.Summary));
+
         List<Feedback> feedbackItems = [
-            Feedback.Summary(criterionName, Comment.New(apiContract.Summary)),
-            ..apiContract.FeedbackItems.Select(fb => fb.ToValueObject(criterionName))
+            summary,
+            ..apiContract.FeedbackItems.Select(fb => fb.ToValueObject(criterionName, sequenceRepository))
         ];
 
         return (breakdownItem, feedbackItems);
     }
 
-    public static Feedback ToValueObject(this FeedbackItemV2 apiContract, CriterionName criterion)
+    public static Feedback ToValueObject(
+        this FeedbackItemV2 apiContract,
+        CriterionName criterion,
+        ISequenceRepository<Feedback> sequenceRepository)
     {
+        var identity = FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result);
+
         var comment = Comment.New(apiContract.Comment);
 
         var locationDataJson = JsonSerializer.Serialize(apiContract.LocationData);
@@ -60,10 +76,10 @@ public static class ValueObjectExtensions
 
         var feedbackTag = Tag.New(apiContract.Tag);
 
-        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag);
+        return Feedback.New(identity, criterion, comment, feedbackAttachment, feedbackTag);
     }
 
-    // Legacy conversion methods for backwards compatibility
+    [Obsolete("Obsoleted because the target model have been obsolete")]
     public static (ScoreBreakdowns, List<Feedback>) ToValueObject(this IEnumerable<ScoreBreakdown> apiContracts)
     {
         var results = apiContracts
@@ -76,6 +92,7 @@ public static class ValueObjectExtensions
         return (ScoreBreakdowns.New(scoreBreakdownItems), allFeedback);
     }
 
+    [Obsolete]
     public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(this ScoreBreakdown apiContract)
     {
         var criterionName = CriterionName.New(apiContract.CriterionName);
@@ -85,9 +102,11 @@ public static class ValueObjectExtensions
             RawScore = Percentage.New(apiContract.RawScore),
             PerformanceTag = PerformanceTag.New(apiContract.Tag)
         },
-            apiContract.FeedbackItems.ConvertAll(fb => fb.ToValueObject(criterionName)));
+
+        apiContract.FeedbackItems.ConvertAll(fb => fb.ToValueObject(criterionName)));
     }
 
+    [Obsolete]
     public static Feedback ToValueObject(this FeedbackItem apiContract, CriterionName criterion)
     {
         var comment = Comment.New(apiContract.Comment);
@@ -105,6 +124,6 @@ public static class ValueObjectExtensions
 
         var feedbackTag = Tag.New(apiContract.Tag);
 
-        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag);
+        return Feedback.New(FeedbackIdentity.Empty, criterion, comment, feedbackAttachment, feedbackTag);
     }
 }
