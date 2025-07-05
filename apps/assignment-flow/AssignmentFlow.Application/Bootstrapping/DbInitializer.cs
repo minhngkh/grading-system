@@ -1,4 +1,5 @@
 ﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using EventFlow.PostgreSql;
 using EventFlow.PostgreSql.EventStores;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,14 @@ public class DbInitializer(
     BlobServiceClient blobServiceClient,
     ILogger<DbInitializer> logger)
 {
+    private static BlobCorsRule corsRule = new()
+    {
+        AllowedHeaders = "*",
+        AllowedMethods = "GET,PUT,OPTIONS",
+        AllowedOrigins = "*",
+        ExposedHeaders = "*",
+        MaxAgeInSeconds = 3600
+    };
     public async Task InitializeAsync(bool applyMigrations = true)
     {
         try
@@ -31,12 +40,18 @@ public class DbInitializer(
             logger.LogDebug("Database initialization completed successfully.");
 
             logger.LogDebug("Ensuring blob container for submissions store exists...");
+            BlobServiceProperties serviceProperties = blobServiceClient.GetProperties().Value;
+            serviceProperties.Cors.Clear(); // Clear existing rules
+            serviceProperties.Cors.Add(corsRule);
+            blobServiceClient.SetProperties(serviceProperties);
+
             var containerClient = blobServiceClient.GetBlobContainerClient("submissions-store");
             var containerExists = await containerClient.ExistsAsync();
             if (!containerExists.Value)
             {
                 logger.LogDebug("Creating blob container for submissions store...");
                 await containerClient.CreateAsync();
+
                 logger.LogDebug("Blob container created successfully.");
             }
             else
