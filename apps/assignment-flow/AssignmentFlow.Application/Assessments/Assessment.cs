@@ -62,7 +62,7 @@ public class Assessment
     public List<ScoreBreakdownApiContract> ScoreBreakdowns { get; set; } = [];
 
     [Attr(Capabilities = AllowView)]
-    public List<FeedbackItemApiContract> Feedbacks { get; set; } = [];
+    public HashSet<FeedbackItemApiContract> Feedbacks { get; set; } = [];
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public DateTimeOffset LastModified { get; set; }
@@ -125,7 +125,11 @@ public class Assessment
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, UpdateFeedBack.FeedbacksUpdatedEvent> domainEvent, CancellationToken cancellationToken)
     {
-        Feedbacks = domainEvent.AggregateEvent.Feedbacks.ToApiContracts();
+        foreach (var feedback in domainEvent.AggregateEvent.Feedbacks.ToApiContracts())
+        {
+            Feedbacks.Add(feedback);
+        }
+
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
