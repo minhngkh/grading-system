@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Rubric } from "@/types/rubric"; // adjust path
-import * as XLSX from "xlsx-js-style";
+import { utils as XLSXUtils, writeFile as XLSXWriteFile, WorkSheet } from "xlsx-js-style";
 import { GradingAttempt } from "@/types/grading";
 import { Assessment } from "@/types/assessment";
 import GradingResultHelper from "@/lib/grading-result";
@@ -23,7 +23,7 @@ export class RubricExporter implements DataExporter {
 
     // Header
     doc.setFontSize(16);
-    doc.text(`Rubric: ${this.rubric.name}`, 14, 20);
+    doc.text(`Rubric: ${this.rubric.rubricName}`, 14, 20);
     doc.setFontSize(10);
 
     // Build table head
@@ -78,7 +78,7 @@ export class RubricExporter implements DataExporter {
       tableLineColor: [80, 80, 80], // Dark gray border
     });
 
-    doc.save(`${this.rubric.name.replace(/\s+/g, "_")}_Rubric.pdf`);
+    doc.save(`${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.pdf`);
   }
 
   exportToExcel() {
@@ -105,7 +105,7 @@ export class RubricExporter implements DataExporter {
     const worksheetData = [headerRow, ...dataRows];
 
     // Create worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const worksheet = XLSXUtils.aoa_to_sheet(worksheetData);
 
     // Define border style for all cells
     const borderStyle = {
@@ -121,10 +121,10 @@ export class RubricExporter implements DataExporter {
     };
 
     // Apply styles: wrapText, vertical alignment, border, header fill + bold font for first row
-    const range = XLSX.utils.decode_range(worksheet["!ref"]!);
+    const range = XLSXUtils.decode_range(worksheet["!ref"]!);
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        const cellAddress = XLSXUtils.encode_cell({ r: R, c: C });
         const cell = worksheet[cellAddress];
         if (cell) {
           cell.s = {
@@ -147,12 +147,12 @@ export class RubricExporter implements DataExporter {
     );
 
     // Create workbook and add the worksheet
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Rubric");
+    const workbook = XLSXUtils.book_new();
+    XLSXUtils.book_append_sheet(workbook, worksheet, "Rubric");
 
     // Write to file and save
-    const fileName = `${this.rubric.name.replace(/\s+/g, "_")}_Rubric.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    const fileName = `${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.xlsx`;
+    XLSXWriteFile(workbook, fileName);
   }
 }
 
@@ -177,7 +177,7 @@ export class GradingExporter implements DataExporter {
 
     // Header
     doc.setFontSize(16);
-    doc.text(`Grading Report: ${this.grading.id}`, 14, 20);
+    doc.text(`Grading Report: ${this.grading.name}`, 14, 20);
     doc.setFontSize(12);
     doc.text(`Grade Scale: ${scaleFactor}`, 14, 35);
 
@@ -186,12 +186,19 @@ export class GradingExporter implements DataExporter {
     doc.text(`Lowest Score: ${this.gradingHelper.getLowestScore().toFixed(2)}`, 14, 50);
     doc.text(`Highest Score: ${this.gradingHelper.getHighestScore().toFixed(2)}`, 14, 55);
 
+    // Add last updated time
+    const lastUpdated =
+      this.grading.lastModified ?
+        this.grading.lastModified.toLocaleString()
+      : "Not available";
+    doc.text(`Last Updated: ${lastUpdated}`, 14, 60);
+
     // Selectors section
     doc.setFontSize(14);
-    doc.text("Selectors:", 14, 70);
+    doc.text("Selectors:", 14, 75);
     doc.setFontSize(10);
 
-    let yPosition = 80;
+    let yPosition = 85;
     this.grading.selectors.forEach((selector, index) => {
       doc.text(`${index + 1}. Criterion: ${selector.criterion}`, 14, yPosition);
       doc.text(`   Filter: ${selector.pattern}`, 14, yPosition + 8);
@@ -234,16 +241,29 @@ export class GradingExporter implements DataExporter {
       margin: { left: 14, right: 14 },
     });
 
-    doc.save(`Grading_Report_${this.grading.id.replace(/\s+/g, "_")}.pdf`);
+    // Generate filename with grading name and updated time
+    const updatedTime =
+      this.grading.lastModified ?
+        this.grading.lastModified.toISOString().slice(0, 16).replace(/[T:]/g, "_")
+      : new Date().toISOString().slice(0, 16).replace(/[T:]/g, "_");
+
+    const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${updatedTime}.pdf`;
+    doc.save(fileName);
   }
 
   exportToExcel() {
     const scaleFactor = this.grading.scaleFactor ?? 10;
 
     // Create grading info worksheet data
+    const lastUpdated =
+      this.grading.lastModified ?
+        this.grading.lastModified.toLocaleString()
+      : "Not available";
+
     const gradingInfoData = [
-      ["Grading ID", this.grading.id],
-      ["Grade Scale", scaleFactor],
+      ["Grading Name", this.grading.name],
+      ["Grade Scale", `${scaleFactor}`],
+      ["Last Updated", lastUpdated],
       ["Average Score", this.gradingHelper.getAverageScore().toFixed(2)],
       ["Lowest Score", this.gradingHelper.getLowestScore().toFixed(2)],
       ["Highest Score", this.gradingHelper.getHighestScore().toFixed(2)],
@@ -253,21 +273,59 @@ export class GradingExporter implements DataExporter {
       ...this.grading.selectors.map((selector) => [selector.criterion, selector.pattern]),
     ];
 
-    const gradingInfoSheet = XLSX.utils.aoa_to_sheet(gradingInfoData);
+    const gradingInfoSheet = XLSXUtils.aoa_to_sheet(gradingInfoData);
 
-    // Create assessments worksheet data
-    const assessmentsHeader = ["Submission Reference", "Total Grade"];
+    // Create assessments summary table
+    // First, get all unique criteria names from all assessments
+    const allCriteria = Array.from(
+      new Set(
+        this.assessments.flatMap((assessment) =>
+          assessment.scoreBreakdowns.map((sb) => sb.criterionName),
+        ),
+      ),
+    ).sort();
+
+    // Create header row
+    const assessmentsHeader = [
+      "Assessment Name",
+      ...allCriteria.map((criterion) => `${criterion} Points`),
+      "Total Points",
+      "Comments",
+    ];
+
+    // Create data rows
     const assessmentsData = this.assessments.map((assessment) => {
+      const row: any[] = [assessment.submissionReference];
+
+      // Add points for each criterion (apply scale factor)
+      allCriteria.forEach((criterion) => {
+        const breakdown = assessment.scoreBreakdowns.find(
+          (sb) => sb.criterionName === criterion,
+        );
+        const scaledScore = breakdown ? (breakdown.rawScore * scaleFactor) / 100 : 0;
+        row.push(scaledScore.toFixed(2));
+      });
+
+      // Calculate total points (apply scale factor)
       const totalRawScore = assessment.scoreBreakdowns.reduce(
         (sum, breakdown) => sum + breakdown.rawScore,
         0,
       );
-      const totalGrade = (totalRawScore * scaleFactor) / 100;
-      return [assessment.submissionReference, totalGrade];
+      const totalScaledPoints = (totalRawScore * scaleFactor) / 100;
+      row.push(totalScaledPoints.toFixed(2));
+
+      // Concatenate all comments with newlines
+      const allComments = assessment.feedbacks
+        .map((feedback) => feedback.comment)
+        .filter((comment) => comment.trim() !== "")
+        .join("\n");
+      row.push(allComments);
+
+      return row;
     });
 
     const assessmentsWorksheetData = [assessmentsHeader, ...assessmentsData];
-    const assessmentsSheet = XLSX.utils.aoa_to_sheet(assessmentsWorksheetData);
+    const assessmentsSheet = XLSXUtils.aoa_to_sheet(assessmentsWorksheetData);
 
     // Border style for cells
     const borderStyle = {
@@ -283,11 +341,11 @@ export class GradingExporter implements DataExporter {
     };
 
     // Helper function to style a sheet with borders, wrapping, vertical alignment, and header fill
-    function styleSheet(sheet: XLSX.WorkSheet, headerRows: number = 1) {
-      const range = XLSX.utils.decode_range(sheet["!ref"]!);
+    function styleSheet(sheet: WorkSheet, headerRows: number = 1) {
+      const range = XLSXUtils.decode_range(sheet["!ref"]!);
       for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
-          const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+          const cellAddress = XLSXUtils.encode_cell({ r: R, c: C });
           const cell = sheet[cellAddress];
           if (cell) {
             cell.s = {
@@ -302,14 +360,15 @@ export class GradingExporter implements DataExporter {
         }
       }
     }
+
     // Apply borders and wrap to entire gradingInfoSheet
     styleSheet(gradingInfoSheet, 0); // 0 header rows for default fill none
 
-    // Manually set header fill for gradingInfoSheet on the "Criterion", "Pattern" row (row 7 zero-based)
-    const headerRowIndex = 7;
-    const rangeGrading = XLSX.utils.decode_range(gradingInfoSheet["!ref"]!);
+    // Manually set header fill for gradingInfoSheet on the "Criterion", "Pattern" row (row 8 zero-based)
+    const headerRowIndex = 8;
+    const rangeGrading = XLSXUtils.decode_range(gradingInfoSheet["!ref"]!);
     for (let C = rangeGrading.s.c; C <= rangeGrading.e.c; ++C) {
-      const cellAddress = XLSX.utils.encode_cell({ r: headerRowIndex, c: C });
+      const cellAddress = XLSXUtils.encode_cell({ r: headerRowIndex, c: C });
       const cell = gradingInfoSheet[cellAddress];
       if (cell) {
         cell.s = {
@@ -326,21 +385,70 @@ export class GradingExporter implements DataExporter {
       }
     }
 
-    // Apply styling and fill header row for assessmentsSheet (header row 0)
-    styleSheet(assessmentsSheet, 1); // fill applied on first row
+    // Apply styling to assessments sheet with header row
+    styleSheet(assessmentsSheet, 1); // Header row styling
 
-    // Set column widths
+    // Apply bold formatting to the total points column
+    const assessmentsRange = XLSXUtils.decode_range(assessmentsSheet["!ref"]!);
+    const totalPointsColumnIndex = allCriteria.length + 1; // Assessment name + criteria columns = total points column
+
+    for (let R = assessmentsRange.s.r; R <= assessmentsRange.e.r; ++R) {
+      const cellAddress = XLSXUtils.encode_cell({ r: R, c: totalPointsColumnIndex });
+      const cell = assessmentsSheet[cellAddress];
+      if (cell) {
+        let cellFill = R === 0 ? headerFill : undefined;
+
+        // Apply color coding for data rows (not header)
+        if (R > 0 && cell.v !== undefined) {
+          const totalPoints = parseFloat(cell.v.toString());
+          const percentage = (totalPoints / scaleFactor) * 100;
+
+          if (percentage < 20) {
+            cellFill = { fgColor: { rgb: "FFCCCC" } }; // Light red
+          } else if (percentage < 80) {
+            cellFill = { fgColor: { rgb: "FFFFCC" } }; // Light yellow
+          } else {
+            cellFill = { fgColor: { rgb: "CCE5FF" } }; // Light blue
+          }
+        }
+
+        cell.s = {
+          ...cell.s,
+          font: { bold: true },
+          fill: cellFill,
+        };
+      }
+    }
+
+    // Set column widths for assessments sheet
+    const assessmentsCols = [];
+    // Assessment name column
+    assessmentsCols.push({ wch: 25 });
+    // Criterion points columns (smaller width for numbers)
+    allCriteria.forEach(() => assessmentsCols.push({ wch: 12 }));
+    // Total points column
+    assessmentsCols.push({ wch: 12 });
+    // Comments column (wider for text)
+    assessmentsCols.push({ wch: 50 });
+
+    assessmentsSheet["!cols"] = assessmentsCols;
+
+    // Set column widths for grading info sheet
     gradingInfoSheet["!cols"] = [{ wch: 20 }, { wch: 40 }];
-    assessmentsSheet["!cols"] = [{ wch: 30 }, { wch: 15 }];
 
     // Create workbook and add worksheets
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, gradingInfoSheet, "Grading Info");
-    XLSX.utils.book_append_sheet(workbook, assessmentsSheet, "Assessments");
+    const workbook = XLSXUtils.book_new();
+    XLSXUtils.book_append_sheet(workbook, gradingInfoSheet, "Grading Info");
+    XLSXUtils.book_append_sheet(workbook, assessmentsSheet, "Assessment Summary");
 
     // Write to file and save
-    const fileName = `Grading_Report_${this.grading.id.replace(/\s+/g, "_")}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    const updatedTime =
+      this.grading.lastModified ?
+        this.grading.lastModified.toISOString().slice(0, 16).replace(/[T:]/g, "_")
+      : new Date().toISOString().slice(0, 16).replace(/[T:]/g, "_");
+
+    const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${updatedTime}.xlsx`;
+    XLSXWriteFile(workbook, fileName);
   }
 }
 
@@ -430,13 +538,13 @@ export class AssessmentExporter implements DataExporter {
       ]),
     );
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const ws = XLSXUtils.aoa_to_sheet(wsData);
 
     const headerRows = [scoreHeaderRow, feedbackHeaderRow];
     headerRows.forEach((rowIdx) => {
       const colLen = wsData[rowIdx].length;
       for (let c = 0; c < colLen; c++) {
-        const cellAddr = XLSX.utils.encode_cell({ r: rowIdx, c });
+        const cellAddr = XLSXUtils.encode_cell({ r: rowIdx, c });
         const cell = ws[cellAddr];
         if (cell) {
           cell.s = {
@@ -456,7 +564,7 @@ export class AssessmentExporter implements DataExporter {
 
     for (let r = 0; r < wsData.length; r++) {
       for (let c = 0; c < wsData[r].length; c++) {
-        const cellAddr = XLSX.utils.encode_cell({ r, c });
+        const cellAddr = XLSXUtils.encode_cell({ r, c });
         const cell = ws[cellAddr];
         if (cell) {
           cell.s = {
@@ -484,9 +592,9 @@ export class AssessmentExporter implements DataExporter {
     }
     ws["!cols"] = cols;
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Assessment");
+    const wb = XLSXUtils.book_new();
+    XLSXUtils.book_append_sheet(wb, ws, "Assessment");
 
-    XLSX.writeFile(wb, `Assessment_${this.assessment.submissionReference}.xlsx`);
+    XLSXWriteFile(wb, `Assessment_${this.assessment.submissionReference}.xlsx`);
   }
 }

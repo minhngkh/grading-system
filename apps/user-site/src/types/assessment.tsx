@@ -65,7 +65,6 @@ export const AssessmentSchema = z.object({
   status: z.nativeEnum(AssessmentState),
 });
 
-// 🎯 Types
 export type Assessment = z.infer<typeof AssessmentSchema>;
 export type FeedbackItem = z.infer<typeof FeedbackSchema>;
 export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;

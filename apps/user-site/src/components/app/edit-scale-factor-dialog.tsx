@@ -60,10 +60,10 @@ export const ChangeScaleFactorDialog = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     onChangeScaleFactor(scaleFactor);
     onOpenChange?.(false);
-  }, [onChangeScaleFactor, onOpenChange]);
+  }, [onChangeScaleFactor, onOpenChange, scaleFactor]);
 
   // Handle dialog close
   const handleOpenChange = useCallback(
