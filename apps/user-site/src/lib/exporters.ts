@@ -361,7 +361,7 @@ export class GradingExporter implements DataExporter {
       : new Date().toISOString().slice(0, 16).replace(/[T:]/g, "_");
 
     const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${createdTime}.xlsx`;
-    XLSXWriteFile(workbook, fileName);
+    XLSX.writeFile(workbook, fileName);
   }
 }
 
