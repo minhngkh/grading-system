@@ -81,7 +81,7 @@ function RouteComponent() {
               status: GradingStatus.Graded,
             })}
             selectFn={(grading) =>
-              `${grading.name} ${grading.createdAt.toLocaleDateString()}`
+              `${grading.name} - ${grading.createdAt.toLocaleString()}`
             }
           />
         </div>

@@ -185,10 +185,7 @@ export default function GradingResult({
             <Download className="w-4 h-4" />
             Export
           </Button>
-          <Link
-            to="/gradings/$gradingId/analytics"
-            params={{ gradingId: gradingAttempt.id }}
-          >
+          <Link to="/analytics" search={{ id: gradingAttempt.id }}>
             <Button variant="outline" size="sm" disabled={isGrading}>
               <ChartColumn className="w-4 h-4" />
               View Analytics

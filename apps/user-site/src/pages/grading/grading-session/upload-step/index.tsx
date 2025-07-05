@@ -139,6 +139,7 @@ export default function UploadStep({ form }: UploadStepProps) {
 
           const uploadRefs = await uploadFileMutation.mutateAsync(chunk);
           allUploadRefs.push(...uploadRefs);
+          setUploadedFiles((prev) => [...prev, ...chunk]);
         }
 
         const newSubmissions = [
@@ -192,9 +193,8 @@ export default function UploadStep({ form }: UploadStepProps) {
       }),
     );
 
-    setValue("submissions", []);
     setUploadedFiles([]);
-
+    setValue("submissions", []);
     setFileDialogOpen(false);
   };
 
