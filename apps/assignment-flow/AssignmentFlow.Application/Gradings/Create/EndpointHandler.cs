@@ -1,12 +1,13 @@
 ﻿using EventFlow;
 using EventFlow.Queries;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using RubricEngine.Application.Protos;
 using System.Security.Claims;
 
 namespace AssignmentFlow.Application.Gradings.Create;
 
-public static class EndpointHandler
+public static partial class EndpointHandler
 {
     public static IEndpointRouteBuilder MapCreateGrading(this IEndpointRouteBuilder endpoint)
     {
@@ -20,6 +21,7 @@ public static class EndpointHandler
 
     [Authorize]
     private static async Task<IResult> CreateGrading(
+        [FromBody] CreateGradingRequest request,
         ICommandBus commandBus,
         IQueryProcessor queryProcessor,
         ClaimsPrincipal user,
@@ -33,6 +35,9 @@ public static class EndpointHandler
         await commandBus.PublishAsync(new Command(gradingId)
         {
             TeacherId = TeacherId.With(teacherId),
+            RubricId = string.IsNullOrWhiteSpace(request.RubricId) ? null : RubricId.With(request.RubricId),
+            Name = string.IsNullOrWhiteSpace(request.Name) ? null : GradingName.New(request.Name),
+            ScaleFactor = request.ScaleFactor.HasValue ? ScaleFactor.New(request.ScaleFactor.Value) : ScaleFactor.TenPoint
         }, cancellationToken);
 
         var grading = await queryProcessor.ProcessAsync(

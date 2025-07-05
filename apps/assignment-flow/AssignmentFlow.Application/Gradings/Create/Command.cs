@@ -5,6 +5,9 @@ namespace AssignmentFlow.Application.Gradings.Create;
 public class Command(GradingId id) : Command<GradingAggregate, GradingId>(id)
 {
     public required TeacherId TeacherId { get; init; }
+    public required ScaleFactor ScaleFactor { get; init; }
+    public RubricId? RubricId { get; init; }
+    public GradingName? Name { get; init; }
 }
 
 public class CommandHandler : CommandHandler<GradingAggregate, GradingId, Command>
