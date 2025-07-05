@@ -26,6 +26,7 @@ public static partial class EndpointHandler
         IQueryProcessor queryProcessor,
         ClaimsPrincipal user,
         RubricProtoService.RubricProtoServiceClient rubricProto,
+        ISequenceRepository<Grading> sequenceRepository,
         CancellationToken cancellationToken)
     {
         var teacherId = user.FindFirstValue(ClaimTypes.NameIdentifier)
@@ -34,6 +35,7 @@ public static partial class EndpointHandler
         var gradingId = GradingId.NewComb();
         await commandBus.PublishAsync(new Command(gradingId)
         {
+            Reference = await sequenceRepository.GenerateSequence(),
             TeacherId = TeacherId.With(teacherId),
             RubricId = string.IsNullOrWhiteSpace(request.RubricId) ? null : RubricId.With(request.RubricId),
             Name = string.IsNullOrWhiteSpace(request.Name) ? null : GradingName.New(request.Name),
