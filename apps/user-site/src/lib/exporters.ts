@@ -24,6 +24,7 @@ export class RubricExporter implements DataExporter {
     // Header
     doc.setFontSize(16);
     doc.text(`Rubric: ${this.rubric.rubricName}`, 14, 20);
+    doc.text(`Rubric: ${this.rubric.rubricName}`, 14, 20);
     doc.setFontSize(10);
 
     // Build table head
@@ -78,6 +79,7 @@ export class RubricExporter implements DataExporter {
       tableLineColor: [80, 80, 80], // Dark gray border
     });
 
+    doc.save(`${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.pdf`);
     doc.save(`${this.rubric.rubricName.replace(/\s+/g, "_")}_Rubric.pdf`);
   }
 
@@ -349,25 +351,6 @@ export class AssessmentExporter implements DataExporter {
 
   exportToPDF() {
     const doc = new jsPDF();
-
-    // Thêm font Unicode (ví dụ DejaVuSans)
-    // 1. Import font file đã convert sang js (xem hướng dẫn dưới)
-    // 2. doc.addFileToVFS("DejaVuSans.ttf", ...); doc.addFont("DejaVuSans.ttf", "DejaVuSans", "normal");
-    // 3. doc.setFont("DejaVuSans");
-
-    // Nếu bạn đã import font:
-    // doc.addFileToVFS("DejaVuSans.ttf", DejaVuSansFontBase64);
-    // doc.addFont("DejaVuSans.ttf", "DejaVuSans", "normal");
-    // doc.setFont("DejaVuSans");
-
-    // Nếu chưa có font, bạn cần convert font .ttf sang js bằng công cụ: https://github.com/simonbengtsson/jsPDF-AutoTable#use-custom-fonts
-
-    // Ví dụ:
-    // import DejaVuSansFont from './fonts/DejaVuSans-normal.js';
-    // doc.addFileToVFS("DejaVuSans.ttf", DejaVuSansFont);
-    // doc.addFont("DejaVuSans.ttf", "DejaVuSans", "normal");
-    // doc.setFont("DejaVuSans");
-
     doc.setFontSize(16);
     doc.text("Assessment Report", 14, 20);
 
@@ -410,7 +393,7 @@ export class AssessmentExporter implements DataExporter {
           fb.comment,
           fb.tag,
           fb.fileRef.split("/").pop() ?? "",
-          String(fb.locationData), // || position,
+          position,
         ];
       }),
       headStyles: {
@@ -448,9 +431,23 @@ export class AssessmentExporter implements DataExporter {
         summaryFb ? summaryFb.comment : "",
       ]);
     });
+    wsData.push(["Criterion", "Tag", "Score", "Summary"]);
+    this.assessment.scoreBreakdowns.forEach((sb) => {
+      // Tìm summary feedback cho criterion này
+      const summaryFb = this.assessment.feedbacks.find(
+        (fb) => fb.tag === "summary" && fb.criterion === sb.criterionName,
+      );
+      wsData.push([
+        sb.criterionName,
+        sb.performanceTag,
+        sb.rawScore,
+        summaryFb ? summaryFb.comment : "",
+      ]);
+    });
     wsData.push([]);
 
     const feedbackHeaderRow = wsData.length;
+    wsData.push(["Criterion", "Comment", "Tag", "File", "Position"]);
     wsData.push(["Criterion", "Comment", "Tag", "File", "Position"]);
 
     this.assessment.feedbacks
@@ -468,7 +465,7 @@ export class AssessmentExporter implements DataExporter {
           fb.comment,
           fb.tag,
           fb.fileRef.split("/").pop() ?? "",
-          fb.locationData ? JSON.stringify(fb.locationData) : position,
+          position,
         ]);
       });
 

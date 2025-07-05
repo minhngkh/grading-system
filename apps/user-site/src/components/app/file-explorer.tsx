@@ -270,7 +270,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   const allSelected =
     selectors.length > 0 && selectedCriteria.length === selectors.length;
   return (
-    <div className="p-4 h-full w-50">
+    <div className="pt-4 px-4 h-full w-50 flex flex-col">
       <div className="justify-between flex items-center">
         <h3 className="text-sm font-medium">Explorer</h3>
         <Popover>
@@ -327,7 +327,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </Popover>
       </div>
 
-      <div className="py-3 h-full space-y-1 overflow-auto">
+      <div className="mt-3 flex-1 overflow-auto space-y-2">
         {renderTree(
           tree,
           "",

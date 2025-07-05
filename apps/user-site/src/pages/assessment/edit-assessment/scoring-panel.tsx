@@ -260,7 +260,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                                     );
                                     updateScore(criterion.name, newRaw);
                                   }}
-                                  className="w-20 rounded border border-gray-600 px-2 py-1 text-sm"
+                                  className="w-20 rounded border border-gray-600 px-2 py-1 text-sm font-semibold"
                                 />
                                 <span className="text-xs">
                                   / {criterionMaxPoints} points

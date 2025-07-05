@@ -28,6 +28,14 @@ import { ExportDialog } from "@/components/app/export-dialog";
 import { AssessmentExporter } from "@/lib/exporters";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FeedbackListPanel } from "./feedback-list-panel";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export function EditAssessmentUI({
   assessment,
@@ -55,22 +63,33 @@ export function EditAssessmentUI({
     feedbacks: Assessment["feedbacks"];
   } | null>(null);
 
-  // Khi mount lần đầu, lastSavedData là dữ liệu gốc
+  // Add state for revert confirmation dialog
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
+
+  // Khi mount lần đầu, lastSavedData và initialData là dữ liệu gốc
   useEffect(() => {
     if (lastSavedData === null) {
-      setLastSavedData({
+      const initialState = {
         scoreBreakdowns: assessment.scoreBreakdowns,
         feedbacks: assessment.feedbacks,
-      });
+      };
+      setLastSavedData(initialState);
+      setInitialData(initialState);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // chỉ phụ thuộc files để đảm bảo đã load xong file
+  }, []);
 
   // isDirty so sánh với lastSavedData
   const isDirty =
     lastSavedData !== null &&
     (!equal(formData.scoreBreakdowns, lastSavedData.scoreBreakdowns) ||
       !equal(formData.feedbacks, lastSavedData.feedbacks));
+
+  // Calculate if revert is possible (compare current with initial)
+  const canRevert =
+    initialData !== null &&
+    (!equal(formData.scoreBreakdowns, initialData.scoreBreakdowns) ||
+      !equal(formData.feedbacks, initialData.feedbacks));
 
   const [files, setFiles] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
@@ -204,13 +223,28 @@ export function EditAssessmentUI({
         throw new Error("You must be logged in to update feedback");
       }
       await AssessmentService.updateFeedback(assessment.id, formData.feedbacks, token);
+
+      // Update lastSavedData and initialData with the current feedback values
+      if (lastSavedData) {
+        setLastSavedData({
+          ...lastSavedData,
+          feedbacks: form.getValues("feedbacks"),
+        });
+      }
+
+      if (initialData) {
+        setInitialData({
+          ...initialData,
+          feedbacks: form.getValues("feedbacks"),
+        });
+      }
+
       toast.success("Feedback updated successfully");
     } catch (err) {
       toast.error("Failed to update feedback");
       console.error(err);
     }
   };
-  console.log("Saving feedbacks:", formData);
 
   const handleSaveScore = async () => {
     try {
@@ -219,23 +253,27 @@ export function EditAssessmentUI({
         throw new Error("You must be logged in to update score");
       }
       await AssessmentService.updateScore(assessment.id, formData.scoreBreakdowns, token);
+
+      // Update lastSavedData and initialData with the current score values
+      if (lastSavedData) {
+        setLastSavedData({
+          ...lastSavedData,
+          scoreBreakdowns: form.getValues("scoreBreakdowns"),
+        });
+      }
+
+      if (initialData) {
+        setInitialData({
+          ...initialData,
+          scoreBreakdowns: form.getValues("scoreBreakdowns"),
+        });
+      }
+
       toast.success("Score updated successfully");
     } catch (err) {
       toast.error("Failed to update score");
       console.error(err);
     }
-  };
-
-  const handleSaveAssessment = async () => {
-    console.log("Saving assessment data:", formData);
-    await handleSaveFeedback();
-    await handleSaveScore();
-    // Sau khi lưu thành công, cập nhật lastSavedData để reset isDirty
-    setLastSavedData({
-      scoreBreakdowns: form.getValues("scoreBreakdowns"),
-      feedbacks: form.getValues("feedbacks"),
-    });
-    return;
   };
 
   const handleExport = () => {
@@ -363,6 +401,12 @@ export function EditAssessmentUI({
 
   // Khi revert, trả về đúng dữ liệu gốc ban đầu
   const handleRevertAdjustment = () => {
+    if (!initialData || !canRevert) return;
+    setRevertDialogOpen(true);
+  };
+
+  // Function to actually perform the revert after confirmation
+  const confirmRevert = () => {
     if (!initialData) return;
     form.setValue("scoreBreakdowns", initialData.scoreBreakdowns, {
       shouldValidate: true,
@@ -373,18 +417,12 @@ export function EditAssessmentUI({
       scoreBreakdowns: initialData.scoreBreakdowns,
       feedbacks: initialData.feedbacks,
     });
-    toast.success("Reverted to original data.");
+    setRevertDialogOpen(false);
+    toast.success("Reverted to saved data.");
   };
 
   return (
-    <div
-      className="-mb-20 -mt-12 h-[92vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-auto "
-      // style={{
-      //   height: "92vh",
-      //   maxHeight: "100vh",
-      //   position: "relative",
-      // }}
-    >
+    <div className="-mb-20 -mt-12 h-[92vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-auto ">
       {/* Header with fixed height */}
       <div className="p-4" style={{ height: "72px" }}>
         <div className="flex items-center md:justify-between">
@@ -428,13 +466,22 @@ export function EditAssessmentUI({
               exporterClass={AssessmentExporter}
               args={[formData]}
             />
-            <Button className="cursor-pointer" size="sm" onClick={handleRevertAdjustment}>
+            <Button
+              className="cursor-pointer"
+              size="sm"
+              onClick={handleRevertAdjustment}
+              disabled={!canRevert}
+            >
               <History className="h-4 w-4 mr-2" />
-              Revert Adjustment
+              Revert Changes
             </Button>
-            <Button className="cursor-pointer" size="sm" onClick={handleSaveAssessment}>
+            <Button className="cursor-pointer" size="sm" onClick={handleSaveFeedback}>
               <Save className="h-4 w-4 mr-2" />
-              Save Assessment
+              Save Feedback
+            </Button>
+            <Button className="cursor-pointer" size="sm" onClick={handleSaveScore}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Scoring
             </Button>
           </div>
         </div>
@@ -507,28 +554,22 @@ export function EditAssessmentUI({
             : <div className="flex-1 w-full overflow-auto">{renderFileContent()}</div>}
           </div>
 
-          <div className="ml-4 w-60 py-4 text-wrap flex flex-col">
+          <div className="ml-4 w-60 pt-4 flex flex-col h-full">
             <Tabs
               value={feedbackViewMode}
               onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
-              className="flex-1 flex flex-col min-h-0"
+              className="flex flex-col h-full"
             >
-              <TabsList className="w-full rounded-lg p-1 flex">
-                <TabsTrigger
-                  value="file"
-                  className="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
-                >
+              <TabsList className="text-xs font-medium rounded-md w-full shrink-0">
+                <TabsTrigger value="file" className="text-xs">
                   By File
                 </TabsTrigger>
-                <TabsTrigger
-                  value="criterion"
-                  className="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
-                >
+                <TabsTrigger value="criterion" className="text-xs">
                   By Criterion
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="file" className="flex-1 min-h-0 h-auto overflow-auto">
-                <h3 className="text-sm font-medium mb-3">
+              <TabsContent value="file" className="flex flex-col flex-1 overflow-hidden">
+                <h3 className="text-sm font-medium mb-3 shrink-0">
                   Feedback for {selectedFile?.name}
                 </h3>
                 <FeedbackListPanel
@@ -543,7 +584,7 @@ export function EditAssessmentUI({
                   updateFeedback={handleUpdateFeedback}
                 />
               </TabsContent>
-              <TabsContent value="criterion" className="flex-1 min-h-0 overflow-auto">
+              <TabsContent value="criterion" className="min-h-0">
                 <h3 className="text-sm font-medium mb-3">
                   Feedback for {activeScoringTab}
                 </h3>
@@ -595,6 +636,27 @@ export function EditAssessmentUI({
           />
         </div>
       )}
+
+      {/* Replace custom dialog with Shadcn Dialog */}
+      <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Revert</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to revert to the last saved state? All current changes
+              will be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setRevertDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmRevert}>
+              Revert
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
