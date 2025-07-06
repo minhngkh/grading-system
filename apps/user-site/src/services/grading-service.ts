@@ -180,11 +180,4 @@ export class GradingService {
     const configHeaders = this.buildHeaders(token);
     return axios.put(`${GRADING_API_URL}/${id}/info`, { name }, configHeaders);
   }
-
-  static async getAssessmentSASToken(token: string): Promise<string> {
-    const configHeaders = this.buildHeaders(token);
-    const response = await axios.get(`${GRADING_API_URL}/sasToken`, configHeaders);
-    console.log("SAS Token:", response.data);
-    return response.data;
-  }
 }

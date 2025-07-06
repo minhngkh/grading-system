@@ -9,8 +9,9 @@ import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-
 
 function createContextHeader(data: Record<string, unknown>) {
   return dedent`
-    ## RUBRIC ADDITIONAL CONTEXT ###
-    This is additional context for the provided rubric, which was not included in the rubric itself:
+    ## RUBRIC CONTROLLING CONTEXT ###
+    This is controlling context for the provided rubric, which dictate the rubric's behavior and scoring criteria.
+    It is important to understand this context in order to properly interpret the rubric and its scores.
     \`\`\`json
     ${JSON.stringify(data, null, 2)}
     \`\`\`
@@ -41,7 +42,7 @@ export function generateRubricContext(data: {
 
     const downloadDirectory = yield* createTempDirectory("rubric-context");
 
-    // TOOD: download straght to buffer or cache if it doesnt change 
+    // TOOD: download straght to buffer or cache if it doesnt change
     const contextFilesInfo = yield* rubricContextStore
       .downloadToDirectory(blobNameRoot, blobNameRestList, downloadDirectory)
       .andThen(() =>
