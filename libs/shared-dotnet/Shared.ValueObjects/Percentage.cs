@@ -20,15 +20,7 @@ public sealed class Percentage : SingleValueObject<decimal>
     public static Percentage OneHundred => new(100M);
 
     [JsonConstructor]
-    public Percentage(decimal value) : base(value) => Validate(value);
-
-    private void Validate(decimal value)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(value, nameof(value));
-
-        // if (value > 100m)
-        //     throw new ArgumentOutOfRangeException(nameof(value), "Percentage value cannot exceed 100%");
-    }
+    public Percentage(decimal value) : base(value) { }
 
     public static implicit operator decimal(Percentage valueObject) => valueObject.Value;
 

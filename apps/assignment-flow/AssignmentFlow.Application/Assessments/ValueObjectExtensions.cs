@@ -5,10 +5,13 @@ namespace AssignmentFlow.Application.Assessments;
 
 public static class ValueObjectExtensions
 {
+    public static ScoreBreakdowns ToValueObject(this IEnumerable<ScoreBreakdownApiContract> apiContracts)
+    => ScoreBreakdowns.New([.. apiContracts.Select(s => s.ToValueObject())]);
+
     public static ScoreBreakdowns ToValueObject(this IEnumerable<ScoreBreakdownApiContract> apiContracts, Grader grader)
         => ScoreBreakdowns.New([.. apiContracts.Select(s => s.ToValueObject(grader))]);
 
-    public static ScoreBreakdownItem ToValueObject(this ScoreBreakdownApiContract apiContract, Grader grader)
+    public static ScoreBreakdownItem ToValueObject(this ScoreBreakdownApiContract apiContract, Grader? grader = null)
     {
         var criterionName = CriterionName.New(apiContract.CriterionName);
         return new ScoreBreakdownItem(criterionName)
@@ -16,7 +19,8 @@ public static class ValueObjectExtensions
             RawScore = Percentage.New(apiContract.RawScore),
             PerformanceTag = PerformanceTag.New(apiContract.PerformanceTag),
             MetadataJson = apiContract.MetadataJson,
-            Grader = grader
+            Grader = grader ?? Grader.New(apiContract.Grader),
+            Status = apiContract.Status
         };
     }
 
