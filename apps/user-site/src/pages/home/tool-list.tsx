@@ -38,7 +38,6 @@ export function ToolsList({ tools }: ToolsListProps) {
           }}
           key={index}
           to={tool.navigation}
-          params={tool.params}
           preload={tool.preload ?? "intent"}
         >
           <Card className="h-full">
