@@ -4,7 +4,7 @@ import type { Result } from "neverthrow";
 import { Buffer } from "node:buffer";
 import path from "node:path";
 import process from "node:process";
-import { CustomError } from "@grading-system/utils/error";
+import { CustomErrorV0 } from "@grading-system/utils/error";
 import { readFile } from "@grading-system/utils/file";
 import dedent from "dedent";
 import mime from "mime";
@@ -52,7 +52,7 @@ function signSupportedBlobs(container: BlobContainer, blobNameList: string[]) {
   });
 }
 
-class NotSupportedInProductionError extends CustomError<void> {}
+class NotSupportedInProductionError extends CustomErrorV0<void> {}
 
 export function createLlmFileParts(data: {
   // blobNameRoot: string;

@@ -7,7 +7,7 @@ import {
   getBlobNameParts,
   getBlobNameRest,
 } from "@grading-system/utils/azure-storage-blob";
-import { CustomError } from "@grading-system/utils/error";
+import { CustomErrorV0 } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { generateObject } from "ai";
 import dedent from "dedent";
@@ -131,7 +131,7 @@ function createGradingSystemPrompt(partOfRubric: Criterion[]) {
   `;
 }
 
-class ErrorWithCriteriaInfo extends CustomError<{
+class ErrorWithCriteriaInfo extends CustomErrorV0<{
   criterionNames: string[];
 }> {}
 

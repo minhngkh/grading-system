@@ -4,7 +4,7 @@ import { BlobSASPermissions, BlobServiceClient, SASProtocol } from "@azure/stora
 import { err, ok, ResultAsync, safeTry } from "neverthrow";
 import { createDirectory, deleteDirectory } from "@/file";
 import logger from "@/logger";
-import { CustomError } from "./error";
+import { CustomErrorV0 } from "./error";
 
 export function getBlobName(url: string, containerName: string): Result<string, Error> {
   const parts = url.split(`${containerName}/`);
@@ -46,9 +46,9 @@ export class BlobService {
   }
 }
 
-class DownloadToBufferError extends CustomError<{ blobName: string }> {}
-class DownloadToFileError extends CustomError<{ blobName: string; localPath: string }> {}
-class GenerateSignedUrlError extends CustomError<{ blobName: string }> {}
+class DownloadToBufferError extends CustomErrorV0<{ blobName: string }> {}
+class DownloadToFileError extends CustomErrorV0<{ blobName: string; localPath: string }> {}
+class GenerateSignedUrlError extends CustomErrorV0<{ blobName: string }> {}
 
 export class BlobContainer {
   containerName: string;

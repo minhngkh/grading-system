@@ -1,7 +1,7 @@
 import type { CliOptions } from "repomix";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { CustomError, wrapError } from "@grading-system/utils/error";
+import { CustomErrorV0, wrapError } from "@grading-system/utils/error";
 import { deleteDirectory, deleteFile } from "@grading-system/utils/file";
 import logger from "@grading-system/utils/logger";
 import fg from "fast-glob";
@@ -68,7 +68,7 @@ export type FilesSubset = {
   blobNameRestList: string[];
 };
 
-class PackFilesError extends CustomError<{
+class PackFilesError extends CustomErrorV0<{
   ids: string[];
 }> {}
 

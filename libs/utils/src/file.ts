@@ -2,9 +2,9 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
-import { CustomError } from "@/error";
+import { CustomErrorV0 } from "@/error";
 
-class CheckDirectoryError extends CustomError<{ path: string }> {}
+class CheckDirectoryError extends CustomErrorV0<{ path: string }> {}
 
 export function checkTempDirectoryExists(name: string) {
   const dirPath = path.join(os.tmpdir(), name);
@@ -20,7 +20,7 @@ export function checkTempDirectoryExists(name: string) {
   ).map(() => dirPath);
 }
 
-class CreateDirectoryError extends CustomError<{ path: string }> {}
+class CreateDirectoryError extends CustomErrorV0<{ path: string }> {}
 export function createDirectory(directoryPath: string, recursive = true) {
   return ResultAsync.fromPromise(
     fs.mkdir(directoryPath, { recursive: true }),
@@ -72,7 +72,7 @@ export function createTempDirectory(prefix: string): ResultAsync<string, Error> 
   );
 }
 
-class DeleteFileError extends CustomError<{ path: string }> {}
+class DeleteFileError extends CustomErrorV0<{ path: string }> {}
 
 export function deleteDirectory(directoryPath: string): ResultAsync<void, Error> {
   return ResultAsync.fromPromise(
@@ -98,7 +98,7 @@ export function deleteFile(filePath: string): ResultAsync<void, Error> {
   );
 }
 
-class ReadFileError extends CustomError<{ path: string }> {}
+class ReadFileError extends CustomErrorV0<{ path: string }> {}
 
 export function readFile(filePath: string, encoding?: BufferEncoding) {
   return ResultAsync.fromPromise(
