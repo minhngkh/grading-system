@@ -9,6 +9,7 @@ import { readFile } from "@grading-system/utils/file";
 import dedent from "dedent";
 import mime from "mime";
 import { err, errAsync, ok, okAsync, ResultAsync, safeTry } from "neverthrow";
+import { multimodalFileManifestHeader } from "@/plugins/ai/prompts/grade";
 
 const SUPPORTED_CONTENT_TYPES = [
   "image/png",
@@ -121,18 +122,11 @@ export function createLlmFileParts(data: {
   });
 }
 
-export const GRADING_FILES_HEADER = dedent`
-  ### MULTIMODAL FILE MANIFEST ###
-  - Addition to all of the text files listed above, this prompt includes the following non-text files, which have been uploaded separately. Please use this manifest to correlate the files with their original paths in the directory.
-  - Remember to use the file original path instead of the uploaded file name when referring to the files in your response.
-    - For example, if the uploaded file name is \`file_1.txt\` the original path is \`/path/to/text.txt\`, you should refer to the file as \`/path/to/text.txt\` in your response.
-`;
-
 const SEPARATOR = "\n---\n";
 
 export function createFileAliasManifest(
   BlobNameRestAliasMap: Map<string, string>,
-  header = GRADING_FILES_HEADER,
+  header = multimodalFileManifestHeader,
 ) {
   return safeTry(function* () {
     // yield* getBlobName(url, DEFAULT_CONTAINER)

@@ -1,26 +1,18 @@
 import { getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
-import { deleteDirectory, deleteFile } from "@grading-system/utils/file";
+import { deleteDirectory } from "@grading-system/utils/file";
 import logger from "@grading-system/utils/logger";
-import dedent from "dedent";
 import { okAsync, safeTry } from "neverthrow";
 import { rubricContextStore } from "@/lib/blob-storage";
 import { createTempDirectory } from "@/lib/file";
 import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-files";
+import {
+  gradingContextHeader,
+  gradingContextManifestHeader,
+} from "@/plugins/ai/prompts/grade";
 
 function createContextHeader(data: Record<string, unknown>) {
-  return dedent`
-    ## RUBRIC ADDITIONAL CONTEXT ###
-    This is additional context for the provided rubric, which was not included in the rubric itself:
-    \`\`\`json
-    ${JSON.stringify(data, null, 2)}
-    \`\`\`
-  `;
+  return gradingContextHeader(JSON.stringify(data, null, 2));
 }
-
-const CONTEXT_MANIFEST_HEADER = dedent`
-  ## Rubric additional context manifest ##
-  There are also additional missing context for the provided rubric in form of files, which are uploaded separately. Please use this manifest to correlate the files with their original paths in the directory.
-`;
 
 export function generateRubricContext(data: {
   blobNameList: string[];
@@ -41,7 +33,7 @@ export function generateRubricContext(data: {
 
     const downloadDirectory = yield* createTempDirectory("rubric-context");
 
-    // TOOD: download straght to buffer or cache if it doesnt change 
+    // TODO: download straight to buffer or cache if it doesn't change
     const contextFilesInfo = yield* rubricContextStore
       .downloadToDirectory(blobNameRoot, blobNameRestList, downloadDirectory)
       .andThen(() =>
@@ -59,7 +51,7 @@ export function generateRubricContext(data: {
 
     const contextFilesManifest = yield* createFileAliasManifest(
       contextFilesInfo.BlobNameRestAliasMap,
-      CONTEXT_MANIFEST_HEADER,
+      gradingContextManifestHeader,
     );
 
     const contextHeader = createContextHeader(data.metadata);
