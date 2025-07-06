@@ -5,14 +5,14 @@ import { useClerk } from "@clerk/clerk-react";
 import { CalendarDays, Clock, Link, Mail, Phone, User, Users } from "lucide-react";
 
 function formatMemberSince(date: Date) {
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(undefined, {
     month: "short",
     year: "numeric",
   });
 }
 
 function formatLastSignIn(date: Date) {
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",

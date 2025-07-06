@@ -27,7 +27,7 @@ function RouteComponent() {
   const setSearchParam = useCallback(
     (partial: Partial<SearchParams>) => {
       navigate({
-        search: (prev) => {
+        search: (prev: SearchParams) => {
           return {
             ...prev,
             ...partial,
