@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AssignmentFlow.Application.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AssignmentFlow.Application.Migrations
 {
     [DbContext(typeof(AssignmentFlowDbContext))]
-    partial class AssignmentFlowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250630152107_AddGrader")]
+    partial class AddGrader
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,9 +37,6 @@ namespace AssignmentFlow.Application.Migrations
 
                     b.Property<int>("AdjustedCount")
                         .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("GradingId")
                         .IsRequired()
@@ -119,9 +119,6 @@ namespace AssignmentFlow.Application.Migrations
                     b.Property<string>("Id")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
@@ -240,9 +237,6 @@ namespace AssignmentFlow.Application.Migrations
 
                             b1.Property<string>("FileRef")
                                 .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("Id")
                                 .HasColumnType("text");
 
                             b1.Property<string>("LocationDataJson")

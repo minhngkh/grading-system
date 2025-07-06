@@ -48,7 +48,6 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
                     <Link
                       to={item.to}
                       preload={item.preload ?? "intent"}
-                      activeOptions={{ exact: true }}
                       activeProps={{ className: "bg-secondary" }}
                     >
                       {item.icon}
@@ -71,7 +70,6 @@ export function AppSidebar({ navigationItems, settingsItems }: SidebarProps) {
                       <Link
                         preload={item.preload ?? "intent"}
                         to={item.to}
-                        activeOptions={{ exact: true }}
                         activeProps={{ className: "bg-secondary" }}
                       >
                         {item.icon}

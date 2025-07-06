@@ -1,6 +1,5 @@
 import { Label } from "@/components/ui/label";
 import { GradingAnalyticsPage } from "@/pages/analytics/grading-analytics";
-import { GradingService } from "@/services/grading-service";
 import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 import { ScrollableSelectMemo } from "@/components/app/scrollable-select";
@@ -10,36 +9,37 @@ import PendingComponent from "@/components/app/route-pending";
 import ErrorComponent from "@/components/app/route-error";
 import {
   getGradingAttemptQueryOptions,
+  getGradingSummaryQueryOptions,
   getInfiniteGradingAttemptsQueryOptions,
 } from "@/queries/grading-queries";
 import { useAuth } from "@clerk/clerk-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-const searchParams = z.object({
-  id: z.string().optional(),
-});
-
 export const Route = createFileRoute("/_authenticated/analytics/")({
   component: RouteComponent,
-  validateSearch: searchParams,
+  validateSearch: z.object({
+    id: z.string().optional(),
+  }),
   loaderDeps: ({ search }) => search,
-  loader: async ({ deps: { id }, context: { auth } }) => {
-    const token = await auth.getToken();
-    if (!token) {
-      throw new Error("Unauthorized: No token found");
-    }
-
-    if (!id) return null;
-    return GradingService.getGradingSummary(id, token);
+  loader: ({ deps: { id }, context: { auth, queryClient } }) => {
+    if (!id) return;
+    queryClient.ensureQueryData(getGradingSummaryQueryOptions(id, auth));
+    queryClient.ensureQueryData(getGradingAttemptQueryOptions(id, auth));
   },
   errorComponent: () => <ErrorComponent message="Failed to load grading analytics" />,
   pendingComponent: () => <PendingComponent message="Loading grading analytics..." />,
 });
 
 function RouteComponent() {
-  const gradingAnalytics = Route.useLoaderData();
   const navigate = Route.useNavigate();
   const auth = useAuth();
+
+  const { data: gradingAnalytics } = useQuery(
+    getGradingSummaryQueryOptions(Route.useSearch().id ?? "", auth, {
+      placeholderData: keepPreviousData,
+    }),
+  );
+
   const { data: grading } = useQuery(
     getGradingAttemptQueryOptions(gradingAnalytics?.gradingId ?? "", auth, {
       placeholderData: keepPreviousData,
@@ -80,7 +80,9 @@ function RouteComponent() {
             queryOptionsFn={getInfiniteGradingAttemptsQueryOptions(auth, {
               status: GradingStatus.Graded,
             })}
-            selectFn={(grading) => grading.name}
+            selectFn={(grading) =>
+              `${grading.name} - ${grading.createdAt.toLocaleString()}`
+            }
           />
         </div>
       </div>

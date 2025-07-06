@@ -12,6 +12,8 @@ import { useMutation } from "@tanstack/react-query";
 import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
 import { startGradingMutationOptions } from "@/queries/grading-queries";
 import ErrorComponent from "@/components/app/route-error";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "@tanstack/react-router";
 
 interface GradingProgressStepProps {
   gradingAttempt: UseFormReturn<GradingAttempt>;
@@ -21,6 +23,7 @@ export default function GradingProgressStep({
   gradingAttempt,
 }: GradingProgressStepProps) {
   const auth = useAuth();
+  const navigate = useNavigate();
   const gradingAttemptValues = gradingAttempt.watch();
   const [assessmentStatus, setAssessmentStatus] = useState<
     AssessmentGradingStatus[] | null
@@ -195,6 +198,23 @@ export default function GradingProgressStep({
           />
         </div>
       ))}
+      {gradingAttemptValues.status === GradingStatus.Started && (
+        <div className="flex flex-col w-full items-center gap-2">
+          <p className="text-center">
+            You can go home and come back later to check the grading progress. <br />{" "}
+            We'll notify you when it's done.
+          </p>
+          <Button
+            onClick={() =>
+              navigate({
+                to: "/home",
+              })
+            }
+          >
+            Go home
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

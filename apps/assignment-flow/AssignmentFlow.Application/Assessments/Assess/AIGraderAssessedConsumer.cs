@@ -4,6 +4,7 @@ using MassTransit;
 
 namespace AssignmentFlow.Application.Assessments.Assess;
 
+[Obsolete("Integration event changed to Criterion-level one")]
 public class AIGraderAssessedConsumer(
     ICommandBus commandBus,
     ILogger<AIGraderAssessedConsumer> logger

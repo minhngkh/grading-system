@@ -2,28 +2,39 @@ import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import { Button } from "@/components/ui/button";
 import GradingResult from "@/pages/grading/grading-result";
-import { GradingService } from "@/services/grading-service";
+import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
+import { getGradingAttemptQueryOptions } from "@/queries/grading-queries";
 import { GradingStatus } from "@/types/grading";
+import { keepPreviousData } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/gradings/$gradingId/result")({
   component: RouteComponent,
-  loader: async ({ params: { gradingId }, context: { auth } }) => {
-    const token = await auth.getToken();
-    if (!token) {
-      throw new Error("Unauthorized: No token found");
-    }
+  loader: async ({ params: { gradingId }, context: { auth, queryClient } }) => {
+    const [gradingAttempt, assessmentsData] = await Promise.all([
+      queryClient.ensureQueryData(
+        getGradingAttemptQueryOptions(gradingId, auth, {
+          staleTime: Infinity,
+        }),
+      ),
+      queryClient.ensureQueryData(
+        getAllGradingAssessmentsQueryOptions(gradingId, auth, {
+          placeholderData: keepPreviousData,
+          staleTime: 1000 * 60 * 5, // 5 minutes
+        }),
+      ),
+    ]);
 
-    return await GradingService.getGradingAttempt(gradingId, token);
+    return { gradingAttempt, assessmentsData };
   },
   errorComponent: () => <ErrorComponent message="Failed to load grading result" />,
   pendingComponent: () => <PendingComponent message="Loading grading result..." />,
 });
 
 function RouteComponent() {
-  const gradingAttempt = Route.useLoaderData();
-
   const router = useRouter();
+  const { gradingAttempt, assessmentsData } = Route.useLoaderData();
+
   if (
     gradingAttempt.status === GradingStatus.Created ||
     gradingAttempt.status === GradingStatus.Started
@@ -39,5 +50,7 @@ function RouteComponent() {
       </div>
     );
 
-  return <GradingResult gradingAttempt={gradingAttempt} />;
+  return (
+    <GradingResult gradingAttempt={gradingAttempt} assessmentsData={assessmentsData} />
+  );
 }

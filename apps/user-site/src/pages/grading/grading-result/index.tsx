@@ -1,6 +1,6 @@
 import { lazy, Suspense, useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { GradingAttempt } from "@/types/grading";
-import { AssessmentState } from "@/types/assessment";
+import { Assessment, AssessmentState } from "@/types/assessment";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
@@ -16,43 +16,64 @@ import {
 } from "@/pages/grading/grading-result/skeletons";
 import { SignalRService } from "@/services/realtime-service";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
-import { rerunGradingMutationOptions } from "@/queries/grading-queries";
+  rerunGradingMutationOptions,
+  updateGradingScaleFactorMutationOptions,
+} from "@/queries/grading-queries";
+import { getRubricQueryOptions } from "@/queries/rubric-queries";
 
 const SummarySection = lazy(() => import("./summary-section"));
 const ReviewResults = lazy(() => import("./review-results"));
 
 interface GradingResultProps {
   gradingAttempt: GradingAttempt;
+  assessmentsData: Assessment[];
 }
 
-export default function GradingResult({ gradingAttempt }: GradingResultProps) {
+export default function GradingResult({
+  gradingAttempt,
+  assessmentsData,
+}: GradingResultProps) {
   const [assessments, setAssessments] = useState<AssessmentGradingStatus[]>([]);
   const [scaleFactor, setScaleFactor] = useState(gradingAttempt.scaleFactor ?? 10);
   const [viewRubricOpen, setViewRubricOpen] = useState(false);
   const [changeScaleFactorOpen, setChangeScaleFactorOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
-  const [isRerunning, setIsRerunning] = useState(false);
+  const [isGrading, setIsGrading] = useState(false);
 
   const auth = useAuth();
   const queryClient = useQueryClient();
   const hubRef = useRef<SignalRService>();
 
-  const { data: assessmentsData, isFetching } = useQuery(
-    getAllGradingAssessmentsQueryOptions(gradingAttempt.id, auth, {
-      placeholderData: keepPreviousData,
-      staleTime: 1000 * 60 * 5,
+  const { data: rubricData } = useQuery(
+    getRubricQueryOptions(gradingAttempt.rubricId, auth, {
+      staleTime: Infinity,
     }),
   );
 
   const { mutateAsync: rerunGrading } = useMutation(
     rerunGradingMutationOptions(gradingAttempt.id, auth),
+  );
+
+  const { mutateAsync: updateScaleFactor } = useMutation(
+    updateGradingScaleFactorMutationOptions(gradingAttempt.id, auth),
+  );
+
+  const handleScaleFactorChange = useCallback(
+    async (newScaleFactor: number) => {
+      if (newScaleFactor === scaleFactor) return;
+
+      try {
+        await updateScaleFactor(newScaleFactor);
+        setScaleFactor(newScaleFactor);
+        toast.success("Grade scale factor updated successfully.");
+      } catch (error) {
+        console.error("Error updating scale factor:", error);
+        toast.error("Failed to update grade scale factor. Please try again later.");
+      }
+    },
+    [scaleFactor, updateScaleFactor],
   );
 
   const handleStatusChange = useCallback((newStatus: AssessmentGradingStatus) => {
@@ -75,14 +96,13 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
 
       try {
         const hub = new SignalRService(() => token);
-        console.log("Starting SignalR hub for grading attempt:", gradingAttempt.id);
 
         hub.on("ReceiveAssessmentProgress", handleStatusChange);
         hub.on("Complete", () => {
           queryClient.invalidateQueries({
             queryKey: ["allGradingAssessments", gradingAttempt.id],
           });
-          setIsRerunning(false);
+          setIsGrading(false);
         });
 
         await hub.start();
@@ -100,7 +120,6 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
     return () => {
       isMounted = false;
       if (hubRef.current) {
-        console.log("Stopping SignalR hub");
         hubRef.current.off("ReceiveAssessmentProgress");
         hubRef.current.off("Complete");
         hubRef.current.stop();
@@ -111,10 +130,10 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
 
   const handleRegradeAll = useCallback(async () => {
     try {
-      setIsRerunning(true);
+      setIsGrading(true);
       await rerunGrading();
     } catch (error) {
-      setIsRerunning(false);
+      setIsGrading(false);
       console.error("Error regrading all assessments:", error);
       toast.error("Failed to regrade all assessments. Please try again later.");
     }
@@ -151,7 +170,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
           <Button
             variant="outline"
             size="sm"
-            disabled={isFetching || isRerunning}
+            disabled={isGrading}
             onClick={() => setChangeScaleFactorOpen(true)}
           >
             <Scale className="w-4 h-4" />
@@ -160,26 +179,19 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
           <Button
             variant="outline"
             size="sm"
-            disabled={isFetching || isRerunning}
+            disabled={isGrading}
             onClick={() => setExportOpen(true)}
           >
             <Download className="w-4 h-4" />
             Export
           </Button>
-          <Link
-            to="/gradings/$gradingId/analytics"
-            params={{ gradingId: gradingAttempt.id }}
-          >
-            <Button variant="outline" size="sm" disabled={isFetching || isRerunning}>
+          <Link to="/analytics" search={{ id: gradingAttempt.id }}>
+            <Button variant="outline" size="sm" disabled={isGrading}>
               <ChartColumn className="w-4 h-4" />
               View Analytics
             </Button>
           </Link>
-          <Button
-            size="sm"
-            disabled={isFetching || isRerunning}
-            onClick={handleRegradeAll}
-          >
+          <Button size="sm" disabled={isGrading} onClick={handleRegradeAll}>
             <RefreshCw className="w-4 h-4" />
             Regrade All
           </Button>
@@ -197,19 +209,19 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
       <ViewRubricDialog
         open={viewRubricOpen}
         onOpenChange={setViewRubricOpen}
-        rubricId={gradingAttempt.rubricId}
+        initialRubric={rubricData}
       />
 
       <ChangeScaleFactorDialog
         open={changeScaleFactorOpen}
         onOpenChange={setChangeScaleFactorOpen}
         initialScaleFactor={scaleFactor}
-        onChangeScaleFactor={setScaleFactor}
+        onChangeScaleFactor={handleScaleFactorChange}
       />
 
       <ExportDialog
         exporterClass={GradingExporter}
-        args={[gradingAttempt, assessmentsData || []]}
+        args={[gradingAttempt, sortedAssessments]}
         open={exportOpen}
         onOpenChange={setExportOpen}
       />

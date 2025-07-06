@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const PluginSchema = z.object({
-  alias: z.string().min(1, "Plugin alias is required"),
+  id: z.string().min(1, "Plugin alias is required"),
   name: z.string().min(1, "Plugin name is required"),
   description: z.string().min(1, "Plugin description is required"),
   categories: z.array(z.string().min(1, "Plugin category is required")),
@@ -15,7 +15,7 @@ export const CodeRunnerTestCaseSchema = z.object({
 
 export const CodeRunnerConfigSchema = z.object({
   language: z.string().min(1, "Language is required"),
-  installCommand: z.string().min(1, "Install command is required"),
+  initCommand: z.string().min(1, "Install command is required"),
   runCommand: z.string().min(1, "Run command is required"),
   environmentVariables: z.record(z.string(), z.string()).optional().default({}),
   testCases: z

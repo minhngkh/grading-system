@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using AssignmentFlow.Application.Gradings.ChangeRubric;
+﻿using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.Start;
@@ -12,6 +10,8 @@ using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using static JsonApiDotNetCore.Resources.Annotations.AttrCapabilities;
 
 namespace AssignmentFlow.Application.Gradings;
@@ -64,8 +64,7 @@ public class Grading
             {
                 Criterion = selector.Criterion,
                 Files = [.. s.Attachments.Where(attachment => {
-                    //"<submission-reference>/**"
-                    return Pattern.New(selector.Pattern).Match("", attachment);
+                    return Pattern.New(selector.Pattern).Match(attachment);
                 })]
             })
         });
@@ -74,6 +73,9 @@ public class Grading
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public DateTimeOffset LastModified { get; set; }
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public DateTimeOffset CreatedAt { get; set; }
 
     [Attr(Capabilities = AllowView)]
     public int Version { get; private set; }
@@ -96,7 +98,7 @@ public class Grading
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
         Reference = domainEvent.AggregateEvent.Reference;
         Name = domainEvent.AggregateEvent.Reference; // Reference is used as the name by default
-
+        CreatedAt = domainEvent.Timestamp.ToUniversalTime();
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }

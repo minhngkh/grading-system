@@ -3,6 +3,7 @@ import { z } from "zod";
 export const ScoreBreakdownSchema = z.object({
   criterionName: z.string(),
   performanceTag: z.string(),
+  grader: z.string(),
   rawScore: z.number(),
   metadata: z.array(z.string()).optional(),
   status: z.enum(["graded", "notgraded"]).optional(),
@@ -64,7 +65,6 @@ export const AssessmentSchema = z.object({
   status: z.nativeEnum(AssessmentState),
 });
 
-// 🎯 Types
 export type Assessment = z.infer<typeof AssessmentSchema>;
 export type FeedbackItem = z.infer<typeof FeedbackSchema>;
 export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;

@@ -69,8 +69,6 @@ export default function UploadAssignmentPage({
           to: "/gradings/$gradingId/result",
           params: { gradingId: gradingAttemptValues.id },
         });
-      case 2:
-        return navigate({ to: "/gradings/view" });
     }
 
     stepper.next();

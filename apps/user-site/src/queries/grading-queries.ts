@@ -47,6 +47,19 @@ export function getInfiniteGradingAttemptsQueryOptions(
   });
 }
 
+export const getGradingAttemptsQueryOptions = (
+  searchParams: SearchParams,
+  auth: Auth,
+  options?: Partial<UseQueryOptions<GetAllResult<GradingAttempt>>>,
+): UseQueryOptions<GetAllResult<GradingAttempt>> => ({
+  queryKey: ["gradingAttempts"],
+  queryFn: async () => {
+    const token = await auth.getToken();
+    return GradingService.getGradingAttempts(searchParams, token!);
+  },
+  ...options,
+});
+
 export const getGradingAttemptQueryOptions = (
   id: string,
   auth: Auth,
@@ -101,12 +114,12 @@ export const getGradingSummaryQueryOptions = (
 
 export const createGradingAttemptMutationOptions = (
   auth: Auth,
-  options?: Partial<UseMutationOptions<GradingAttempt>>,
-): UseMutationOptions<GradingAttempt> => ({
-  mutationFn: async () => {
+  options?: Partial<UseMutationOptions<GradingAttempt, unknown, string | undefined>>,
+): UseMutationOptions<GradingAttempt, unknown, string | undefined> => ({
+  mutationFn: async (rubricId?: string) => {
     const token = await auth.getToken();
     if (!token) throw new Error("Authentication token is required");
-    return GradingService.createGradingAttempt(token);
+    return GradingService.createGradingAttempt(rubricId, token);
   },
   ...options,
 });
@@ -153,12 +166,12 @@ export const updateGradingSelectorsMutationOptions = (
 export const uploadSubmissionMutationOptions = (
   id: string,
   auth: Auth,
-  options?: Partial<UseMutationOptions<unknown, unknown, File>>,
-): UseMutationOptions<unknown, unknown, File> => ({
-  mutationFn: async (file: File) => {
+  options?: Partial<UseMutationOptions<string[], unknown, File[]>>,
+): UseMutationOptions<string[], unknown, File[]> => ({
+  mutationFn: async (files: File[]) => {
     const token = await auth.getToken();
     if (!token) throw new Error("Authentication token is required");
-    return GradingService.uploadSubmission(id, file, token);
+    return GradingService.uploadSubmission(id, files, token);
   },
   ...options,
 });

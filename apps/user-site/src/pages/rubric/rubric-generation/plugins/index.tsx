@@ -17,7 +17,7 @@ import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 import { useAuth } from "@clerk/clerk-react";
 
 const PluginConfigDialogs: Record<string, PluginDialogComponent> = {
-  "Test Runner": CodeRunnerConfigDialog,
+  "test-runner": CodeRunnerConfigDialog,
   // add other plugins here
 };
 
@@ -62,11 +62,10 @@ export default function PluginRubricTable({
       setPluginDialogOpen(false);
 
       const component = PluginConfigDialogs[plugin];
+      console.log(plugin);
       if (component) {
-        setTimeout(() => {
-          setActivePluginConfigDialog(() => component);
-          setPluginDialogConfigOpen(true);
-        }, 100);
+        setActivePluginConfigDialog(() => component);
+        setPluginDialogConfigOpen(true);
       }
     } catch (error) {
       console.error("Error selecting plugin:", error);
@@ -113,14 +112,15 @@ export default function PluginRubricTable({
         />
         {ActivePluginConfigDialog && selectedCriterionIndex !== undefined && (
           <ActivePluginConfigDialog
+            configId={rubricData.criteria[selectedCriterionIndex]?.configuration}
             open={pluginDialogConfigOpen}
             onOpenChange={setPluginDialogConfigOpen}
             onCriterionConfigChange={handleConfigChange}
           />
         )}
-        {pluginDialogOpen && selectedCriterionIndex !== undefined && (
+        {selectedCriterionIndex !== undefined && (
           <PluginSelectDialog
-            criterion={rubricData.criteria[selectedCriterionIndex]}
+            currentPlugin={rubricData?.criteria[selectedCriterionIndex]?.plugin}
             open={pluginDialogOpen}
             onOpenChange={setPluginDialogOpen}
             onSelect={onPluginSelect}

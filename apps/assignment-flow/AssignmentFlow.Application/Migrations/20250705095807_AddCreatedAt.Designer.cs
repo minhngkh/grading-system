@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using AssignmentFlow.Application.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AssignmentFlow.Application.Migrations
 {
     [DbContext(typeof(AssignmentFlowDbContext))]
-    partial class AssignmentFlowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250705095807_AddCreatedAt")]
+    partial class AddCreatedAt
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -240,9 +243,6 @@ namespace AssignmentFlow.Application.Migrations
 
                             b1.Property<string>("FileRef")
                                 .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("Id")
                                 .HasColumnType("text");
 
                             b1.Property<string>("LocationDataJson")

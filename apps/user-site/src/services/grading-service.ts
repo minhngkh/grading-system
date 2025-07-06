@@ -1,11 +1,6 @@
 import { buildFilterExpr, contains, eq } from "@/lib/json-api-query";
 import { GradingAnalytics, OverallGradingAnalytics } from "@/types/analytics";
-import {
-  CriteriaSelector,
-  GradingAttempt,
-  GradingStatus,
-  Submission,
-} from "@/types/grading";
+import { CriteriaSelector, GradingAttempt, GradingStatus } from "@/types/grading";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import axios, { AxiosRequestConfig } from "axios";
 import { Deserializer } from "jsonapi-serializer";
@@ -39,6 +34,7 @@ export class GradingService {
       ...record,
       rubricId: !record.rubricId ? undefined : record.rubricId,
       lastModified: record.lastModified ? new Date(record.lastModified) : undefined,
+      createdAt: new Date(record.createdAt),
       scaleFactor: !record.scaleFactor ? 10 : record.scaleFactor,
     };
   }
@@ -48,9 +44,12 @@ export class GradingService {
     transform: (record: any) => this.ConvertToGrading(record),
   });
 
-  static async createGradingAttempt(token: string): Promise<GradingAttempt> {
+  static async createGradingAttempt(
+    rubricId: string | undefined,
+    token: string,
+  ): Promise<GradingAttempt> {
     const configHeaders = await this.buildHeaders(token);
-    const response = await axios.post(GRADING_API_URL, {}, configHeaders);
+    const response = await axios.post(GRADING_API_URL, { rubricId }, configHeaders);
     return this.ConvertToGrading(response.data);
   }
 
@@ -129,19 +128,17 @@ export class GradingService {
 
   static async uploadSubmission(
     id: string,
-    file: File,
+    files: File[],
     token: string,
-  ): Promise<Submission> {
+  ): Promise<string[]> {
     const configHeaders = this.buildFileHeaders(token);
-    const response = await axios.post(
+    const responses = await axios.post(
       `${GRADING_API_URL}/${id}/submissions`,
-      {
-        file,
-      },
+      { files },
       configHeaders,
     );
 
-    return { reference: response.data };
+    return responses.data.map((ref: any) => ref.value);
   }
 
   static async startGrading(id: string, token: string) {
@@ -182,5 +179,12 @@ export class GradingService {
   static async updateGradingName(id: string, name: string, token: string): Promise<void> {
     const configHeaders = this.buildHeaders(token);
     return axios.put(`${GRADING_API_URL}/${id}/info`, { name }, configHeaders);
+  }
+
+  static async getAssessmentSASToken(token: string): Promise<string> {
+    const configHeaders = this.buildHeaders(token);
+    const response = await axios.get(`${GRADING_API_URL}/sasToken`, configHeaders);
+    console.log("SAS Token:", response.data);
+    return response.data;
   }
 }

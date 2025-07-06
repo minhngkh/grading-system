@@ -252,7 +252,7 @@ const EditRubric = memo(function EditRubric({
             </Label>
             <Input
               id="rubric-name"
-              value={formData.name}
+              value={formData.rubricName}
               onChange={(e) => handleRubricNameChange(e.target.value)}
               className="font-bold"
               placeholder="Enter rubric name"
@@ -487,10 +487,7 @@ const EditRubric = memo(function EditRubric({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button
-                onClick={handleSave}
-                disabled={isLoading || isValidating || !validationState.isWeightValid}
-              >
+              <Button onClick={handleSave} disabled={isLoading || isValidating}>
                 <Save className="h-4 w-4 mr-2" />
                 {isLoading || isValidating ? "Saving..." : "Save Changes"}
               </Button>

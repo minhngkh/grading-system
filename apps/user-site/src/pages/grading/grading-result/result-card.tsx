@@ -54,7 +54,7 @@ export function AssessmentResultCard({
             </h3>
             {!isGradingFailed && (
               <span className="text-2xl font-bold">
-                {(item.rawScore * scaleFactor) / 100} point(s)
+                {((item.rawScore * scaleFactor) / 100).toFixed(2)} point(s)
               </span>
             )}
           </div>
@@ -77,9 +77,12 @@ export function AssessmentResultCard({
                   <div key={index} className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className={colorStyle.text}>{score.criterionName}</span>
-                      <span className={colorStyle.text}>
-                        {finalScore} ({score.rawScore}%)
-                      </span>
+                      {score.grader === "None" ?
+                        <span className="text-warning">Require manual grading</span>
+                      : <span className={colorStyle.text}>
+                          {finalScore} ({score.rawScore}%)
+                        </span>
+                      }
                     </div>
                     {index !== item.scoreBreakdowns.length - 1 && <Separator />}
                   </div>

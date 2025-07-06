@@ -26,7 +26,8 @@ public class ScoreBreakdownApiContract
     /// </summary>
     public decimal RawScore { get; set; }
 
-    public string Status { get; set; }
+    public string Grader { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
 
     //[JsonIgnore]: TODO: Keep this commented until we can make sure this works
     public string MetadataJson { get; set; } = string.Empty;

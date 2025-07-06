@@ -1,7 +1,7 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import ManageRubricsPage from "@/pages/rubric/manage-rubric";
-import { RubricService } from "@/services/rubric-service";
+import { getRubricsQueryOptions } from "@/queries/rubric-queries";
 import { SearchParams, searchParams } from "@/types/search-params";
 import { createFileRoute, retainSearchParams } from "@tanstack/react-router";
 import { useCallback } from "react";
@@ -10,14 +10,8 @@ export const Route = createFileRoute("/_authenticated/rubrics/view")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
-  loader: async ({ deps, context: { auth } }) => {
-    const token = await auth.getToken();
-    if (!token) {
-      throw new Error("Unauthorized: No token found");
-    }
-
-    return RubricService.getRubrics(deps, token);
-  },
+  loader: async ({ deps, context: { auth, queryClient } }) =>
+    queryClient.ensureQueryData(getRubricsQueryOptions(deps, auth)),
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },

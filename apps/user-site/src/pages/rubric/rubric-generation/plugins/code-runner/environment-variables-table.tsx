@@ -31,7 +31,7 @@ export default function EnvironmentVariablesTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-center font-semibold border-r">Key</TableHead>
+              <TableHead className="text-center font-semibold border-r">Name</TableHead>
               <TableHead className="text-center font-semibold border-r">Value</TableHead>
               <TableHead className="text-center font-semibold" />
             </TableRow>
