@@ -1,3 +1,3 @@
-import { CustomErrorV0 } from "@grading-system/utils/error";
+import { CustomError } from "@grading-system/utils/error";
 
-export class EmptyListError extends CustomErrorV0<void> {}
+export class EmptyListError extends CustomError.withTag("EmptyListError")<void> {}

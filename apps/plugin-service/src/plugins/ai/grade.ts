@@ -7,7 +7,7 @@ import {
   getBlobNameParts,
   getBlobNameRest,
 } from "@grading-system/utils/azure-storage-blob";
-import { CustomErrorV0 } from "@grading-system/utils/error";
+import { CustomError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { generateObject } from "ai";
 import dedent from "dedent";
@@ -131,7 +131,7 @@ function createGradingSystemPrompt(partOfRubric: Criterion[]) {
   `;
 }
 
-class ErrorWithCriteriaInfo extends CustomErrorV0<{
+class ErrorWithCriteriaInfo extends CustomError.withTag("ErrorWithCriteriaInfo")<{
   criterionNames: string[];
 }> {}
 
@@ -192,7 +192,7 @@ export function gradeCriteria(options: {
           criterionNames: options.partOfRubric.map((c) => c.criterionName),
         },
         message: `Failed to grade criteria`,
-        options: { cause: error },
+        cause: error,
       }),
   ).map((response) => response.object);
 }
@@ -205,12 +205,7 @@ export function gradeSubmission(data: {
 }) {
   return safeTry(async function* () {
     if (data.criterionDataList.length === 0) {
-      return errAsync(
-        new EmptyListError({
-          message: "No criteria to grade",
-          data: undefined,
-        }),
-      );
+      return errAsync(new EmptyListError({ message: "No criteria to grade" }));
     }
 
     let firstFileRef;
@@ -223,12 +218,7 @@ export function gradeSubmission(data: {
     }
 
     if (firstFileRef === undefined) {
-      return errAsync(
-        new EmptyListError({
-          message: "No file to grade",
-          data: undefined,
-        }),
-      );
+      return errAsync(new EmptyListError({ message: "No file to grade" }));
     }
 
     const rubricContext = yield* generateRubricContext({
@@ -282,7 +272,7 @@ export function gradeSubmission(data: {
             new ErrorWithCriteriaInfo({
               data: { criterionNames: error.data.ids },
               message: `Failed to pack files for criteria`,
-              options: { cause: error },
+              cause: error,
             }),
         )
         .andThen((value) => {
@@ -307,7 +297,7 @@ export function gradeSubmission(data: {
                 new ErrorWithCriteriaInfo({
                   data: { criterionNames: value.criterionNames },
                   message: `Failed to process non-text files for criteria`,
-                  options: { cause: error },
+                  cause: error,
                 }),
             )
             .andThen((mediaValue) =>
@@ -317,7 +307,7 @@ export function gradeSubmission(data: {
                     new ErrorWithCriteriaInfo({
                       data: { criterionNames: value.criterionNames },
                       message: `Failed to create manifest info for media files`,
-                      options: { cause: error },
+                      cause: error,
                     }),
                 )
                 .map((manifest) => ({
@@ -360,7 +350,7 @@ export function gradeSubmission(data: {
               new ErrorWithCriteriaInfo({
                 data: { criterionNames: value.criterionNames },
                 message: `Failed to grade criteria`,
-                options: { cause: error },
+                cause: error,
               }),
           )
           .map((results) =>

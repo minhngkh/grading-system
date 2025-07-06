@@ -2,9 +2,11 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { errAsync, okAsync, ResultAsync } from "neverthrow";
-import { CustomErrorV0 } from "@/error";
+import { CustomError } from "@/error";
 
-class CheckDirectoryError extends CustomErrorV0<{ path: string }> {}
+class CheckDirectoryError extends CustomError.withTag("CheckDirectoryError")<{
+  path: string;
+}> {}
 
 export function checkTempDirectoryExists(name: string) {
   const dirPath = path.join(os.tmpdir(), name);
@@ -14,20 +16,22 @@ export function checkTempDirectoryExists(name: string) {
     (error) =>
       new CheckDirectoryError({
         message: `directory doesn't exist or can't access`,
-        options: { cause: error },
+        cause: error,
         data: { path: dirPath },
       }),
   ).map(() => dirPath);
 }
 
-class CreateDirectoryError extends CustomErrorV0<{ path: string }> {}
+class CreateDirectoryError extends CustomError.withTag("CreateDirectoryError")<{
+  path: string;
+}> {}
 export function createDirectory(directoryPath: string, recursive = true) {
   return ResultAsync.fromPromise(
     fs.mkdir(directoryPath, { recursive: true }),
     (error) =>
       new CreateDirectoryError({
         message: `Failed to create directory`,
-        options: { cause: error },
+        cause: error,
         data: { path: directoryPath },
       }),
   ).andThen((value) => {
@@ -52,7 +56,7 @@ export function createDirectoryOnSystemTemp(name: string): ResultAsync<string, E
     (error) =>
       new CreateDirectoryError({
         message: `Failed to create temporary directory`,
-        options: { cause: error },
+        cause: error,
         data: { path: dirPath },
       }),
   ).map(() => dirPath);
@@ -66,13 +70,13 @@ export function createTempDirectory(prefix: string): ResultAsync<string, Error> 
     (error) =>
       new CreateDirectoryError({
         message: `Failed to create temporary directory`,
-        options: { cause: error },
+        cause: error,
         data: { path: dirPath },
       }),
   );
 }
 
-class DeleteFileError extends CustomErrorV0<{ path: string }> {}
+class DeleteFileError extends CustomError.withTag("DeleteFileError")<{ path: string }> {}
 
 export function deleteDirectory(directoryPath: string): ResultAsync<void, Error> {
   return ResultAsync.fromPromise(
@@ -80,7 +84,7 @@ export function deleteDirectory(directoryPath: string): ResultAsync<void, Error>
     (err) =>
       new DeleteFileError({
         message: `Failed to delete directory`,
-        options: { cause: err },
+        cause: err,
         data: { path: directoryPath },
       }),
   );
@@ -92,13 +96,13 @@ export function deleteFile(filePath: string): ResultAsync<void, Error> {
     (err) =>
       new DeleteFileError({
         message: `Failed to delete file`,
-        options: { cause: err },
+        cause: err,
         data: { path: filePath },
       }),
   );
 }
 
-class ReadFileError extends CustomErrorV0<{ path: string }> {}
+class ReadFileError extends CustomError.withTag("ReadFileError")<{ path: string }> {}
 
 export function readFile(filePath: string, encoding?: BufferEncoding) {
   return ResultAsync.fromPromise(
@@ -106,7 +110,7 @@ export function readFile(filePath: string, encoding?: BufferEncoding) {
     (err) =>
       new ReadFileError({
         message: `Failed to read file`,
-        options: { cause: err },
+        cause: err,
         data: { path: filePath },
       }),
   );

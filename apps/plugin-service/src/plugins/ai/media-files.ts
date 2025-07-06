@@ -4,7 +4,7 @@ import type { Result } from "neverthrow";
 import { Buffer } from "node:buffer";
 import path from "node:path";
 import process from "node:process";
-import { CustomErrorV0 } from "@grading-system/utils/error";
+import { CustomError } from "@grading-system/utils/error";
 import { readFile } from "@grading-system/utils/file";
 import dedent from "dedent";
 import mime from "mime";
@@ -52,7 +52,9 @@ function signSupportedBlobs(container: BlobContainer, blobNameList: string[]) {
   });
 }
 
-class NotSupportedInProductionError extends CustomErrorV0<void> {}
+class NotSupportedInProductionError extends CustomError.withTag(
+  "NotSupportedInProductionError",
+)<void> {}
 
 export function createLlmFileParts(data: {
   // blobNameRoot: string;
@@ -69,8 +71,7 @@ export function createLlmFileParts(data: {
       // Should not download files in production, just sign the URLs
       return errAsync(
         new NotSupportedInProductionError({
-          message: "Signing blob Urls in production is not yet implemented.",
-          data: undefined,
+          message: "Signing blob Urls in production is not yet implemented",
         }),
       );
     }

@@ -4,7 +4,7 @@ import { BlobSASPermissions, BlobServiceClient, SASProtocol } from "@azure/stora
 import { err, ok, ResultAsync, safeTry } from "neverthrow";
 import { createDirectory, deleteDirectory } from "@/file";
 import logger from "@/logger";
-import { CustomErrorV0 } from "./error";
+import { CustomError } from "./error";
 
 export function getBlobName(url: string, containerName: string): Result<string, Error> {
   const parts = url.split(`${containerName}/`);
@@ -46,9 +46,16 @@ export class BlobService {
   }
 }
 
-class DownloadToBufferError extends CustomErrorV0<{ blobName: string }> {}
-class DownloadToFileError extends CustomErrorV0<{ blobName: string; localPath: string }> {}
-class GenerateSignedUrlError extends CustomErrorV0<{ blobName: string }> {}
+class DownloadToBufferError extends CustomError.withTag("DownloadToBufferError")<{
+  blobName: string;
+}> {}
+class DownloadToFileError extends CustomError.withTag("DownloadToFileError")<{
+  blobName: string;
+  localPath: string;
+}> {}
+class GenerateSignedUrlError extends CustomError.withTag("GenerateSignedUrlError")<{
+  blobName: string;
+}> {}
 
 export class BlobContainer {
   containerName: string;
@@ -66,9 +73,9 @@ export class BlobContainer {
       blobClient.downloadToBuffer(),
       (error) =>
         new DownloadToBufferError({
-          message: `Failed to download blob to buffer`,
-          options: { cause: error },
           data: { blobName },
+          message: `Failed to download blob to buffer`,
+          cause: error,
         }),
     );
   }
@@ -81,8 +88,8 @@ export class BlobContainer {
       (error) =>
         new DownloadToFileError({
           message: `Failed to download blob to file`,
-          options: { cause: error },
           data: { blobName, localPath },
+          cause: error,
         }),
     ).map(() => undefined as void);
   }
@@ -149,8 +156,8 @@ export class BlobContainer {
       (error) =>
         new GenerateSignedUrlError({
           message: `Failed to sign url for blob`,
-          options: { cause: error },
           data: { blobName },
+          cause: error,
         }),
     );
   }
