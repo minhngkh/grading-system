@@ -21,7 +21,12 @@ import {
   getInfiniteRubricsQueryOptions,
   getRubricQueryOptions,
 } from "@/queries/rubric-queries";
-import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   deleteSubmissionMutationOptions,
   updateGradingNameMutationOptions,
@@ -42,6 +47,7 @@ export default function UploadStep({ form }: UploadStepProps) {
   const [fileDialogAction, setFileDialogAction] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [moodleMode, setMoodleMode] = useState(false);
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -69,6 +75,7 @@ export default function UploadStep({ form }: UploadStepProps) {
   const updateNameMutation = useMutation(
     updateGradingNameMutationOptions(gradingAttempt.id, auth),
   );
+
   const updateScaleFactorMutation = useMutation(
     updateGradingScaleFactorMutationOptions(gradingAttempt.id, auth),
   );
@@ -89,12 +96,25 @@ export default function UploadStep({ form }: UploadStepProps) {
     deleteSubmissionMutationOptions(gradingAttempt.id, auth),
   );
 
-  useDebounceUpdate(gradingAttempt.name, 500, updateNameMutation.mutate);
-  useDebounceUpdate(gradingAttempt.scaleFactor, 500, updateScaleFactorMutation.mutate);
+  useDebounceUpdate(gradingAttempt.name, 500, (name) => {
+    updateNameMutation.mutate(name);
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempt", gradingAttempt.id],
+    });
+  });
+  useDebounceUpdate(gradingAttempt.scaleFactor, 500, (scaleFactor) => {
+    updateScaleFactorMutation.mutate(scaleFactor);
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempt", gradingAttempt.id],
+    });
+  });
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
     await updateSelectorsMutation.mutateAsync(selectors);
     setValue("selectors", selectors);
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempt", gradingAttempt.id],
+    });
   };
 
   const handleSelectRubric = async (rubric: Rubric) => {
@@ -118,47 +138,50 @@ export default function UploadStep({ form }: UploadStepProps) {
       (file) => !uploadedFiles.some((existing) => existing.name === file.name),
     );
 
-    if (newFiles.length > 0) {
-      setFileDialogAction("Uploading");
-      setFileDialogOpen(true);
+    if (newFiles.length == 0) return;
 
-      try {
-        // Split files into chunks of 10
-        const chunkSize = 10;
-        const chunks = [];
-        for (let i = 0; i < newFiles.length; i += chunkSize) {
-          chunks.push(newFiles.slice(i, i + chunkSize));
-        }
+    setFileDialogAction("Uploading");
+    setFileDialogOpen(true);
 
-        const allUploadRefs = [];
-
-        // Upload each chunk sequentially
-        for (let i = 0; i < chunks.length; i++) {
-          const chunk = chunks[i];
-          setFileDialogAction(`Uploading ${chunk.length} files of ${newFiles.length}`);
-
-          const uploadRefs = await uploadFileMutation.mutateAsync(chunk);
-          allUploadRefs.push(...uploadRefs);
-          setUploadedFiles((prev) => [...prev, ...chunk]);
-        }
-
-        const newSubmissions = [
-          ...gradingAttempt.submissions,
-          ...allUploadRefs.map((ref) => {
-            return {
-              reference: ref,
-            };
-          }),
-        ];
-
-        setValue("submissions", newSubmissions);
-      } catch (error) {
-        console.error("Error uploading files:", error);
-        toast.error("Failed to upload some files");
-      } finally {
-        setIsUploading(false);
-        setFileDialogOpen(false);
+    try {
+      // Split files into chunks of 10
+      const chunkSize = 10;
+      const chunks = [];
+      for (let i = 0; i < newFiles.length; i += chunkSize) {
+        chunks.push(newFiles.slice(i, i + chunkSize));
       }
+
+      const allUploadRefs = [];
+
+      // Upload each chunk sequentially
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        setFileDialogAction(`Uploading ${chunk.length} files of ${newFiles.length}`);
+
+        const uploadRefs = await uploadFileMutation.mutateAsync(chunk);
+        allUploadRefs.push(...uploadRefs);
+        setUploadedFiles((prev) => [...prev, ...chunk]);
+      }
+
+      const newSubmissions = [
+        ...gradingAttempt.submissions,
+        ...allUploadRefs.map((ref) => {
+          return {
+            reference: ref,
+          };
+        }),
+      ];
+
+      setValue("submissions", newSubmissions);
+      queryClient.invalidateQueries({
+        queryKey: ["gradingAttempt", gradingAttempt.id],
+      });
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      toast.error("Failed to upload some files");
+    } finally {
+      setIsUploading(false);
+      setFileDialogOpen(false);
     }
   };
 
@@ -177,6 +200,10 @@ export default function UploadStep({ form }: UploadStepProps) {
           (sub) => sub.reference !== submission.reference,
         ),
       );
+
+      queryClient.invalidateQueries({
+        queryKey: ["gradingAttempt", gradingAttempt.id],
+      });
     } catch (error) {
       console.error("Error removing submission:", error);
       toast.error(`Failed to remove submission: ${submission.reference}`);
@@ -196,6 +223,10 @@ export default function UploadStep({ form }: UploadStepProps) {
     setUploadedFiles([]);
     setValue("submissions", []);
     setFileDialogOpen(false);
+
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempt", gradingAttempt.id],
+    });
   };
 
   return (

@@ -10,8 +10,8 @@ export const Route = createFileRoute("/_authenticated/gradings/view")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
-  loader: async ({ deps, context: { auth, queryClient } }) =>
-    queryClient.ensureQueryData(getGradingAttemptsQueryOptions(deps, auth)),
+  loader: ({ deps, context: { auth, queryClient } }) =>
+    queryClient.fetchQuery(getGradingAttemptsQueryOptions(deps, auth)),
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search", "status"])],
   },
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated/gradings/view")({
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const search = Route.useSearch();
-  const rubricsData = Route.useLoaderData();
+  const gradingsData = Route.useLoaderData();
 
   const setSearchParam = useCallback(
     (partial: Partial<SearchParams>) => {
@@ -41,7 +41,7 @@ function RouteComponent() {
 
   return (
     <ManageGradingsPage
-      results={rubricsData}
+      results={gradingsData}
       searchParams={search}
       setSearchParam={setSearchParam}
     />

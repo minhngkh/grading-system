@@ -12,6 +12,7 @@ import { useCallback } from "react";
 import ChatWindow from "./chat";
 import FinalRubricTable from "./review-step";
 import PluginRubricTable from "./plugins";
+import { useQueryClient } from "@tanstack/react-query";
 
 type StepData = {
   title: string;
@@ -50,6 +51,7 @@ export default function RubricGenerationPage({
     resolver: zodResolver(RubricSchema),
     defaultValues: initialRubric,
   });
+  const queryClient = useQueryClient();
 
   const formValues = form.watch();
 
@@ -80,16 +82,15 @@ export default function RubricGenerationPage({
   };
 
   const onUpdateRubric = useCallback(
-    async (updatedRubricData: Partial<Rubric>) => {
+    (updatedRubricData: Partial<Rubric>) => {
       const updatedRubric = {
         ...formValues,
         ...updatedRubricData,
       };
 
-      const result = RubricSchema.safeParse(updatedRubric);
-      if (!result.success) {
-        throw result.error;
-      }
+      queryClient.invalidateQueries({
+        queryKey: ["rubric", updatedRubric.id],
+      });
 
       form.reset(updatedRubric);
     },

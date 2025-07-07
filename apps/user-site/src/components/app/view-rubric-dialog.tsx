@@ -44,7 +44,9 @@ export function ViewRubricDialog({
         className="min-w-[80%] max-w-[95%] max-h-[90vh] flex flex-col"
       >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">View Rubric</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Rubric: {initialRubric?.rubricName}
+          </DialogTitle>
           <DialogDescription>This is the rubric details view.</DialogDescription>
         </DialogHeader>
 

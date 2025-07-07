@@ -102,6 +102,11 @@ export default function GradingResult({
           queryClient.invalidateQueries({
             queryKey: ["allGradingAssessments", gradingAttempt.id],
           });
+
+          queryClient.invalidateQueries({
+            queryKey: ["gradingAttempt", gradingAttempt.id],
+          });
+
           setIsGrading(false);
         });
 
@@ -131,6 +136,18 @@ export default function GradingResult({
   const handleRegradeAll = useCallback(async () => {
     try {
       setIsGrading(true);
+
+      queryClient.invalidateQueries({
+        queryKey: ["gradingAttempt", gradingAttempt.id],
+      });
+
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return key[0] === "gradingAttempts";
+        },
+      });
+
       await rerunGrading();
     } catch (error) {
       setIsGrading(false);
