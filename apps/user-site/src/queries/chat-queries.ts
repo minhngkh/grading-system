@@ -4,7 +4,6 @@ import {
   type ChatMessage,
   type AgentChatResponse,
   type RubricAgentResponse,
-  ChatRubric,
   ChatRubricSchema,
 } from "@/types/chat";
 import { useAuth } from "@clerk/clerk-react";

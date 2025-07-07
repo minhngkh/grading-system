@@ -103,6 +103,8 @@ export default function UploadStep({ form }: UploadStepProps) {
     });
   });
   useDebounceUpdate(gradingAttempt.scaleFactor, 500, (scaleFactor) => {
+    if (scaleFactor == undefined) return;
+
     updateScaleFactorMutation.mutate(scaleFactor);
     queryClient.invalidateQueries({
       queryKey: ["gradingAttempt", gradingAttempt.id],

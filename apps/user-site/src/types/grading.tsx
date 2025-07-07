@@ -29,7 +29,7 @@ export const GradingSchema = z.object({
     .min(1, {
       message: "Scale factor must be at least 1",
     })
-    .default(10),
+    .optional(),
   selectors: z.array(SelectorSchema).min(1, { message: "Selectors cannot be empty" }),
   status: z.nativeEnum(GradingStatus),
   lastModified: z.date().optional(),

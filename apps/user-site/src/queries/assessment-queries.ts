@@ -85,10 +85,10 @@ export function getAssessmentStatusQueryOptions(
 export function updateFeedbackMutationOptions(
   id: string,
   auth: Auth,
-  options?: Partial<UseMutationOptions<Assessment, unknown, Partial<FeedbackItem>[]>>,
-): UseMutationOptions<Assessment, unknown, Partial<FeedbackItem>[]> {
+  options?: Partial<UseMutationOptions<Assessment, unknown, FeedbackItem[]>>,
+): UseMutationOptions<Assessment, unknown, FeedbackItem[]> {
   return {
-    mutationFn: async (feedbacks: Partial<FeedbackItem>[]) => {
+    mutationFn: async (feedbacks: FeedbackItem[]) => {
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required");
       return AssessmentService.updateFeedback(id, feedbacks, token);

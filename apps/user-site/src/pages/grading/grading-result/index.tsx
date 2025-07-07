@@ -44,7 +44,7 @@ export default function GradingResult({
 
   const auth = useAuth();
   const queryClient = useQueryClient();
-  const hubRef = useRef<SignalRService>();
+  const hubRef = useRef<SignalRService | undefined>(undefined);
 
   const { data: rubricData } = useQuery(
     getRubricQueryOptions(gradingAttempt.rubricId, auth, {
