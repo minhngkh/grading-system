@@ -148,9 +148,29 @@ export function ManualLocationDialog({
   }, []);
 
   const toggleSelect = useCallback((path: string) => {
-    setSelectedPaths((prev) =>
-      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path],
-    );
+    setSelectedPaths((prev) => {
+      const isCurrentlySelected = prev.includes(path);
+
+      if (isCurrentlySelected) {
+        return prev.filter((p) => p !== path);
+      } else {
+        let newPaths = [...prev, path];
+
+        if (path !== "root") {
+          newPaths = newPaths.filter((p) => p !== "root");
+
+          const pathParts = path.split("/");
+          for (let i = 1; i < pathParts.length; i++) {
+            const parentPath = pathParts.slice(0, i).join("/");
+            if (parentPath && parentPath !== path) {
+              newPaths = newPaths.filter((p) => p !== parentPath);
+            }
+          }
+        }
+
+        return newPaths;
+      }
+    });
   }, []);
 
   const onConfirm = useCallback(() => {
@@ -167,7 +187,6 @@ export function ManualLocationDialog({
     onClose();
   }, [selectedPaths, criterionIndex, onSelect, onClose]);
 
-  // Memoize context value to avoid re-renders in tree nodes
   const contextValue = useMemo(
     () => ({
       expandedFolders,
@@ -211,7 +230,6 @@ export function ManualLocationDialog({
             <div>Parsing file...</div>
           : fileSystem && renderFileTree(fileSystem)}
         </div>
-        {/* Confirm Button */}
         <div className="flex justify-end">
           <Button onClick={onConfirm}>Confirm</Button>
         </div>

@@ -1,7 +1,7 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import ManageGradingsPage from "@/pages/grading/manage-grading";
-import { GradingService } from "@/services/grading-service";
+import { getGradingAttemptsQueryOptions } from "@/queries/grading-queries";
 import { searchParams, SearchParams } from "@/types/search-params";
 import { createFileRoute, retainSearchParams } from "@tanstack/react-router";
 import { useCallback } from "react";
@@ -10,14 +10,8 @@ export const Route = createFileRoute("/_authenticated/gradings/view")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
-  loader: async ({ deps, context: { auth } }) => {
-    const token = await auth.getToken();
-    if (!token) {
-      throw new Error("Unauthorized: No token found");
-    }
-
-    return await GradingService.getGradingAttempts(deps, token);
-  },
+  loader: async ({ deps, context: { auth, queryClient } }) =>
+    queryClient.ensureQueryData(getGradingAttemptsQueryOptions(deps, auth)),
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search", "status"])],
   },

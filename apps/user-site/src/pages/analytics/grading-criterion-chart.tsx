@@ -70,19 +70,16 @@ export function AssessmentCriterionChart({
         };
       });
 
-      const { totalScore, totalCount } = chartPoints.reduce(
-        (acc, point) => {
-          acc.totalScore += point.midScore * point.count;
-          acc.totalCount += point.count;
-          return acc;
-        },
-        { totalScore: 0, totalCount: 0 },
-      );
+      const rawAvg =
+        criterion.scores.length > 0 ?
+          criterion.scores.reduce((sum, score) => sum + score, 0) /
+          criterion.scores.length
+        : 0;
 
       return {
         ...criterion,
         chartPoints,
-        averageScore: totalCount > 0 ? totalScore / totalCount : 0,
+        averageScore: usePercentScore ? rawAvg : rawAvg / 10,
         maxScore:
           usePercentScore ?
             criterion.totalWeight

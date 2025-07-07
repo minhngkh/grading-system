@@ -110,7 +110,7 @@ export class AssessmentService {
     id: string,
     feedbacks: FeedbackItem[],
     token: string,
-  ): Promise<Assessment> {
+  ): Promise<number> {
     const configHeaders = await this.buildHeaders(token);
     const payload = { feedbacks };
     const response = await axios.put(
@@ -118,9 +118,7 @@ export class AssessmentService {
       payload,
       configHeaders,
     );
-
-    const raw = await this.assessmentDeserializer.deserialize(response.data);
-    return this.ConvertToAssessment(raw);
+    return response.status;
   }
 
   static async updateScore(
@@ -130,6 +128,7 @@ export class AssessmentService {
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
     const payload = { scoreBreakdowns };
+    console.log("Updating score with payload:", payload);
     const response = await axios.post(
       `${ASSESSMENT_API_URL}/${id}/scores`,
       payload,

@@ -34,6 +34,7 @@ export class GradingService {
       ...record,
       rubricId: !record.rubricId ? undefined : record.rubricId,
       lastModified: record.lastModified ? new Date(record.lastModified) : undefined,
+      createdAt: new Date(record.createdAt),
       scaleFactor: !record.scaleFactor ? 10 : record.scaleFactor,
     };
   }
@@ -43,9 +44,12 @@ export class GradingService {
     transform: (record: any) => this.ConvertToGrading(record),
   });
 
-  static async createGradingAttempt(token: string): Promise<GradingAttempt> {
+  static async createGradingAttempt(
+    rubricId: string | undefined,
+    token: string,
+  ): Promise<GradingAttempt> {
     const configHeaders = await this.buildHeaders(token);
-    const response = await axios.post(GRADING_API_URL, {}, configHeaders);
+    const response = await axios.post(GRADING_API_URL, { rubricId }, configHeaders);
     return this.ConvertToGrading(response.data);
   }
 

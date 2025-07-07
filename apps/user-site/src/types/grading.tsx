@@ -33,6 +33,7 @@ export const GradingSchema = z.object({
   selectors: z.array(SelectorSchema).min(1, { message: "Selectors cannot be empty" }),
   status: z.nativeEnum(GradingStatus),
   lastModified: z.date().optional(),
+  createdAt: z.date(),
   submissions: z.array(SubmissionSchema).min(1, {
     message: "At least one submission is required",
   }),

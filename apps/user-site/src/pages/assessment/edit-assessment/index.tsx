@@ -130,17 +130,8 @@ export function EditAssessmentUI({
         feedbacks: assessment.feedbacks,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // chỉ phụ thuộc files để đảm bảo đã load xong file
+  }, []);
 
-  const totalScore = formData.scoreBreakdowns.reduce((sum, breakdown) => {
-    const criterion = rubric.criteria.find((c) => c.name === breakdown.criterionName);
-    const weight = criterion?.weight || 0;
-    const scale = grading.scaleFactor ?? 10;
-    return sum + ((breakdown.rawScore / weight) * (weight * scale)) / 100;
-  }, 0);
-
-  // Add feedback handler (toggle highlight mode)
   const handleAddFeedbackClick = () => {
     setIsHighlightMode((prev) => !prev);
     setSelectedFeedback(null);
@@ -200,7 +191,16 @@ export function EditAssessmentUI({
     return false;
   };
 
+  function generateUID() {
+    const first = (Math.random() * 46656) | 0;
+    const second = (Math.random() * 46656) | 0;
+    const part1 = ("000" + first.toString(36)).slice(-3);
+    const part2 = ("000" + second.toString(36)).slice(-3);
+    return (part1 + part2).toUpperCase();
+  }
+
   const handleAddNewFeedback = (newFeedback: FeedbackItem) => {
+    newFeedback.id = generateUID(); // Generate a unique ID for the new feedback
     const currentFeedbacks = [...formData.feedbacks];
     currentFeedbacks.push(newFeedback);
 
@@ -368,7 +368,6 @@ export function EditAssessmentUI({
     }
   }, [files, formData.feedbacks]);
   const renderFileContent = () => {
-    console.log("Rendering file content for:", selectedFile);
     if (!selectedFile) return <div className="text-gray-400 p-8">No file selected</div>;
     let prefix = assessment.submissionReference;
     const underscoreIdx = prefix.indexOf("_");
@@ -439,8 +438,7 @@ export function EditAssessmentUI({
             <div>
               <div className="flex">
                 <h1 className="text-xl font-bold">
-                  {formData.submissionReference} Score: {totalScore.toFixed(1)}/
-                  {grading.scaleFactor}
+                  Review Assessment: {formData.submissionReference}
                 </h1>
                 <span className="text-xl font-bold"></span>
               </div>

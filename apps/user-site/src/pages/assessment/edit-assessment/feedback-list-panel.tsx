@@ -28,7 +28,6 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
   const [editComment, setEditComment] = useState("");
   const [editTag, setEditTag] = useState("info");
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [editFeedbackId, setEditFeedbackId] = useState<string | null>(null);
 
   const handleEditClick = (feedback: FeedbackItem) => {
     setEditComment(feedback.comment);
@@ -36,7 +35,6 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
     // Find the index of this feedback in the allFeedbacks array
     const index = allFeedbacks.findIndex((fb) => fb.id === feedback.id);
     setEditIndex(index >= 0 ? index : null);
-    setEditFeedbackId(feedback.id ?? null);
     setEditDialogOpen(true);
   };
 
@@ -45,7 +43,6 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
     updateFeedback(editIndex, { comment: editComment, tag: editTag });
     setEditDialogOpen(false);
     setEditIndex(null);
-    setEditFeedbackId(null);
   };
 
   return (

@@ -117,14 +117,6 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
 
       // Format fileRef with gradingId and file.relativePath (always include gradingId)
       let fileRef = `${gradingId}/${submissionReference}/${file.relativePath || ""}`;
-      console.log(
-        "Adding feedback for fileRef:",
-        fileRef,
-        "gradingID",
-        gradingId,
-        "path",
-        file.relativePath,
-      );
 
       const newFeedback: FeedbackItem = {
         criterion: newCriterion,

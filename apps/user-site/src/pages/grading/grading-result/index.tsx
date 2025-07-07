@@ -1,6 +1,6 @@
 import { lazy, Suspense, useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { GradingAttempt } from "@/types/grading";
-import { AssessmentState } from "@/types/assessment";
+import { Assessment, AssessmentState } from "@/types/assessment";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
@@ -16,13 +16,7 @@ import {
 } from "@/pages/grading/grading-result/skeletons";
 import { SignalRService } from "@/services/realtime-service";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   rerunGradingMutationOptions,
   updateGradingScaleFactorMutationOptions,
@@ -34,9 +28,13 @@ const ReviewResults = lazy(() => import("./review-results"));
 
 interface GradingResultProps {
   gradingAttempt: GradingAttempt;
+  assessmentsData: Assessment[];
 }
 
-export default function GradingResult({ gradingAttempt }: GradingResultProps) {
+export default function GradingResult({
+  gradingAttempt,
+  assessmentsData,
+}: GradingResultProps) {
   const [assessments, setAssessments] = useState<AssessmentGradingStatus[]>([]);
   const [scaleFactor, setScaleFactor] = useState(gradingAttempt.scaleFactor ?? 10);
   const [viewRubricOpen, setViewRubricOpen] = useState(false);
@@ -51,13 +49,6 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
   const { data: rubricData } = useQuery(
     getRubricQueryOptions(gradingAttempt.rubricId, auth, {
       staleTime: Infinity,
-    }),
-  );
-
-  const { data: assessmentsData, isFetching } = useQuery(
-    getAllGradingAssessmentsQueryOptions(gradingAttempt.id, auth, {
-      placeholderData: keepPreviousData,
-      staleTime: 1000 * 60 * 5,
     }),
   );
 
@@ -179,7 +170,7 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
           <Button
             variant="outline"
             size="sm"
-            disabled={isFetching || isGrading}
+            disabled={isGrading}
             onClick={() => setChangeScaleFactorOpen(true)}
           >
             <Scale className="w-4 h-4" />
@@ -188,22 +179,19 @@ export default function GradingResult({ gradingAttempt }: GradingResultProps) {
           <Button
             variant="outline"
             size="sm"
-            disabled={isFetching || isGrading}
+            disabled={isGrading}
             onClick={() => setExportOpen(true)}
           >
             <Download className="w-4 h-4" />
             Export
           </Button>
-          <Link
-            to="/gradings/$gradingId/analytics"
-            params={{ gradingId: gradingAttempt.id }}
-          >
-            <Button variant="outline" size="sm" disabled={isFetching || isGrading}>
+          <Link to="/analytics" search={{ id: gradingAttempt.id }}>
+            <Button variant="outline" size="sm" disabled={isGrading}>
               <ChartColumn className="w-4 h-4" />
               View Analytics
             </Button>
           </Link>
-          <Button size="sm" disabled={isFetching || isGrading} onClick={handleRegradeAll}>
+          <Button size="sm" disabled={isGrading} onClick={handleRegradeAll}>
             <RefreshCw className="w-4 h-4" />
             Regrade All
           </Button>

@@ -88,6 +88,11 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
     const scale = grading.scaleFactor ?? 10;
     return ((rawScore / weight) * (weight * scale)) / 100;
   };
+  const totalScore = (
+    (formData.scoreBreakdowns.reduce((acc, sb) => acc + sb.rawScore, 0) *
+      grading.scaleFactor) /
+    100
+  ).toFixed(2);
 
   // State for editing summary feedback comment inline
   const [editingSummaryIdx, setEditingSummaryIdx] = useState<number | null>(null);
@@ -133,7 +138,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                 onValueChange={(v) => setActiveScoringTab(v || "")}
                 className="flex-1 flex flex-col min-h-0"
               >
-                <div className="flex-shrink-0 sticky top-0 z-10 bg-background">
+                <div className="flex-shrink-0 sticky top-0 z-10 bg-background flex items-center justify-between">
                   <TabsList className="flex flex-wrap gap-1 p-1 rounded-lg">
                     {rubric.criteria.map((criterion) => (
                       <TabsTrigger
@@ -145,6 +150,10 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                       </TabsTrigger>
                     ))}
                   </TabsList>
+                  <div className="flex items-center gap-2 p-2">
+                    <span className="text-base font-semibold">Total Score:</span>
+                    <span className="text-lg font-bold text-blue-600">{totalScore}</span>
+                  </div>
                 </div>
                 <div className="flex-1 min-h-0 flex flex-col">
                   {rubric.criteria.map((criterion) => {

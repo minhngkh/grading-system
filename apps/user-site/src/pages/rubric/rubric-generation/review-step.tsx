@@ -35,7 +35,9 @@ export default function FinalRubricTable({ rubricData }: FinalRubricTableProps) 
             <Button
               size="sm"
               className="bg-green-500 hover:bg-green-600 text-white"
-              onClick={() => navigate({ to: "/gradings/create" })}
+              onClick={() =>
+                navigate({ to: "/gradings/create", search: { rubricId: rubricData.id } })
+              }
             >
               <BookOpenCheck className="size-4" />
               Grade Now
