@@ -69,9 +69,13 @@ export function route(broker: ServiceBroker) {
         body,
       );
 
-      if (responseResult.isErr()) {
+      if (!responseResult.success) {
         throw responseResult.error;
       }
+
+      // if (responseResult.isErr()) {
+      //   throw responseResult.error;
+      // }
 
       const response = responseResult.value;
 

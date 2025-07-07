@@ -1,13 +1,21 @@
 // TODO: Update validation logic
 
 import type { CoreMessage, StreamObjectResult } from "ai";
-import type { Result } from "neverthrow";
+import type { Result, ResultAsync } from "neverthrow";
 import type { LanguageModelWithOptions } from "@/core/llm/types";
 import { asError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { generateObject, streamObject } from "ai";
 import dedent from "dedent";
-import { err, fromPromise, fromThrowable, ok } from "neverthrow";
+import {
+  err,
+  errAsync,
+  fromPromise,
+  fromThrowable,
+  ok,
+  okAsync,
+  safeTry,
+} from "neverthrow";
 import { z } from "zod";
 import { googleProviderOptions } from "@/core/llm/providers/google";
 import { registry } from "@/core/llm/registry";
@@ -152,107 +160,105 @@ type ActualChatResponse =
  * @param options.stream - Whether to stream the response or not, defaults to `false`
  * @returns Chat response or stream of it
  */
-export async function generateChatResponse(options: {
+export function generateChatResponse(options: {
   messages: CoreMessage[];
   weightInRange?: boolean | null;
   rubric?: Rubric;
   stream?: boolean;
-}): Promise<Result<ActualChatResponse, Error>> {
-  const toStream = options.stream ?? false;
-  const hasWeightInRange =
-    typeof options.weightInRange === "undefined" ? null : options.weightInRange;
+}): ResultAsync<ActualChatResponse, Error> {
+  return safeTry(async function* () {
+    const toStream = options.stream ?? false;
+    const hasWeightInRange =
+      typeof options.weightInRange === "undefined" ? null : options.weightInRange;
 
-  let outputSchema;
-  switch (hasWeightInRange) {
-    case null:
-      outputSchema = chatResponseSchema;
-      break;
-    case true:
-      outputSchema = chatResponseSchemaVariant.weightInRange;
-      break;
-    case false:
-      outputSchema = chatResponseSchemaVariant.weightNotInRange;
-      break;
-  }
-
-  // if (currentMessage.role !== "user") {
-  //   return err(new Error("The last message must be from the user"));
-  // }
-
-  if (options.rubric) {
-    logger.info("Updating existing rubric using LLM");
-
-    options.messages.splice(-1, 0, {
-      role: "user",
-      content: dedent`
-      This is my current rubric:
-      \`\`\`json
-      ${JSON.stringify(options.rubric, null, 2)}
-      \`\`\`
-    `,
-    });
-  } else {
-    logger.info("Creating new rubric using LLM");
-  }
-
-  if (!toStream) {
-    const responseResult = await fromPromise(
-      generateObject({
-        ...chatOptions,
-        schema: outputSchema,
-        system: chatSystemPrompt,
-        messages: options.messages,
-      }),
-      asError,
-    );
-    if (responseResult.isErr()) {
-      console.debug(responseResult.error);
-      return err(
-        wrapError(
-          responseResult.error,
-          `Failed to ${options.rubric ? "update" : "create"} rubric`,
-        ),
-      );
+    let outputSchema;
+    switch (hasWeightInRange) {
+      case null:
+        outputSchema = chatResponseSchema;
+        break;
+      case true:
+        outputSchema = chatResponseSchemaVariant.weightInRange;
+        break;
+      case false:
+        outputSchema = chatResponseSchemaVariant.weightNotInRange;
+        break;
     }
 
-    const response = responseResult.value.object;
+    // if (currentMessage.role !== "user") {
+    //   return err(new Error("The last message must be from the user"));
+    // }
 
-    const validationResult = validateChatResponse(response);
-    if (validationResult.isErr()) {
-      return err(wrapError(validationResult.error, "Invalid response from LLM"));
+    if (options.rubric) {
+      logger.info("Updating existing rubric using LLM");
+
+      options.messages.splice(-1, 0, {
+        role: "user",
+        content: dedent`
+        This is my current rubric:
+        \`\`\`json
+        ${JSON.stringify(options.rubric, null, 2)}
+        \`\`\`
+      `,
+      });
+    } else {
+      logger.info("Creating new rubric using LLM");
     }
 
-    return ok({
-      stream: false,
-      result: response,
-    });
-  } else {
-    const safeStreamObject = fromThrowable(
-      () =>
-        streamObject({
+    if (!toStream) {
+      const responseResult = yield* fromPromise(
+        generateObject({
           ...chatOptions,
           schema: outputSchema,
           system: chatSystemPrompt,
           messages: options.messages,
         }),
-      asError,
-    );
-
-    const responseResult = safeStreamObject();
-    if (responseResult.isErr()) {
-      return err(
-        wrapError(
-          responseResult.error,
-          `Failed to ${options.rubric ? "update" : "create"} rubric (stream)`,
-        ),
+        (error) =>
+          wrapError(error, `Failed to ${options.rubric ? "update" : "create"} rubric`),
       );
-    }
 
-    return ok({
-      stream: true,
-      result: responseResult.value,
-    });
-  }
+      const response = responseResult.object;
+
+      const validationResult = validateChatResponse(response);
+      if (validationResult.isErr()) {
+        return errAsync(wrapError(validationResult.error, "Invalid response from LLM"));
+      }
+
+      return okAsync({
+        stream: false,
+        result: response,
+      } as ActualChatResponse);
+    } else {
+      const safeStreamObject = fromThrowable(
+        () =>
+          streamObject({
+            ...chatOptions,
+            schema: outputSchema,
+            system: chatSystemPrompt,
+            messages: options.messages,
+          }),
+        (error) =>
+          wrapError(
+            error,
+            `Failed to ${options.rubric ? "update" : "create"} rubric (stream)`,
+          ),
+      );
+
+      const responseResult = yield* safeStreamObject();
+      // if (responseResult.isErr()) {
+      //   return err(
+      //     wrapError(
+      //       responseResult.error,
+      //       `Failed to ${options.rubric ? "update" : "create"} rubric (stream)`,
+      //     ),
+      //   );
+      // }
+
+      return okAsync({
+        stream: true,
+        result: responseResult,
+      } as ActualChatResponse);
+    }
+  });
 }
 
 export const feedbackSchema = z.object({
