@@ -4,6 +4,13 @@ import { toPlainObject } from "@grading-system/utils/neverthrow";
 import { coreMessageSchema } from "ai";
 import { ZodParams } from "moleculer-zod-validator";
 import z from "zod";
+import { getTransporter } from "@/lib/transporter";
+import {
+  criterionGradingFailedEvent,
+  criterionGradingSuccessEvent,
+} from "@/messaging/events";
+import { gradeSubmissionActionParams } from "@/plugins/actions";
+import { gradeSubmission } from "@/plugins/ai/grade";
 import { generateChatResponse, rubricSchema } from "./core";
 
 export const chatRubricActionSchema = z.object({
@@ -23,55 +30,86 @@ export const chatRubricActionSchema = z.object({
 });
 export const chatRubricActionParams = new ZodParams(chatRubricActionSchema.shape);
 
-export const gradeActionSchema = z.object({
-  rubric: rubricSchema,
-  prompt: z.string().min(1),
-});
-export const gradeActionParams = new ZodParams(gradeActionSchema.shape);
-
 export const aiService = defineTypedService2({
   name: "ai",
   version: 1,
   actions: {
     chatRubric: {
       params: chatRubricActionParams.schema,
-      handler(ctx: Context<typeof chatRubricActionParams.context>) {
+      async handler(ctx: Context<typeof chatRubricActionParams.context>) {
         const params = ctx.params;
 
-        // TODO: fix the underlying response from core.ts
-        return toPlainObject(
-          generateChatResponse({
-            messages: params.messages,
-            weightInRange: params.weightInRange,
-            rubric: params.rubric,
-            stream: params.stream,
-          }),
-        );
+        const result = await generateChatResponse({
+          messages: params.messages,
+          weightInRange: params.weightInRange,
+          rubric: params.rubric,
+          stream: params.stream,
+        });
 
-        // return generateChatResponse({
-        //   messages: params.messages,
-        //   weightInRange: params.weightInRange,
-        //   rubric: params.rubric,
-        //   stream: params.stream,
-        // });
+        if (result.isErr()) {
+          throw new Error(result.error.message);
+        }
+
+        return result.value;
       },
     },
-    // grade: {
-    //   params: gradeActionParams.schema,
-    //   handler(ctx: Context<typeof gradeActionParams.context>) {
-    //     const { rubric, prompt } = ctx.params;
 
-    //     if (!rubric) {
-    //       throw new Error("Rubric is null or undefined");
-    //     }
-    //     return gradeUsingRubric(rubric, prompt);
-    //   },
-    // },
-    // test: {
-    //   handler(ctx: Context) {
-    //     return "hello world";
-    //   },
-    // },
+    gradeSubmission: {
+      params: gradeSubmissionActionParams.schema,
+      async handler(ctx: Context<typeof gradeSubmissionActionParams.context>) {
+        const params = ctx.params;
+
+        const result = await gradeSubmission({
+          attemptId: params.assessmentId,
+          criterionDataList: params.criterionDataList,
+          attachments: params.attachments,
+          metadata: params.metadata,
+        });
+
+        if (result.isErr()) {
+          throw new Error(result.error.message);
+        }
+
+        const transporter = await getTransporter();
+
+        const promises = result.value.map((value) =>
+          value
+            .orTee((error) => {
+              for (const criterion of error.data.criterionNames) {
+                transporter.emit(criterionGradingFailedEvent, {
+                  assessmentId: params.assessmentId,
+                  criterionName: criterion,
+                  error: error.message,
+                });
+              }
+            })
+            .andTee((value) => {
+              for (const item of value) {
+                transporter.emit(criterionGradingSuccessEvent, {
+                  assessmentId: params.assessmentId,
+                  criterionName: item.criterion,
+                  metadata: {
+                    ignoredFiles: item.ignoredFiles,
+                  },
+                  scoreBreakdown: {
+                    tag: item.tag,
+                    rawScore: item.score,
+                    summary: item.summary,
+                    feedbackItems: item.feedback.map((feedbackItem) => ({
+                      comment: feedbackItem.comment,
+                      fileRef: feedbackItem.fileRef,
+                      tag: "info",
+                      locationData: feedbackItem.locationData,
+                    })),
+                  },
+                });
+              }
+            }),
+        );
+
+        await Promise.all(promises);
+      },
+    },
   },
 });
 
