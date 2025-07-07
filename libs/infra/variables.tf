@@ -5,16 +5,19 @@
 variable "postgres_url" {
   description = "PostgreSQL connection URL"
   type        = string
+  sensitive   = true
 }
 
 # Redis Configuration
 variable "redis_url" {
   description = "Redis connection URL (optional, if using Redis with SSL)"
   type        = string
+  sensitive   = true
 }
 variable "redis_host" {
   description = "Redis server hostname"
   type        = string
+  sensitive   = true
 }
 
 variable "redis_port" {
