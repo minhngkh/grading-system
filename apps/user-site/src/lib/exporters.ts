@@ -444,12 +444,15 @@ export class GradingExporter implements DataExporter {
       : new Date().toISOString().slice(0, 16).replace(/[T:]/g, "_");
 
     const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${createdTime}.xlsx`;
-    XLSXWriteFile(workbook, fileName);
+    XLSX.writeFile(workbook, fileName);
   }
 }
 
 export class AssessmentExporter implements DataExporter {
-  constructor(private assessment: Assessment) {}
+  constructor(
+    private assessment: Assessment,
+    private grading: GradingAttempt,
+  ) {}
 
   exportToPDF() {
     const doc = new jsPDF();
@@ -459,16 +462,29 @@ export class AssessmentExporter implements DataExporter {
 
     doc.setFontSize(12);
     doc.text(`Submission: ${this.assessment.submissionReference}`, 14, 30);
-    doc.text(`Total Score: ${this.assessment.rawScore}`, 14, 40);
-    doc.text(`Adjusted Count: ${this.assessment.adjustedCount ?? 0}`, 14, 50);
+    doc.text(`Total Score (%): ${this.assessment.rawScore}`, 14, 40);
+    doc.text(
+      `Total Score (Scale Factor): ${(this.assessment.rawScore * this.grading.scaleFactor) / 100}`,
+      14,
+      50,
+    );
+    doc.text(`Adjusted Count: ${this.assessment.adjustedCount ?? 0}`, 14, 60);
+    doc.text(`Created at: ${this.assessment.createdAt?.toLocaleString() ?? ""}`, 14, 70);
+    doc.text(
+      `Last modified: ${this.assessment.lastModified?.toLocaleString() ?? ""}`,
+      14,
+      80,
+    );
+    doc.text(`Export time: ${new Date().toLocaleString()}`, 14, 90);
 
     autoTable(doc, {
-      startY: 60,
-      head: [["Criterion", "Tag", "Score", "Summary"]],
+      startY: 100,
+      head: [["Criterion", "Tag", "Score (%)", "Score (Scale Factor)", "Summary"]],
       body: this.assessment.scoreBreakdowns.map((sb) => [
         sb.criterionName,
         sb.performanceTag,
         sb.rawScore.toString(),
+        ((sb.rawScore * this.grading.scaleFactor) / 100).toString(),
         this.assessment.feedbacks.find(
           (fb) => fb.criterion === sb.criterionName && fb.tag === "summary",
         )?.comment ?? "",
@@ -481,8 +497,7 @@ export class AssessmentExporter implements DataExporter {
       styles: { fontSize: 10 },
     });
 
-    //
-    const yAfter = (doc as any).lastAutoTable?.finalY ?? 60;
+    const yAfter = (doc as any).lastAutoTable?.finalY ?? 100;
 
     autoTable(doc, {
       startY: yAfter + 10,
@@ -535,17 +550,25 @@ export class AssessmentExporter implements DataExporter {
 
     wsData.push(["Assessment Report"]);
     wsData.push(["Submission", this.assessment.submissionReference]);
-    wsData.push(["Total Score", this.assessment.rawScore]);
+    wsData.push(["Total Score (%)", this.assessment.rawScore]);
+    wsData.push([
+      "Total Score (ScaleFactor)",
+      (this.assessment.rawScore * this.grading.scaleFactor) / 100,
+    ]);
     wsData.push(["Adjusted Count", this.assessment.adjustedCount ?? 0]);
+    wsData.push(["Created at", this.assessment.createdAt?.toLocaleString() ?? ""]);
+    wsData.push(["Last modified", this.assessment.lastModified?.toLocaleString() ?? ""]);
+    wsData.push(["Export time", new Date().toLocaleString() ?? ""]);
     wsData.push([]);
 
     const scoreHeaderRow = wsData.length;
-    wsData.push(["Criterion", "Tag", "Score", "Summary"]);
+    wsData.push(["Criterion", "Tag", "Score (%)", "Score (Scale factor)", "Summary"]);
     this.assessment.scoreBreakdowns.forEach((sb) =>
       wsData.push([
         sb.criterionName,
         sb.performanceTag,
         sb.rawScore,
+        (sb.rawScore * this.grading.scaleFactor) / 100,
         this.assessment.feedbacks.find(
           (fb) => fb.criterion === sb.criterionName && fb.tag === "summary",
         )?.comment ?? "",

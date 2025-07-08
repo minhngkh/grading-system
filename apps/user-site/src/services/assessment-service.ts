@@ -1,4 +1,4 @@
-import { eq } from "@/lib/json-api-query";
+import { buildFilterExpr, contains, eq } from "@/lib/json-api-query";
 import {
   Assessment,
   AssessmentState,
@@ -57,6 +57,8 @@ export class AssessmentService {
       scoreBreakdowns: record.scoreBreakdowns ?? [],
       feedbacks,
       status: record.status,
+      lastModified: record.lastModified ? new Date(record.lastModified) : undefined,
+      createdAt: record.createdAt ? new Date(record.createdAt) : new Date(),
     };
   }
 
@@ -155,5 +157,19 @@ export class AssessmentService {
 
     const assessment = await this.assessmentDeserializer.deserialize(response.data);
     return assessment.status;
+  }
+  static async getScoreAdjustments(assessmentId: string, token: string): Promise<any[]> {
+    const params = new URLSearchParams();
+    const filterExpr = buildFilterExpr([eq("assessment.id", assessmentId)]);
+    params.append("filter", filterExpr ?? "");
+
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(
+      `${ASSIGNMENT_FLOW_API_URL}/scoreAdjustments?${params.toString()}`,
+      configHeaders,
+    );
+    console.log("Score adjustments response:", response.data);
+
+    return response.data.data;
   }
 }

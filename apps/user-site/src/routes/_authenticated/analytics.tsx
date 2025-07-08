@@ -15,7 +15,7 @@ import {
 import { useAuth } from "@clerk/clerk-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-export const Route = createFileRoute("/_authenticated/analytics/")({
+export const Route = createFileRoute("/_authenticated/analytics")({
   component: RouteComponent,
   validateSearch: z.object({
     id: z.string().optional(),
@@ -51,12 +51,7 @@ function RouteComponent() {
       if (newId === gradingAnalytics?.gradingId) return;
 
       navigate({
-        search: (prev) => {
-          return {
-            ...prev,
-            id: newId,
-          };
-        },
+        search: { id: newId ?? undefined },
         replace: true,
       });
     },

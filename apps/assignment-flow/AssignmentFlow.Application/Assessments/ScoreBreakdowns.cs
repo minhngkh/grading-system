@@ -54,38 +54,26 @@ public sealed class ScoreBreakdowns : ValueObject, IEnumerable<ScoreBreakdownIte
     // Plus operator: Combines two lists (summing scores with the same criteria/tags)
     public static ScoreBreakdowns operator +(ScoreBreakdowns a, ScoreBreakdowns b)
     {
-        foreach (var item in b.BreakdownItems)
+        var result = ScoreBreakdowns.Empty;
+        foreach (var item in a)
         {
-            var existingItem = a.BreakdownItems.FirstOrDefault(x => x.CriterionName == item.CriterionName);
-            if (existingItem == null)
-            {
-                a.BreakdownItems.Add(item);
-            }
-            else
-            {
-                existingItem.RawScore += item.RawScore;
-            }
+            result[item.CriterionName] = item + b[item.CriterionName];
         }
 
-        return a;
+        return result;
     }
 
-    public static ScoreBreakdowns operator -(ScoreBreakdowns a, ScoreBreakdowns b)
+    public static ScoreBreakdowns operator -(ScoreBreakdowns a, ScoreBreakdowns? b)
     {
-        foreach (var item in b.BreakdownItems)
+        if (b is null) return a.Clone();
+
+        var result = Empty;
+        foreach (var item in a)
         {
-            var existingItem = a.BreakdownItems.FirstOrDefault(x => x.CriterionName == item.CriterionName);
-            if (existingItem == null)
-            {
-                a.BreakdownItems.Add(item);
-            }
-            else
-            {
-                existingItem.RawScore -= item.RawScore;
-            }
+            result[item.CriterionName] = item - b[item.CriterionName];
         }
 
-        return a;
+        return result;
     }
 
     /// <summary>
@@ -133,6 +121,13 @@ public sealed class ScoreBreakdowns : ValueObject, IEnumerable<ScoreBreakdownIte
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    public ScoreBreakdownItem this[CriterionName criterionName]
+    {
+        get => BreakdownItems.FirstOrDefault(item => item.CriterionName == criterionName)
+            ?? new ScoreBreakdownItem(criterionName);
+        set => BreakdownItems.Add(value);
     }
 
     public ScoreBreakdowns Clone()

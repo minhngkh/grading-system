@@ -36,6 +36,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { FileService } from "@/services/file-service";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export function EditAssessmentUI({
   assessment,
@@ -111,6 +119,10 @@ export function EditAssessmentUI({
     rubric.criteria[0]?.name || "",
   );
   const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">("file");
+  const [scoreAdjustment, setScoreAdjustment] = useState<any[]>([]);
+  const [lastScoreSaveTime, setLastScoreSaveTime] = useState<number>(0);
+  const [showScoreAdjustmentDialog, setShowScoreAdjustmentDialog] = useState(false);
+
   useEffect(() => {
     async function load() {
       const items = await FileService.loadFileItems(
@@ -277,6 +289,9 @@ export function EditAssessmentUI({
         });
       }
 
+      // Trigger score adjustment fetch by updating timestamp
+      setLastScoreSaveTime(Date.now());
+
       toast.success("Score updated successfully");
     } catch (err) {
       toast.error("Failed to update score");
@@ -284,6 +299,42 @@ export function EditAssessmentUI({
     }
   };
 
+  // useEffect to fetch score adjustment after saving score
+  useEffect(() => {
+    const fetchScoreAdjustment = async () => {
+      try {
+        const token = await auth.getToken();
+        if (!token) {
+          console.error("No authentication token available");
+          return;
+        }
+
+        console.log("Fetching score adjustment after score save...");
+        const adjustmentData = await AssessmentService.getScoreAdjustments(
+          assessment.id,
+          token,
+        );
+        console.log("Fetched score adjustment data:", adjustmentData);
+
+        // Make sure we're setting the full array, not just one element
+        if (Array.isArray(adjustmentData)) {
+          setScoreAdjustment(adjustmentData);
+        } else {
+          console.warn("Adjustment data is not an array:", adjustmentData);
+          setScoreAdjustment([]);
+        }
+
+        console.log("Score adjustment data length:", adjustmentData?.length || 0);
+      } catch (error) {
+        console.error("Failed to fetch score adjustment:", error);
+        setScoreAdjustment([]);
+      }
+    };
+
+    fetchScoreAdjustment();
+  }, []);
+
+  console.log("Score adjustment data:", scoreAdjustment[0]);
   const handleExport = () => {
     if (isDirty) {
       toast.warning("You have unsaved changes. Please save before exporting.");
@@ -419,6 +470,38 @@ export function EditAssessmentUI({
     toast.success("Reverted to saved data.");
   };
 
+  function handleShowScoreAdjustments(): void {
+    // Also fetch fresh data when opening the dialog
+    const fetchFreshData = async () => {
+      try {
+        const token = await auth.getToken();
+        if (!token) {
+          toast.error("Authentication required");
+          return;
+        }
+
+        const adjustmentData = await AssessmentService.getScoreAdjustments(
+          assessment.id,
+          token,
+        );
+        console.log("Fresh score adjustment data:", adjustmentData);
+
+        if (Array.isArray(adjustmentData)) {
+          setScoreAdjustment(adjustmentData);
+        } else {
+          setScoreAdjustment([]);
+        }
+
+        setShowScoreAdjustmentDialog(true);
+      } catch (error) {
+        console.error("Failed to fetch score adjustments:", error);
+        toast.error("Failed to load score adjustments");
+      }
+    };
+
+    fetchFreshData();
+  }
+
   return (
     <div className="-mb-20 -mt-12 h-[92vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-auto ">
       {/* Header with fixed height */}
@@ -461,7 +544,7 @@ export function EditAssessmentUI({
               open={open}
               onOpenChange={setOpen}
               exporterClass={AssessmentExporter}
-              args={[formData]}
+              args={[formData, grading]}
             />
             <Button
               className="cursor-pointer"
@@ -633,9 +716,94 @@ export function EditAssessmentUI({
             addFeedback={handleAddNewFeedback}
             updateFeedback={handleUpdateFeedback}
             feedbacks={formData.feedbacks}
+            onShowScoreAdjustments={handleShowScoreAdjustments}
           />
         </div>
       )}
+
+      {/* Score Adjustment Dialog */}
+      <Dialog
+        open={showScoreAdjustmentDialog}
+        onOpenChange={setShowScoreAdjustmentDialog}
+      >
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Score Adjustments</DialogTitle>
+            <DialogDescription>
+              History of score adjustments for this assessment
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {scoreAdjustment && scoreAdjustment.length > 0 ?
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Adjustment Date</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Total Score</TableHead>
+                    <TableHead>Delta Score</TableHead>
+                    <TableHead>Criterion Name</TableHead>
+                    <TableHead>Performance Tag</TableHead>
+                    <TableHead>Raw Score</TableHead>
+                    <TableHead>Grader</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {scoreAdjustment.flatMap((adjustment, adjustmentIndex) =>
+                    adjustment.attributes.scoreBreakdowns.map(
+                      (scoreBreakdown, scoreIndex) => (
+                        <TableRow key={`${adjustmentIndex}-${scoreIndex}`}>
+                          {scoreIndex === 0 && (
+                            <>
+                              <TableCell
+                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
+                                className="font-medium"
+                              >
+                                {new Date(
+                                  adjustment.attributes.createdAt,
+                                ).toLocaleString()}
+                              </TableCell>
+                              <TableCell
+                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
+                              >
+                                {adjustment.attributes.adjustmentSource}
+                              </TableCell>
+                              <TableCell
+                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
+                              >
+                                {adjustment.attributes.score}
+                              </TableCell>
+                              <TableCell
+                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
+                              >
+                                {adjustment.attributes.deltaScore}
+                              </TableCell>
+                            </>
+                          )}
+                          <TableCell>{scoreBreakdown.criterionName}</TableCell>
+                          <TableCell>{scoreBreakdown.performanceTag}</TableCell>
+                          <TableCell>{scoreBreakdown.rawScore}</TableCell>
+                          <TableCell>{scoreBreakdown.grader}</TableCell>
+                          <TableCell>{scoreBreakdown.status}</TableCell>
+                        </TableRow>
+                      ),
+                    ),
+                  )}
+                </TableBody>
+              </Table>
+            : <div className="text-center py-8 text-gray-500">
+                <p>No score adjustments found for this assessment.</p>
+              </div>
+            }
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowScoreAdjustmentDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Replace custom dialog with Shadcn Dialog */}
       <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>

@@ -36,7 +36,7 @@ function RouteComponent() {
     didRun.current = true;
 
     mutate();
-  }, [mutate, navigate]);
+  }, [mutate]);
 
   if (isPending) {
     return <PendingComponent message="Creating rubric..." />;

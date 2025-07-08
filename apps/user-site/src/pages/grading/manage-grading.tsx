@@ -278,10 +278,7 @@ export default function ManageGradingsPage({
                         {grading.status === GradingStatus.Graded && (
                           <>
                             <DropdownMenuItem asChild>
-                              <Link
-                                to="/gradings/$gradingId/analytics"
-                                params={{ gradingId: grading.id }}
-                              >
+                              <Link to="/analytics" search={{ id: grading.id }}>
                                 View Analytics
                               </Link>
                             </DropdownMenuItem>

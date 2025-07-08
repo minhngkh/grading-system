@@ -63,6 +63,8 @@ export const AssessmentSchema = z.object({
   scoreBreakdowns: z.array(ScoreBreakdownSchema),
   feedbacks: z.array(FeedbackSchema),
   status: z.nativeEnum(AssessmentState),
+  lastModified: z.date().optional(),
+  createdAt: z.date(),
 });
 
 export type Assessment = z.infer<typeof AssessmentSchema>;

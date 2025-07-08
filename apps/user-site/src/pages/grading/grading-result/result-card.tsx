@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ResultCardSkeleton } from "@/pages/grading/grading-result/skeletons";
 import { useMutation } from "@tanstack/react-query";
 import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
+import { useMemo } from "react";
 
 interface AssessmentResultCardProps {
   item: Assessment;
@@ -44,6 +45,13 @@ export function AssessmentResultCard({
     return <ResultCardSkeleton />;
 
   const isGradingFailed = item.status === AssessmentState.AutoGradingFailed || isError;
+
+  const sortedScoreBreakdowns = useMemo(() => {
+    return item.scoreBreakdowns.sort((a, b) => {
+      return a.criterionName.localeCompare(b.criterionName);
+    });
+  }, [item.scoreBreakdowns]);
+
   return (
     <Card className="overflow-hidden py-0">
       <div className="flex flex-col md:flex-row">
@@ -65,7 +73,7 @@ export function AssessmentResultCard({
                 Grading for this submission has failed. Please regrade or manually grade
                 this submission.
               </div>
-            : item.scoreBreakdowns.map((score, index) => {
+            : sortedScoreBreakdowns.map((score, index) => {
                 const colorStyle = getCriteriaColorStyle(
                   score.criterionName,
                   criteriaColorMap,

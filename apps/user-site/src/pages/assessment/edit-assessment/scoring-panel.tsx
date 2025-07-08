@@ -7,7 +7,7 @@ import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
 import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Eye, History } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,7 @@ interface ScoringPanelProps {
   addFeedback?: (feedback: FeedbackItem) => void;
   updateFeedback?: (index: number, updatedFeedback: Partial<FeedbackItem>) => void;
   feedbacks?: FeedbackItem[];
+  onShowScoreAdjustments?: () => void;
 }
 
 export const ScoringPanel: React.FC<ScoringPanelProps> = ({
@@ -53,6 +54,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   addFeedback,
   updateFeedback,
   feedbacks,
+  onShowScoreAdjustments,
 }) => {
   const tests: TestCase[] = [
     { input: "1\n2\n3\n", expectedOutput: "6\n", actualOutput: "6\n" },
@@ -120,7 +122,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           onValueChange={(v) => setActiveTab(v || "")}
           className="flex-1 flex flex-col min-h-0"
         >
-          <div className="flex-shrink-0 sticky top-0 z-10 bg-background">
+          <div className="flex-shrink-0 sticky top-0 bg-background">
             <div className="p-2">
               <TabsList className="w-full h-auto rounded-lg">
                 <TabsTrigger value="scoring">Rubric Scoring</TabsTrigger>
@@ -138,7 +140,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                 onValueChange={(v) => setActiveScoringTab(v || "")}
                 className="flex-1 flex flex-col min-h-0"
               >
-                <div className="flex-shrink-0 sticky top-0 z-10 bg-background flex items-center justify-between">
+                <div className="flex-shrink-0 sticky top-0 bg-background flex items-center justify-between">
                   <TabsList className="flex flex-wrap gap-1 p-1 rounded-lg">
                     {rubric.criteria.map((criterion) => (
                       <TabsTrigger
@@ -150,9 +152,24 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                       </TabsTrigger>
                     ))}
                   </TabsList>
-                  <div className="flex items-center gap-2 p-2">
-                    <span className="text-base font-semibold">Total Score:</span>
-                    <span className="text-lg font-bold text-blue-600">{totalScore}</span>
+                  <div className="flex items-center gap-4 p-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-semibold">Total Score:</span>
+                      <span className="text-lg font-bold text-blue-600">
+                        {totalScore}
+                      </span>
+                    </div>
+                    {true && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onShowScoreAdjustments}
+                        className="flex items-center gap-2"
+                      >
+                        <History className="h-4 w-4" />
+                        Score History
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="flex-1 min-h-0 flex flex-col">

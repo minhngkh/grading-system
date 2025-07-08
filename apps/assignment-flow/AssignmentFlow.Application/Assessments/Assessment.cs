@@ -64,6 +64,9 @@ public class Assessment
     [Attr(Capabilities = AllowView)]
     public HashSet<FeedbackItemApiContract> Feedbacks { get; set; } = [];
 
+    [HasMany]
+    public List<ScoreAdjustment> ScoreAdjustmentsHistory { get; set; } = [];
+
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public DateTimeOffset LastModified { get; set; }
 
@@ -111,8 +114,25 @@ public class Assessment
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, Assess.AssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
+        var oldScore = ScoreBreakdowns.ToValueObject();
+        var newScore = domainEvent.AggregateEvent.ScoreBreakdowns;
+        var deltaScore = newScore - oldScore;
+
         ScoreBreakdowns = domainEvent.AggregateEvent.ScoreBreakdowns.ToApiContracts();
         RawScore = domainEvent.AggregateEvent.ScoreBreakdowns.TotalRawScore;
+        ScoreAdjustmentsHistory.Add(new ScoreAdjustment
+        {
+            Id = ScoreAdjustmentId.NewComb().Value,
+            Assessment = this,
+            GradingId = GradingId,
+            TeacherId = TeacherId,
+            AdjustmentSource = domainEvent.AggregateEvent.Grader,
+            Score = newScore.TotalRawScore,
+            ScoreBreakdowns = newScore.ToApiContracts(),
+            DeltaScore = deltaScore.TotalRawScore,
+            DeltaScoreBreakdowns = deltaScore.ToApiContracts(),
+            CreatedAt = DateTimeOffset.UtcNow
+        });
 
         if (domainEvent.AggregateEvent.Grader == Grader.AIGrader)
         {
@@ -151,13 +171,30 @@ public class Assessment
             ScoreBreakdowns.Remove(existingItem);
         }
         ScoreBreakdowns.Add(breakdownItem);
-        
-        if(ScoreBreakdowns.All(item => item.Status == "Completed"))
+        RawScore = ScoreBreakdowns.Sum(s => s.RawScore);
+
+        if (ScoreBreakdowns.ToValueObject().IsCompleted)
         {
+            var oldScore = ScoreAdjustmentsHistory.LastOrDefault()?.ScoreBreakdowns.ToValueObject();
+            var newScore = ScoreBreakdowns.ToValueObject();
+            var deltaScore = newScore - oldScore;
+
+            ScoreAdjustmentsHistory.Add(new ScoreAdjustment
+            {
+                Id = ScoreAdjustmentId.NewComb().Value,
+                Assessment = this,
+                GradingId = GradingId,
+                TeacherId = TeacherId,
+                AdjustmentSource = Grader.AIGrader,
+                Score = newScore.TotalRawScore,
+                ScoreBreakdowns = newScore.ToApiContracts(),
+                DeltaScore = deltaScore.TotalRawScore,
+                DeltaScoreBreakdowns = deltaScore.ToApiContracts(),
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+
             StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
         }
-
-        RawScore = ScoreBreakdowns.Sum(s => s.RawScore);
 
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
