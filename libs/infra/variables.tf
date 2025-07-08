@@ -1,42 +1,8 @@
-# Judge0 on Azure - Variables
-# Input variables for the Judge0 deployment
-
-# Database Configuration
-variable "postgres_url" {
-  description = "PostgreSQL connection URL"
-  type        = string
-  sensitive   = true
-}
-
-# Redis Configuration
-variable "redis_url" {
-  description = "Redis connection URL (optional, if using Redis with SSL)"
-  type        = string
-  sensitive   = true
-}
-variable "redis_host" {
-  description = "Redis server hostname"
-  type        = string
-  sensitive   = true
-}
-
-variable "redis_port" {
-  description = "Redis server port"
-  type        = string
-  default     = "6379"
-}
-
-variable "redis_password" {
-  description = "Redis password"
-  type        = string
-  sensitive   = true
-}
-
 # General Configuration
 variable "location" {
   description = "Azure region"
   type        = string
-  default     = "East US"
+  default     = "Southeast Asia"
 }
 
 variable "resource_group_name" {
@@ -51,22 +17,53 @@ variable "judge0_image_tag" {
   default     = "1.13.1"
 }
 
-variable "max_workers" {
-  description = "Maximum number of worker instances (Note: Container Instances don't auto-scale, this is for future use)"
-  type        = number
-  default     = 1
-}
-
-variable "max_servers" {
-  description = "Maximum number of server instances"
-  type        = number
-  default     = 5
-}
-
 # Optional Security
 variable "auth_token" {
   description = "API authentication token (optional)"
   type        = string
   default     = ""
   sensitive   = true
+}
+
+# Scaling Configuration
+variable "min_workers" {
+  description = "Minimum number of worker instances"
+  type        = number
+  default     = 0
+}
+
+variable "max_workers" {
+  description = "Maximum number of worker instances"
+  type        = number
+  default     = 1
+}
+
+variable "min_servers" {
+  description = "Minimum number of server instances"
+  type        = number
+  default     = 0
+}
+
+variable "max_servers" {
+  description = "Maximum number of server instances"
+  type        = number
+  default     = 1
+}
+
+variable "scale_up_threshold" {
+  description = "Queue size threshold to scale up workers"
+  type        = number
+  default     = 5
+}
+
+variable "scale_down_threshold" {
+  description = "Queue size threshold to scale down workers"
+  type        = number
+  default     = 2
+}
+
+variable "max_idle_workers" {
+  description = "Maximum number of idle workers before scaling down"
+  type        = number
+  default     = 1
 }
