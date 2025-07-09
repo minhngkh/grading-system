@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { getTagColor } from "./icon-utils";
+import { getTagColor } from "../../pages/assessment/edit-assessment/icon-utils";
 import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
@@ -125,8 +125,12 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           <div className="flex-shrink-0 sticky top-0 bg-background">
             <div className="p-2">
               <TabsList className="w-full h-auto rounded-lg">
-                <TabsTrigger value="scoring">Rubric Scoring</TabsTrigger>
-                <TabsTrigger value="summary">Score Summary</TabsTrigger>
+                <TabsTrigger value="scoring" className="text-xs font-medium">
+                  Rubric Scoring
+                </TabsTrigger>
+                <TabsTrigger value="summary" className="text-xs font-medium">
+                  Score Summary
+                </TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -154,8 +158,8 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                   </TabsList>
                   <div className="flex items-center gap-4 p-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-semibold">Total Score:</span>
-                      <span className="text-lg font-bold text-blue-600">
+                      <span className="text-sm font-semibold">Total Score:</span>
+                      <span className="text-sm font-bold text-blue-600">
                         {totalScore}
                       </span>
                     </div>
@@ -167,7 +171,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         className="flex items-center gap-2"
                       >
                         <History className="h-4 w-4" />
-                        Score History
+                        <span className="text-xs">Score History</span>
                       </Button>
                     )}
                   </div>
@@ -236,18 +240,19 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                       >
                         <div className="rounded-lg border p-4 flex flex-col gap-4">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm flex gap-3 items-center font-medium text-muted-foreground">
+                            <span className="text-xs flex gap-3 items-center font-medium text-muted-foreground">
                               {criterion.name} - {criterion.weight}%
                               <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
+                                  size="sm"
                                   onClick={() => {
                                     setCurrentCriterion(criterion.name);
                                     setOpenTestCaseDialog(true);
                                   }}
                                 >
                                   <Eye className="h-4 w-4" />
-                                  Test case
+                                  <span className="text-xs">Test case</span>
                                 </Button>
                               </div>
                             </span>
@@ -286,7 +291,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                                     );
                                     updateScore(criterion.name, newRaw);
                                   }}
-                                  className="w-20 rounded border border-gray-600 px-2 py-1 text-sm font-semibold"
+                                  className="w-20 rounded border border-gray-600 px-2 py-1 text-xs font-semibold"
                                 />
                                 <span className="text-xs">
                                   / {criterionMaxPoints} points
@@ -323,7 +328,9 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                                   </button>
                                 </>
                               : <>
-                                  <span>Summary: {summaryFb.comment}</span>
+                                  <span className="text-xs">
+                                    Summary: {summaryFb.comment}
+                                  </span>
                                   <button
                                     className="text-blue-500 underline text-xs"
                                     type="button"
@@ -411,31 +418,41 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         >
                           <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                              <DialogTitle>Test Cases for {criterion.name}</DialogTitle>
+                              <DialogTitle className="text-base font-semibold">
+                                Test Cases for {criterion.name}
+                              </DialogTitle>
                             </DialogHeader>
                             <div className="overflow-x-auto">
                               <table className="min-w-full text-xs border font-mono">
                                 <thead>
                                   <tr>
-                                    <th className="border px-2 py-1">#</th>
-                                    <th className="border px-2 py-1">Input</th>
-                                    <th className="border px-2 py-1">Expected Output</th>
-                                    <th className="border px-2 py-1">Actual Output</th>
+                                    <th className="border px-2 py-1 text-xs font-medium">
+                                      #
+                                    </th>
+                                    <th className="border px-2 py-1 text-xs font-medium">
+                                      Input
+                                    </th>
+                                    <th className="border px-2 py-1 text-xs font-medium">
+                                      Expected Output
+                                    </th>
+                                    <th className="border px-2 py-1 text-xs font-medium">
+                                      Actual Output
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {tests.map((tc, idx) => (
                                     <tr key={idx}>
-                                      <td className="border px-2 py-1 text-center">
+                                      <td className="border px-2 py-1 text-center text-xs">
                                         {idx + 1}
                                       </td>
-                                      <td className="border px-2 py-1 whitespace-pre font-mono">
+                                      <td className="border px-2 py-1 whitespace-pre font-mono text-xs">
                                         {tc.input}
                                       </td>
-                                      <td className="border px-2 py-1 whitespace-pre font-mono">
+                                      <td className="border px-2 py-1 whitespace-pre font-mono text-xs">
                                         {tc.expectedOutput}
                                       </td>
-                                      <td className="border px-2 py-1 whitespace-pre font-mono">
+                                      <td className="border px-2 py-1 whitespace-pre font-mono text-xs">
                                         {tc.actualOutput}
                                       </td>
                                     </tr>
@@ -464,7 +481,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               className="flex-1 min-h-0 overflow-auto px-4 pb-4"
             >
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
+                <h3 className="text-xs font-medium text-muted-foreground">
                   Score Summary
                 </h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -479,15 +496,12 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                       <div key={criterion.id} className="rounded-lg border p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{criterion.name}</span>
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${getTagColor(currentScore?.performanceTag || "")}`}
-                            >
+                            <span className="text-xs font-medium">{criterion.name}</span>
+                            <Badge variant="outline" className={`text-xs bg-inherit`}>
                               {currentScore?.performanceTag || "N/A"}
                             </Badge>
                           </div>
-                          <span className="text-sm font-medium">
+                          <span className="text-xs font-medium">
                             {score.toFixed(2)}/
                             {(
                               ((grading.scaleFactor ?? 10) * (criterion.weight || 0)) /

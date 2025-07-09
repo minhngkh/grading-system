@@ -63,21 +63,52 @@ function fileMatchesCriteria(file: any, selectedCriteria: string[], selectors: a
     const selector = selectors.find((sel) => sel.criterion === criterionName);
     if (!selector) return false;
 
-    // Handle wildcard pattern
-    if (selector.pattern === "*") return true;
+    // Handle wildcard pattern that matches all files
+    if (selector.pattern === "*" || selector.pattern === "**/*") return true;
 
     // Split pattern by spaces to handle multiple file patterns
-    const patterns = selector.pattern.split(" ");
+    const patterns = selector.pattern.split(" ").filter((p: string) => p.trim());
 
     // Check if the file name matches any of the patterns
     return patterns.some((pattern: string) => {
-      // Simple file name matching
-      if (!pattern.includes("/")) {
+      pattern = pattern.trim();
+      if (!pattern) return false;
+
+      try {
+        // Check if pattern contains glob-like characters or regex special chars
+        const hasGlobChars = /[*?[\]{}]/.test(pattern);
+        const hasRegexChars = /[.*+?^${}()|[\]\\]/.test(pattern);
+
+        if (hasGlobChars || hasRegexChars) {
+          // Convert glob pattern to regex or treat as regex
+          let regexPattern = pattern;
+
+          // If it looks like a glob pattern, convert to regex
+          if (hasGlobChars && !pattern.startsWith("/") && !pattern.endsWith("/")) {
+            // Convert glob to regex
+            regexPattern = pattern
+              .replace(/\*\*/g, ".*") // ** matches anything including /
+              .replace(/\*/g, "[^/]*") // * matches anything except /
+              .replace(/\?/g, "[^/]") // ? matches single character except /
+              .replace(/\./g, "\\."); // escape dots
+            regexPattern = `^${regexPattern}$`;
+          }
+
+          const regex = new RegExp(regexPattern, "i"); // case insensitive
+          return (
+            regex.test(file.name) ||
+            regex.test(file.relativePath || "") ||
+            regex.test(file.path || "")
+          );
+        } else {
+          // Simple file name matching - exact match
+          return file.name === pattern;
+        }
+      } catch (error) {
+        // If regex is invalid, fall back to simple string matching
+        console.warn(`Invalid pattern: ${pattern}`, error);
         return file.name === pattern;
       }
-
-      // Path matching
-      return file.relativePath?.endsWith(pattern) || false;
     });
   });
 }
@@ -135,19 +166,12 @@ function renderTree(
               <div
                 key={file.id}
                 className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-all duration-150 ${
-                  selectedFile?.id === file.id ?
-                    "bg-secondary shadow-sm"
-                  : "hover:bg-muted"
+                  selectedFile?.id === file.id ? "bg-muted shadow-sm" : "hover:bg-muted"
                 }`}
                 onClick={() => setSelectedFile(file)}
               >
                 {getFileIcon(file)}
-                <span className="text-sm">{file.name}</span>
-                {hasFeedbackForFile(feedbacks, file) && (
-                  <Badge className="ml-auto text-xs">
-                    {countFeedbackForFile(feedbacks, file)}
-                  </Badge>
-                )}
+                <span className="text-xs">{file.name}</span>
               </div>
             ))}
         </>
@@ -169,7 +193,7 @@ function renderTree(
         return (
           <div key={fullPath}>
             <div
-              className="flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer hover:bg-gray-100 transition-colors duration-150"
+              className="flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted transition-colors duration-150"
               onClick={() =>
                 setExpandedFolders((prev) => ({
                   ...prev,
@@ -180,7 +204,7 @@ function renderTree(
               {expanded ?
                 <FolderOpen className="h-4 w-4 text-amber-500" />
               : <Folder className="h-4 w-4 text-amber-500" />}
-              <span className="text-sm font-medium">{folder}</span>
+              <span className="text-xs font-medium">{folder}</span>
             </div>
             {expanded && (
               <div className="ml-6 space-y-1">
@@ -210,19 +234,12 @@ function renderTree(
               <div
                 key={file.id}
                 className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-all duration-150 ${
-                  selectedFile?.id === file.id ?
-                    "bg-blue-100 text-blue-900 shadow-sm"
-                  : "hover:bg-gray-100"
+                  selectedFile?.id === file.id ? "bg-muted shadow-sm" : "hover:bg-muted"
                 }`}
                 onClick={() => setSelectedFile(file)}
               >
                 {getFileIcon(file)}
-                <span className="text-sm">{file.name}</span>
-                {hasFeedbackForFile(feedbacks, file) && (
-                  <Badge className="ml-auto text-xs">
-                    {countFeedbackForFile(feedbacks, file)}
-                  </Badge>
-                )}
+                <span className="text-xs">{file.name}</span>
               </div>
             ))}
         </>
@@ -272,7 +289,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   return (
     <div className="pt-4 px-4 h-full w-50 flex flex-col">
       <div className="justify-between flex items-center">
-        <h3 className="text-sm font-medium">Explorer</h3>
+        <h3 className="text-xs font-medium">Explorer</h3>
         <Popover>
           <div className="flex items-end">
             {selectedCriteria.length > 0 && (
@@ -282,33 +299,42 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               <Filter className="h-4 w-4 text-gray-500 hover:text-gray-700" />
             </PopoverTrigger>
           </div>
-          <PopoverContent className="w-72">
-            <h3 className="font-medium mb-2">Filter files by criterion</h3>
+          <PopoverContent className="w-80">
+            <h3 className="text-sm font-medium mb-2">Filter files by criterion</h3>
             {selectors.length > 0 ?
               <div className="space-y-2 max-h-60 overflow-auto">
-                {selectors.map((selector) => (
-                  <div key={selector.criterion} className="flex items-start space-x-2">
-                    <Checkbox
-                      id={`criterion-${selector.criterion}`}
-                      checked={selectedCriteria.includes(selector.criterion)}
-                      onCheckedChange={() => toggleCriterion(selector.criterion)}
-                    />
-                    <div className="grid gap-1.5 leading-none">
-                      <Label
-                        htmlFor={`criterion-${selector.criterion}`}
-                        className="text-sm font-medium cursor-pointer"
-                      >
-                        {selector.criterion}
-                      </Label>
-                      {selector.pattern && (
-                        <p className="text-xs text-muted-foreground">
-                          Pattern: {selector.pattern}
-                        </p>
-                      )}
+                {selectors.map((selector) => {
+                  // Check if pattern looks like regex
+                  const regexChars = /[.*+?^${}()|[\]\\]/;
+
+                  return (
+                    <div key={selector.criterion} className="flex items-start space-x-2">
+                      <Checkbox
+                        id={`criterion-${selector.criterion}`}
+                        checked={selectedCriteria.includes(selector.criterion)}
+                        onCheckedChange={() => toggleCriterion(selector.criterion)}
+                      />
+                      <div className="grid gap-1.5 leading-none flex-1">
+                        <Label
+                          htmlFor={`criterion-${selector.criterion}`}
+                          className="text-xs font-medium cursor-pointer"
+                        >
+                          {selector.criterion}
+                        </Label>
+                        {selector.pattern && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground">
+                                Pattern: {selector.pattern}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                <div className="flex items-start space-x-2 pb-2 mb-2 border-b">
+                  );
+                })}
+                <div className="flex items-start space-x-2 pt-2 mt-2 border-t">
                   <Checkbox
                     id="criterion-all"
                     checked={allSelected}
@@ -316,13 +342,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   />
                   <Label
                     htmlFor="criterion-all"
-                    className="text-sm font-medium cursor-pointer"
+                    className="text-xs font-medium cursor-pointer"
                   >
                     All Criteria
                   </Label>
                 </div>
               </div>
-            : <p className="text-sm text-muted-foreground">No criteria available</p>}
+            : <p className="text-xs text-muted-foreground">No criteria available</p>}
           </PopoverContent>
         </Popover>
       </div>

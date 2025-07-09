@@ -24,6 +24,7 @@ interface PDFViewerProps {
   submissionReference: string;
   onTotalPagesChange?: (totalPages: number) => void;
   activeFeedbackId?: string | null;
+  onFeedbackValidated?: (validatedFeedbacks: FeedbackItem[]) => void;
 }
 
 export interface PDFViewerHandle {
@@ -46,6 +47,7 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
       submissionReference,
       onTotalPagesChange,
       activeFeedbackId,
+      onFeedbackValidated,
     }: PDFViewerProps,
     ref,
   ) => {
@@ -174,10 +176,12 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
     useEffect(() => {
       if (totalPages > 0 && feedbacks.length > 0) {
         const adjustedFeedbacks = validatePdfFeedbacks(feedbacks, totalPages);
+        let hasChanges = false;
 
         // Check for changes and update
         for (let i = 0; i < adjustedFeedbacks.length; i++) {
           if (JSON.stringify(adjustedFeedbacks[i]) !== JSON.stringify(feedbacks[i])) {
+            hasChanges = true;
             // Find the feedback index by matching ID
             const feedbackIndex = feedbacksAll.findIndex((f) => f.id === feedbacks[i].id);
 
@@ -186,9 +190,14 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
             }
           }
         }
+
+        // Notify parent that validation occurred
+        if (hasChanges && onFeedbackValidated) {
+          onFeedbackValidated(adjustedFeedbacks);
+        }
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [totalPages, feedbacks]);
+    }, [totalPages, feedbacks, onFeedbackValidated]);
     // Show dialog automatically when isHighlightMode is true
     useEffect(() => {
       if (isHighlightMode) setIsDialogOpen(true);
@@ -228,12 +237,12 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
         {isDialogOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
             <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-96 z-50">
-              <h2 className="text-lg font-bold mb-4">Add PDF Feedback</h2>
+              <h2 className="text-base font-semibold mb-4">Add PDF Feedback</h2>
               {/* Select page dropdown */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Select Page:</label>
+                <label className="block text-xs font-medium mb-2">Select Page:</label>
                 <select
-                  className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                  className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
                   value={currentPage}
                   onChange={(e) => setCurrentPage(Number(e.target.value))}
                 >
@@ -245,11 +254,11 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
                 </select>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-xs font-medium mb-2">
                   Select Criterion:
                 </label>
                 <select
-                  className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                  className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
                   value={newCriterion}
                   onChange={(e) => setNewCriterion(e.target.value)}
                 >
@@ -262,9 +271,9 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
                 </select>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Select Tag:</label>
+                <label className="block text-xs font-medium mb-2">Select Tag:</label>
                 <select
-                  className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                  className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
                   value={newFeedbackTag}
                   onChange={(e) => setNewFeedbackTag(e.target.value as any)}
                 >
@@ -275,9 +284,9 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
                 </select>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Comment:</label>
+                <label className="block text-xs font-medium mb-2">Comment:</label>
                 <textarea
-                  className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                  className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
                   rows={4}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
@@ -288,6 +297,7 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
                 <Button
                   variant="outline"
                   className="mr-2"
+                  size="sm"
                   onClick={() => {
                     setIsDialogOpen(false);
                     setNewComment("");
@@ -295,7 +305,7 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
                     setNewCriterion("");
                   }}
                 >
-                  Cancel
+                  <span className="text-xs">Cancel</span>
                 </Button>
                 <Button
                   onClick={handleAddFeedback}
@@ -306,8 +316,9 @@ const PDFViewer = forwardRef<PDFViewerHandle, PDFViewerProps>(
                     currentPage < 1 ||
                     currentPage > totalPages
                   }
+                  size="sm"
                 >
-                  Add
+                  <span className="text-xs">Add</span>
                 </Button>
               </div>
             </div>

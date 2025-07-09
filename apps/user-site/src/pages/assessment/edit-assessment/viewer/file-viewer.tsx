@@ -17,6 +17,7 @@ interface FileViewerProps {
   rubricCriteria?: string[];
   gradingId: string;
   submissionReference: string;
+  onFeedbackValidated?: (validatedFeedbacks: FeedbackItem[]) => void;
 }
 
 const FileViewer: React.FC<FileViewerProps> = ({
@@ -31,6 +32,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   rubricCriteria = [],
   gradingId,
   submissionReference,
+  onFeedbackValidated,
 }) => {
   // Gộp logic xác định loại file
   if (file.type === "image") {
@@ -63,6 +65,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         gradingId={gradingId}
         submissionReference={submissionReference}
         activeFeedbackId={activeFeedbackId} // truyền activeFeedbackId
+        onFeedbackValidated={onFeedbackValidated}
       />
     );
   }
@@ -80,6 +83,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         rubricCriteria={rubricCriteria}
         gradingId={gradingId}
         submissionReference={submissionReference}
+        onFeedbackValidated={onFeedbackValidated}
       />
     );
   }

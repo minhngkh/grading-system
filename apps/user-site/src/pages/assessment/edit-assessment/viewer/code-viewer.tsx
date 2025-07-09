@@ -18,6 +18,7 @@ interface HighlightableViewerProps {
   rubricCriteria?: string[];
   gradingId: string;
   submissionReference: string;
+  onFeedbackValidated?: (validatedFeedbacks: FeedbackItem[]) => void;
 }
 
 const HighlightableViewer = ({
@@ -32,6 +33,7 @@ const HighlightableViewer = ({
   rubricCriteria = [],
   gradingId,
   submissionReference,
+  onFeedbackValidated,
 }: HighlightableViewerProps) => {
   const { theme = "light" } = useTheme?.() || {};
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -205,10 +207,15 @@ const HighlightableViewer = ({
       };
     });
   }
+
+  // Validate and adjust feedbacks of type "text"
   useEffect(() => {
     const adjusted = getAdjustedFeedbacks(file.content, feedbacks);
+    let hasChanges = false;
+
     for (let i = 0; i < adjusted.length; i++) {
       if (JSON.stringify(adjusted[i]) !== JSON.stringify(feedbacks[i])) {
+        hasChanges = true;
         const globalIdx = feedbacksAll.findIndex(
           (f) =>
             f.fileRef === feedbacks[i].fileRef &&
@@ -222,7 +229,13 @@ const HighlightableViewer = ({
         }
       }
     }
-  }, [file.content, feedbacks]);
+
+    // Notify parent that validation occurred
+    if (hasChanges && onFeedbackValidated) {
+      onFeedbackValidated(adjusted);
+    }
+  }, [file.content, feedbacks, onFeedbackValidated]);
+
   const handleAddFeedback = () => {
     if (!selectionRange || !newComment.trim() || !newCriterion) return;
     const { from, to } = selectionRange;
@@ -627,18 +640,18 @@ const HighlightableViewer = ({
       {isDialogOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
           <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-96 z-50">
-            <h2 className="text-lg font-bold mb-4">Add Feedback</h2>
+            <h2 className="text-base font-semibold mb-4">Add Feedback</h2>
             <textarea
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+              className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
               rows={4}
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Enter your feedback..."
             />
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-2">Select Tag:</label>
+              <label className="block text-xs font-medium mb-2">Select Tag:</label>
               <select
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
                 value={newFeedbackTag}
                 onChange={(e) => setNewFeedbackTag(e.target.value as any)}
               >
@@ -649,9 +662,9 @@ const HighlightableViewer = ({
               </select>
             </div>
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-2">Select Criterion:</label>
+              <label className="block text-xs font-medium mb-2">Select Criterion:</label>
               <select
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
                 value={newCriterion}
                 onChange={(e) => setNewCriterion(e.target.value)}
               >
@@ -667,6 +680,7 @@ const HighlightableViewer = ({
               <Button
                 variant="outline"
                 className="mr-2"
+                size="sm"
                 onClick={() => {
                   setIsDialogOpen(false);
                   setNewComment("");
@@ -675,13 +689,14 @@ const HighlightableViewer = ({
                   setSelectionRange(null);
                 }}
               >
-                Cancel
+                <span className="text-xs">Cancel</span>
               </Button>
               <Button
                 onClick={handleAddFeedback}
                 disabled={!newComment.trim() || !newCriterion}
+                size="sm"
               >
-                Add
+                <span className="text-xs">Add</span>
               </Button>
             </div>
           </div>
@@ -690,4 +705,5 @@ const HighlightableViewer = ({
     </>
   );
 };
+
 export default HighlightableViewer;

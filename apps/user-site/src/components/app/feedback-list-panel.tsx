@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FeedbackItem } from "@/types/assessment";
 import { Badge } from "@/components/ui/badge";
 import { Trash, MessageSquare, Pen } from "lucide-react";
-import { getTagColor } from "./icon-utils";
+import { getTagColor } from "@/pages/assessment/edit-assessment/icon-utils";
 import { Button } from "@/components/ui/button";
 
 interface FeedbackListPanelProps {
@@ -93,7 +93,9 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                           }}
                         />
                       </div>
-                      <Badge className={`${getTagColor(feedback.tag)} text-gray-800`}>
+                      <Badge
+                        className={`${getTagColor(feedback.tag)} text-gray-800 text-xs`}
+                      >
                         {feedback.tag}
                       </Badge>
 
@@ -106,7 +108,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
               })
           : <div className="text-center py-8 text-gray-500">
               <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">There is no feedback</p>
+              <p className="text-xs">There is no feedback</p>
             </div>
 
         }
@@ -114,18 +116,18 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
       {editDialogOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-96 z-50">
-            <h2 className="text-lg font-bold mb-4">Edit Feedback</h2>
+            <h2 className="text-base font-semibold mb-4">Edit Feedback</h2>
             <textarea
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+              className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
               rows={4}
               value={editComment}
               onChange={(e) => setEditComment(e.target.value)}
               placeholder="Edit feedback..."
             />
             <div className="mt-4">
-              <label className="block text-sm font-medium mb-2">Select Tag:</label>
+              <label className="block text-xs font-medium mb-2">Select Tag:</label>
               <select
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
                 value={editTag}
                 onChange={(e) => setEditTag(e.target.value)}
               >
@@ -139,12 +141,13 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
               <Button
                 variant="outline"
                 className="mr-2"
+                size="sm"
                 onClick={() => setEditDialogOpen(false)}
               >
-                Cancel
+                <span className="text-xs">Cancel</span>
               </Button>
-              <Button onClick={handleEditSave} disabled={!editComment.trim()}>
-                Save
+              <Button onClick={handleEditSave} disabled={!editComment.trim()} size="sm">
+                <span className="text-xs">Save</span>
               </Button>
             </div>
           </div>

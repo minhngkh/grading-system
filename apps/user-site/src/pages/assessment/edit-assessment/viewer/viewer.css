@@ -5,7 +5,7 @@
 code {
   font-family: monospace;
   display: grid;
-  font-size: large;
+  font-size: 14px;
   padding-left: 1em; /* Add space between line numbers and content */
 }
 

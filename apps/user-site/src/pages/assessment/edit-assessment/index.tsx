@@ -8,6 +8,7 @@ import {
   PanelLeftOpen,
   EyeClosed,
   History,
+  ArrowLeft,
 } from "lucide-react";
 import { Assessment, AssessmentSchema, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
@@ -22,11 +23,11 @@ import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
 import { getFileIcon } from "./icon-utils";
 import { FileExplorer } from "@/components/app/file-explorer";
-import { ScoringPanel } from "./scoring-panel";
+import { ScoringPanel } from "@/components/app/scoring-panel";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { AssessmentExporter } from "@/lib/exporters";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { FeedbackListPanel } from "./feedback-list-panel";
+import { FeedbackListPanel } from "@/components/app/feedback-list-panel";
 import {
   Dialog,
   DialogContent,
@@ -36,14 +37,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { FileService } from "@/services/file-service";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ScoreAdjustmentDialog } from "@/components/app/score-adjustment-dialog";
+import { useNavigate } from "@tanstack/react-router";
 
 export function EditAssessmentUI({
   assessment,
@@ -122,6 +117,7 @@ export function EditAssessmentUI({
   const [scoreAdjustment, setScoreAdjustment] = useState<any[]>([]);
   const [lastScoreSaveTime, setLastScoreSaveTime] = useState<number>(0);
   const [showScoreAdjustmentDialog, setShowScoreAdjustmentDialog] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function load() {
@@ -242,6 +238,13 @@ export function EditAssessmentUI({
       if (!token) {
         throw new Error("You must be logged in to update feedback");
       }
+
+      // Check if feedback has actually changed
+      if (lastSavedData && equal(formData.feedbacks, lastSavedData.feedbacks)) {
+        toast.info("No changes to save feedback.");
+        return;
+      }
+
       await AssessmentService.updateFeedback(assessment.id, formData.feedbacks, token);
 
       // Update lastSavedData and initialData with the current feedback values
@@ -272,6 +275,16 @@ export function EditAssessmentUI({
       if (!token) {
         throw new Error("You must be logged in to update score");
       }
+
+      // Check if score has actually changed
+      if (
+        lastSavedData &&
+        equal(formData.scoreBreakdowns, lastSavedData.scoreBreakdowns)
+      ) {
+        toast.info("No changes to save score.");
+        return;
+      }
+
       await AssessmentService.updateScore(assessment.id, formData.scoreBreakdowns, token);
 
       // Update lastSavedData and initialData with the current score values
@@ -309,12 +322,10 @@ export function EditAssessmentUI({
           return;
         }
 
-        console.log("Fetching score adjustment after score save...");
         const adjustmentData = await AssessmentService.getScoreAdjustments(
           assessment.id,
           token,
         );
-        console.log("Fetched score adjustment data:", adjustmentData);
 
         // Make sure we're setting the full array, not just one element
         if (Array.isArray(adjustmentData)) {
@@ -323,18 +334,48 @@ export function EditAssessmentUI({
           console.warn("Adjustment data is not an array:", adjustmentData);
           setScoreAdjustment([]);
         }
-
-        console.log("Score adjustment data length:", adjustmentData?.length || 0);
       } catch (error) {
         console.error("Failed to fetch score adjustment:", error);
         setScoreAdjustment([]);
       }
     };
 
+    // Fetch on initial load
     fetchScoreAdjustment();
-  }, []);
+  }, [assessment.id]);
 
-  console.log("Score adjustment data:", scoreAdjustment[0]);
+  // Separate useEffect to refetch after score saves
+  useEffect(() => {
+    if (lastScoreSaveTime === 0) return; // Skip initial render
+
+    const fetchScoreAdjustmentAfterSave = async () => {
+      try {
+        const token = await auth.getToken();
+        if (!token) {
+          console.error("No authentication token available");
+          return;
+        }
+
+        console.log("Refetching score adjustment after save...");
+        const adjustmentData = await AssessmentService.getScoreAdjustments(
+          assessment.id,
+          token,
+        );
+        console.log("Refetched score adjustment data:", adjustmentData);
+
+        if (Array.isArray(adjustmentData)) {
+          setScoreAdjustment(adjustmentData);
+        } else {
+          setScoreAdjustment([]);
+        }
+      } catch (error) {
+        console.error("Failed to refetch score adjustment:", error);
+      }
+    };
+
+    fetchScoreAdjustmentAfterSave();
+  }, [lastScoreSaveTime, assessment.id]);
+
   const handleExport = () => {
     if (isDirty) {
       toast.warning("You have unsaved changes. Please save before exporting.");
@@ -444,6 +485,7 @@ export function EditAssessmentUI({
         isHighlightMode={isHighlightMode}
         onHighlightComplete={() => setIsHighlightMode(false)}
         activeFeedbackId={selectedFeedbackId}
+        onFeedbackValidated={handleFeedbackValidated}
       />
     );
   };
@@ -471,36 +513,28 @@ export function EditAssessmentUI({
   };
 
   function handleShowScoreAdjustments(): void {
-    // Also fetch fresh data when opening the dialog
-    const fetchFreshData = async () => {
-      try {
-        const token = await auth.getToken();
-        if (!token) {
-          toast.error("Authentication required");
-          return;
-        }
+    // No need to fetch fresh data here since we already have up-to-date data
+    setShowScoreAdjustmentDialog(true);
+  }
 
-        const adjustmentData = await AssessmentService.getScoreAdjustments(
-          assessment.id,
-          token,
-        );
-        console.log("Fresh score adjustment data:", adjustmentData);
-
-        if (Array.isArray(adjustmentData)) {
-          setScoreAdjustment(adjustmentData);
-        } else {
-          setScoreAdjustment([]);
-        }
-
-        setShowScoreAdjustmentDialog(true);
-      } catch (error) {
-        console.error("Failed to fetch score adjustments:", error);
-        toast.error("Failed to load score adjustments");
-      }
+  // Handle feedback validation from viewers
+  const handleFeedbackValidated = React.useCallback(() => {
+    // Update both initialData and lastSavedData with current validated state
+    const currentState = {
+      scoreBreakdowns: form.getValues("scoreBreakdowns"),
+      feedbacks: form.getValues("feedbacks"),
     };
 
-    fetchFreshData();
-  }
+    setInitialData(currentState);
+    setLastSavedData(currentState);
+  }, [form]);
+
+  const handleBackClick = () => {
+    navigate({
+      to: "/gradings/$gradingId/result",
+      params: { gradingId: grading.id },
+    });
+  };
 
   return (
     <div className="-mb-20 -mt-12 h-[92vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-auto ">
@@ -508,6 +542,15 @@ export function EditAssessmentUI({
       <div className="p-4" style={{ height: "72px" }}>
         <div className="flex items-center md:justify-between">
           <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackClick}
+              className="p-2"
+              title="Back to results"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -520,13 +563,13 @@ export function EditAssessmentUI({
             </Button>
             <div>
               <div className="flex">
-                <h1 className="text-xl font-bold">
+                <h1 className="text-lg font-semibold">
                   Review Assessment: {formData.submissionReference}
                 </h1>
-                <span className="text-xl font-bold"></span>
+                <span className="text-lg font-semibold"></span>
               </div>
 
-              <p className="text-sm text-gray-500">Rubric: {rubric.rubricName}</p>
+              <p className="text-xs text-muted-foreground">Rubric: {rubric.rubricName}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -534,11 +577,13 @@ export function EditAssessmentUI({
               {showBottomPanel ?
                 <EyeClosed className="h-4 w-4 mr-2" />
               : <Eye className="h-4 w-4 mr-2" />}
-              {showBottomPanel ? "Hide Scoring" : "Show Scoring"}
+              <span className="text-xs">
+                {showBottomPanel ? "Hide Scoring" : "Show Scoring"}
+              </span>
             </Button>
             <Button onClick={handleExport} size="sm">
               <Save className="h-4 w-4 mr-2" />
-              Export
+              <span className="text-xs">Export</span>
             </Button>
             <ExportDialog
               open={open}
@@ -553,22 +598,22 @@ export function EditAssessmentUI({
               disabled={!canRevert}
             >
               <History className="h-4 w-4 mr-2" />
-              Revert Changes
+              <span className="text-xs">Revert Changes</span>
             </Button>
             <Button className="cursor-pointer" size="sm" onClick={handleSaveFeedback}>
               <Save className="h-4 w-4 mr-2" />
-              Save Feedback
+              <span className="text-xs">Save Feedback</span>
             </Button>
             <Button className="cursor-pointer" size="sm" onClick={handleSaveScore}>
               <Save className="h-4 w-4 mr-2" />
-              Save Scoring
+              <span className="text-xs">Save Scoring</span>
             </Button>
           </div>
         </div>
       </div>
 
       <div
-        className="flex justify-between"
+        className="flex justify-between pt-2"
         style={{
           height:
             showBottomPanel ?
@@ -591,7 +636,7 @@ export function EditAssessmentUI({
         )}
 
         {/* Main Content + Feedback Panel */}
-        <div className="flex-1 flex flex-row" style={{ minWidth: 0 }}>
+        <div className="gap-4 flex-1 flex flex-row" style={{ minWidth: 0 }}>
           {/* File Viewer - không cần điều chỉnh height, luôn 100% */}
           <div
             className="flex-1 flex flex-col h-full w-80"
@@ -600,14 +645,16 @@ export function EditAssessmentUI({
               position: "relative",
             }}
           >
-            <div className="mt-2 border-b flex-shrink-0">
-              <div className="flex mb-2 items-center justify-between">
+            <div className="border-b flex-shrink-0">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {selectedFile && getFileIcon(selectedFile)}
-                  <h2 className="text-lg font-medium">
+                  <h2 className="text-sm font-medium">
                     {selectedFile?.name || "No file selected"}
                   </h2>
-                  <Badge variant="outline">{selectedFile?.type}</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {selectedFile?.type}
+                  </Badge>
                 </div>
                 <Button
                   variant={isHighlightMode ? "default" : "outline"}
@@ -616,11 +663,13 @@ export function EditAssessmentUI({
                   onClick={handleAddFeedbackClick}
                 >
                   <Edit3 className="h-4 w-4 mr-2" />
-                  {isHighlightMode ? "Exit Feedback" : "Add Feedback"}
+                  <span className="text-xs">
+                    {isHighlightMode ? "Exit Feedback" : "Add Feedback"}
+                  </span>
                 </Button>
               </div>
               {isHighlightMode && selectedFile && (
-                <div className="mt-2 text-blue-700 text-sm font-medium">
+                <div className="mt-2 text-blue-700 text-xs font-medium">
                   {(selectedFile.type === "code" || selectedFile.type === "essay") &&
                     "Click and drag to highlight and add feedback. Click again to exit."}
                 </div>
@@ -634,7 +683,7 @@ export function EditAssessmentUI({
             : <div className="flex-1 w-full overflow-auto">{renderFileContent()}</div>}
           </div>
 
-          <div className="ml-4 w-60 pt-4 flex flex-col h-full">
+          <div className="w-60 flex flex-col h-full">
             <Tabs
               value={feedbackViewMode}
               onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
@@ -649,7 +698,7 @@ export function EditAssessmentUI({
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="file" className="flex flex-col flex-1 overflow-hidden">
-                <h3 className="text-sm font-medium mb-3 shrink-0">
+                <h3 className="text-xs font-medium mb-3 shrink-0">
                   Feedback for {selectedFile?.name}
                 </h3>
                 <FeedbackListPanel
@@ -668,7 +717,7 @@ export function EditAssessmentUI({
                 value="criterion"
                 className="flex flex-col flex-1 overflow-hidden"
               >
-                <h3 className="text-sm font-medium mb-3">
+                <h3 className="text-xs font-medium mb-3">
                   Feedback for {activeScoringTab}
                 </h3>
                 <FeedbackListPanel
@@ -698,7 +747,6 @@ export function EditAssessmentUI({
             right: 0,
             bottom: 0,
             height: bottomPanelHeight,
-            zIndex: 20,
             borderTop: "1px solid var(--border-color, #e5e7eb)",
           }}
         >
@@ -722,90 +770,14 @@ export function EditAssessmentUI({
       )}
 
       {/* Score Adjustment Dialog */}
-      <Dialog
+      <ScoreAdjustmentDialog
+        scaleFactor={grading.scaleFactor}
         open={showScoreAdjustmentDialog}
         onOpenChange={setShowScoreAdjustmentDialog}
-      >
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>Score Adjustments</DialogTitle>
-            <DialogDescription>
-              History of score adjustments for this assessment
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4">
-            {scoreAdjustment && scoreAdjustment.length > 0 ?
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Adjustment Date</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Total Score</TableHead>
-                    <TableHead>Delta Score</TableHead>
-                    <TableHead>Criterion Name</TableHead>
-                    <TableHead>Performance Tag</TableHead>
-                    <TableHead>Raw Score</TableHead>
-                    <TableHead>Grader</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {scoreAdjustment.flatMap((adjustment, adjustmentIndex) =>
-                    adjustment.attributes.scoreBreakdowns.map(
-                      (scoreBreakdown, scoreIndex) => (
-                        <TableRow key={`${adjustmentIndex}-${scoreIndex}`}>
-                          {scoreIndex === 0 && (
-                            <>
-                              <TableCell
-                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
-                                className="font-medium"
-                              >
-                                {new Date(
-                                  adjustment.attributes.createdAt,
-                                ).toLocaleString()}
-                              </TableCell>
-                              <TableCell
-                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
-                              >
-                                {adjustment.attributes.adjustmentSource}
-                              </TableCell>
-                              <TableCell
-                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
-                              >
-                                {adjustment.attributes.score}
-                              </TableCell>
-                              <TableCell
-                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
-                              >
-                                {adjustment.attributes.deltaScore}
-                              </TableCell>
-                            </>
-                          )}
-                          <TableCell>{scoreBreakdown.criterionName}</TableCell>
-                          <TableCell>{scoreBreakdown.performanceTag}</TableCell>
-                          <TableCell>{scoreBreakdown.rawScore}</TableCell>
-                          <TableCell>{scoreBreakdown.grader}</TableCell>
-                          <TableCell>{scoreBreakdown.status}</TableCell>
-                        </TableRow>
-                      ),
-                    ),
-                  )}
-                </TableBody>
-              </Table>
-            : <div className="text-center py-8 text-gray-500">
-                <p>No score adjustments found for this assessment.</p>
-              </div>
-            }
-          </div>
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setShowScoreAdjustmentDialog(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        scoreAdjustment={scoreAdjustment}
+      />
 
-      {/* Replace custom dialog with Shadcn Dialog */}
+      {/* Revert confirmation dialog */}
       <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
         <DialogContent>
           <DialogHeader>
