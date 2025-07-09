@@ -771,7 +771,7 @@ export function EditAssessmentUI({
 
       {/* Score Adjustment Dialog */}
       <ScoreAdjustmentDialog
-        scaleFactor={grading.scaleFactor}
+        scaleFactor={grading.scaleFactor ?? 10}
         open={showScoreAdjustmentDialog}
         onOpenChange={setShowScoreAdjustmentDialog}
         scoreAdjustment={scoreAdjustment}
