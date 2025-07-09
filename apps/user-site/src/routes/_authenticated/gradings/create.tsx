@@ -2,7 +2,7 @@ import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import { createGradingAttemptMutationOptions } from "@/queries/grading-queries";
 import { useAuth } from "@clerk/clerk-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { z } from "zod";
@@ -19,10 +19,17 @@ function RouteComponent() {
   const navigate = Route.useNavigate();
   const auth = useAuth();
   const didRun = useRef(false);
+  const queryClient = useQueryClient();
 
   const { mutate, isPending, isError } = useMutation(
     createGradingAttemptMutationOptions(auth, {
       onSuccess: (grading) => {
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey;
+            return key[0] === "gradingAttempts";
+          },
+        });
         sessionStorage.removeItem("gradingStep");
         navigate({
           to: "/gradings/$gradingId",

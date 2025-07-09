@@ -146,9 +146,9 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               >
                 <div className="flex-shrink-0 sticky top-0 bg-background flex items-center justify-between">
                   <TabsList className="flex flex-wrap gap-1 p-1 rounded-lg">
-                    {rubric.criteria.map((criterion) => (
+                    {rubric.criteria.map((criterion, index) => (
                       <TabsTrigger
-                        key={criterion.id}
+                        key={index}
                         value={criterion.name}
                         className="px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
                       >

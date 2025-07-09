@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useCallback, useState, memo } from "react";
+import { useCallback, useState, memo, JSX } from "react";
 import { cn } from "@/lib/utils";
 import { useDebounceUpdate } from "@/hooks/use-debounce";
 import type { SearchParams } from "@/types/search-params";

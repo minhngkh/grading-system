@@ -8,7 +8,7 @@ import { UseFormReturn } from "react-hook-form";
 import { AssessmentStatusCard } from "@/pages/grading/grading-session/grading-step/status-card";
 import { AssessmentState } from "@/types/assessment";
 import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
 import { startGradingMutationOptions } from "@/queries/grading-queries";
 import ErrorComponent from "@/components/app/route-error";
@@ -28,11 +28,14 @@ export default function GradingProgressStep({
   const [assessmentStatus, setAssessmentStatus] = useState<
     AssessmentGradingStatus[] | null
   >(null);
+
+  const queryClient = useQueryClient();
+
   const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
   const { mutateAsync: startGrading } = useMutation(
     startGradingMutationOptions(gradingAttemptValues.id, auth, {
       onError: (error) => {
-        gradingAttempt.setValue("status", GradingStatus.Failed);
+        handleGradingStatusChange(GradingStatus.Failed);
         console.error("Failed to start grading:", error);
         toast.error("Failed to start grading. Please try again.");
       },
@@ -41,6 +44,9 @@ export default function GradingProgressStep({
 
   const handleGradingStatusChange = (newStatus: GradingStatus) => {
     gradingAttempt.setValue("status", newStatus);
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempt", gradingAttemptValues.id],
+    });
   };
 
   const handleStatusChange = (newStatus: AssessmentGradingStatus) => {
@@ -74,6 +80,9 @@ export default function GradingProgressStep({
     try {
       await rerunAssessmentMutation.mutateAsync(assessmentId);
       handleGradingStatusChange(GradingStatus.Started);
+      queryClient.invalidateQueries({
+        queryKey: ["assessment", assessmentId],
+      });
     } catch (error) {
       console.error("Failed to regrade assessment:", error);
       toast.error(`Failed to regrade assessment. Please try again.`);
@@ -100,8 +109,8 @@ export default function GradingProgressStep({
         hub.on("Complete", () => handleGradingStatusChange(GradingStatus.Graded));
 
         if (gradingAttemptValues.status === GradingStatus.Created) {
-          gradingAttempt.setValue("status", GradingStatus.Started);
           await startGrading();
+          handleGradingStatusChange(GradingStatus.Started);
         }
 
         await hub.start();

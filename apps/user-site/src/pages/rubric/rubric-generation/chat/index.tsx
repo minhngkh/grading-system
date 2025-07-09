@@ -17,7 +17,7 @@ import { sendRubricMessageMutationOptions } from "@/queries/chat-queries";
 import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 interface EditRubricPageProps {
   rubric: Rubric;
-  onUpdate: (rubric: Partial<Rubric>) => Promise<void>;
+  onUpdate: (rubric: Partial<Rubric>) => void;
 }
 
 export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
@@ -36,19 +36,12 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
         if (response.rubric) {
           setIsApplyingEdit(true);
 
-          setTimeout(async () => {
-            try {
-              await updateRubricMutation.mutateAsync({
-                ...response.rubric,
-              });
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await updateRubricMutation.mutateAsync({
+            ...response.rubric,
+          });
 
-              onUpdate({ ...response.rubric });
-            } catch (error) {
-              console.error("Error updating rubric:", error);
-              return "Error updating rubric. Please try again.";
-            }
-            setIsApplyingEdit(false);
-          }, 1500);
+          onUpdate({ ...response.rubric });
         }
 
         return response.message;
@@ -56,6 +49,7 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
         console.error("Error sending message:", error);
         return "An error occurred while processing your request. Please try again.";
       } finally {
+        setIsApplyingEdit(false);
         setIsLoading(false);
       }
     },

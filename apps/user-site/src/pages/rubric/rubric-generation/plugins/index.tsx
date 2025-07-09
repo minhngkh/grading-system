@@ -23,7 +23,7 @@ const PluginConfigDialogs: Record<string, PluginDialogComponent> = {
 
 interface PluginRubricTableProps {
   rubricData: Rubric;
-  onUpdate?: (updatedRubric: Partial<Rubric>) => Promise<void>;
+  onUpdate?: (updatedRubric: Partial<Rubric>) => void;
 }
 
 export default function PluginRubricTable({

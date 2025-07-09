@@ -58,27 +58,23 @@ export default function CodeRunnerConfigDialog({
 
   const createConfigMutation = useMutation(createCodeRunnerConfigMutationOptions(auth));
 
-  // const { data: initialConfig, isLoading: isLoadingConfig } = useQuery(
-  //   getTestRunnerConfigQueryOptions(configId!, auth, {
-  //     staleTime: Infinity,
-  //     enabled: !!configId,
-  //   }),
-  // );
+  const { data: initialConfig, isLoading: isLoadingConfig } = useQuery(
+    getTestRunnerConfigQueryOptions(configId!, auth, {
+      staleTime: Infinity,
+      enabled: !!configId,
+    }),
+  );
 
-  // useEffect(() => {
-  //   if (!isLoadingConfig) return;
+  useEffect(() => {
+    if (!isLoadingConfig) return;
 
-  //   if (initialConfig) {
-  //     setDefaultConfig(initialConfig);
-  //     reset(initialConfig);
-  //   }
-  // }, [isLoadingConfig]);
+    if (initialConfig) {
+      setDefaultConfig(initialConfig);
+      reset(initialConfig);
+    }
+  }, [isLoadingConfig]);
 
-  const {
-    data: languages,
-    isFetching: isFetchingLanguages,
-    isError: isFetchingConfigError,
-  } = useQuery(
+  const { data: languages, isFetching: isFetchingLanguages } = useQuery(
     getTestRunnerSupportedLanguagesQueryOptions(auth, {
       staleTime: Infinity,
     }),
@@ -292,7 +288,7 @@ export default function CodeRunnerConfigDialog({
                     )}
 
                     <EnvironmentVariablesTable
-                      environmentVariables={config.environmentVariables}
+                      environmentVariables={config.environmentVariables ?? {}}
                       onUpdateEnvVar={updateEnvVar}
                       onDeleteEnvVar={deleteEnvVar}
                     />

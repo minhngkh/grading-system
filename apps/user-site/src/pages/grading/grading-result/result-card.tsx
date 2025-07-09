@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { ResultCardSkeleton } from "@/pages/grading/grading-result/skeletons";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
 import { useMemo } from "react";
 
@@ -24,6 +24,7 @@ export function AssessmentResultCard({
   criteriaColorMap,
 }: AssessmentResultCardProps) {
   const auth = useAuth();
+  const queryClient = useQueryClient();
   const {
     isPending: isRerunning,
     isError,
@@ -33,6 +34,13 @@ export function AssessmentResultCard({
   const handleRerun = async () => {
     try {
       await rerunAssessment(item.id);
+      queryClient.invalidateQueries({
+        queryKey: ["gradingAttempts"],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["assessment", item.id],
+      });
     } catch (error) {
       console.error("Failed to rerun assessment:", error);
       toast.error(
@@ -41,9 +49,6 @@ export function AssessmentResultCard({
     }
   };
 
-  if (item.status === AssessmentState.AutoGradingStarted || isRerunning)
-    return <ResultCardSkeleton />;
-
   const isGradingFailed = item.status === AssessmentState.AutoGradingFailed || isError;
 
   const sortedScoreBreakdowns = useMemo(() => {
@@ -51,6 +56,9 @@ export function AssessmentResultCard({
       return a.criterionName.localeCompare(b.criterionName);
     });
   }, [item.scoreBreakdowns]);
+
+  if (item.status === AssessmentState.AutoGradingStarted || isRerunning)
+    return <ResultCardSkeleton />;
 
   return (
     <Card className="overflow-hidden py-0">

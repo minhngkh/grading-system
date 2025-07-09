@@ -42,6 +42,7 @@ export default function UploadAssignmentPage({
     resolver: zodResolver(GradingSchema),
     defaultValues: initialGradingAttempt,
   });
+
   const gradingAttemptValues = gradingAttempt.watch();
 
   useEffect(() => {

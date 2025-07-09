@@ -10,8 +10,8 @@ export const Route = createFileRoute("/_authenticated/rubrics/view")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
-  loader: async ({ deps, context: { auth, queryClient } }) =>
-    queryClient.ensureQueryData(getRubricsQueryOptions(deps, auth)),
+  loader: ({ deps, context: { auth, queryClient } }) =>
+    queryClient.fetchQuery(getRubricsQueryOptions(deps, auth)),
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },
