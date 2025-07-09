@@ -3,6 +3,22 @@ import ShikiHighlighter from "react-shiki";
 import { FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import "./viewer.css";
 import { FileItem } from "@/types/file";
 
@@ -440,7 +456,7 @@ const HighlightableViewer = ({
               pre(node) {
                 node.properties = {
                   ...node.properties,
-                  style: "var(--background)",
+                  style: "background: var(--background)",
                 };
               },
             },
@@ -637,71 +653,81 @@ const HighlightableViewer = ({
   return (
     <>
       {renderContent()}
-      {isDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-96 z-50">
-            <h2 className="text-base font-semibold mb-4">Add Feedback</h2>
-            <textarea
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
-              rows={4}
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Enter your feedback..."
-            />
-            <div className="mt-4">
-              <label className="block text-xs font-medium mb-2">Select Tag:</label>
-              <select
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
-                value={newFeedbackTag}
-                onChange={(e) => setNewFeedbackTag(e.target.value as any)}
-              >
-                <option value="info">Info</option>
-                <option value="notice">Notice</option>
-                <option value="tip">Tip</option>
-                <option value="caution">Caution</option>
-              </select>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Feedback</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="tag" className="text-sm font-medium">
+                Select Tag
+              </Label>
+              <Select value={newFeedbackTag} onValueChange={setNewFeedbackTag}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="notice">Notice</SelectItem>
+                  <SelectItem value="tip">Tip</SelectItem>
+                  <SelectItem value="caution">Caution</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="mt-4">
-              <label className="block text-xs font-medium mb-2">Select Criterion:</label>
-              <select
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white text-xs"
-                value={newCriterion}
-                onChange={(e) => setNewCriterion(e.target.value)}
-              >
-                <option value="">Select criterion</option>
-                {rubricCriteria.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex justify-end mt-4">
-              <Button
-                variant="outline"
-                className="mr-2"
-                size="sm"
-                onClick={() => {
-                  setIsDialogOpen(false);
-                  setNewComment("");
-                  setNewFeedbackTag("info");
-                  setNewCriterion("");
-                  setSelectionRange(null);
-                }}
-              >
-                <span className="text-xs">Cancel</span>
-              </Button>
-              <Button
-                onClick={handleAddFeedback}
-                disabled={!newComment.trim() || !newCriterion}
-                size="sm"
-              >
-                <span className="text-xs">Add</span>
-              </Button>
+            <div className="grid gap-2">
+              <Label htmlFor="criterion" className="text-sm font-medium">
+                Select Criterion
+              </Label>
+              <Select value={newCriterion} onValueChange={setNewCriterion}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select criterion" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rubricCriteria.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="grid gap-2">
+                <Label htmlFor="comment" className="text-sm font-medium">
+                  Feedback Comment
+                </Label>
+                <Textarea
+                  id="comment"
+                  rows={4}
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Enter your feedback..."
+                  className="text-sm"
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDialogOpen(false);
+                setNewComment("");
+                setNewFeedbackTag("info");
+                setNewCriterion("");
+                setSelectionRange(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddFeedback}
+              disabled={!newComment.trim() || !newCriterion}
+            >
+              Add Feedback
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

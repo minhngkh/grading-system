@@ -130,7 +130,6 @@ export class AssessmentService {
   ): Promise<Assessment> {
     const configHeaders = await this.buildHeaders(token);
     const payload = { scoreBreakdowns };
-    console.log("Updating score with payload:", payload);
     const response = await axios.post(
       `${ASSESSMENT_API_URL}/${id}/scores`,
       payload,
@@ -168,7 +167,6 @@ export class AssessmentService {
       `${ASSIGNMENT_FLOW_API_URL}/scoreAdjustments?${params.toString()}`,
       configHeaders,
     );
-    console.log("Score adjustments response:", response.data);
 
     return response.data.data;
   }

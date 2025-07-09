@@ -1,7 +1,23 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FeedbackItem } from "@/types/assessment";
 import { FileItem } from "@/types/file";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ImageViewerProps {
   src: string;
@@ -15,7 +31,7 @@ interface ImageViewerProps {
   submissionReference: string;
 }
 
-export const ImageViewer: React.FC<ImageViewerProps> = ({
+export const ImageViewer = ({
   src,
   file,
   addFeedback,
@@ -25,7 +41,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   rubricCriteria = [],
   gradingId,
   submissionReference,
-}) => {
+}: ImageViewerProps) => {
   const [open, setOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -115,62 +131,72 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
         </div>
       )}
 
-      {isDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-96 z-50">
-            <h2 className="text-lg font-bold mb-4">Add Image Feedback</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Select Criterion:</label>
-              <select
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
-                value={newCriterion}
-                onChange={(e) => setNewCriterion(e.target.value)}
-              >
-                <option value="">Select criterion</option>
-                {rubricCriteria.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Image Feedback</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="tag" className="text-sm font-medium">
+                Select Tag
+              </Label>
+              <Select value={newFeedbackTag} onValueChange={setNewFeedbackTag}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="notice">Notice</SelectItem>
+                  <SelectItem value="tip">Tip</SelectItem>
+                  <SelectItem value="caution">Caution</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Select Tag:</label>
-              <select
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
-                value={newFeedbackTag}
-                onChange={(e) => setNewFeedbackTag(e.target.value as any)}
-              >
-                <option value="info">Info</option>
-                <option value="notice">Notice</option>
-                <option value="tip">Tip</option>
-                <option value="caution">Caution</option>
-              </select>
+            <div className="grid gap-2">
+              <Label htmlFor="criterion" className="text-sm font-medium">
+                Select Criterion
+              </Label>
+              <Select value={newCriterion} onValueChange={setNewCriterion}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select criterion" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rubricCriteria.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Comment:</label>
-              <textarea
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
+            <div className="grid gap-2">
+              <Label htmlFor="comment" className="text-sm font-medium">
+                Comment
+              </Label>
+              <Textarea
+                id="comment"
                 rows={4}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Enter your feedback..."
+                className="text-sm"
               />
             </div>
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" className="mr-2" onClick={handleCloseDialog}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleAddFeedback}
-                disabled={!newComment.trim() || !newCriterion}
-              >
-                Add
-              </Button>
-            </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseDialog}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddFeedback}
+              disabled={!newComment.trim() || !newCriterion}
+            >
+              Add Feedback
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

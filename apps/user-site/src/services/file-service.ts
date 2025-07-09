@@ -121,7 +121,6 @@ export class FileService {
     if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext)) return "image";
     if (ext === "pdf") return "pdf";
     if (ext === "md") return "document";
-    if (ext === "txt") return "essay";
     return "code";
   }
 }

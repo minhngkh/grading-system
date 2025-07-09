@@ -10,14 +10,13 @@ import {
   History,
   ArrowLeft,
 } from "lucide-react";
-import { Assessment, AssessmentSchema, FeedbackItem } from "@/types/assessment";
+import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
 import FileViewer from "./viewer/file-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@clerk/clerk-react";
 import { AssessmentService } from "@/services/assessment-service";
 import { toast } from "sonner";
@@ -50,9 +49,8 @@ export function EditAssessmentUI({
   rubric: Rubric;
 }) {
   const form = useForm<Assessment>({
-    resolver: zodResolver(AssessmentSchema),
     defaultValues: assessment,
-    mode: "onChange",
+    mode: "onChange" as const,
   });
 
   const formData = form.watch();
@@ -130,6 +128,7 @@ export function EditAssessmentUI({
 
     if (formData.submissionReference) load();
   }, [formData.submissionReference, grading.id]);
+  console.log(files);
   // Đảm bảo chỉ set initialData đúng 1 lần duy nhất khi vào trang (không update lại sau này)
   useEffect(() => {
     if (initialData === null) {
