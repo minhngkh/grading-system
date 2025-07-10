@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import ShikiHighlighter from "react-shiki";
 import { FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import "./viewer.css";
 import { FileItem } from "@/types/file";
+import { Button } from "@/components/ui/button";
 
 interface HighlightableViewerProps {
   file: FileItem;
@@ -35,6 +35,7 @@ interface HighlightableViewerProps {
   gradingId: string;
   submissionReference: string;
   onFeedbackValidated?: (validatedFeedbacks: FeedbackItem[]) => void;
+  onSelectionMade?: () => void;
 }
 
 const HighlightableViewer = ({
@@ -50,6 +51,7 @@ const HighlightableViewer = ({
   gradingId,
   submissionReference,
   onFeedbackValidated,
+  onSelectionMade,
 }: HighlightableViewerProps) => {
   const { theme = "light" } = useTheme?.() || {};
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -95,7 +97,7 @@ const HighlightableViewer = ({
 
   // --- Highlight selection logic ---
   useEffect(() => {
-    if (!isHighlightMode) return;
+    // Remove the isHighlightMode check - allow selection anytime
     let isMouseDown = false,
       mouseMoved = false,
       startPosition: { line: number; col: number } | null = null;
@@ -165,7 +167,8 @@ const HighlightableViewer = ({
           [from, to] = [to, from];
         if (from.line !== to.line || Math.abs(from.col - to.col) > 0) {
           setSelectionRange({ from, to });
-          setIsDialogOpen(true);
+          // Always notify parent that selection was made - this enables the button
+          onSelectionMade?.();
         }
       }
       isMouseDown = false;
@@ -180,7 +183,16 @@ const HighlightableViewer = ({
       window.removeEventListener("mousemove", onMouseMove);
       // mouseup is once:true
     };
-  }, [isHighlightMode, file.type]);
+  }, [file.type, onSelectionMade]); // Remove isHighlightMode dependency
+
+  // Only open dialog when isHighlightMode is true AND we have a selection
+  useEffect(() => {
+    if (isHighlightMode && selectionRange) {
+      setIsDialogOpen(true);
+    } else {
+      setIsDialogOpen(false);
+    }
+  }, [isHighlightMode, selectionRange]);
 
   // Validate and adjust feedbacks of type "text"
   function getAdjustedFeedbacks(
@@ -715,6 +727,8 @@ const HighlightableViewer = ({
                 setNewFeedbackTag("info");
                 setNewCriterion("");
                 setSelectionRange(null);
+                // Clear parent states when canceling dialog
+                onHighlightComplete();
               }}
             >
               Cancel

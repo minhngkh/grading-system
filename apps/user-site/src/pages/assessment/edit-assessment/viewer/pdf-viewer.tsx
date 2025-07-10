@@ -40,6 +40,8 @@ interface PDFViewerProps {
   onTotalPagesChange?: (n: number) => void;
   activeFeedbackId?: string | null;
   onFeedbackValidated?: (adjusted: FeedbackItem[]) => void;
+  onPageClick?: (page: number) => void;
+  onPageClear?: () => void; // Add new prop to clear page selection
 }
 
 const PDFViewer = ({
@@ -57,6 +59,8 @@ const PDFViewer = ({
   onTotalPagesChange,
   activeFeedbackId,
   onFeedbackValidated,
+  onPageClick,
+  onPageClear,
 }: PDFViewerProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
@@ -126,8 +130,18 @@ const PDFViewer = ({
     }
   }, [totalPages, feedbacks, feedbacksAll, updateFeedback, onFeedbackValidated]);
 
-  // Mở dialog khi bật highlight mode
-  useEffect(() => setIsDialogOpen(isHighlightMode), [isHighlightMode]);
+  // Remove automatic dialog opening - only open when explicitly triggered
+  useEffect(() => {
+    if (isHighlightMode) {
+      setIsDialogOpen(true);
+    }
+  }, [isHighlightMode]);
+
+  // Add page click handler
+  const handlePageClick = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    onPageClick?.(pageNumber);
+  };
 
   if (!fileUrl) {
     return (
@@ -153,6 +167,8 @@ const PDFViewer = ({
     setNewFeedbackTag("info");
     setIsDialogOpen(false);
     onHighlightComplete();
+    // Clear page selection after successful feedback addition
+    onPageClear?.();
   };
 
   useEffect(() => {
@@ -188,7 +204,8 @@ const PDFViewer = ({
               pageNumber={i + 1}
               scale={scale}
               onRenderError={console.error}
-              className="mb-4"
+              className="mb-4 cursor-pointer"
+              onClick={() => handlePageClick(i + 1)}
             />
           ))}
         </Document>
@@ -275,6 +292,10 @@ const PDFViewer = ({
                 setNewComment("");
                 setNewFeedbackTag("info");
                 setNewCriterion("");
+                // Clear parent states when canceling dialog
+                onHighlightComplete();
+                // Also clear the page selection
+                onPageClear?.();
               }}
             >
               Cancel

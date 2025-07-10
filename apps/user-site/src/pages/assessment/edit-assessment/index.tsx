@@ -9,6 +9,9 @@ import {
   EyeClosed,
   History,
   ArrowLeft,
+  Files,
+  MessageSquare,
+  Code,
 } from "lucide-react";
 import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
@@ -108,6 +111,9 @@ export function EditAssessmentUI({
   const [isResizing, setIsResizing] = useState(false);
   const [showBottomPanel, setShowBottomPanel] = useState(true);
   const [isHighlightMode, setIsHighlightMode] = useState(false);
+  const [canAddFeedback, setCanAddFeedback] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<number | null>(null);
+  const [hasTextSelection, setHasTextSelection] = useState(false);
   const [activeScoringTab, setActiveScoringTab] = useState<string>(
     rubric.criteria[0]?.name || "",
   );
@@ -116,6 +122,14 @@ export function EditAssessmentUI({
   const [lastScoreSaveTime, setLastScoreSaveTime] = useState<number>(0);
   const [showScoreAdjustmentDialog, setShowScoreAdjustmentDialog] = useState(false);
   const navigate = useNavigate();
+  const [sidebarView, setSidebarView] = useState<"files" | "testcases" | "feedback">(
+    "files",
+  );
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(320); // Default width: 320px (48px icons + 272px content)
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const [dragStartX, setDragStartX] = useState(0);
+  const [dragStartWidth, setDragStartWidth] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -140,9 +154,25 @@ export function EditAssessmentUI({
   }, []);
 
   const handleAddFeedbackClick = () => {
-    setIsHighlightMode((prev) => !prev);
+    if (isHighlightMode) {
+      // Cancel highlight mode - clear all states
+      setIsHighlightMode(false);
+      setCanAddFeedback(false);
+      setHasTextSelection(false);
+      setSelectedPage(null);
+    } else if (canAddFeedback || selectedPage) {
+      // User has made selection, trigger the add feedback mode
+      setIsHighlightMode(true);
+    }
     setSelectedFeedback(null);
   };
+
+  // Reset feedback states when file changes
+  useEffect(() => {
+    setCanAddFeedback(false);
+    setSelectedPage(null);
+    setIsHighlightMode(false);
+  }, [selectedFile]);
 
   const handleUpdateScore = (criterionName: string, newScore: number) => {
     const criterion = rubric.criteria.find((c) => c.name === criterionName);
@@ -436,6 +466,53 @@ export function EditAssessmentUI({
     };
   }, [isResizing]);
 
+  // Handle sidebar resize
+  const handleSidebarMouseDown = (e: React.MouseEvent) => {
+    setIsResizingSidebar(true);
+    setDragStartX(e.clientX);
+    setDragStartWidth(sidebarWidth);
+    e.preventDefault();
+  };
+
+  const handleSidebarMouseMove = (e: MouseEvent) => {
+    if (!isResizingSidebar) return;
+
+    const minWidth = 200; // Minimum width: 48px icons + 152px content
+    const maxWidth = 600; // Maximum width
+
+    const deltaX = e.clientX - dragStartX;
+    const newWidth = dragStartWidth + deltaX;
+    const clampedWidth = Math.min(Math.max(newWidth, minWidth), maxWidth);
+
+    setSidebarWidth(clampedWidth);
+  };
+
+  const handleSidebarMouseUp = () => {
+    setIsResizingSidebar(false);
+  };
+
+  // Add event listeners for sidebar resize
+  React.useEffect(() => {
+    if (isResizingSidebar) {
+      document.addEventListener("mousemove", handleSidebarMouseMove);
+      document.addEventListener("mouseup", handleSidebarMouseUp);
+      document.body.style.cursor = "ew-resize";
+      document.body.style.userSelect = "none";
+    } else {
+      document.removeEventListener("mousemove", handleSidebarMouseMove);
+      document.removeEventListener("mouseup", handleSidebarMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleSidebarMouseMove);
+      document.removeEventListener("mouseup", handleSidebarMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizingSidebar]);
+
   const handleFeedbackSelect = (feedback: FeedbackItem) => {
     if (selectedFeedback && selectedFeedback.id === feedback.id) {
       setSelectedFeedback(null);
@@ -482,9 +559,20 @@ export function EditAssessmentUI({
         addFeedback={handleAddNewFeedback}
         updateFeedback={handleUpdateFeedback}
         isHighlightMode={isHighlightMode}
-        onHighlightComplete={() => setIsHighlightMode(false)}
+        onHighlightComplete={() => {
+          setIsHighlightMode(false);
+          setHasTextSelection(false);
+          setCanAddFeedback(false);
+          setSelectedPage(null); // Also clear page selection when highlighting is complete
+        }}
         activeFeedbackId={selectedFeedbackId}
         onFeedbackValidated={handleFeedbackValidated}
+        onSelectionMade={() => {
+          setHasTextSelection(true);
+          setCanAddFeedback(true);
+        }}
+        onPageClick={(page) => setSelectedPage(page)}
+        onPageClear={() => setSelectedPage(null)}
       />
     );
   };
@@ -533,6 +621,89 @@ export function EditAssessmentUI({
       to: "/gradings/$gradingId/result",
       params: { gradingId: grading.id },
     });
+  };
+
+  const renderSidebarContent = () => {
+    switch (sidebarView) {
+      case "files":
+        return (
+          <FileExplorer
+            files={files}
+            selectedFile={selectedFile}
+            setSelectedFile={setSelectedFile}
+            expandedFolders={expandedFolders}
+            setExpandedFolders={setExpandedFolders}
+            feedbacks={formData.feedbacks}
+            grading={grading}
+          />
+        );
+      case "testcases":
+        return (
+          <div className="p-4">
+            <h3 className="text-sm font-medium mb-3">Test Cases</h3>
+            <div className="text-xs text-muted-foreground">
+              Test cases will be displayed here
+            </div>
+          </div>
+        );
+      case "feedback":
+        return (
+          <div className="p-2 w-full h-full flex flex-col">
+            <Tabs
+              value={feedbackViewMode}
+              onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
+              className="flex flex-col h-full"
+            >
+              <TabsList className="text-xs font-medium rounded-md w-full shrink-0">
+                <TabsTrigger value="file" className="text-xs">
+                  By File
+                </TabsTrigger>
+                <TabsTrigger value="criterion" className="text-xs">
+                  By Criterion
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="file" className="flex flex-col flex-1 overflow-hidden">
+                <h3 className="text-xs font-medium mb-3 shrink-0">
+                  Feedback for {selectedFile?.name}
+                </h3>
+                <FeedbackListPanel
+                  feedbacks={formData.feedbacks.filter((f) => {
+                    const fileRefName = f.fileRef?.split("/").pop();
+                    return fileRefName === selectedFile?.name;
+                  })}
+                  selectedFeedbackId={selectedFeedbackId}
+                  onSelect={handleFeedbackSelect}
+                  onDelete={handleDeleteFeedback}
+                  allFeedbacks={formData.feedbacks}
+                  updateFeedback={handleUpdateFeedback}
+                />
+              </TabsContent>
+              <TabsContent
+                value="criterion"
+                className="flex flex-col flex-1 overflow-hidden"
+              >
+                <h3 className="text-xs font-medium mb-3">
+                  Feedback for {activeScoringTab}
+                </h3>
+                <FeedbackListPanel
+                  feedbacks={formData.feedbacks.filter(
+                    (f) => f.criterion === activeScoringTab,
+                  )}
+                  selectedFeedbackId={selectedFeedbackId}
+                  onSelect={handleFeedbackSelect}
+                  onDelete={handleDeleteFeedback}
+                  allFeedbacks={formData.feedbacks}
+                  activeCriterion={activeScoringTab}
+                  addFeedback={handleAddNewFeedback}
+                  updateFeedback={handleUpdateFeedback}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -621,30 +792,87 @@ export function EditAssessmentUI({
           minHeight: 0,
         }}
       >
-        {/* File Explorer với width cố định */}
-        {isFileExplorerOpen && files.length > 0 && (
-          <FileExplorer
-            files={files}
-            selectedFile={selectedFile}
-            setSelectedFile={setSelectedFile}
-            expandedFolders={expandedFolders}
-            setExpandedFolders={setExpandedFolders}
-            feedbacks={formData.feedbacks}
-            grading={grading}
-          />
+        {isFileExplorerOpen && files.length > 0 && isSidebarOpen && (
+          <div className="flex h-full border-r relative" style={{ width: sidebarWidth }}>
+            <div className="w-10 border-r flex flex-col">
+              <button
+                onClick={() => setSidebarView("files")}
+                className={`flex items-center justify-center h-10 w-full transition-colors ${
+                  sidebarView === "files" ?
+                    "bg-primary/5 text-primary border-r-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+                title="Files"
+              >
+                <Files className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setSidebarView("testcases")}
+                className={`flex items-center justify-center h-10 w-full transition-colors ${
+                  sidebarView === "testcases" ?
+                    "bg-primary/5 text-primary border-r-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+                title="Test Cases"
+              >
+                <Code className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setSidebarView("feedback")}
+                className={`flex items-center justify-center h-10 w-full transition-colors ${
+                  sidebarView === "feedback" ?
+                    "bg-primary/5 text-primary border-r-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
+                title="Feedback"
+              >
+                <MessageSquare className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Sidebar Content */}
+            <div
+              className="flex-1 flex flex-col h-full"
+              style={{ width: sidebarWidth - 48 }}
+            >
+              {renderSidebarContent()}
+            </div>
+
+            {/* Resize Handle */}
+            <div
+              className={`absolute top-0 right-0 w-1 h-full hover:bg-blue-400 cursor-ew-resize transition-colors duration-200 ${
+                isResizingSidebar ? "bg-blue-500" : ""
+              }`}
+              onMouseDown={handleSidebarMouseDown}
+            >
+              <div className="h-full flex items-center justify-center">
+                <div className="w-0.5 h-12 bg-gray-400 rounded-full"></div>
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* Main Content + Feedback Panel */}
-        <div className="gap-4 flex-1 flex flex-row" style={{ minWidth: 0 }}>
-          {/* File Viewer - không cần điều chỉnh height, luôn 100% */}
+        {/* Sidebar Toggle Button - Only show when sidebar is closed */}
+        {isFileExplorerOpen && files.length > 0 && !isSidebarOpen && (
+          <div className="flex items-start pt-2 pl-2">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="flex items-center justify-center h-8 w-8 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-muted/50 border"
+              title="Open Sidebar"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Main Content - Remove the separate feedback panel */}
+        <div className="flex-1 flex flex-col h-full" style={{ minWidth: 0 }}>
+          {/* File Viewer */}
           <div
-            className="flex-1 flex flex-col h-full w-80"
-            style={{
-              minWidth: 0,
-              position: "relative",
-            }}
+            className="flex-1 flex flex-col h-full"
+            style={{ minWidth: 0, position: "relative" }}
           >
-            <div className="border-b flex-shrink-0">
+            <div className="border-b flex-shrink-0 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {selectedFile && getFileIcon(selectedFile)}
@@ -655,84 +883,107 @@ export function EditAssessmentUI({
                     {selectedFile?.type}
                   </Badge>
                 </div>
-                <Button
-                  variant={isHighlightMode ? "default" : "outline"}
-                  size="sm"
-                  className={isHighlightMode ? "bg-blue-600 text-white" : ""}
-                  onClick={handleAddFeedbackClick}
-                >
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  <span className="text-xs">
-                    {isHighlightMode ? "Exit Feedback" : "Add Feedback"}
-                  </span>
-                </Button>
+                <div className="flex items-center gap-2">
+                  {/* Show Add Feedback button based on file type and conditions */}
+                  {selectedFile && (
+                    <>
+                      {/* For code/essay files: show workflow */}
+                      {(selectedFile.type === "code" ||
+                        selectedFile.type === "essay") && (
+                        <Button
+                          variant={
+                            isHighlightMode ? "destructive"
+                            : canAddFeedback ?
+                              "default"
+                            : "outline"
+                          }
+                          size="sm"
+                          onClick={handleAddFeedbackClick}
+                          disabled={!isHighlightMode && !canAddFeedback}
+                        >
+                          <Edit3 className="h-4 w-4 mr-2" />
+                          <span className="text-xs">
+                            {isHighlightMode ?
+                              "Cancel"
+                            : canAddFeedback ?
+                              "Add Feedback"
+                            : "Select Text First"}
+                          </span>
+                        </Button>
+                      )}
+
+                      {/* For PDF files: show after page click */}
+                      {selectedFile.type === "pdf" && (
+                        <Button
+                          variant={
+                            isHighlightMode ? "destructive"
+                            : selectedPage !== null ?
+                              "default"
+                            : "outline"
+                          }
+                          size="sm"
+                          onClick={handleAddFeedbackClick}
+                          disabled={!isHighlightMode && selectedPage === null}
+                        >
+                          <Edit3 className="h-4 w-4 mr-2" />
+                          <span className="text-xs">
+                            {isHighlightMode ?
+                              "Cancel"
+                            : selectedPage !== null ?
+                              `Add Feedback (Page ${selectedPage})`
+                            : "Click Page First"}
+                          </span>
+                        </Button>
+                      )}
+
+                      {/* For other file types: original behavior */}
+                      {selectedFile.type !== "code" &&
+                        selectedFile.type !== "essay" &&
+                        selectedFile.type !== "pdf" && (
+                          <Button
+                            variant={isHighlightMode ? "destructive" : "outline"}
+                            size="sm"
+                            onClick={handleAddFeedbackClick}
+                          >
+                            <Edit3 className="h-4 w-4 mr-2" />
+                            <span className="text-xs">
+                              {isHighlightMode ? "Cancel" : "Add Feedback"}
+                            </span>
+                          </Button>
+                        )}
+                    </>
+                  )}
+                </div>
               </div>
-              {isHighlightMode && selectedFile && (
+              {selectedFile && !isHighlightMode && (
                 <div className="mt-2 text-blue-700 text-xs font-medium">
-                  {(selectedFile.type === "code" || selectedFile.type === "essay") &&
-                    "Click and drag to highlight and add feedback. Click again to exit."}
+                  {isHighlightMode &&
+                    (selectedFile.type === "code" || selectedFile.type === "essay") &&
+                    "Fill the form to add feedback, or click Cancel to exit."}
+                  {isHighlightMode &&
+                    selectedFile.type === "pdf" &&
+                    selectedPage !== null &&
+                    `Adding feedback to page ${selectedPage}. Fill the form or click Cancel.`}
+                  {!isHighlightMode &&
+                    (selectedFile.type === "code" || selectedFile.type === "essay") &&
+                    !canAddFeedback &&
+                    "Drag to select text, then click Add Feedback."}
+                  {!isHighlightMode &&
+                    (selectedFile.type === "code" || selectedFile.type === "essay") &&
+                    canAddFeedback &&
+                    "Text selected. Click Add Feedback to proceed."}
+                  {!isHighlightMode &&
+                    selectedFile.type === "pdf" &&
+                    selectedPage !== null &&
+                    `Page ${selectedPage} selected. Click Add Feedback to proceed.`}
+                  {!isHighlightMode &&
+                    selectedFile.type === "pdf" &&
+                    selectedPage === null &&
+                    "Click on a page first, then click Add Feedback."}
                 </div>
               )}
             </div>
-            {(
-              selectedFile &&
-              (selectedFile.type === "code" || selectedFile.type === "essay")
-            ) ?
-              renderFileContent()
-            : <div className="flex-1 w-full overflow-auto">{renderFileContent()}</div>}
-          </div>
-
-          <div className="w-60 flex flex-col h-full">
-            <Tabs
-              value={feedbackViewMode}
-              onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
-              className="flex flex-col h-full"
-            >
-              <TabsList className="text-xs font-medium rounded-md w-full shrink-0">
-                <TabsTrigger value="file" className="text-xs">
-                  By File
-                </TabsTrigger>
-                <TabsTrigger value="criterion" className="text-xs">
-                  By Criterion
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="file" className="flex flex-col flex-1 overflow-hidden">
-                <h3 className="text-xs font-medium mb-3 shrink-0">
-                  Feedback for {selectedFile?.name}
-                </h3>
-                <FeedbackListPanel
-                  feedbacks={formData.feedbacks.filter((f) => {
-                    const fileRefName = f.fileRef?.split("/").pop();
-                    return fileRefName === selectedFile?.name;
-                  })}
-                  selectedFeedbackId={selectedFeedbackId}
-                  onSelect={handleFeedbackSelect}
-                  onDelete={handleDeleteFeedback}
-                  allFeedbacks={formData.feedbacks}
-                  updateFeedback={handleUpdateFeedback}
-                />
-              </TabsContent>
-              <TabsContent
-                value="criterion"
-                className="flex flex-col flex-1 overflow-hidden"
-              >
-                <h3 className="text-xs font-medium mb-3">
-                  Feedback for {activeScoringTab}
-                </h3>
-                <FeedbackListPanel
-                  feedbacks={formData.feedbacks.filter(
-                    (f) => f.criterion === activeScoringTab,
-                  )}
-                  selectedFeedbackId={selectedFeedbackId}
-                  onSelect={handleFeedbackSelect}
-                  onDelete={handleDeleteFeedback}
-                  allFeedbacks={formData.feedbacks}
-                  activeCriterion={activeScoringTab}
-                  addFeedback={handleAddNewFeedback}
-                  updateFeedback={handleUpdateFeedback}
-                />
-              </TabsContent>
-            </Tabs>
+            <div className="flex-1 overflow-auto">{renderFileContent()}</div>
           </div>
         </div>
       </div>

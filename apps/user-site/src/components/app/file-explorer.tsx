@@ -165,13 +165,14 @@ function renderTree(
             .map((file: any) => (
               <div
                 key={file.id}
-                className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-all duration-150 ${
+                className={`flex items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer transition-all duration-150 min-w-0 ${
                   selectedFile?.id === file.id ? "bg-muted shadow-sm" : "hover:bg-muted"
                 }`}
                 onClick={() => setSelectedFile(file)}
+                title={file.name}
               >
-                {getFileIcon(file)}
-                <span className="text-xs">{file.name}</span>
+                <div className="flex-shrink-0">{getFileIcon(file)}</div>
+                <span className="text-xs truncate min-w-0 flex-1">{file.name}</span>
               </div>
             ))}
         </>
@@ -193,21 +194,26 @@ function renderTree(
         return (
           <div key={fullPath}>
             <div
-              className="flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer hover:bg-muted transition-colors duration-150"
+              className="flex items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer hover:bg-muted transition-colors duration-150 min-w-0"
               onClick={() =>
                 setExpandedFolders((prev) => ({
                   ...prev,
                   [fullPath]: !expanded,
                 }))
               }
+              title={folder}
             >
-              {expanded ?
-                <FolderOpen className="h-4 w-4 text-amber-500" />
-              : <Folder className="h-4 w-4 text-amber-500" />}
-              <span className="text-xs font-medium">{folder}</span>
+              <div className="flex-shrink-0">
+                {expanded ?
+                  <FolderOpen className="h-4 w-4 text-amber-500" />
+                : <Folder className="h-4 w-4 text-amber-500" />}
+              </div>
+              <span className="text-xs font-medium truncate min-w-0 flex-1">
+                {folder}
+              </span>
             </div>
             {expanded && (
-              <div className="ml-6 space-y-1">
+              <div className="ml-4 space-y-0.5">
                 {renderTree(
                   node.folders[folder],
                   fullPath,
@@ -233,13 +239,14 @@ function renderTree(
             .map((file: any) => (
               <div
                 key={file.id}
-                className={`flex items-center gap-2 py-1.5 px-2 rounded-md cursor-pointer transition-all duration-150 ${
+                className={`flex items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer transition-all duration-150 min-w-0 ${
                   selectedFile?.id === file.id ? "bg-muted shadow-sm" : "hover:bg-muted"
                 }`}
                 onClick={() => setSelectedFile(file)}
+                title={file.name}
               >
-                {getFileIcon(file)}
-                <span className="text-xs">{file.name}</span>
+                <div className="flex-shrink-0">{getFileIcon(file)}</div>
+                <span className="text-xs truncate min-w-0 flex-1">{file.name}</span>
               </div>
             ))}
         </>
@@ -287,16 +294,18 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   const allSelected =
     selectors.length > 0 && selectedCriteria.length === selectors.length;
   return (
-    <div className="pt-4 px-4 h-full w-50 flex flex-col">
-      <div className="justify-between flex items-center">
-        <h3 className="text-xs font-medium">Explorer</h3>
+    <div className="pt-2 px-2 h-full w-full flex flex-col min-w-0">
+      <div className="justify-between flex items-center mb-2">
+        <h3 className="text-xs font-medium truncate min-w-0 flex-1">Explorer</h3>
         <Popover>
-          <div className="flex items-end">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {selectedCriteria.length > 0 && (
-              <Badge className="ml-1.5 text-[10px] h-4">{selectedCriteria.length}</Badge>
+              <Badge className="text-[10px] h-4 px-1">{selectedCriteria.length}</Badge>
             )}
-            <PopoverTrigger>
-              <Filter className="h-4 w-4 text-gray-500 hover:text-gray-700" />
+            <PopoverTrigger asChild>
+              <button className="p-1 rounded hover:bg-muted transition-colors">
+                <Filter className="h-3.5 w-3.5 text-gray-500 hover:text-gray-700" />
+              </button>
             </PopoverTrigger>
           </div>
           <PopoverContent className="w-80">
@@ -353,7 +362,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </Popover>
       </div>
 
-      <div className="mt-3 flex-1 overflow-auto space-y-2">
+      <div className="flex-1 overflow-auto space-y-0.5 min-w-0">
         {renderTree(
           tree,
           "",
