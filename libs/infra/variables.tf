@@ -35,7 +35,7 @@ variable "min_workers" {
 variable "max_workers" {
   description = "Maximum number of worker instances"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "min_servers" {
@@ -66,4 +66,22 @@ variable "max_idle_workers" {
   description = "Maximum number of idle workers before scaling down"
   type        = number
   default     = 1
+}
+
+variable "scale_check_interval" {
+  description = "Interval in seconds for checking scaling conditions"
+  type        = number
+  default     = 15
+}
+
+variable "scale_cooldown_minutes" {
+  description = "Cooldown period in minutes after scaling operations"
+  type        = number
+  default     = 5
+}
+
+variable "allow_infinite_scale" {
+  description = "Allow creating new containers beyond the pre-created pool (enables unlimited scaling)"
+  type        = bool
+  default     = false
 }

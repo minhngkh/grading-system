@@ -1,12 +1,15 @@
-# Judge0 Workers - Container Instances Configuration
+# Judge0 Workers - Pre-created pool for fast stop/start scaling
+# All worker instances are created at deployment time for optimal scaling speed
 
-resource "azurerm_container_group" "judge0_workers" {
-  name                = "judge0-workers"
+# Create all worker instances (up to max_workers) for stop/start scaling
+resource "azurerm_container_group" "judge0_workers_pool" {
+  count               = var.max_workers
+  name                = "judge0-worker-${count.index + 1}"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   ip_address_type     = "None"
   os_type             = "Linux"
-  restart_policy      = "Always" # Changed to Always for demonstration
+  restart_policy      = "OnFailure"
   sku                 = "Confidential"
 
   container {
@@ -15,22 +18,20 @@ resource "azurerm_container_group" "judge0_workers" {
     cpu    = "1.0"
     memory = "2.0"
 
-    # Command to start workers (overrides default entrypoint)
     commands = ["./scripts/workers"]
 
     security {
       privilege_enabled = true
     }
 
-    # Environment variables configuration
     environment_variables = {
       REDIS_HOST    = var.redis_host
       REDIS_USE_SSL = var.redis_use_ssl
 
-      # Judge0 Workers Configuration
       INTERVAL       = var.worker_interval
       COUNT          = var.worker_count != null ? var.worker_count : ""
       MAX_QUEUE_SIZE = var.max_queue_size
+      WORKER_ID      = tostring(count.index + 1)
 
       # Submission Configuration
       CPU_TIME_LIMIT                                   = var.cpu_time_limit
@@ -58,7 +59,6 @@ resource "azurerm_container_group" "judge0_workers" {
       ALLOW_ENABLE_NETWORK                             = var.allow_enable_network
       ENABLE_NETWORK                                   = var.enable_network
 
-      # Rails Configuration
       RAILS_ENV              = var.rails_env
       RAILS_MAX_THREADS      = var.rails_max_threads != null ? var.rails_max_threads : ""
       RAILS_SERVER_PROCESSES = var.rails_server_processes
@@ -75,12 +75,39 @@ resource "azurerm_container_group" "judge0_workers" {
   }
 
   tags = {
-    Environment = "production"
-    Application = "judge0"
-    Component   = "worker"
+    Environment    = "production"
+    Application    = "judge0"
+    Component      = "worker"
+    ManagedBy      = "autoscaler"
+    WorkerInstance = tostring(count.index + 1)
+    WorkerType     = count.index < var.min_workers ? "baseline" : "scalable"
+  }
+
+  lifecycle {
+    ignore_changes = [
+      # Allow the autoscaler to manage start/stop state
+      restart_policy,
+    ]
   }
 }
 
-# Note: For demonstration purposes, we use a single always-running worker instance
-# Container Instances do not support autoscaling, so this provides a simple setup
-# for testing Judge0 functionality without complex scaling logic
+# Worker pool initialization script to stop non-baseline workers after creation
+resource "terraform_data" "stop_excess_workers" {
+  count = (var.max_workers > var.min_workers ? 1 : 0)
+
+  depends_on = [azurerm_container_group.judge0_workers_pool]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Stopping excess workers (keeping first ${var.min_workers} running)..."
+      for i in $(seq $((${var.min_workers} + 2)) ${var.max_workers}); do
+        echo "Stopping judge0-worker-$i..."
+        az container stop --name "judge0-worker-$i" --resource-group "${azurerm_resource_group.main.name}" || true
+      done
+    EOT
+  }
+}
+
+# Note: Workers beyond min_workers are stopped after creation for optimal scaling performance
+# - Baseline workers (1 to min_workers): Always running
+# - Scalable workers (min_workers+1 to max_workers): Stopped, ready for fast start

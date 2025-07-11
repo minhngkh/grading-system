@@ -2,6 +2,21 @@
 # Judge0 Configuration Variables
 ################################################################################
 
+
+################################################################################
+# Additional Configuration
+################################################################################
+
+variable "redis_http_host" {
+  description = "Redis HTTP host for Judge0 autoscaler"
+  type        = string
+}
+
+variable "redis_http_token" {
+  description = "Redis HTTP token for Judge0 autoscaler"
+  type        = string
+}
+
 ################################################################################
 # Judge0 Server Configuration
 ################################################################################

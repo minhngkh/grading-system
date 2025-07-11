@@ -1,0 +1,20 @@
+{
+  "name": "judge0-autoscaler",
+  "version": "1.0.0",
+  "description": "Azure Function for autoscaling Judge0 workers",
+  "main": "./dist/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "func start",
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/arm-containerinstance": "9.2.0-beta.1",
+    "@azure/functions": "4.7.3-beta.0",
+    "@azure/identity": "^4.10.2"
+  },
+  "devDependencies": {}
+}
