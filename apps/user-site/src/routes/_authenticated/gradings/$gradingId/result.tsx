@@ -12,12 +12,12 @@ export const Route = createFileRoute("/_authenticated/gradings/$gradingId/result
   component: RouteComponent,
   loader: async ({ params: { gradingId }, context: { auth, queryClient } }) => {
     const [gradingAttempt, assessmentsData] = await Promise.all([
-      queryClient.ensureQueryData(
+      queryClient.fetchQuery(
         getGradingAttemptQueryOptions(gradingId, auth, {
           staleTime: Infinity,
         }),
       ),
-      queryClient.ensureQueryData(
+      queryClient.fetchQuery(
         getAllGradingAssessmentsQueryOptions(gradingId, auth, {
           placeholderData: keepPreviousData,
           staleTime: 1000 * 60 * 5, // 5 minutes

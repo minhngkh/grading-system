@@ -330,9 +330,8 @@ export default function UploadStep({ form }: UploadStepProps) {
         </div>
         <FileUploader
           onFileUpload={handleFileUpload}
-          accept=".zip"
           multiple={!moodleMode}
-          maxSize={10} // 10 MB
+          maxSize={20} // 20 MB
         />
       </div>
 

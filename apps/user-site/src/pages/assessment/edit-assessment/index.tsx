@@ -412,9 +412,7 @@ export function EditAssessmentUI({
     }
     setOpen(true);
   };
-  // Render file content with line numbers and highlights
 
-  // Handle mouse down on resize handle
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsResizing(true);
     e.preventDefault();
@@ -535,6 +533,7 @@ export function EditAssessmentUI({
       });
     }
   }, [files, formData.feedbacks]);
+
   const renderFileContent = () => {
     if (!selectedFile) return <div className="text-gray-400 p-8">No file selected</div>;
     let prefix = assessment.submissionReference;
@@ -707,91 +706,63 @@ export function EditAssessmentUI({
   };
 
   return (
-    <div className="-mb-20 -mt-12 h-[92vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-auto ">
-      {/* Header with fixed height */}
-      <div className="p-4" style={{ height: "72px" }}>
-        <div className="flex items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackClick}
-              className="p-2"
-              title="Back to results"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsFileExplorerOpen(!isFileExplorerOpen)}
-              className="p-2"
-            >
-              {isFileExplorerOpen ?
-                <PanelLeftClose className="h-4 w-4" />
-              : <PanelLeftOpen className="h-4 w-4" />}
-            </Button>
-            <div>
-              <div className="flex">
-                <h1 className="text-lg font-semibold">
-                  Review Assessment: {formData.submissionReference}
-                </h1>
-                <span className="text-lg font-semibold"></span>
-              </div>
-
-              <p className="text-xs text-muted-foreground">Rubric: {rubric.rubricName}</p>
-            </div>
+    <div className="relative flex flex-col bg-background text-foreground size-full gap-8">
+      <div className="flex items-center md:justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={handleBackClick}
+            title="Back to results"
+            className="size-8 p-0 flex items-center justify-center"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-lg font-semibold">
+              Assessment: {assessment.submissionReference}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Grading ID: {grading.name} - Rubric: {rubric.rubricName}
+            </p>
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => setShowBottomPanel((v) => !v)}>
-              {showBottomPanel ?
-                <EyeClosed className="h-4 w-4 mr-2" />
-              : <Eye className="h-4 w-4 mr-2" />}
-              <span className="text-xs">
-                {showBottomPanel ? "Hide Scoring" : "Show Scoring"}
-              </span>
-            </Button>
-            <Button onClick={handleExport} size="sm">
-              <Save className="h-4 w-4 mr-2" />
-              <span className="text-xs">Export</span>
-            </Button>
-            <ExportDialog
-              open={open}
-              onOpenChange={setOpen}
-              exporterClass={AssessmentExporter}
-              args={[formData, grading]}
-            />
-            <Button
-              className="cursor-pointer"
-              size="sm"
-              onClick={handleRevertAdjustment}
-              disabled={!canRevert}
-            >
-              <History className="h-4 w-4 mr-2" />
+        </div>
+        <div className="flex gap-2">
+          {canRevert && (
+            <Button size="sm" onClick={handleRevertAdjustment}>
+              <History className="h-4 w-4" />
               <span className="text-xs">Revert Changes</span>
             </Button>
-            <Button className="cursor-pointer" size="sm" onClick={handleSaveFeedback}>
-              <Save className="h-4 w-4 mr-2" />
-              <span className="text-xs">Save Feedback</span>
-            </Button>
-            <Button className="cursor-pointer" size="sm" onClick={handleSaveScore}>
-              <Save className="h-4 w-4 mr-2" />
-              <span className="text-xs">Save Scoring</span>
-            </Button>
-          </div>
+          )}
+          <Button size="sm" onClick={() => setShowBottomPanel((v) => !v)}>
+            {showBottomPanel ?
+              <EyeClosed className="h-4 w-4" />
+            : <Eye className="h-4 w-4" />}
+            <span className="text-xs">
+              {showBottomPanel ? "Hide Scoring" : "Show Scoring"}
+            </span>
+          </Button>
+          <Button onClick={handleExport} size="sm">
+            <Save className="h-4 w-4" />
+            <span className="text-xs">Export</span>
+          </Button>
+          <ExportDialog
+            open={open}
+            onOpenChange={setOpen}
+            exporterClass={AssessmentExporter}
+            args={[formData, grading]}
+          />
+          <Button className="cursor-pointer" size="sm" onClick={handleSaveFeedback}>
+            <Save className="h-4 w-4" />
+            <span className="text-xs">Save Feedback</span>
+          </Button>
+          <Button className="cursor-pointer" size="sm" onClick={handleSaveScore}>
+            <Save className="h-4 w-4" />
+            <span className="text-xs">Save Scoring</span>
+          </Button>
         </div>
       </div>
 
-      <div
-        className="flex justify-between pt-2"
-        style={{
-          height:
-            showBottomPanel ?
-              `calc(100% - 72px - ${bottomPanelHeight}px)`
-            : "calc(100% - 72px - 20px)",
-          minHeight: 0,
-        }}
-      >
+      <div className="flex flex-1 justify-between border rounded-md overflow-hidden">
         {isFileExplorerOpen && files.length > 0 && isSidebarOpen && (
           <div className="flex h-full border-r relative" style={{ width: sidebarWidth }}>
             <div className="w-10 border-r flex flex-col">
@@ -841,7 +812,7 @@ export function EditAssessmentUI({
             {/* Resize Handle */}
             <div
               className={`absolute top-0 right-0 w-1 h-full hover:bg-blue-400 cursor-ew-resize transition-colors duration-200 ${
-                isResizingSidebar ? "bg-blue-500" : ""
+                isResizingSidebar && "bg-blue-500"
               }`}
               onMouseDown={handleSidebarMouseDown}
             >
@@ -852,7 +823,6 @@ export function EditAssessmentUI({
           </div>
         )}
 
-        {/* Sidebar Toggle Button - Only show when sidebar is closed */}
         {isFileExplorerOpen && files.length > 0 && !isSidebarOpen && (
           <div className="flex items-start pt-2 pl-2">
             <button
@@ -865,9 +835,7 @@ export function EditAssessmentUI({
           </div>
         )}
 
-        {/* Main Content - Remove the separate feedback panel */}
         <div className="flex-1 flex flex-col h-full" style={{ minWidth: 0 }}>
-          {/* File Viewer */}
           <div
             className="flex-1 flex flex-col h-full"
             style={{ minWidth: 0, position: "relative" }}
@@ -988,9 +956,9 @@ export function EditAssessmentUI({
         </div>
       </div>
 
-      {/* ScoringPanel với vị trí tuyệt đối, chiếm toàn bộ chiều rộng trang */}
       {showBottomPanel && (
         <div
+          className="border rounded-b-md overflow-hidden"
           style={{
             position: "absolute",
             left: 0,
