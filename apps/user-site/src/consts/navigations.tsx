@@ -4,7 +4,6 @@ import {
   ClipboardPlus,
   Library,
   BookOpenCheck,
-  BotMessageSquare,
   ChartNoAxesCombined,
 } from "lucide-react";
 
@@ -35,11 +34,6 @@ export const NavigationItems: NavigationData[] = [
     title: "Manage Gradings",
     icon: <Library className="size-4" />,
     to: "/gradings/view",
-  },
-  {
-    title: "AI Assistant",
-    icon: <BotMessageSquare className="size-4" />,
-    to: "/chat",
   },
   {
     title: "Analytics",

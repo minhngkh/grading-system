@@ -28,13 +28,6 @@ export const SystemTools: Tool[] = [
     collapseSidebar: true,
   },
   {
-    name: "AI Assistant",
-    details: "Channels, direct messages, and file sharing to keep your team connected.",
-    types: [ToolType.AI],
-    isFavorite: false,
-    navigation: "/chat",
-  },
-  {
     name: "Analytics Dashboard",
     details: "Interactive charts and reports to help you make data-driven decisions.",
     types: [ToolType.Review],

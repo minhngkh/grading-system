@@ -13,7 +13,7 @@ import {
   getInfiniteGradingAttemptsQueryOptions,
 } from "@/queries/grading-queries";
 import { useAuth } from "@clerk/clerk-react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   component: RouteComponent,
@@ -21,10 +21,30 @@ export const Route = createFileRoute("/_authenticated/analytics")({
     id: z.string().optional(),
   }),
   loaderDeps: ({ search }) => search,
-  loader: ({ deps: { id }, context: { auth, queryClient } }) => {
-    if (!id) return;
-    queryClient.ensureQueryData(getGradingSummaryQueryOptions(id, auth));
-    queryClient.ensureQueryData(getGradingAttemptQueryOptions(id, auth));
+  loader: async ({ deps: { id }, context: { auth, queryClient } }) => {
+    if (!id)
+      return {
+        gradingAnalytics: undefined,
+        grading: undefined,
+      };
+
+    const [gradingAnalytics, grading] = await Promise.all([
+      queryClient.fetchQuery(
+        getGradingSummaryQueryOptions(id, auth, {
+          placeholderData: keepPreviousData,
+        }),
+      ),
+      queryClient.fetchQuery(
+        getGradingAttemptQueryOptions(id, auth, {
+          placeholderData: keepPreviousData,
+        }),
+      ),
+    ]);
+
+    return {
+      gradingAnalytics,
+      grading,
+    };
   },
   errorComponent: () => <ErrorComponent message="Failed to load grading analytics" />,
   pendingComponent: () => <PendingComponent message="Loading grading analytics..." />,
@@ -33,18 +53,7 @@ export const Route = createFileRoute("/_authenticated/analytics")({
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const auth = useAuth();
-
-  const { data: gradingAnalytics } = useQuery(
-    getGradingSummaryQueryOptions(Route.useSearch().id ?? "", auth, {
-      placeholderData: keepPreviousData,
-    }),
-  );
-
-  const { data: grading } = useQuery(
-    getGradingAttemptQueryOptions(gradingAnalytics?.gradingId ?? "", auth, {
-      placeholderData: keepPreviousData,
-    }),
-  );
+  const { gradingAnalytics, grading } = Route.useLoaderData();
 
   const setSearchParam = useCallback(
     (newId?: string) => {
