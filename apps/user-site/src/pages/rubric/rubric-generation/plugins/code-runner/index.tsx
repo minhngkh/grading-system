@@ -38,7 +38,7 @@ import {
   getTestRunnerConfigQueryOptions,
   getTestRunnerSupportedLanguagesQueryOptions,
 } from "@/queries/plugin-queries";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 
 export default function CodeRunnerConfigDialog({
   configId,
@@ -74,8 +74,9 @@ export default function CodeRunnerConfigDialog({
     }
   }, [isLoadingConfig]);
 
-  const { data: languages, isFetching: isFetchingLanguages } = useQuery(
+  const { data: languages, isPending: isFetchingLanguages } = useQuery(
     getTestRunnerSupportedLanguagesQueryOptions(auth, {
+      placeholderData: keepPreviousData,
       staleTime: Infinity,
     }),
   );

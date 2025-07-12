@@ -10,9 +10,6 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 export const Route = createFileRoute("/_authenticated/rubrics/view")({
   component: RouteComponent,
   validateSearch: searchParams,
-  loaderDeps: ({ search }) => search,
-  loader: ({ deps, context: { auth, queryClient } }) =>
-    queryClient.ensureQueryData(getRubricsQueryOptions(deps, auth)),
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },
@@ -25,7 +22,7 @@ function RouteComponent() {
 
   const {
     data: rubricsData,
-    isFetching,
+    isPending,
     error,
   } = useQuery(
     getRubricsQueryOptions(search, auth, {
@@ -49,7 +46,7 @@ function RouteComponent() {
     [navigate],
   );
 
-  if (isFetching && !rubricsData) {
+  if (isPending) {
     return <PendingComponent message="Loading rubrics..." />;
   }
 

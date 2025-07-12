@@ -5,6 +5,7 @@ import { getAssessmentQueryOptions } from "@/queries/assessment-queries";
 import { getGradingAttemptQueryOptions } from "@/queries/grading-queries";
 import { getRubricQueryOptions } from "@/queries/rubric-queries";
 import { createFileRoute } from "@tanstack/react-router";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute(
   "/_authenticated/gradings/$gradingId/assessments/$assessmentId",
@@ -14,22 +15,59 @@ export const Route = createFileRoute(
     params: { assessmentId, gradingId },
     context: { auth, queryClient },
   }) => {
-    const [grading, assessment] = await Promise.all([
-      queryClient.ensureQueryData(getGradingAttemptQueryOptions(gradingId, auth)),
-      queryClient.ensureQueryData(getAssessmentQueryOptions(assessmentId, auth)),
-    ]);
-
-    const rubric = await queryClient.ensureQueryData(
-      getRubricQueryOptions(grading.rubricId, auth),
-    );
-
-    return { assessment, grading, rubric };
+    queryClient.ensureQueryData(getGradingAttemptQueryOptions(gradingId, auth));
+    queryClient.ensureQueryData(getAssessmentQueryOptions(assessmentId, auth));
   },
-  errorComponent: () => <ErrorComponent message="Failed to load assessment" />,
-  pendingComponent: () => <PendingComponent message="Loading assessment..." />,
 });
 
 function RouteComponent() {
-  const { assessment, grading, rubric } = Route.useLoaderData();
+  const { assessmentId, gradingId } = Route.useParams();
+  const { auth } = Route.useRouteContext();
+
+  const {
+    data: assessment,
+    isPending: isFetchingAssessment,
+    error: assessmentError,
+  } = useQuery(
+    getAssessmentQueryOptions(assessmentId, auth, {
+      placeholderData: keepPreviousData,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    }),
+  );
+
+  const {
+    data: grading,
+    isPending: isFetchingGrading,
+    error: gradingError,
+  } = useQuery(
+    getGradingAttemptQueryOptions(gradingId, auth, {
+      placeholderData: keepPreviousData,
+      staleTime: Infinity,
+    }),
+  );
+
+  const {
+    data: rubric,
+    isPending: isFetchingRubric,
+    error: rubricError,
+  } = useQuery(
+    getRubricQueryOptions(grading?.rubricId || "", auth, {
+      placeholderData: keepPreviousData,
+      staleTime: Infinity,
+    }),
+  );
+
+  if (isFetchingAssessment || isFetchingGrading || isFetchingRubric) {
+    return <PendingComponent message="Loading assessment..." />;
+  }
+
+  if (assessmentError || gradingError || rubricError) {
+    return <ErrorComponent message="Failed to load assessment" />;
+  }
+
+  if (!assessment || !grading || !rubric) {
+    return <ErrorComponent message="Assessment, grading, or rubric data is missing" />;
+  }
+
   return <EditAssessmentUI assessment={assessment} grading={grading} rubric={rubric} />;
 }

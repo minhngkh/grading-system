@@ -44,7 +44,7 @@ function RouteComponent() {
     if (didRun.current) return;
     didRun.current = true;
     mutate(rubricId);
-  }, [mutate, navigate]);
+  }, []);
 
   if (isPending) {
     return <PendingComponent message="Creating grading session..." />;

@@ -5,27 +5,14 @@ import GradingResult from "@/pages/grading/grading-result";
 import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
 import { getGradingAttemptQueryOptions } from "@/queries/grading-queries";
 import { GradingStatus } from "@/types/grading";
-import { keepPreviousData } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/gradings/$gradingId/result")({
   component: RouteComponent,
-  loader: async ({ params: { gradingId }, context: { auth, queryClient } }) => {
-    const [gradingAttempt, assessmentsData] = await Promise.all([
-      queryClient.fetchQuery(
-        getGradingAttemptQueryOptions(gradingId, auth, {
-          staleTime: Infinity,
-        }),
-      ),
-      queryClient.fetchQuery(
-        getAllGradingAssessmentsQueryOptions(gradingId, auth, {
-          placeholderData: keepPreviousData,
-          staleTime: 1000 * 60 * 5, // 5 minutes
-        }),
-      ),
-    ]);
-
-    return { gradingAttempt, assessmentsData };
+  loader: ({ params: { gradingId }, context: { auth, queryClient } }) => {
+    queryClient.ensureQueryData(getGradingAttemptQueryOptions(gradingId, auth));
+    queryClient.ensureQueryData(getAllGradingAssessmentsQueryOptions(gradingId, auth));
   },
   errorComponent: () => <ErrorComponent message="Failed to load grading result" />,
   pendingComponent: () => <PendingComponent message="Loading grading result..." />,
@@ -33,7 +20,44 @@ export const Route = createFileRoute("/_authenticated/gradings/$gradingId/result
 
 function RouteComponent() {
   const router = useRouter();
-  const { gradingAttempt, assessmentsData } = Route.useLoaderData();
+  const { gradingId } = Route.useParams();
+  const { auth } = Route.useRouteContext();
+
+  // Use useQuery with initialData from loader to handle cache invalidation
+  const {
+    data: gradingAttempt,
+    isPending: isFetchingGradingAttempt,
+    error: gradingAttemptError,
+  } = useQuery(
+    getGradingAttemptQueryOptions(gradingId, auth, {
+      placeholderData: keepPreviousData,
+    }),
+  );
+
+  const {
+    data: assessmentsData,
+    isPending: isFetchingAssessmentsData,
+    error: assessmentsDataError,
+  } = useQuery(
+    getAllGradingAssessmentsQueryOptions(gradingId, auth, {
+      placeholderData: keepPreviousData,
+    }),
+  );
+
+  if (
+    (isFetchingGradingAttempt && !gradingAttempt) ||
+    (isFetchingAssessmentsData && !assessmentsData)
+  ) {
+    return <PendingComponent message="Loading grading result..." />;
+  }
+
+  if (gradingAttemptError || assessmentsDataError) {
+    return <ErrorComponent message="Failed to load grading result" />;
+  }
+
+  if (!gradingAttempt || !assessmentsData) {
+    return <ErrorComponent message="Failed to load grading result" />;
+  }
 
   if (
     gradingAttempt.status === GradingStatus.Created ||

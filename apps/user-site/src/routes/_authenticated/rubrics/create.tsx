@@ -39,9 +39,8 @@ function RouteComponent() {
   useEffect(() => {
     if (didRun.current) return;
     didRun.current = true;
-
     mutate();
-  }, [mutate]);
+  }, []);
 
   if (isPending) {
     return <PendingComponent message="Creating rubric..." />;

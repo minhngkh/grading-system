@@ -10,9 +10,6 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 export const Route = createFileRoute("/_authenticated/gradings/view")({
   component: RouteComponent,
   validateSearch: searchParams,
-  loaderDeps: ({ search }) => search,
-  loader: ({ deps, context: { auth, queryClient } }) =>
-    queryClient.ensureQueryData(getGradingAttemptsQueryOptions(deps, auth)),
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search", "status"])],
   },
@@ -25,7 +22,7 @@ function RouteComponent() {
 
   const {
     data: gradingsData,
-    isFetching,
+    isPending,
     error,
   } = useQuery(
     getGradingAttemptsQueryOptions(search, auth, {
@@ -49,7 +46,7 @@ function RouteComponent() {
     [navigate],
   );
 
-  if (isFetching && !gradingsData) {
+  if (isPending) {
     return <PendingComponent message="Loading gradings..." />;
   }
 

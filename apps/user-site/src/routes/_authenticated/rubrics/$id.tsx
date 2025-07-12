@@ -2,6 +2,8 @@ import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import RubricGenerationPage from "@/pages/rubric/rubric-generation";
 import { getRubricQueryOptions } from "@/queries/rubric-queries";
+import { useAuth } from "@clerk/clerk-react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 
@@ -22,7 +24,31 @@ export const Route = createFileRoute("/_authenticated/rubrics/$id")({
 });
 
 function RouteComponent() {
-  const rubric = Route.useLoaderData();
+  const { id } = Route.useParams();
+  const auth = useAuth();
+  const {
+    data: rubric,
+    isPending,
+    error,
+  } = useQuery(
+    getRubricQueryOptions(id, auth, {
+      placeholderData: keepPreviousData,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    }),
+  );
+
+  if (isPending) {
+    return <PendingComponent message="Loading rubric..." />;
+  }
+
+  if (error) {
+    return <ErrorComponent message="Failed to load rubric. Please try again later." />;
+  }
+
+  if (!rubric) {
+    return <ErrorComponent message="Rubric not found." />;
+  }
+
   const rubricStep = sessionStorage.getItem("rubricStep") || undefined;
   return <RubricGenerationPage rubricStep={rubricStep} initialRubric={rubric} />;
 }
