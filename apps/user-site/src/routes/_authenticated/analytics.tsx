@@ -96,7 +96,7 @@ function RouteComponent() {
             No grading analytics to view. Please select a grading to view analytics.
           </p>
         </div>
-      : <GradingAnalyticsPage gradingAnalytics={gradingAnalytics} />}
+      : <GradingAnalyticsPage gradingAnalytics={gradingAnalytics} grading={grading} />}
     </div>
   );
 }

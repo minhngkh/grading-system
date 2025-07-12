@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTestRouteImport } from './routes/_authenticated/test'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
@@ -38,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTestRoute = AuthenticatedTestRouteImport.update({
+  id: '/test',
+  path: '/test',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/test': typeof AuthenticatedTestRoute
   '/gradings/create': typeof AuthenticatedGradingsCreateRoute
   '/gradings/view': typeof AuthenticatedGradingsViewRoute
   '/rubrics/$id': typeof AuthenticatedRubricsIdRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/home': typeof AuthenticatedHomeRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/test': typeof AuthenticatedTestRoute
   '/gradings/create': typeof AuthenticatedGradingsCreateRoute
   '/gradings/view': typeof AuthenticatedGradingsViewRoute
   '/rubrics/$id': typeof AuthenticatedRubricsIdRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/test': typeof AuthenticatedTestRoute
   '/_authenticated/gradings/create': typeof AuthenticatedGradingsCreateRoute
   '/_authenticated/gradings/view': typeof AuthenticatedGradingsViewRoute
   '/_authenticated/rubrics/$id': typeof AuthenticatedRubricsIdRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/home'
     | '/profile'
+    | '/test'
     | '/gradings/create'
     | '/gradings/view'
     | '/rubrics/$id'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/home'
     | '/profile'
+    | '/test'
     | '/gradings/create'
     | '/gradings/view'
     | '/rubrics/$id'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/_authenticated/analytics'
     | '/_authenticated/home'
     | '/_authenticated/profile'
+    | '/_authenticated/test'
     | '/_authenticated/gradings/create'
     | '/_authenticated/gradings/view'
     | '/_authenticated/rubrics/$id'
@@ -244,6 +256,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/test': {
+      id: '/_authenticated/test'
+      path: '/test'
+      fullPath: '/test'
+      preLoaderRoute: typeof AuthenticatedTestRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
@@ -357,6 +376,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedTestRoute: typeof AuthenticatedTestRoute
   AuthenticatedGradingsCreateRoute: typeof AuthenticatedGradingsCreateRoute
   AuthenticatedGradingsViewRoute: typeof AuthenticatedGradingsViewRoute
   AuthenticatedRubricsIdRoute: typeof AuthenticatedRubricsIdRoute
@@ -371,6 +391,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedTestRoute: AuthenticatedTestRoute,
   AuthenticatedGradingsCreateRoute: AuthenticatedGradingsCreateRoute,
   AuthenticatedGradingsViewRoute: AuthenticatedGradingsViewRoute,
   AuthenticatedRubricsIdRoute: AuthenticatedRubricsIdRoute,

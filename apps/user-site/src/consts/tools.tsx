@@ -28,18 +28,18 @@ export const SystemTools: Tool[] = [
     collapseSidebar: true,
   },
   {
-    name: "Analytics Dashboard",
-    details: "Interactive charts and reports to help you make data-driven decisions.",
-    types: [ToolType.Review],
-    isFavorite: false,
-    navigation: "/analytics",
-  },
-  {
     name: "Manage Gradings",
     details:
       "Track and review student submissions, provide feedback, and manage grading criteria.",
     types: [ToolType.Review, ToolType.Grading],
     isFavorite: false,
     navigation: "/gradings/view",
+  },
+  {
+    name: "Analytics Dashboard",
+    details: "Interactive charts and reports to help you make data-driven decisions.",
+    types: [ToolType.Review],
+    isFavorite: false,
+    navigation: "/analytics",
   },
 ];

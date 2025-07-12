@@ -41,13 +41,15 @@ export function ViewRubricDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         aria-describedby={undefined}
-        className="min-w-[80%] max-w-[95%] max-h-[90vh] flex flex-col"
+        className="min-w-[80%] max-w-[95%] max-h-[90vh] flex flex-col gap-0"
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Rubric: {initialRubric?.rubricName}
           </DialogTitle>
-          <DialogDescription>This is the rubric details view.</DialogDescription>
+          <DialogDescription>
+            View the details of the rubric including its criteria and scoring.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden mt-4">

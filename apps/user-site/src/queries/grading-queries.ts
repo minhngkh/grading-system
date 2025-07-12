@@ -52,7 +52,7 @@ export const getGradingAttemptsQueryOptions = (
   auth: Auth,
   options?: Partial<UseQueryOptions<GetAllResult<GradingAttempt>>>,
 ): UseQueryOptions<GetAllResult<GradingAttempt>> => ({
-  queryKey: ["gradingAttempts"],
+  queryKey: ["gradingAttempts", searchParams],
   queryFn: async () => {
     const token = await auth.getToken();
     return GradingService.getGradingAttempts(searchParams, token!);

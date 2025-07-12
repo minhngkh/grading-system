@@ -25,10 +25,7 @@ function RouteComponent() {
     createGradingAttemptMutationOptions(auth, {
       onSuccess: (grading) => {
         queryClient.invalidateQueries({
-          predicate: (query) => {
-            const key = query.queryKey;
-            return key[0] === "gradingAttempts";
-          },
+          queryKey: ["gradingAttempts"],
         });
         sessionStorage.removeItem("gradingStep");
         navigate({

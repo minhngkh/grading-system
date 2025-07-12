@@ -108,7 +108,7 @@ export function AssessmentResultCard({
           </div>
         </div>
 
-        <div className="flex md:flex-col justify-end p-4">
+        <div className="flex md:flex-col justify-end p-4 bg-muted/40">
           <Button
             disabled={isRerunning}
             onClick={handleRerun}

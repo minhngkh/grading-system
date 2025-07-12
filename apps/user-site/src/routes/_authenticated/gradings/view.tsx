@@ -5,24 +5,34 @@ import { getGradingAttemptsQueryOptions } from "@/queries/grading-queries";
 import { searchParams, SearchParams } from "@/types/search-params";
 import { createFileRoute, retainSearchParams } from "@tanstack/react-router";
 import { useCallback } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/gradings/view")({
   component: RouteComponent,
   validateSearch: searchParams,
   loaderDeps: ({ search }) => search,
-  loader: async ({ deps, context: { auth, queryClient } }) =>
-    await queryClient.fetchQuery(getGradingAttemptsQueryOptions(deps, auth)),
+  loader: ({ deps, context: { auth, queryClient } }) =>
+    queryClient.ensureQueryData(getGradingAttemptsQueryOptions(deps, auth)),
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search", "status"])],
   },
-  errorComponent: () => <ErrorComponent message="Failed to load gradings" />,
-  pendingComponent: () => <PendingComponent message="Loading gradings..." />,
 });
 
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const search = Route.useSearch();
-  const gradingsData = Route.useLoaderData();
+  const { auth } = Route.useRouteContext();
+
+  const {
+    data: gradingsData,
+    isFetching,
+    error,
+  } = useQuery(
+    getGradingAttemptsQueryOptions(search, auth, {
+      placeholderData: keepPreviousData,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    }),
+  );
 
   const setSearchParam = useCallback(
     (partial: Partial<SearchParams>) => {
@@ -38,6 +48,18 @@ function RouteComponent() {
     },
     [navigate],
   );
+
+  if (isFetching && !gradingsData) {
+    return <PendingComponent message="Loading gradings..." />;
+  }
+
+  if (error) {
+    return <ErrorComponent message="Failed to load gradings" />;
+  }
+
+  if (!gradingsData) {
+    return <ErrorComponent message="No data available" />;
+  }
 
   return (
     <ManageGradingsPage

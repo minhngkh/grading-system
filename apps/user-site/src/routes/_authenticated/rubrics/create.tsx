@@ -2,7 +2,7 @@ import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
 import { createRubricMutationOptions } from "@/queries/rubric-queries";
 import { useAuth } from "@clerk/clerk-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
@@ -14,10 +14,15 @@ function RouteComponent() {
   const navigate = Route.useNavigate();
   const auth = useAuth();
   const didRun = useRef(false);
+  const queryClient = useQueryClient();
 
   const { mutate, isPending, isError } = useMutation(
     createRubricMutationOptions(auth, {
       onSuccess: (rubric) => {
+        queryClient.invalidateQueries({
+          queryKey: ["rubrics"],
+        });
+
         sessionStorage.removeItem("rubricStep");
         navigate({
           to: "/rubrics/$id",
