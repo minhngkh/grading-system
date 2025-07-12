@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { CriterionScoreDistribution } from "@/types/analytics";
 import { CombinedCriterionChart } from "./combined-criterion-chart";
-import { LazyLoadedCriterionList } from "./virtualized-criterion-list";
+import { VirtualizedCriterionList } from "./virtualized-criterion-list";
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp } from "lucide-react";
 import { CHART_COLORS } from "@/consts/chart-config";
@@ -62,7 +62,7 @@ const AssessmentCriterionChart = React.memo<AssessmentCriterionChartProps>(
             criterionData={criterionData}
             chartColors={chartColors}
           />
-        : <LazyLoadedCriterionList
+        : <VirtualizedCriterionList
             criterionData={criterionData}
             scaleFactor={scaleFactor}
             assessmentCount={assessmentCount}

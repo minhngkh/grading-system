@@ -50,6 +50,22 @@ export function AssessmentResultCard({
   };
 
   const isGradingFailed = item.status === AssessmentState.AutoGradingFailed || isError;
+  const isUndergoingGrading =
+    item.status === AssessmentState.AutoGradingStarted ||
+    item.status === AssessmentState.Created;
+
+  const getCardClassName = () => {
+    if (isGradingFailed) {
+      return "overflow-hidden py-0 border-red-200 dark:border-red-800";
+    }
+    if (item.status === AssessmentState.AutoGradingFinished) {
+      return "overflow-hidden py-0 border-green-200 dark:border-green-800";
+    }
+    if (isUndergoingGrading) {
+      return "overflow-hidden py-0 border-blue-200 dark:border-blue-800";
+    }
+    return "overflow-hidden py-0";
+  };
 
   const sortedScoreBreakdowns = useMemo(() => {
     return item.scoreBreakdowns.sort((a, b) => {
@@ -61,7 +77,7 @@ export function AssessmentResultCard({
     return <ResultCardSkeleton />;
 
   return (
-    <Card className="overflow-hidden py-0">
+    <Card className={getCardClassName()}>
       <div className="flex flex-col md:flex-row">
         <div className="flex-1 p-6">
           <div className="flex items-center justify-between mb-4">

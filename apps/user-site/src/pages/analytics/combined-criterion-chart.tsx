@@ -115,7 +115,7 @@ const CombinedCriterionChart = React.memo<CombinedCriterionChartProps>(
                       }
                       return `Score Range: ${label}`;
                     }}
-                    formatter={(value, name) => [`${value} assessment(s)`, name]}
+                    formatter={(value, name) => `${name}: ${value} assessment(s)`}
                   />
                 }
               />

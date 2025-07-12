@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { AssessmentState } from "@/types/assessment";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
-import { Check, CircleAlert, Loader2 } from "lucide-react";
+import { Check, Loader2, FileText, CheckCircle2, XCircle, RotateCw } from "lucide-react";
+import { memo } from "react";
 
 type AssessmentStyle = {
   color: string;
@@ -13,24 +14,24 @@ type AssessmentStyle = {
 
 const assessmentStateStyles: Partial<Record<AssessmentState, AssessmentStyle>> = {
   [AssessmentState.Created]: {
-    color: "text-gray-500",
+    color: "text-blue-600 dark:text-blue-400",
     label: "Processing files",
-    icon: <Check className="size-4 text-gray-500" />,
+    icon: <FileText className="size-4 text-blue-600 dark:text-blue-400" />,
   },
   [AssessmentState.AutoGradingStarted]: {
-    color: "text-blue-500",
-    label: "Grading files",
-    icon: <Check className="size-4 text-blue-500" />,
+    color: "text-amber-600 dark:text-amber-400",
+    label: "Grading in progress",
+    icon: <CheckCircle2 className="size-4 text-amber-600 dark:text-amber-400" />,
   },
   [AssessmentState.AutoGradingFinished]: {
-    color: "text-green-500",
-    label: "Grading Finished",
-    icon: <Check className="size-4 text-green-500" />,
+    color: "text-green-600 dark:text-green-400",
+    label: "Grading completed",
+    icon: <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />,
   },
   [AssessmentState.AutoGradingFailed]: {
-    color: "text-destructive",
-    label: "Grading Failed",
-    icon: <CircleAlert className="size-4 text-destructive" />,
+    color: "text-red-600 dark:text-red-400",
+    label: "Grading failed",
+    icon: <XCircle className="size-4 text-red-600 dark:text-red-400" />,
   },
 };
 
@@ -39,62 +40,106 @@ interface AssessmentStatusCardProps {
   onRegrade?: (id: string) => void;
 }
 
-export const AssessmentStatusCard = ({
-  status,
-  onRegrade,
-}: AssessmentStatusCardProps) => {
-  function getCurrentStatuses(current: AssessmentState): AssessmentState[] {
-    const states: AssessmentState[] = [AssessmentState.Created];
+export const AssessmentStatusCard = memo(
+  ({ status, onRegrade }: AssessmentStatusCardProps) => {
+    function getCurrentStatuses(current: AssessmentState): AssessmentState[] {
+      const states: AssessmentState[] = [AssessmentState.Created];
 
-    if (
-      current !== AssessmentState.AutoGradingStarted &&
-      current !== AssessmentState.Created
-    ) {
-      states.push(AssessmentState.AutoGradingStarted);
+      if (
+        current !== AssessmentState.AutoGradingStarted &&
+        current !== AssessmentState.Created
+      ) {
+        states.push(AssessmentState.AutoGradingStarted);
+      }
+
+      states.push(current);
+
+      return states;
     }
 
-    states.push(current);
+    const currentStatuses = getCurrentStatuses(status.status);
+    const isUndergoingGrading =
+      status.status === AssessmentState.AutoGradingStarted ||
+      status.status === AssessmentState.Created;
 
-    return states;
-  }
-
-  const currentStatuses = getCurrentStatuses(status.status);
-  const isUndergoingGrading =
-    status.status === AssessmentState.AutoGradingStarted ||
-    status.status === AssessmentState.Created;
-
-  return (
-    <Card className="gap-2">
-      <CardHeader>
-        <CardTitle className="text-lg">{status.submissionReference}</CardTitle>
-        {status.errorMessage && (
-          <p className="text-sm text-red-500">
-            Error: {status.errorMessage}. Please try again!
-          </p>
+    return (
+      <Card
+        className={cn(
+          "gap-0 bg-background",
+          status.status === AssessmentState.AutoGradingFailed &&
+            "border-red-200 dark:border-red-800",
+          status.status === AssessmentState.AutoGradingFinished &&
+            "border-green-200 dark:border-green-800",
+          isUndergoingGrading && "border-blue-200 dark:border-blue-800",
         )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          {currentStatuses.map((status, index) => {
-            const { color, icon, label } = assessmentStateStyles[status] || {
-              color: "text-gray-500",
-              label: "Unknown State",
-              icon: <Check className="size-4 text-gray-500" />,
-            };
-            return (
-              <div className="flex items-center gap-4" key={index}>
-                {index === currentStatuses.length - 1 && isUndergoingGrading ?
-                  <Loader2 className={cn("size-4 animate-spin", color)} />
-                : icon}
-                <span className={cn(`text-sm font-medium`, color)}>{label}</span>
-              </div>
-            );
-          })}
-        </div>
-        {!isUndergoingGrading && (
-          <Button onClick={() => onRegrade?.(status.assessmentId)}>Re-grade</Button>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+      >
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold">
+              {status.submissionReference}
+            </CardTitle>
+            {!isUndergoingGrading && (
+              <Button
+                variant="outline"
+                onClick={() => onRegrade?.(status.assessmentId)}
+                size="sm"
+              >
+                <RotateCw className="size-4" />
+                Rerun
+              </Button>
+            )}
+          </div>
+          {status.errorMessage && (
+            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md dark:bg-red-950/30 dark:border-red-800">
+              <p className="text-sm text-red-700 font-medium dark:text-red-300">
+                Error: {status.errorMessage}
+              </p>
+              <p className="text-xs text-red-600 mt-1 dark:text-red-400">
+                Please try regrading this assessment.
+              </p>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div>
+            {currentStatuses.map((statusItem, index) => {
+              const { color, icon, label } = assessmentStateStyles[statusItem] || {
+                color: "text-gray-500 dark:text-gray-400",
+                label: "Unknown State",
+                icon: <Check className="size-4 text-gray-500 dark:text-gray-400" />,
+                badgeVariant: "outline" as const,
+              };
+
+              const isCurrent = index === currentStatuses.length - 1;
+              const isCompleted =
+                index < currentStatuses.length - 1 ||
+                (isCurrent &&
+                  (status.status === AssessmentState.AutoGradingFinished ||
+                    status.status === AssessmentState.AutoGradingFailed));
+
+              const isFailed =
+                status.status === AssessmentState.AutoGradingFailed &&
+                (statusItem === AssessmentState.AutoGradingFailed ||
+                  index < currentStatuses.length - 1);
+
+              return (
+                <div className="flex items-center gap-3 py-2 rounded-md" key={index}>
+                  {isCurrent && isUndergoingGrading ?
+                    <Loader2 className={cn("size-4 animate-spin", color)} />
+                  : icon}
+                  <span className={cn("text-sm font-medium", color)}>{label}</span>
+                  {isCompleted &&
+                    (isFailed ?
+                      <XCircle className="size-3 text-red-500 ml-auto dark:text-red-400" />
+                    : <Check className="size-3 text-green-500 ml-auto dark:text-green-400" />)}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  },
+);
+
+AssessmentStatusCard.displayName = "AssessmentStatusCard";

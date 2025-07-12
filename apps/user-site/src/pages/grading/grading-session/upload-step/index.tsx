@@ -3,7 +3,7 @@ import type { CriteriaSelector, GradingAttempt, Submission } from "@/types/gradi
 import { RubricStatus, type Rubric } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileUploader } from "@/components/app/file-uploader";
 import { InfoToolTip } from "@/components/app/info-tooltip";
@@ -96,20 +96,30 @@ export default function UploadStep({ form }: UploadStepProps) {
     deleteSubmissionMutationOptions(gradingAttempt.id, auth),
   );
 
-  useDebounceUpdate(gradingAttempt.name, 500, (name) => {
-    updateNameMutation.mutate(name);
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
-  });
-  useDebounceUpdate(gradingAttempt.scaleFactor, 500, (scaleFactor) => {
-    if (scaleFactor == undefined) return;
+  const handleNameUpdate = useCallback(
+    (name: string) => {
+      updateNameMutation.mutate(name);
+      queryClient.invalidateQueries({
+        queryKey: ["gradingAttempt", gradingAttempt.id],
+      });
+    },
+    [updateNameMutation, queryClient, gradingAttempt.id],
+  );
 
-    updateScaleFactorMutation.mutate(scaleFactor);
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
-  });
+  const handleScaleFactorUpdate = useCallback(
+    (scaleFactor: number | undefined) => {
+      if (scaleFactor == undefined) return;
+
+      updateScaleFactorMutation.mutate(scaleFactor);
+      queryClient.invalidateQueries({
+        queryKey: ["gradingAttempt", gradingAttempt.id],
+      });
+    },
+    [updateScaleFactorMutation, queryClient, gradingAttempt.id],
+  );
+
+  useDebounceUpdate(gradingAttempt.name, 500, handleNameUpdate);
+  useDebounceUpdate(gradingAttempt.scaleFactor, 500, handleScaleFactorUpdate);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
     await updateSelectorsMutation.mutateAsync(selectors);
@@ -146,24 +156,7 @@ export default function UploadStep({ form }: UploadStepProps) {
     setFileDialogOpen(true);
 
     try {
-      // Split files into chunks of 10
-      const chunkSize = 10;
-      const chunks = [];
-      for (let i = 0; i < newFiles.length; i += chunkSize) {
-        chunks.push(newFiles.slice(i, i + chunkSize));
-      }
-
-      const allUploadRefs = [];
-
-      // Upload each chunk sequentially
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        setFileDialogAction(`Uploading ${chunk.length} files of ${newFiles.length}`);
-
-        const uploadRefs = await uploadFileMutation.mutateAsync(chunk);
-        allUploadRefs.push(...uploadRefs);
-        setUploadedFiles((prev) => [...prev, ...chunk]);
-      }
+      const allUploadRefs = await uploadFileMutation.mutateAsync(newFiles);
 
       const newSubmissions = [
         ...gradingAttempt.submissions,
@@ -247,7 +240,7 @@ export default function UploadStep({ form }: UploadStepProps) {
       </Dialog>
 
       <div className="space-y-1">
-        <Label className="text-lg">Session Name</Label>
+        <Label className="text-lg">Name</Label>
         <Input
           defaultValue={gradingAttempt.name}
           {...register("name")}

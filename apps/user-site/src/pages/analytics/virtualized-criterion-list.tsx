@@ -1,45 +1,52 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useRef } from "react";
 import { CriterionCard } from "./criterion-card";
 import { CriterionScoreDistribution } from "@/types/analytics";
-import { Button } from "@/components/ui/button";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
-interface LazyLoadedCriterionListProps {
+interface VirtualizedCriterionListProps {
   criterionData: CriterionScoreDistribution[];
   scaleFactor: number;
   assessmentCount: number;
   chartColors: string[];
-  initialItemsToShow?: number;
-  itemsPerLoad?: number;
+  columnsPerRow?: number;
 }
 
-const LazyLoadedCriterionList = React.memo<LazyLoadedCriterionListProps>(
+const VirtualizedCriterionList = React.memo<VirtualizedCriterionListProps>(
   ({
     criterionData,
     scaleFactor,
     assessmentCount,
     chartColors,
-    initialItemsToShow = 4,
-    itemsPerLoad = 4,
+    columnsPerRow = 2, // Default to 2 columns (xl:grid-cols-2)
   }) => {
-    const [visibleCount, setVisibleCount] = useState(
-      Math.min(initialItemsToShow, criterionData.length),
-    );
+    const parentRef = useRef<HTMLDivElement>(null);
 
-    const visibleItems = useMemo(
-      () => criterionData.slice(0, visibleCount),
-      [criterionData, visibleCount],
-    );
+    // Calculate how many rows we need based on columns per row
+    const rowCount = Math.ceil(criterionData.length / columnsPerRow);
 
-    const loadMore = useCallback(() => {
-      setVisibleCount((prev) => Math.min(prev + itemsPerLoad, criterionData.length));
-    }, [itemsPerLoad, criterionData.length]);
+    // Virtualization setup for rows
+    const virtualizer = useVirtualizer({
+      count: rowCount,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 400, // Estimated height of each row of criterion cards
+      overscan: 2, // Buffer rows for smooth scrolling
+      measureElement:
+        typeof ResizeObserver !== "undefined" ?
+          (element) => element?.getBoundingClientRect().height
+        : undefined,
+    });
 
-    const hasMore = visibleCount < criterionData.length;
+    // Group criteria into rows
+    const getCriteriaForRow = (rowIndex: number) => {
+      const startIndex = rowIndex * columnsPerRow;
+      const endIndex = Math.min(startIndex + columnsPerRow, criterionData.length);
+      return criterionData.slice(startIndex, endIndex);
+    };
 
-    // For small datasets, show all items immediately
-    if (criterionData.length <= initialItemsToShow) {
+    // For small datasets, show all items without virtualization
+    if (criterionData.length <= 8) {
       return (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="space-y-4">
           {criterionData.map((criterion, index) => (
             <CriterionCard
               key={criterion.criterionName}
@@ -55,32 +62,57 @@ const LazyLoadedCriterionList = React.memo<LazyLoadedCriterionListProps>(
     }
 
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {visibleItems.map((criterion, index) => (
-            <CriterionCard
-              key={criterion.criterionName}
-              criterionData={criterion}
-              scaleFactor={scaleFactor}
-              index={index}
-              assessmentCount={assessmentCount}
-              chartColors={chartColors}
-            />
-          ))}
-        </div>
+      <div
+        ref={parentRef}
+        className="h-[70vh] max-h-[800px] min-h-[400px] overflow-auto border rounded-md"
+      >
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: "100%",
+            position: "relative",
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const criteriaInRow = getCriteriaForRow(virtualRow.index);
 
-        {hasMore && (
-          <div className="flex justify-center">
-            <Button onClick={loadMore} variant="outline" size="sm">
-              Load More Criteria ({criterionData.length - visibleCount} remaining)
-            </Button>
-          </div>
-        )}
+            return (
+              <div
+                key={virtualRow.key}
+                data-index={virtualRow.index}
+                ref={virtualizer.measureElement}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <div className="space-y-4">
+                  {criteriaInRow.map((criterion, columnIndex) => {
+                    const globalIndex = virtualRow.index * columnsPerRow + columnIndex;
+                    return (
+                      <CriterionCard
+                        key={criterion.criterionName}
+                        criterionData={criterion}
+                        scaleFactor={scaleFactor}
+                        index={globalIndex}
+                        assessmentCount={assessmentCount}
+                        chartColors={chartColors}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   },
 );
 
-LazyLoadedCriterionList.displayName = "LazyLoadedCriterionList";
+VirtualizedCriterionList.displayName = "VirtualizedCriterionList";
 
-export { LazyLoadedCriterionList };
+export { VirtualizedCriterionList };
