@@ -105,9 +105,9 @@ const ReviewResults = memo(function ReviewResults({
   });
 
   return (
-    <section>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
-        <h2 className="text-2xl font-bold mb-2">Grading Results</h2>
+    <section className="space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        <h2 className="text-2xl font-bold">Grading Results</h2>
 
         <div className="flex gap-2 items-center">
           {/* Search - remains outside dropdown */}

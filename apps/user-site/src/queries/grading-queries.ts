@@ -109,6 +109,7 @@ export const getGradingSummaryQueryOptions = (
     const token = await auth.getToken();
     return GradingService.getGradingSummary(id, token!);
   },
+  enabled: Boolean(id),
   ...options,
 });
 

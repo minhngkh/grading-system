@@ -91,7 +91,11 @@ export default function UploadAssignmentPage({
   };
 
   const isNextButtonDisabled = () => {
-    if (currentIndex === 1) return gradingAttemptValues.status === GradingStatus.Started;
+    if (currentIndex === 1)
+      return (
+        gradingAttemptValues.status === GradingStatus.Started ||
+        gradingAttemptValues.status === GradingStatus.Created
+      );
     return false;
   };
 

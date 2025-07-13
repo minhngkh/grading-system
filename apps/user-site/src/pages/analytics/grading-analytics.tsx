@@ -88,60 +88,64 @@ export function GradingAnalyticsPage({
         </CardContent>
       </Card>
 
-      {/* Assessment Score Distribution */}
-      <Card className="py-0">
-        <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
-          <div className="flex flex-1 flex-col justify-center gap-1 px-6">
-            <CardTitle>Score Distribution</CardTitle>
-            <CardDescription className="hidden lg:block">
-              Distribution of all assessment scores on a scale of {scaleFactor}
-            </CardDescription>
-          </div>
-          <div className="flex">
-            <div className="flex flex-1 flex-col justify-center gap-1 border-t px-3 py-2 text-left sm:border-t-0 sm:border-l sm:px-4 sm:py-3">
-              <span className="text-muted-foreground text-xs whitespace-nowrap">
-                Highest Score
-              </span>
-              <span className="text-lg leading-none font-bold sm:text-3xl">
-                {((highestScore / 100) * scaleFactor).toFixed(1)}
-              </span>
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold mb-4">Assessment Score Distribution</h2>
+        <Card className="py-0">
+          <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
+            <div className="flex flex-1 flex-col justify-center gap-1 px-6">
+              <CardTitle>Score Distribution</CardTitle>
+              <CardDescription className="hidden lg:block">
+                Distribution of all assessment scores on a scale of {scaleFactor}
+              </CardDescription>
             </div>
-            <div className="flex flex-1 flex-col justify-center gap-1 border-t px-3 py-2 text-left border-l sm:border-t-0 sm:border-l sm:px-4 sm:py-3">
-              <span className="text-muted-foreground text-xs whitespace-nowrap">
-                Lowest Score
-              </span>
-              <span className="text-lg leading-none font-bold sm:text-3xl">
-                {((lowestScore / 100) * scaleFactor).toFixed(1)}
-              </span>
+            <div className="flex">
+              <div className="flex flex-1 flex-col justify-center gap-1 border-t px-3 py-2 text-left sm:border-t-0 sm:border-l sm:px-4 sm:py-3">
+                <span className="text-muted-foreground text-xs whitespace-nowrap">
+                  Highest Score
+                </span>
+                <span className="text-lg leading-none font-bold sm:text-3xl">
+                  {((highestScore / 100) * scaleFactor).toFixed(1)}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col justify-center gap-1 border-t px-3 py-2 text-left border-l sm:border-t-0 sm:border-l sm:px-4 sm:py-3">
+                <span className="text-muted-foreground text-xs whitespace-nowrap">
+                  Lowest Score
+                </span>
+                <span className="text-lg leading-none font-bold sm:text-3xl">
+                  {((lowestScore / 100) * scaleFactor).toFixed(1)}
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col justify-center gap-1 border-t px-3 py-2 text-left border-l sm:border-t-0 sm:border-l sm:px-4 sm:py-3">
+                <span className="text-muted-foreground text-xs whitespace-nowrap">
+                  Average Score
+                </span>
+                <span
+                  className="text-lg leading-none font-bold sm:text-3xl"
+                  style={{ color: "var(--chart-1)" }}
+                >
+                  {((averageScore / 100) * scaleFactor).toFixed(1)}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-1 flex-col justify-center gap-1 border-t px-3 py-2 text-left border-l sm:border-t-0 sm:border-l sm:px-4 sm:py-3">
-              <span className="text-muted-foreground text-xs whitespace-nowrap">
-                Average Score
-              </span>
-              <span
-                className="text-lg leading-none font-bold sm:text-3xl"
-                style={{ color: "var(--chart-1)" }}
-              >
-                {((averageScore / 100) * scaleFactor).toFixed(1)}
-              </span>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-2">
-          <AssessmentScoreDistributionChart
-            scoreDistribution={scoreDistribution}
-            scaleFactor={scaleFactor}
-            assessmentCount={assessmentCount}
-          />
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="px-2">
+            <AssessmentScoreDistributionChart
+              scoreDistribution={scoreDistribution}
+              scaleFactor={scaleFactor}
+              assessmentCount={assessmentCount}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Criteria Score Distribution */}
-      <AssessmentCriterionChart
-        assessmentCount={assessmentCount}
-        criterionData={criterionData}
-        scaleFactor={scaleFactor}
-      />
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold mb-4">Assessment Criteria</h2>
+        <AssessmentCriterionChart
+          assessmentCount={assessmentCount}
+          criterionData={criterionData}
+          scaleFactor={scaleFactor}
+        />
+      </div>
     </div>
   );
 }

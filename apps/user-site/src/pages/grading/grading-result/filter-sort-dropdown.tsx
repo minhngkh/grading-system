@@ -83,7 +83,7 @@ export function FilterSortDropdown({
               placeholder="Min"
               value={tempMinScore}
               onChange={(e) => setTempMinScore(e.target.value)}
-              className="w-20"
+              className="flex-1"
               step="0.1"
             />
             <span className="text-muted-foreground">-</span>
@@ -92,7 +92,7 @@ export function FilterSortDropdown({
               placeholder="Max"
               value={tempMaxScore}
               onChange={(e) => setTempMaxScore(e.target.value)}
-              className="w-20"
+              className="flex-1"
               step="0.1"
             />
           </div>
