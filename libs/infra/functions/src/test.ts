@@ -20,13 +20,17 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
   // });
 
   const start = Date.now();
-  const a = containerClient.containerGroups.get("judge0-rg", "judge0-worker-1");
-  const b = containerClient.containerGroups.get("judge0-rg", "judge0-worker-2");
+  // const a = containerClient.containerGroups.get("judge0-rg", "judge0-worker-1");
+  // const b = containerClient.containerGroups.get("judge0-rg", "judge0-worker-2");
 
-  const res = await Promise.all([a, b]);
+  // const res = await Promise.all([a, b]);
+  const t = await containerClient.containerGroups.beginStart("judge0-rg", "judge0-worker-1").catch((error) => {
+    console.error("Error starting container group:", error);
+    // process.exit(1);
+  })
 
-  console.log("a", res[0].instanceView);
-  console.log("b", res[1].instanceView);
+  // console.log("a", res[0].instanceView);
+  // console.log("b", res[1].instanceView);
 
   // console.dir(a.instanceView);
 

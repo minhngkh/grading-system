@@ -2,21 +2,6 @@
 # Judge0 Configuration Variables
 ################################################################################
 
-
-################################################################################
-# Additional Configuration
-################################################################################
-
-variable "redis_http_host" {
-  description = "Redis HTTP host for Judge0 autoscaler"
-  type        = string
-}
-
-variable "redis_http_token" {
-  description = "Redis HTTP token for Judge0 autoscaler"
-  type        = string
-}
-
 ################################################################################
 # Judge0 Server Configuration
 ################################################################################
@@ -216,17 +201,29 @@ variable "redis_host" {
   type        = string
 }
 
-variable "redis_url" {
-  description = "Redis URL"
+variable "redis_password" {
+  description = "Redis password for secure connections"
   type        = string
   sensitive   = true
 }
 
-variable "redis_use_ssl" {
-  description = "Use SSL for Redis connection"
-  type        = bool
-  default     = true
+variable "redis_port" {
+  description = "Redis port"
+  type        = number
+  default     = 6379
 }
+
+# variable "redis_url" {
+#   description = "Redis URL"
+#   type        = string
+#   sensitive   = true
+# }
+
+# variable "redis_use_ssl" {
+#   description = "Use SSL for Redis connection"
+#   type        = bool
+#   default     = true
+# }
 
 ################################################################################
 # PostgreSQL Configuration

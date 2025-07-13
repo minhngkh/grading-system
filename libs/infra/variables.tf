@@ -50,22 +50,10 @@ variable "max_servers" {
   default     = 1
 }
 
-variable "scale_up_threshold" {
+variable "scale_ratio" {
   description = "Queue size threshold to scale up workers"
   type        = number
   default     = 5
-}
-
-variable "scale_down_threshold" {
-  description = "Queue size threshold to scale down workers"
-  type        = number
-  default     = 2
-}
-
-variable "max_idle_workers" {
-  description = "Maximum number of idle workers before scaling down"
-  type        = number
-  default     = 1
 }
 
 variable "scale_check_interval" {

@@ -4,7 +4,7 @@ import { ContainerInstanceManagementClient } from "@azure/arm-containerinstance"
 import { app } from "@azure/functions";
 import { DefaultAzureCredential } from "@azure/identity";
 import { Redis } from "@upstash/redis";
-import { count, inArray, isNull, or } from "drizzle-orm";
+import { and, count, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import { submissions } from "./db";
 
@@ -16,6 +16,11 @@ interface WorkerStats {
   working: number;
   paused: number;
   failed: number;
+}
+
+interface JobsStatus {
+  inQueue: number;
+  processing: number;
 }
 
 interface WorkerCount {
@@ -40,14 +45,7 @@ class Judge0Autoscaler {
   private readonly containerGroupName: string;
   private readonly judge0Version: string;
 
-  public readonly config: {
-    minWorkers: number;
-    maxWorkers: number;
-    scaleUpThreshold: number;
-    scaleDownThreshold: number;
-    scaleCooldownMinutes: number;
-    allowInfiniteScale: boolean;
-  };
+  public readonly config;
 
   constructor() {
     this.subscriptionId = process.env.AZURE_SUBSCRIPTION_ID!;
@@ -58,14 +56,13 @@ class Judge0Autoscaler {
     this.config = {
       minWorkers: Number.parseInt(process.env.MIN_WORKERS || "0"),
       maxWorkers: Number.parseInt(process.env.MAX_WORKERS || "2"),
-      scaleUpThreshold: Number.parseInt(process.env.SCALE_UP_THRESHOLD || "5"),
+      scaleRatio: Number.parseInt(process.env.SCALE_RATIO || "5"),
       scaleDownThreshold: Number.parseInt(process.env.SCALE_DOWN_THRESHOLD || "2"),
       scaleCooldownMinutes: Number.parseInt(process.env.SCALE_COOLDOWN_MINUTES || "5"),
       allowInfiniteScale: process.env.ALLOW_INFINITE_SCALE?.toLowerCase() === "true",
     };
 
     try {
-      // Needs a Service Principal with Container Instance
       // const credential = new ClientSecretCredential(
       //   process.env.AZURE_TENANT_ID!,
       //   process.env.AZURE_CLIENT_ID!,
@@ -87,7 +84,6 @@ class Judge0Autoscaler {
       throw error;
     }
 
-    // Initialize Upstash Redis client using REST API
     try {
       this.redisClient = new Redis({
         url: process.env.REDIS_HTTP_HOST,
@@ -100,7 +96,6 @@ class Judge0Autoscaler {
       throw error;
     }
 
-    // Initialize PostgreSQL client using Drizzle ORM with Neon
     try {
       this.dbClient = drizzle(process.env.DATABASE_URL!);
 
@@ -124,7 +119,7 @@ class Judge0Autoscaler {
     }
   }
 
-  async getRemainingJobs() {
+  async getUnfinishedJobs() {
     try {
       const [remainingJobs] = await this.dbClient
         .select({ count: count() })
@@ -138,135 +133,78 @@ class Judge0Autoscaler {
     }
   }
 
-  async getWorkerStats(): Promise<WorkerStats[]> {
+  async getJobsStatus() {
     try {
-      // Get queue size from Redis using the Judge0 version-specific queue name
-      const queueName = `resque:queue:${this.judge0Version}`;
+      const result = await this.dbClient
+        .select({ statusId: submissions.statusId, count: count() })
+        .from(submissions)
+        .where(and(inArray(submissions.statusId, [1, 2])))
+        .groupBy(submissions.statusId);
 
-      // Get processing jobs count from PostgreSQL
-      // Jobs in queue have status_id = 1 (Status.queue)
-      // Jobs being processed have status_id = 2 (Status.process)
-      // Jobs with null status_id are also considered in progress
-      const [queueSize, processingJobs] = await Promise.all([
-        this.redisClient.llen(queueName),
-        this.dbClient
-          .select({ count: count() })
-          .from(submissions)
-          .where(or(inArray(submissions.statusId, [1, 2]), isNull(submissions.statusId)))
-          .then(([value]) => value.count),
-      ]);
-
-      const totalAvailable = Math.max(1, Math.ceil(processingJobs / 2)); // Estimate available workers
-      const working = Math.min(processingJobs, totalAvailable);
-      const idle = Math.max(0, totalAvailable - working);
-
-      return [
-        {
-          queue: this.judge0Version,
-          size: queueSize || 0,
-          available: totalAvailable,
-          idle,
-          working,
-          paused: 0, // We don't track paused workers from Redis/DB
-          failed: 0, // We don't track failed workers from Redis/DB
-        },
-      ];
-    } catch (error) {
-      console.error("Failed to fetch worker stats from Redis/DB:", error);
-      throw new Error(`Failed to fetch worker stats: ${error}`);
-    }
-  }
-
-  // Optimized method to get all worker containers with their detailed info in parallel
-  private async getAllWorkerContainers(): Promise<
-    Array<{
-      name: string;
-      state: string;
-      instanceNumber: number;
-    }>
-  > {
-    try {
-      // List all container groups that match our worker pattern
-      const containerGroups = this.containerClient.containerGroups.listByResourceGroup(
-        this.resourceGroupName,
-      );
-
-      // Collect all worker container group names in parallel during iteration
-      const workerGroupNames: string[] = [];
-      for await (const group of containerGroups) {
-        if (
-          group.name?.startsWith(this.containerGroupName) &&
-          group.tags?.Component === "worker"
-        ) {
-          workerGroupNames.push(group.name);
+      const jobsStatus: JobsStatus = { inQueue: 0, processing: 0 };
+      for (const row of result) {
+        if (row.statusId === 1) {
+          jobsStatus.inQueue = row.count;
+        } else if (row.statusId === 2) {
+          jobsStatus.processing = row.count;
         }
       }
 
-      // Fetch detailed information for all worker groups in parallel
-      const detailPromises = workerGroupNames.map((groupName) =>
-        this.containerClient.containerGroups
-          .get(this.resourceGroupName, groupName)
-          .catch((error) => {
-            console.error(`Failed to get details for worker ${groupName}:`, error);
-            return null; // Return null for failed requests
-          }),
-      );
-
-      const detailedGroups = await Promise.all(detailPromises);
-
-      // Transform to standardized format
-      return detailedGroups
-        .filter((group) => group !== null)
-        .map((group) => ({
-          name: group!.name!,
-          state: group!.instanceView?.state || "Unknown",
-          instanceNumber: Number.parseInt(group!.tags?.WorkerInstance || "0"),
-        }));
+      return jobsStatus;
     } catch (error) {
-      throw new Error(`Failed to get worker containers: ${error}`);
+      console.error("Failed getting jobs status:", error);
+      throw error;
     }
   }
 
-  async getCurrentWorkerCount(): Promise<{
-    running: number;
-    stopped: number;
-    total: number;
-  }> {
-    try {
-      const workers = await this.getAllWorkerContainers();
+  calc(jobsStatus: JobsStatus) {
+    const availableJobs = jobsStatus.inQueue + jobsStatus.processing;
 
-      console.log(workers);
-
-      // Count running and stopped workers
-      let runningWorkers = 0;
-      let stoppedWorkers = 0;
-
-      for (const worker of workers) {
-        if (worker.state === "Running") {
-          runningWorkers++;
-        } else if (worker.state === "Stopped" || worker.state === "Terminated") {
-          stoppedWorkers++;
-        } else {
-          // Handle other states like "Pending", "Starting", etc.
-          console.warn(`Worker ${worker.name} is in state: ${worker.state}`);
-          // Count as stopped for now, but could be refined based on requirements
-          stoppedWorkers++;
-        }
-      }
-
-      return {
-        running: runningWorkers,
-        stopped: stoppedWorkers,
-        total: runningWorkers + stoppedWorkers,
-      };
-    } catch (error) {
-      throw new Error(`Failed to get current worker count: ${error}`);
-    }
+    const neededWorkers = availableJobs / this.config.scaleRatio;
+    const 
   }
+
+  // async getCurrentWorkerCount(): Promise<{
+  //   running: number;
+  //   stopped: number;
+  //   total: number;
+  // }> {
+  //   try {
+  //     const workers = await this.getAllWorkerContainers();
+
+  //     console.log(workers);
+
+  //     // Count running and stopped workers
+  //     let runningWorkers = 0;
+  //     let stoppedWorkers = 0;
+
+  //     for (const worker of workers) {
+  //       if (worker.state === "Running") {
+  //         runningWorkers++;
+  //       } else if (worker.state === "Stopped" || worker.state === "Terminated") {
+  //         stoppedWorkers++;
+  //       } else {
+  //         // Handle other states like "Pending", "Starting", etc.
+  //         console.warn(`Worker ${worker.name} is in state: ${worker.state}`);
+  //         // Count as stopped for now, but could be refined based on requirements
+  //         stoppedWorkers++;
+  //       }
+  //     }
+
+  //     return {
+  //       running: runningWorkers,
+  //       stopped: stoppedWorkers,
+  //       total: runningWorkers + stoppedWorkers,
+  //     };
+  //   } catch (error) {
+  //     throw new Error(`Failed to get current worker count: ${error}`);
+  //   }
+  // }
 
   calculateScalingDecision(
     workerStats: WorkerStats[],
     currentWorkers: WorkerCount,
+    jobsStatus: JobsStatus,
   ): ScalingDecision {
     if (workerStats.length === 0) {
       return {

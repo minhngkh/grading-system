@@ -3,10 +3,10 @@
 
 # Container Apps Environment - Consumption Plan (serverless)
 resource "azurerm_container_app_environment" "judge0_env" {
-  name                = "judge0-env"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  # log_analytics_workspace_id = azurerm_log_analytics_workspace.judge0_logs.id
+  name                       = "judge0-env"
+  location                   = azurerm_resource_group.main.location
+  resource_group_name        = azurerm_resource_group.main.name
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.judge0_log.id
 
   tags = {
     Environment = "production"
@@ -15,21 +15,6 @@ resource "azurerm_container_app_environment" "judge0_env" {
   }
 }
 
-# Log Analytics Workspace for Container Apps
-# resource "azurerm_log_analytics_workspace" "judge0_logs" {
-#   name                = "judge0-logs"
-#   location            = azurerm_resource_group.main.location
-#   resource_group_name = azurerm_resource_group.main.name
-#   sku                 = "PerGB2018"
-#   retention_in_days   = 30
-
-#   tags = {
-#     Environment = "production"
-#     Application = "judge0"
-#     Component   = "logging"
-#   }
-# }
-
 # Judge0 Server - Container App
 resource "azurerm_container_app" "judge0_server" {
   name                         = "judge0-server"
@@ -37,9 +22,9 @@ resource "azurerm_container_app" "judge0_server" {
   resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
 
+
   template {
-    # Scaling configuration - can scale to 0
-    min_replicas = 0
+    min_replicas = var.min_servers
     max_replicas = var.max_servers
 
     # HTTP-based scaling rules
@@ -59,18 +44,26 @@ resource "azurerm_container_app" "judge0_server" {
         name        = "DATABASE_URL"
         secret_name = "database-url"
       }
-      env {
-        name        = "REDIS_URL"
-        secret_name = "redis-url"
-      }
+      # env {
+      #   name        = "REDIS_URL"
+      #   secret_name = "redis-url"
+      # }
       env {
         name  = "REDIS_HOST"
         value = var.redis_host
       }
       env {
-        name  = "REDIS_USE_SSL"
-        value = var.redis_use_ssl
+        name  = "REDIS_PORT"
+        value = var.redis_port
       }
+      env {
+        name  = "REDIS_PASSWORD"
+        secret_name = "redis-password"
+      }
+      # env {
+      #   name  = "REDIS_USE_SSL"
+      #   value = var.redis_use_ssl
+      # }
 
       # Judge0 Server Configuration
       env {
@@ -317,9 +310,14 @@ resource "azurerm_container_app" "judge0_server" {
   }
 
   secret {
-    name  = "redis-url"
-    value = var.redis_url
+    name  = "redis-password"
+    value = var.redis_password
   }
+
+  # secret {
+  #   name  = "redis-url"
+  #   value = var.redis_url
+  # }
 
   dynamic "secret" {
     for_each = var.authn_token != "" ? [1] : []
