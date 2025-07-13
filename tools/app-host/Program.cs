@@ -167,6 +167,8 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
                 assignmentFlowEndpoint?.Url ?? "";
+
+            ctx.EnvironmentVariables["VITE_BLOB_STORAGE_URL"] = "http://127.0.0.1:27000/devstoreaccount1";
         });
 }
 

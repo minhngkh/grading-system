@@ -4,8 +4,7 @@ import axios, { AxiosRequestConfig } from "axios";
 
 // Use environment variables instead of hardcoded values
 const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
-const BLOB_ENDPOINT =
-  import.meta.env.VITE_BLOB_STORAGE_URL || "http://127.0.0.1:27000/devstoreaccount1";
+const BLOB_ENDPOINT = import.meta.env.VITE_BLOB_STORAGE_URL;
 
 export class FileService {
   private static async buildHeaders(): Promise<AxiosRequestConfig> {
@@ -40,9 +39,7 @@ export class FileService {
   static async loadFileItems(prefix: string): Promise<FileItem[]> {
     try {
       const sasToken = await this.getSasToken();
-      const blobServiceClient = new BlobServiceClient(
-        `${BLOB_ENDPOINT}${BLOB_ENDPOINT.includes("?") ? "&" : "?"}${sasToken}`,
-      );
+      const blobServiceClient = new BlobServiceClient(`${BLOB_ENDPOINT}?${sasToken}`);
       const containerClient = blobServiceClient.getContainerClient("submissions-store");
 
       const dir =
