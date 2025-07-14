@@ -1,75 +1,16 @@
-# General Configuration
-variable "location" {
-  description = "Azure region"
+variable "name" {
+  description = "The name of the deployment"
+  type        = string
+}
+
+variable "region" {
+  description = "The region for the deployment"
   type        = string
   default     = "Southeast Asia"
 }
 
-variable "resource_group_name" {
-  description = "Resource group name"
+variable "environment" {
+  description = "The environment for the deployment"
   type        = string
-  default     = "judge0-rg"
-}
-
-variable "judge0_image_tag" {
-  description = "Judge0 Docker image tag"
-  type        = string
-  default     = "1.13.1"
-}
-
-# Optional Security
-variable "auth_token" {
-  description = "API authentication token (optional)"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-# Scaling Configuration
-variable "min_workers" {
-  description = "Minimum number of worker instances"
-  type        = number
-  default     = 0
-}
-
-variable "max_workers" {
-  description = "Maximum number of worker instances"
-  type        = number
-  default     = 2
-}
-
-variable "min_servers" {
-  description = "Minimum number of server instances"
-  type        = number
-  default     = 0
-}
-
-variable "max_servers" {
-  description = "Maximum number of server instances"
-  type        = number
-  default     = 1
-}
-
-variable "scale_ratio" {
-  description = "Queue size threshold to scale up workers"
-  type        = number
-  default     = 5
-}
-
-variable "scale_check_interval" {
-  description = "Interval in seconds for checking scaling conditions"
-  type        = number
-  default     = 15
-}
-
-variable "scale_cooldown_minutes" {
-  description = "Cooldown period in minutes after scaling operations"
-  type        = number
-  default     = 5
-}
-
-variable "allow_infinite_scale" {
-  description = "Allow creating new containers beyond the pre-created pool (enables unlimited scaling)"
-  type        = bool
-  default     = false
+  default     = "development"
 }
