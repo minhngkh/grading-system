@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "plugin-tools/static-analysis",
+  "projectType": "library",
+  "targets": {
+    "sync": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "uv sync",
+        "cwd": "{projectRoot}"
+      },
+      "outputs": ["{projectRoot}/.venv"]
+    }
+  }
+}

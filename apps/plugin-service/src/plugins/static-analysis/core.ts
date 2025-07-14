@@ -1,9 +1,8 @@
-import { AnalysisFile, AnalysisRequest, AnalysisResponse, FileAnalysisResult, SemgrepFinding } from './types';
-import { exec, execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import { tmpdir } from 'os';
-import { fileURLToPath } from 'url';
+import type { AnalysisRequest, AnalysisResponse, FileAnalysisResult, SemgrepFinding } from './types';
+import { exec, execSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,9 +1,9 @@
 import type { Context } from 'moleculer';
+import type { AnalysisRequest } from './types';
 import { defineTypedService2 } from '@grading-system/typed-moleculer/service';
 import { ZodParams } from 'moleculer-zod-validator';
 import { z } from 'zod';
 import { analyzeFiles } from './core';
-import { AnalysisRequest } from './types';
 import { analyzeZipBuffer } from './grade-zip';
 
 const fileSchema = z.object({

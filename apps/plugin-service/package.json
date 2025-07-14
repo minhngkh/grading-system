@@ -7,7 +7,17 @@
   },
   "nx": {
     "name": "plugin-service",
-    "projectType": "application"
+    "projectType": "application",
+    "targets": {
+      "dev": {
+        "dependsOn": [
+          {
+            "projects": "plugin-tools/static-analysis",
+            "target": "sync"
+          }
+        ]
+      }
+    }
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.18",

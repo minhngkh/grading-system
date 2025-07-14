@@ -1,0 +1,8 @@
+[project]
+name = "static-analysis"
+version = "0.1.0"
+description = "Tools for static analysis plugin"
+requires-python = ">=3.13"
+dependencies = [
+    "semgrep>=1.128.1",
+]

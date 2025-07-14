@@ -1,8 +1,7 @@
-import { analyzeFiles } from './core';
-import * as fs from 'fs';
-import * as path from 'path';
-import { analyzeZipBuffer } from './grade-zip';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import AdmZip from 'adm-zip';
+import { analyzeZipBuffer } from './grade-zip';
 
 const testFiles = [
   { filename: 'python_test.py', language: 'python' },
