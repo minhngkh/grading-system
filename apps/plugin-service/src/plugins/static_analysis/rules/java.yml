@@ -1,0 +1,30 @@
+rules:
+  - id: no-debugger
+    pattern: debugger;
+    message: "Remove debugger statements from production code."
+    severity: ERROR
+    languages: [java]
+
+  - id: empty-catch
+    pattern: |
+      try {
+        ...
+      } catch (Exception e) {
+      }
+    message: "Empty catch block detected. Handle exceptions properly."
+    severity: WARNING
+    languages: [java]
+
+  - id: hardcoded-password
+    pattern: String password = $VAL;
+    message: "Possible hardcoded password."
+    severity: ERROR
+    languages: [java]
+
+  - id: variable-naming
+    pattern: $VAR = ...
+    message: "Variable name `$VAR` should use camelCase."
+    severity: INFO
+    languages: [java]
+    metadata:
+      max-character-regex: ".*[_].*" 
