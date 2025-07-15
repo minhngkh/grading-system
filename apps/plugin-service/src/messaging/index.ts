@@ -51,7 +51,7 @@ export async function initMessaging(broker: ServiceBroker) {
 
       for (const criterion of data.criteria) {
         if (pluginsMap.has(criterion.plugin)) {
-          tasks[criterion.plugin as keyof typeof tasks].criteria.push(criterion);
+          tasks[pluginsMap.get(criterion.plugin)!].criteria.push(criterion);
         } else {
           console.warn(`Unsupported plugin: ${criterion.plugin}, fallback to 'ai'`);
           tasks.ai.criteria.push(criterion);
