@@ -5,7 +5,7 @@ import { asError } from "@grading-system/utils/error";
 import { fromPromise, fromSafePromise, okAsync, safeTry } from "neverthrow";
 import { getTransporter } from "@/lib/transporter";
 import { criterionGradingFailedEvent, submissionStartedEvent } from "@/messaging/events";
-import { plugins } from "@/plugins/info";
+import { plugins, pluginsMap } from "@/plugins/info";
 
 export async function initMessaging(broker: ServiceBroker) {
   // All of the function above can throw and make the system exit as it should
@@ -50,28 +50,10 @@ export async function initMessaging(broker: ServiceBroker) {
       );
 
       for (const criterion of data.criteria) {
-        // switch (criterion.plugin) {
-        //   case plugins.ai.id:
-        //     tasks.ai.criteria.push(criterion);
-        //     break;
-        //   case plugins.testRunner.id:
-        //     tasks.testRunner.criteria.push(criterion);
-        //     break;
-        //   default:
-        //     transporter.emit(criterionGradingFailedEvent, {
-        //       assessmentId: data.assessmentId,
-        //       criterionName: criterion.criterionName,
-        //       error: `Unsupported plugin: ${criterion.plugin}`,
-        //     });
-        //   // tasks.ai.criteria.push(criterion);
-        // }
-        if (criterion.plugin in tasks) {
-          console.log(
-            `Adding criterion ${criterion.criterionName} to plugin ${criterion.plugin}`,
-          );
+        if (pluginsMap.has(criterion.plugin)) {
           tasks[criterion.plugin as keyof typeof tasks].criteria.push(criterion);
         } else {
-          console.warn(`Unsupported plugin: ${criterion.plugin}`);
+          console.warn(`Unsupported plugin: ${criterion.plugin}, fallback to 'ai'`);
           tasks.ai.criteria.push(criterion);
           // transporter.emit(criterionGradingFailedEvent, {
           //   assessmentId: data.assessmentId,
