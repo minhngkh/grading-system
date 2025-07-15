@@ -8,6 +8,7 @@ import {
   getBlobNameRest,
 } from "@grading-system/utils/azure-storage-blob";
 import { LocalCommandExecutor } from "@grading-system/utils/local-command";
+import logger from "@grading-system/utils/logger";
 import { errAsync, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
 import { downloadBlobBatch, submissionStore } from "@/lib/blob-storage";
 import { cleanTempDirectory, symlinkFiles } from "@/lib/file";

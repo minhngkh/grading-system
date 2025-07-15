@@ -47,11 +47,6 @@ export const staticAnalysisService = defineTypedService2({
                 criterionName: value.criterion,
                 metadata: {
                   ignoredFiles: value.ignoredFiles,
-                },
-                scoreBreakdown: {
-                  tag: "",
-                  rawScore: value.score,
-
                   feedbackItems: value.feedback.map((feedbackItem) => ({
                     comment: feedbackItem.message || "",
                     fileRef: feedbackItem.fileRef,
@@ -64,6 +59,22 @@ export const staticAnalysisService = defineTypedService2({
                       toColumn: feedbackItem.position.toCol,
                     },
                   })) satisfies Feedback[],
+                },
+                scoreBreakdown: {
+                  tag: "0",
+                  rawScore: value.score,
+                  // feedbackItems: value.feedback.map((feedbackItem) => ({
+                  //   comment: feedbackItem.message || "",
+                  //   fileRef: feedbackItem.fileRef,
+                  //   tag: feedbackItem.severity,
+                  //   locationData: {
+                  //     type: "text",
+                  //     fromLine: feedbackItem.position.fromLine,
+                  //     fromColumn: feedbackItem.position.fromCol,
+                  //     toLine: feedbackItem.position.toLine,
+                  //     toColumn: feedbackItem.position.toCol,
+                  //   },
+                  // })) satisfies Feedback[],
                 },
               });
             }),

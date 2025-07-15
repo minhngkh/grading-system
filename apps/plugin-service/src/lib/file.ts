@@ -85,6 +85,7 @@ export function getFiles(
 
 class SymlinkError extends CustomError.withTag("SymlinkError")<void> {}
 
+// TODO: rename this to link instead of symlink (it now uses hardlink)
 export function symlinkFiles(originalDirectory: string, fileList: string[], tag: string) {
   return safeTry(async function* () {
     if (fileList.length === 0) {
@@ -93,15 +94,31 @@ export function symlinkFiles(originalDirectory: string, fileList: string[], tag:
 
     const newDir = yield* createTempDirectory(tag);
 
-    const promises = fileList.map((file) => {
-      return fromPromise(
-        fs.symlink(path.join(newDir, file), path.join(originalDirectory, file)),
-        (error) =>
-          new SymlinkError({ message: `Failed to symlink file ${file}`, cause: error }),
-      );
-    });
+    const symlinkPromises = [];
 
-    yield* ResultAsync.combine(promises).orTee((error) => {
+    const createdDirs = new Set<string>();
+    for (const filePath of fileList) {
+      const absolutePath = path.join(newDir, filePath);
+      const dirPath = path.dirname(absolutePath);
+
+      // check to create folder if it does not exist
+      if (!createdDirs.has(dirPath)) {
+        yield* fileUtils.createDirectory(dirPath).andTee(() => createdDirs.add(dirPath));
+      }
+
+      symlinkPromises.push(
+        fromPromise(
+          fs.link(path.join(originalDirectory, filePath), path.join(newDir, filePath)),
+          (error) =>
+            new SymlinkError({
+              message: `Failed to symlink file ${filePath}`,
+              cause: error,
+            }),
+        ),
+      );
+    }
+
+    yield* ResultAsync.combine(symlinkPromises).orTee((error) => {
       logger.info("Failed to symlink files:", error);
 
       cleanTempDirectory(newDir).orTee((error) => {
