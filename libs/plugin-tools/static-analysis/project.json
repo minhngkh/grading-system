@@ -3,10 +3,11 @@
   "name": "plugin-tools/static-analysis",
   "projectType": "library",
   "targets": {
-    "sync": {
+    "install-deps": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "uv sync",
+        "commands": ["uv sync", "uv run semgrep install-semgrep-pro", "uv run semgrep login"],
+        "parallel": false,
         "cwd": "{projectRoot}"
       },
       "outputs": ["{projectRoot}/.venv"]

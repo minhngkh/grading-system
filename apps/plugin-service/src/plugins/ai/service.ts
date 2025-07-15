@@ -1,6 +1,6 @@
 import type { Context } from "moleculer";
+import type { PluginOperations } from "@/plugins/info";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
-import { toPlainObject } from "@grading-system/utils/neverthrow";
 import { coreMessageSchema } from "ai";
 import { ZodParams } from "moleculer-zod-validator";
 import z from "zod";
@@ -9,8 +9,8 @@ import {
   criterionGradingFailedEvent,
   criterionGradingSuccessEvent,
 } from "@/messaging/events";
-import { gradeSubmissionActionParams } from "@/plugins/actions";
 import { gradeSubmission } from "@/plugins/ai/grade";
+import { gradeSubmissionActionParams } from "@/plugins/data";
 import { generateChatResponse, rubricSchema } from "./core";
 
 export const chatRubricActionSchema = z.object({
@@ -114,3 +114,9 @@ export const aiService = defineTypedService2({
 });
 
 export type AIService = typeof aiService;
+
+export const aiPluginOperations = {
+  grade: {
+    action: "v1.ai.gradeSubmission",
+  },
+} satisfies PluginOperations<AIService>;

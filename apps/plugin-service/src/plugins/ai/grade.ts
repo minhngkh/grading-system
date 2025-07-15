@@ -1,5 +1,6 @@
 import type { FilePart } from "ai";
 import type { LanguageModelWithOptions } from "@/core/llm/types";
+import type { Criterion, CriterionData } from "@/plugins/data";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -7,7 +8,6 @@ import {
   getBlobNameParts,
   getBlobNameRest,
 } from "@grading-system/utils/azure-storage-blob";
-import { CustomError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { generateObject } from "ai";
 import { errAsync, fromPromise, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
@@ -19,6 +19,8 @@ import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-
 import { gradingSystemPrompt } from "@/plugins/ai/prompts/grade";
 import { packFilesSubsets } from "@/plugins/ai/repomix";
 import { generateRubricContext } from "@/plugins/ai/rubric-metadata";
+import { feedbackSchema } from "@/plugins/data";
+import { ErrorWithCriteriaInfo } from "@/plugins/error";
 
 const llmOptions: LanguageModelWithOptions = {
   model: registry.languageModel("google:gemini-2.5-flash-preview"),
@@ -28,48 +30,6 @@ const llmOptions: LanguageModelWithOptions = {
     },
   }),
 };
-
-const textLocationDataSchema = z
-  .object({
-    type: z.literal("text"),
-    fromLine: z.number().int(),
-    fromColumn: z.number().int().optional(),
-    toLine: z.number().int(),
-    toColumn: z.number().int().optional(),
-  })
-  .describe(
-    "Position of part of the files to highlight the reason why you conclude to that comment, this is relative to the file itself",
-  );
-
-const testLocationDataSchema = z.object({
-  type: z.literal("test"),
-  input: z.string(),
-  expectedOutput: z.string(),
-  actualOutput: z.string(),
-});
-
-const pdfLocationDataSchema = z
-  .object({
-    type: z.literal("pdf"),
-    page: z.number().int(),
-  })
-  .describe(
-    "Page of the PDF file to highlight the reason why you conclude to that comment",
-  );
-
-const otherLocationDataSchema = z.object({
-  type: z.literal("other"),
-});
-
-export const feedbackSchema = z.object({
-  comment: z.string().describe("short comment about the reason"),
-  fileRef: z.string().describe("The file that the comment refers to"),
-  locationData: z.discriminatedUnion("type", [
-    textLocationDataSchema,
-    pdfLocationDataSchema,
-    otherLocationDataSchema,
-  ]),
-});
 
 export const criterionGradingResultSchema = z.object({
   criterion: z
@@ -83,30 +43,9 @@ export const criterionGradingResultSchema = z.object({
   summary: z.string().optional().describe("summary feedback for the grading result"),
 });
 
-type CriterionGradingResult = z.infer<typeof criterionGradingResultSchema>;
-
-interface Criterion {
-  criterionName: string;
-  levels: {
-    tag: string;
-    description: string;
-    weight: number;
-  }[];
-}
-
-interface CriterionData extends Criterion {
-  fileRefs: string[];
-  plugin: string;
-  configuration: string;
-}
-
 function createGradingSystemPrompt(partOfRubric: Criterion[]) {
   return gradingSystemPrompt(JSON.stringify(partOfRubric, null, 2));
 }
-
-class ErrorWithCriteriaInfo extends CustomError.withTag("ErrorWithCriteriaInfo")<{
-  criterionNames: string[];
-}> {}
 
 export function gradeCriteria(options: {
   partOfRubric: Criterion[];

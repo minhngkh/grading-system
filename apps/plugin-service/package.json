@@ -13,7 +13,7 @@
         "dependsOn": [
           {
             "projects": "plugin-tools/static-analysis",
-            "target": "sync"
+            "target": "install-deps"
           }
         ]
       }

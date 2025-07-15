@@ -38,6 +38,13 @@ const PLUGINS = [
     enabled: false,
   },
   {
+    _id: plugins.staticAnalysis.id,
+    name: "Static Analysis",
+    description: "Using Semgrep to run static analysis on submissions",
+    categories: ["code"],
+    enabled: true,
+  },
+  {
     _id: "test",
     name: "Test Plugin",
     description: "A test plugin for demonstration purposes",
