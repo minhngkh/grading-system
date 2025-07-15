@@ -73,7 +73,7 @@ export function RubricView({
                           <div className="font-semibold text-blue-400 mb-1">
                             {criterionLevel.weight} %
                           </div>
-                          <div>{criterionLevel.description}</div>
+                          <div className="flex-1">{criterionLevel.description}</div>
                         </div>
                       )}
                     </td>

@@ -157,6 +157,7 @@ export default function UploadStep({ form }: UploadStepProps) {
 
     try {
       const allUploadRefs = await uploadFileMutation.mutateAsync(newFiles);
+      console.log("Uploaded files:", allUploadRefs);
 
       const newSubmissions = [
         ...gradingAttempt.submissions,
@@ -239,6 +240,12 @@ export default function UploadStep({ form }: UploadStepProps) {
         </DialogContent>
       </Dialog>
 
+      <div>
+        <h1 className="text-3xl font-semibold">Grade Assignments</h1>
+        <p className="text-muted-foreground">
+          Upload files for grading and configure the grading settings.
+        </p>
+      </div>
       <div className="space-y-1">
         <Label className="text-lg">Name</Label>
         <Input

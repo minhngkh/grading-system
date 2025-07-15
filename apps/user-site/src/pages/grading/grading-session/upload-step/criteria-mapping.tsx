@@ -104,88 +104,96 @@ export default function CriteriaMapper({
         </CardDescription>
       </CardHeader>
       <CardContent className="mt-2 text-sm">
-        <div className="my-4 gap-2 flex items-center">
-          <span>Using file </span>
-          <Select
-            value={gradingAttempt.submissions[chosenFileIndex].reference}
-            onValueChange={(value) => {
-              const index = gradingAttempt.submissions.findIndex(
-                (file) => file.reference === value,
-              );
-              if (index !== -1) {
-                setChosenFileIndex(index);
-                setCriterionPathType({});
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Choose file" />
-            </SelectTrigger>
-            <SelectContent>
-              {gradingAttempt.submissions.map((file, index) => (
-                <SelectItem key={index} value={file.reference}>
-                  {getSubmissionName(file)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span> to configure the grading selectors</span>
-        </div>
-        <div className="grid gap-4">
-          <div className="grid grid-cols-3 gap-4 font-semibold">
-            <div>Criteria</div>
-            <div>Select Method</div>
-            <div></div>
+        {!gradingAttempt.selectors || gradingAttempt.selectors.length === 0 ?
+          <div className="text-center py-8 text-muted-foreground">
+            No criteria selectors available. Please select a rubric or upload files to
+            continue.
           </div>
-
-          {gradingAttempt.selectors.map((criterion, index) => (
-            <div key={index} className="grid grid-cols-3 gap-4 items-center">
-              <div className="border rounded-md px-2 h-full flex items-center">
-                {criterion.criterion}
-              </div>
-
+        : <>
+            <div className="my-4 gap-2 flex items-center">
+              <span>Using file </span>
               <Select
+                value={gradingAttempt.submissions[chosenFileIndex].reference}
                 onValueChange={(value) => {
-                  setCriterionPathType((prev) => ({
-                    ...prev,
-                    [index]: value,
-                  }));
+                  const index = gradingAttempt.submissions.findIndex(
+                    (file) => file.reference === value,
+                  );
+                  if (index !== -1) {
+                    setChosenFileIndex(index);
+                    setCriterionPathType({});
+                  }
                 }}
-                value={criterionPathType[index] ?? ""}
               >
-                <SelectTrigger className="w-full h-[100%]">
-                  <SelectValue placeholder="Select method" />
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose file" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Manual">Manual</SelectItem>
-                  <SelectItem value="Exact">Exact</SelectItem>
+                  {gradingAttempt.submissions.map((file, index) => (
+                    <SelectItem key={index} value={file.reference}>
+                      {getSubmissionName(file)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-
-              <Button
-                disabled={
-                  SelectLocationType[
-                    criterionPathType[index] as keyof typeof SelectLocationType
-                  ] === undefined
-                }
-                variant="ghost"
-                className="w-full h-full justify-start border rounded-md px-3 py-2 text-left cursor-pointer hover:bg-muted/50"
-                onClick={() => {
-                  openDialog(
-                    index,
-                    SelectLocationType[
-                      criterionPathType[index] as keyof typeof SelectLocationType
-                    ],
-                  );
-                }}
-              >
-                <div className="truncate">
-                  {criterion.pattern === "*" ? "All files" : criterion.pattern}
-                </div>
-              </Button>
+              <span> to configure the grading selectors</span>
             </div>
-          ))}
-        </div>
+            <div className="grid gap-4">
+              <div className="grid grid-cols-3 gap-4 font-semibold">
+                <div>Criteria</div>
+                <div>Select Method</div>
+                <div></div>
+              </div>
+
+              {gradingAttempt.selectors.map((criterion, index) => (
+                <div key={index} className="grid grid-cols-3 gap-4 items-center">
+                  <div className="border rounded-md px-2 h-full flex items-center">
+                    {criterion.criterion}
+                  </div>
+
+                  <Select
+                    onValueChange={(value) => {
+                      setCriterionPathType((prev) => ({
+                        ...prev,
+                        [index]: value,
+                      }));
+                    }}
+                    value={criterionPathType[index] ?? ""}
+                  >
+                    <SelectTrigger className="w-full h-[100%]">
+                      <SelectValue placeholder="Select method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Manual">Manual</SelectItem>
+                      <SelectItem value="Exact">Exact</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    disabled={
+                      SelectLocationType[
+                        criterionPathType[index] as keyof typeof SelectLocationType
+                      ] === undefined
+                    }
+                    variant="ghost"
+                    className="w-full h-full justify-start border rounded-md px-3 py-2 text-left cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      openDialog(
+                        index,
+                        SelectLocationType[
+                          criterionPathType[index] as keyof typeof SelectLocationType
+                        ],
+                      );
+                    }}
+                  >
+                    <div className="truncate">
+                      {criterion.pattern === "*" ? "All files" : criterion.pattern}
+                    </div>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </>
+        }
 
         {criteriaIndex != undefined && manualFile && (
           <ManualLocationDialog
