@@ -10,7 +10,6 @@ import { syncDB } from "./db/init";
 import { connectMongoDB } from "./db/mongoose";
 import { aiService } from "./plugins/ai/service";
 
-
 const broker = createZodValidatedServiceBroker();
 broker.createService(aiService);
 
@@ -27,7 +26,7 @@ async function start() {
     logger.info("Plugin initialization completed");
 
     // Set up event listeners for interacting with external systems
-    await initMessaging();
+    await initMessaging(broker);
 
     // Start Moleculer broker
     await broker.start();
@@ -37,7 +36,6 @@ async function start() {
       fetch: api.fetch,
       port: Number.parseInt(process.env.PORT ?? "5069", 10),
     });
-
 
     // const output = await packFiles();
     // const content = await fs.readFile(output, "utf-8");
@@ -175,7 +173,6 @@ async function start() {
     //   logger.error("AI grading action failed", result.error);
     //   throw new Error("AI grading action failed");
     // }
-
 
     // logger.info("AI grading action executed successfully", result.value);
 

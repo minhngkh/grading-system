@@ -8,6 +8,15 @@ var username = builder.AddParameter("dev-username", secret: true);
 var password = builder.AddParameter("dev-password", secret: true);
 var toProxy = builder.Configuration.GetValue<bool>("ProxyEnabled", true);
 
+// var piston = builder
+//     .AddContainer("piston", "ghcr.io/engineer-man/piston")
+//     .WithHttpEndpoint(port: 2000, targetPort: 2000)
+//     .WithBindMount(
+//         source: Path.Combine(rootPath, "tmp", "piston", "packages"),
+//         target: "/piston/packages"
+//     )
+//     .WithContainerRuntimeArgs(["--privileged"]);
+
 var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
 
 var rubricDb = postgres.AddDatabase("rubricdb");

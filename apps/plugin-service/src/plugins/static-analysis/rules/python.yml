@@ -1,0 +1,143 @@
+rules:
+  - id: no-logging-debug
+    pattern: logging.debug(...)
+    message: "Remove debug logging from production code."
+    severity: WARNING
+    languages: [python]
+
+  - id: no-logging-info
+    pattern: logging.info(...)
+    message: "Remove info logging from production code."
+    severity: WARNING
+    languages: [python]
+
+  - id: none-dereference
+    patterns:
+      - pattern: |
+          if $X is None:
+              ...
+          $X.$Y
+    message: "Possible 'None' dereference of variable `$X`."
+    severity: ERROR
+    languages: [python]
+
+  - id: sql-injection-format
+    pattern: cursor.execute("SELECT ... {}".format(...))
+    message: "Possible SQL Injection via string formatting."
+    severity: ERROR
+    languages: [python]
+
+  - id: sql-injection-fstring
+    pattern: cursor.execute(f"SELECT ... {...}")
+    message: "Possible SQL Injection via f-string. Use parameterized queries."
+    severity: ERROR
+    languages: [python]
+
+  - id: hardcoded-password
+    pattern: $VAR = "password"
+    message: "Avoid hardcoding sensitive data like passwords."
+    severity: ERROR
+    languages: [python]
+
+  - id: boolean-comparison
+    pattern: "if $VAR == True:"
+    message: "Unnecessary boolean comparison, just use 'if $VAR:'"
+    languages: [python]
+    severity: WARNING
+    fix: "if $VAR:"
+
+  - id: unnecessary-else-after-return
+    pattern: |
+      if $COND:
+          return $VAL
+      else:
+          $BODY
+    message: "'else' after 'return' is redundant"
+    languages: [python]
+    severity: INFO
+
+  - id: print-instead-of-logger
+    pattern: "print($MSG)"
+    message: "Use 'logging' instead of 'print' for debugging"
+    languages: [python]
+    severity: WARNING
+
+  - id: true-loop-no-exit
+    pattern: |
+      while True:
+          $BODY
+    message: "'while True:' without an exit condition may cause infinite loop"
+    languages: [python]
+    severity: WARNING
+
+  - id: return-after-raise
+    pattern: |
+      raise $EXC
+      return $VAL
+    message: "Code after 'raise' is unreachable"
+    languages: [python]
+    severity: WARNING
+
+  - id: condition-always-false
+    pattern: "if False:"
+    message: "Condition will never be true"
+    languages: [python]
+    severity: INFO
+
+  - id: none-comparison
+    pattern: "$VAR == None"
+    message: "Use 'is' to compare with None instead of '=='"
+    languages: [python]
+    severity: WARNING
+    fix: "$VAR is None"
+
+  - id: mutable-default-arg
+    pattern: |
+      def $FUNC(..., $ARG=[], ...):
+          ...
+    message: "Do not use mutable default arguments like list/dict"
+    languages: [python]
+    severity: ERROR
+
+  - id: catch-general-exception
+    pattern: |
+      try:
+        ...
+      except Exception:
+        ...
+    message: "Avoid catching general 'Exception', be more specific"
+    languages: [python]
+    severity: WARNING
+
+  - id: logging-sensitive-data
+    pattern: |
+      logging.$LEVEL("*password*" or "*token*")
+    message: "Avoid logging sensitive information like passwords or tokens"
+    languages: [python]
+    severity: ERROR
+
+  - id: variable-shadowing
+    pattern: |
+      for $X in $IT:
+          ...
+          $X = ...
+    message: "Loop variable is being shadowed inside the loop"
+    languages: [python]
+    severity: WARNING
+
+  - id: typo-a-plus
+    pattern: "$X =+ $Y"
+    message: "Possible typo: '=+' instead of '+='"
+    languages: [python]
+    severity: WARNING
+
+  - id: duplicate-code-block
+    pattern: |
+      if $COND:
+          $X = $VAL
+      ...
+      if $OTHER:
+          $X = $VAL
+    message: "Duplicated code block detected, consider refactoring"
+    languages: [python]
+    severity: INFO

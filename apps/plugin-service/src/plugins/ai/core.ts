@@ -1,16 +1,25 @@
 // TODO: Update validation logic
 
 import type { CoreMessage, StreamObjectResult } from "ai";
-import type { Result } from "neverthrow";
+import type { Result, ResultAsync } from "neverthrow";
 import type { LanguageModelWithOptions } from "@/core/llm/types";
 import { asError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { generateObject, streamObject } from "ai";
 import dedent from "dedent";
-import { err, fromPromise, fromThrowable, ok } from "neverthrow";
+import {
+  err,
+  errAsync,
+  fromPromise,
+  fromThrowable,
+  ok,
+  okAsync,
+  safeTry,
+} from "neverthrow";
 import { z } from "zod";
 import { googleProviderOptions } from "@/core/llm/providers/google";
 import { registry } from "@/core/llm/registry";
+import { chatSystemPrompt } from "./prompts/chat";
 
 /**
  * Only works with Gemini model atm, using OpenAi models require schema to use nullable
@@ -117,41 +126,6 @@ const chatResponseSchemaVariant = {
 export const chatResponseSchema = createChatResponseSchema(rubricSchema);
 export type ChatResponse = z.infer<typeof chatResponseSchema>;
 
-// TODO: Add scoreInRange
-// TODO: Refine the prompt to completely block out of scope usage
-// TODO: Try to enforce property order when streaming
-const chatSystemPrompt = dedent`
-  You are a helpful AI assistant that can create and update a rubric used for grading based on the user's input, or just answer general questions that resolves around creating rubric and using it for grading.
-
-  ---
-
-  ### Decision Logic
-  - Detect and response in user's language
-  - If the user's input is a **general question** (e.g. about grading, rubrics, tags, or weights), you must:
-    - Return \`rubric: null\`
-    - Provide the answer to the question naturally in the \`message\` field
-    - Ignore any provided rubric
-  - If the input is a **rubric request** (creating or updating a rubric):
-    - update the \`rubric\` field with the new or updated rubric
-    - After creating/updating the rubric, provide back a detailed message about what you have done in the \`message\` field and reason behind it (if needed)
-
-  ---
-
-  ### Instructions
-  Here are some more specific specifications of the output:
-    - The \`tag\` of each criterion's level must be one of the rubric's \`tags\`
-    - criteria's levels do not have to include all the performance tags
-    - Total weight of all criteria must add up to 100% and no criteria's weight is 0
-    - tags for each level in each criterion are used as an id to differentiate each levels and must be numbers like ['0', '1', '2', '3']. Level with the lower tag value is the higher weight level
-    - Depends on the \`weightInRange\` value:
-      - If \`weightInRange\` is \`true\`:
-        - The \`weight\` of each criterion's level must have the max value equal to the higher level's weight (if exists) and the min value equal to the lower level's weight (if exists)
-        - The max weight of the highest level must be 100
-        - The min weight of the lowest level must be 0
-    - The \`weight\` of the highest \`weight\` must be 100
-    - When there is mismatch in \`weightInRange\` of the current rubric and the output rubric that force you to change the \`weightInRange\` value, you must notify the user about this in the \`message\` field
-`;
-
 function validateChatResponse(chatResponse: ChatResponse): Result<void, Error> {
   if (chatResponse.rubric) {
     for (const criterion of chatResponse.rubric.criteria) {
@@ -186,107 +160,105 @@ type ActualChatResponse =
  * @param options.stream - Whether to stream the response or not, defaults to `false`
  * @returns Chat response or stream of it
  */
-export async function generateChatResponse(options: {
+export function generateChatResponse(options: {
   messages: CoreMessage[];
   weightInRange?: boolean | null;
   rubric?: Rubric;
   stream?: boolean;
-}): Promise<Result<ActualChatResponse, Error>> {
-  const toStream = options.stream ?? false;
-  const hasWeightInRange =
-    typeof options.weightInRange === "undefined" ? null : options.weightInRange;
+}): ResultAsync<ActualChatResponse, Error> {
+  return safeTry(async function* () {
+    const toStream = options.stream ?? false;
+    const hasWeightInRange =
+      typeof options.weightInRange === "undefined" ? null : options.weightInRange;
 
-  let outputSchema;
-  switch (hasWeightInRange) {
-    case null:
-      outputSchema = chatResponseSchema;
-      break;
-    case true:
-      outputSchema = chatResponseSchemaVariant.weightInRange;
-      break;
-    case false:
-      outputSchema = chatResponseSchemaVariant.weightNotInRange;
-      break;
-  }
-
-  // if (currentMessage.role !== "user") {
-  //   return err(new Error("The last message must be from the user"));
-  // }
-
-  if (options.rubric) {
-    logger.info("Updating existing rubric using LLM");
-
-    options.messages.splice(-1, 0, {
-      role: "user",
-      content: dedent`
-      This is my current rubric:
-      \`\`\`json
-      ${JSON.stringify(options.rubric, null, 2)}
-      \`\`\`
-    `,
-    });
-  } else {
-    logger.info("Creating new rubric using LLM");
-  }
-
-  if (!toStream) {
-    const responseResult = await fromPromise(
-      generateObject({
-        ...chatOptions,
-        schema: outputSchema,
-        system: chatSystemPrompt,
-        messages: options.messages,
-      }),
-      asError,
-    );
-    if (responseResult.isErr()) {
-      console.debug(responseResult.error);
-      return err(
-        wrapError(
-          responseResult.error,
-          `Failed to ${options.rubric ? "update" : "create"} rubric`,
-        ),
-      );
+    let outputSchema;
+    switch (hasWeightInRange) {
+      case null:
+        outputSchema = chatResponseSchema;
+        break;
+      case true:
+        outputSchema = chatResponseSchemaVariant.weightInRange;
+        break;
+      case false:
+        outputSchema = chatResponseSchemaVariant.weightNotInRange;
+        break;
     }
 
-    const response = responseResult.value.object;
+    // if (currentMessage.role !== "user") {
+    //   return err(new Error("The last message must be from the user"));
+    // }
 
-    const validationResult = validateChatResponse(response);
-    if (validationResult.isErr()) {
-      return err(wrapError(validationResult.error, "Invalid response from LLM"));
+    if (options.rubric) {
+      logger.info("Updating existing rubric using LLM");
+
+      options.messages.splice(-1, 0, {
+        role: "user",
+        content: dedent`
+        This is my current rubric:
+        \`\`\`json
+        ${JSON.stringify(options.rubric, null, 2)}
+        \`\`\`
+      `,
+      });
+    } else {
+      logger.info("Creating new rubric using LLM");
     }
 
-    return ok({
-      stream: false,
-      result: response,
-    });
-  } else {
-    const safeStreamObject = fromThrowable(
-      () =>
-        streamObject({
+    if (!toStream) {
+      const responseResult = yield* fromPromise(
+        generateObject({
           ...chatOptions,
           schema: outputSchema,
           system: chatSystemPrompt,
           messages: options.messages,
         }),
-      asError,
-    );
-
-    const responseResult = safeStreamObject();
-    if (responseResult.isErr()) {
-      return err(
-        wrapError(
-          responseResult.error,
-          `Failed to ${options.rubric ? "update" : "create"} rubric (stream)`,
-        ),
+        (error) =>
+          wrapError(error, `Failed to ${options.rubric ? "update" : "create"} rubric`),
       );
-    }
 
-    return ok({
-      stream: true,
-      result: responseResult.value,
-    });
-  }
+      const response = responseResult.object;
+
+      const validationResult = validateChatResponse(response);
+      if (validationResult.isErr()) {
+        return errAsync(wrapError(validationResult.error, "Invalid response from LLM"));
+      }
+
+      return okAsync({
+        stream: false,
+        result: response,
+      } as ActualChatResponse);
+    } else {
+      const safeStreamObject = fromThrowable(
+        () =>
+          streamObject({
+            ...chatOptions,
+            schema: outputSchema,
+            system: chatSystemPrompt,
+            messages: options.messages,
+          }),
+        (error) =>
+          wrapError(
+            error,
+            `Failed to ${options.rubric ? "update" : "create"} rubric (stream)`,
+          ),
+      );
+
+      const responseResult = yield* safeStreamObject();
+      // if (responseResult.isErr()) {
+      //   return err(
+      //     wrapError(
+      //       responseResult.error,
+      //       `Failed to ${options.rubric ? "update" : "create"} rubric (stream)`,
+      //     ),
+      //   );
+      // }
+
+      return okAsync({
+        stream: true,
+        result: responseResult,
+      } as ActualChatResponse);
+    }
+  });
 }
 
 export const feedbackSchema = z.object({
@@ -416,6 +388,9 @@ function createGradingSystemPrompt(rubric: Rubric) {
   `;
 }
 
+/**
+ * @deprecated
+ */
 export async function gradeUsingRubric(
   rubric: Rubric,
   prompt: string,

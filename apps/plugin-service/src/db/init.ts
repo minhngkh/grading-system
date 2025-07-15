@@ -1,6 +1,7 @@
 import type { Plugin, PluginCategory } from "./models";
 import { asError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
+import { plugins } from "@/plugins/info";
 import { PluginCategoryModel, PluginModel } from "./models";
 
 const CATEGORIES = [
@@ -23,18 +24,25 @@ const CATEGORIES = [
 
 const PLUGINS = [
   {
-    _id: "ai",
+    _id: plugins.ai.id,
     name: "AI grader",
     description: "Grade rubric using AI language models",
     categories: ["ai", "general"],
     enabled: true,
   },
   {
-    _id: "test-runner",
+    _id: plugins.testRunner.id,
     name: "Test Runner",
     description: "Run tests on submissions",
     categories: ["code"],
     enabled: false,
+  },
+  {
+    _id: plugins.staticAnalysis.id,
+    name: "Static Analysis",
+    description: "Using Semgrep to run static analysis on submissions",
+    categories: ["code"],
+    enabled: true,
   },
   {
     _id: "test",
