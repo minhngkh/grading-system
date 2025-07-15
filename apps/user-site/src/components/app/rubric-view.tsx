@@ -1,5 +1,6 @@
 import type { Rubric } from "@/types/rubric";
 import { cn } from "@/lib/utils";
+import { plugins } from "@/consts/plugins";
 
 interface RubricViewProps {
   rubricData: Rubric;
@@ -95,7 +96,9 @@ export function RubricView({
                         editPlugin && "underline cursor-pointer",
                       )}
                     >
-                      {criterion.plugin || "AI (Default)"}
+                      {criterion.plugin ?
+                        plugins[criterion.plugin as keyof typeof plugins] || "Unknown"
+                      : plugins["ai"]}
                     </div>
                   </td>
                 )}

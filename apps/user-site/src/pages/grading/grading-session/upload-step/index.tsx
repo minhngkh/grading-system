@@ -257,7 +257,7 @@ export default function UploadStep({ form }: UploadStepProps) {
           <Label className="text-lg">Select Rubric</Label>
           <InfoToolTip description="Choose a rubric to use for grading. If you don't have a rubric, you can create one." />
         </div>
-        <div className="flex items-center w-full gap-4">
+        <div className="flex items-center w-full gap-2">
           <ScrollableSelectMemo<Rubric>
             value={rubricData}
             onValueChange={handleSelectRubric}
@@ -269,7 +269,7 @@ export default function UploadStep({ form }: UploadStepProps) {
           <span>or</span>
           <Button variant="outline" asChild>
             <Link preload={false} to="/rubrics/create">
-              Create New Rubric
+              New Rubric
             </Link>
           </Button>
           {gradingAttempt.rubricId && (

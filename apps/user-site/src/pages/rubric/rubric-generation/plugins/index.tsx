@@ -15,9 +15,11 @@ import { PluginSelectDialog } from "./plugin-select-dialog";
 import { useMutation } from "@tanstack/react-query";
 import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 import { useAuth } from "@clerk/clerk-react";
+import StaticAnalysisConfigDialog from "./static-analysis";
 
 const PluginConfigDialogs: Record<string, PluginDialogComponent> = {
   "test-runner": CodeRunnerConfigDialog,
+  "static-analysis": StaticAnalysisConfigDialog,
   // add other plugins here
 };
 
@@ -40,6 +42,8 @@ export default function PluginRubricTable({
     updateRubricMutationOptions(rubricData.id, auth),
   );
 
+  console.log("Rubric Config:", rubricData.criteria[0]?.configuration);
+
   const openPluginDialog = (criterionIndex: number) => {
     setSelectedCriterionIndex(criterionIndex);
     setPluginDialogOpen(true);
@@ -47,22 +51,24 @@ export default function PluginRubricTable({
 
   const onPluginSelect = async (plugin: string) => {
     try {
-      const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
-        if (idx === selectedCriterionIndex) {
-          return {
-            ...criterion,
-            plugin: criterion.plugin === plugin ? undefined : plugin,
-          };
-        }
-        return criterion;
-      });
+      if (rubricData.criteria[selectedCriterionIndex!].plugin !== plugin) {
+        const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
+          if (idx === selectedCriterionIndex) {
+            return {
+              ...criterion,
+              plugin: criterion.plugin === plugin ? undefined : plugin,
+            };
+          }
+          return criterion;
+        });
 
-      await updateRubricMutation.mutateAsync({ criteria: updatedCriteria });
-      onUpdate?.({ criteria: updatedCriteria });
+        await updateRubricMutation.mutateAsync({ criteria: updatedCriteria });
+        onUpdate?.({ criteria: updatedCriteria });
+      }
+
       setPluginDialogOpen(false);
 
       const component = PluginConfigDialogs[plugin];
-      console.log(plugin);
       if (component) {
         setActivePluginConfigDialog(() => component);
         setPluginDialogConfigOpen(true);
@@ -85,9 +91,13 @@ export default function PluginRubricTable({
         return criterion;
       });
 
-      await updateRubricMutation.mutateAsync({ criteria: updatedCriteria });
-      onUpdate?.({ criteria: updatedCriteria });
+      if (rubricData.criteria[selectedCriterionIndex!].configuration !== config) {
+        await updateRubricMutation.mutateAsync({ criteria: updatedCriteria });
+        onUpdate?.({ criteria: updatedCriteria });
+      }
+
       setPluginDialogConfigOpen(false);
+      toast.success("Configure plugin successfully!");
     } catch (error) {
       console.error("Error updating Code Runner configuration:", error);
       toast.error("Failed to update Code Runner configuration. Please try again.");

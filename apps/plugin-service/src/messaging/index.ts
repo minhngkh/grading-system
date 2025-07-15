@@ -66,13 +66,18 @@ export async function initMessaging(broker: ServiceBroker) {
         //   // tasks.ai.criteria.push(criterion);
         // }
         if (criterion.plugin in tasks) {
+          console.log(
+            `Adding criterion ${criterion.criterionName} to plugin ${criterion.plugin}`,
+          );
           tasks[criterion.plugin as keyof typeof tasks].criteria.push(criterion);
         } else {
-          transporter.emit(criterionGradingFailedEvent, {
-            assessmentId: data.assessmentId,
-            criterionName: criterion.criterionName,
-            error: `Unsupported plugin: ${criterion.plugin}`,
-          });
+          console.warn(`Unsupported plugin: ${criterion.plugin}`);
+          tasks.ai.criteria.push(criterion);
+          // transporter.emit(criterionGradingFailedEvent, {
+          //   assessmentId: data.assessmentId,
+          //   criterionName: criterion.criterionName,
+          //   error: `Unsupported plugin: ${criterion.plugin}`,
+          // });
         }
       }
 
