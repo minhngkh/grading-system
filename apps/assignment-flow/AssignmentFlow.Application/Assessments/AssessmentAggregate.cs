@@ -93,15 +93,22 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void FinishAutoGrading()
     {
-        ConditionalEmit(
-            AutoGrading.AutoGradingCanBeFinishedSpecification.New().IsSatisfiedBy(State),
-            () => new AutoGrading.AutoGradingFinishedEvent { 
+        if (AutoGrading.AutoGradingCanBeFinishedSpecification.New().IsSatisfiedBy(State))
+        {
+            Emit(new AutoGrading.AutoGradingFinishedEvent
+            {
                 GradingId = State.GradingId,
                 Errors = State.ScoreBreakdowns
                     .Where(item => !string.IsNullOrWhiteSpace(item.FailureReason)).ToDictionary(
                     item => item.CriterionName.Value,
                     item => item.FailureReason)
             });
+
+            ConditionalEmit(
+                State.ScoreBreakdowns.IsManualActionNeeded,
+                () => new AutoGrading.ManualGradingRequestedEvent(),
+                () => new AutoGrading.AssessmentGradingCompletedEvent());
+        }
     }
 
     public void UpdateFeedbacks(UpdateFeedBack.Command command)
@@ -112,11 +119,18 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         });
     }
 
-    private void ConditionalEmit(bool condition, Func<AggregateEvent<AssessmentAggregate, AssessmentId>> eventPredicate)
+    private void ConditionalEmit(
+        bool condition,
+        Func<AggregateEvent<AssessmentAggregate, AssessmentId>> eventPredicate,
+        Func<AggregateEvent<AssessmentAggregate, AssessmentId>>? elseEventPredicate = null)
     {
         if (condition)
         {
             Emit(eventPredicate());
+        }
+        else if (elseEventPredicate != null)
+        {
+            Emit(elseEventPredicate());
         }
     }
 }
