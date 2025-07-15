@@ -2,68 +2,32 @@ import React, { useState, useEffect } from "react";
 import ShikiHighlighter from "react-shiki";
 import { FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import "./viewer.css";
 import { FileItem } from "@/types/file";
-import { Button } from "@/components/ui/button";
 
 interface HighlightableViewerProps {
   file: FileItem;
   feedbacks: FeedbackItem[];
-  feedbacksAll?: FeedbackItem[];
-  updateFeedback: (index: number, adjustedFeedback: FeedbackItem) => void;
-  addFeedback: (newFeedback: FeedbackItem) => void;
-  isHighlightMode: boolean;
-  onHighlightComplete: () => void;
+  updateFeedback: (feedbackId: string, updatedFeedback: FeedbackItem) => void;
   activeFeedbackId?: string | null;
-  rubricCriteria?: string[];
-  gradingId: string;
-  submissionReference: string;
-  onFeedbackValidated?: (validatedFeedbacks: FeedbackItem[]) => void;
   onSelectionMade?: () => void;
+  onSelectionChange?: (selection: any) => void;
 }
 
 const HighlightableViewer = ({
   file,
   feedbacks,
-  feedbacksAll = [],
-  addFeedback,
   updateFeedback,
-  isHighlightMode,
-  onHighlightComplete,
   activeFeedbackId,
-  rubricCriteria = [],
-  gradingId,
-  submissionReference,
-  onFeedbackValidated,
   onSelectionMade,
+  onSelectionChange,
 }: HighlightableViewerProps) => {
   const { theme = "light" } = useTheme?.() || {};
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [newFeedbackTag, setNewFeedbackTag] = useState<string>("info");
   const [selectionRange, setSelectionRange] = useState<{
     from: { line: number; col: number };
     to: { line: number; col: number };
   } | null>(null);
-  const [newCriterion, setNewCriterion] = useState<string>("");
 
-  // Determine language from fileUrl
   let language = "plaintext";
   if (file.relativePath) {
     language =
@@ -90,16 +54,11 @@ const HighlightableViewer = ({
         md: "markdown",
         txt: "plaintext",
         h: "c",
-      }[file.extension] ||
-      file.extension ||
-      "plaintext";
+      }[file.extension] || "plaintext";
   }
 
-  // --- Highlight selection logic ---
   useEffect(() => {
-    // Remove the isHighlightMode check - allow selection anytime
     let isMouseDown = false,
-      mouseMoved = false,
       startPosition: { line: number; col: number } | null = null;
 
     const calculateColumn = (e: MouseEvent, lineEl: HTMLElement): number => {
@@ -113,7 +72,7 @@ const HighlightableViewer = ({
         range.setEnd(pos.offsetNode, pos.offset);
       }
       if (!range) return 0;
-      // Nếu click vào ngoài text node (khoảng trắng đầu dòng), trả về 0
+
       if (!lineEl.contains(range.startContainer)) return 0;
       const walker = document.createTreeWalker(lineEl, NodeFilter.SHOW_TEXT, null);
       let charCount = 0,
@@ -136,19 +95,17 @@ const HighlightableViewer = ({
       ) as HTMLElement;
       if (!lineEl) return;
       isMouseDown = true;
-      mouseMoved = false;
-      // Tách logic lấy số dòng cho code và essay
       const line =
         file.type === "code" ?
-          parseInt(lineEl.dataset.line || "0", 10) // code: zero-based
-        : parseInt(lineEl.dataset.line || "0", 10) + 1; // essay: one-based
-      const col = calculateColumn(e, lineEl); // col luôn từ 0
+          parseInt(lineEl.dataset.line || "0", 10)
+        : parseInt(lineEl.dataset.line || "0", 10) + 1;
+      const col = calculateColumn(e, lineEl);
       startPosition = { line, col };
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp, { once: true });
     };
     const onMouseMove = () => {
-      if (isMouseDown) mouseMoved = true;
+      // Track mouse movement for potential future use
     };
     const onMouseUp = (e: MouseEvent) => {
       if (!isMouseDown) return;
@@ -166,8 +123,10 @@ const HighlightableViewer = ({
         if (from.line > to.line || (from.line === to.line && from.col > to.col))
           [from, to] = [to, from];
         if (from.line !== to.line || Math.abs(from.col - to.col) > 0) {
-          setSelectionRange({ from, to });
-          // Always notify parent that selection was made - this enables the button
+          const selection = { from, to };
+          setSelectionRange(selection);
+          void selectionRange; // Keep variable for potential future use
+          onSelectionChange?.(selection);
           onSelectionMade?.();
         }
       }
@@ -181,20 +140,9 @@ const HighlightableViewer = ({
     return () => {
       window.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
-      // mouseup is once:true
     };
-  }, [file.type, onSelectionMade]); // Remove isHighlightMode dependency
+  }, [file.type, onSelectionMade]);
 
-  // Only open dialog when isHighlightMode is true AND we have a selection
-  useEffect(() => {
-    if (isHighlightMode && selectionRange) {
-      setIsDialogOpen(true);
-    } else {
-      setIsDialogOpen(false);
-    }
-  }, [isHighlightMode, selectionRange]);
-
-  // Validate and adjust feedbacks of type "text"
   function getAdjustedFeedbacks(
     content: string,
     feedbacks: FeedbackItem[],
@@ -202,12 +150,14 @@ const HighlightableViewer = ({
     const rawLines = content.split(/\r?\n/);
     const lines = rawLines.map((l) => l.trimEnd());
     const totalLines = lines.length;
+
     return feedbacks.map((fb) => {
       if (fb.locationData?.type !== "text") return fb;
+
       let { fromLine, toLine, fromCol, toCol } = fb.locationData;
       fromCol = typeof fromCol === "number" ? fromCol : 0;
       toCol = typeof toCol === "number" ? toCol : 0;
-      // Nếu chỉ có fromLine/toLine, thì fromCol = 0, toCol = chiều dài dòng toLine
+
       if (
         (fb.locationData.fromCol === undefined || fb.locationData.fromCol === 0) &&
         (fb.locationData.toCol === undefined || fb.locationData.toCol === 0)
@@ -215,14 +165,17 @@ const HighlightableViewer = ({
         fromCol = 0;
         toCol = lines[toLine - 1]?.length ?? 0;
       }
+
       if (typeof toLine === "number" && toLine > totalLines) {
         toLine = totalLines;
         toCol = lines[totalLines - 1]?.length ?? 0;
       }
+
       const fromLineLen = lines[fromLine! - 1]?.length ?? 0;
       const toLineLen = lines[toLine! - 1]?.length ?? 0;
       const adjustedFromCol = Math.max(0, Math.min(fromCol, fromLineLen));
       const adjustedToCol = Math.max(0, Math.min(toCol, toLineLen));
+
       return {
         ...fb,
         locationData: {
@@ -236,145 +189,91 @@ const HighlightableViewer = ({
     });
   }
 
-  // Validate and adjust feedbacks of type "text"
+  // Scroll to active feedback when it changes
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        "🎯 CodeViewer activeFeedbackId changed:",
+        activeFeedbackId,
+        "file:",
+        file.relativePath,
+      );
+    }
+  }, [activeFeedbackId, file.relativePath]);
+
   useEffect(() => {
     const adjusted = getAdjustedFeedbacks(file.content, feedbacks);
-    let hasChanges = false;
 
     for (let i = 0; i < adjusted.length; i++) {
       if (JSON.stringify(adjusted[i]) !== JSON.stringify(feedbacks[i])) {
-        hasChanges = true;
-        const globalIdx = feedbacksAll.findIndex(
-          (f) =>
-            f.fileRef === feedbacks[i].fileRef &&
-            f.criterion === feedbacks[i].criterion &&
-            f.comment === feedbacks[i].comment &&
-            JSON.stringify(f.locationData) === JSON.stringify(feedbacks[i].locationData),
-        );
-
-        if (globalIdx !== -1) {
-          updateFeedback(globalIdx, adjusted[i]);
+        const originalFeedback = feedbacks[i];
+        if (originalFeedback.id) {
+          updateFeedback(originalFeedback.id, adjusted[i]);
         }
       }
     }
+  }, [file.content, feedbacks, updateFeedback]);
 
-    // Notify parent that validation occurred
-    if (hasChanges && onFeedbackValidated) {
-      onFeedbackValidated(adjusted);
-    }
-  }, [file.content, feedbacks, onFeedbackValidated]);
-
-  const handleAddFeedback = () => {
-    if (!selectionRange || !newComment.trim() || !newCriterion) return;
-    const { from, to } = selectionRange;
-    let fileRef = `${submissionReference}/${file.relativePath || ""}`;
-    const newFeedback: FeedbackItem = {
-      criterion: newCriterion,
-      fileRef,
-      comment: newComment.trim(),
-      tag: newFeedbackTag,
-      locationData: {
-        type: "text",
-        fromLine: Math.min(from.line, to.line),
-        toLine: Math.max(from.line, to.line),
-        fromCol: Math.min(from.col, to.col),
-        toCol: Math.max(from.col, to.col),
-      },
-    };
-    addFeedback(newFeedback);
-
-    setNewComment("");
-    setNewFeedbackTag("info");
-    setNewCriterion("");
-    setSelectionRange(null);
-    setIsDialogOpen(false);
-    onHighlightComplete();
-  };
-
-  // Update useEffect for activeFeedbackId
   useEffect(() => {
+    if (!activeFeedbackId) return;
+
+    const fb = feedbacks.find((f) => f.id === activeFeedbackId);
     if (
-      activeFeedbackId !== undefined &&
-      activeFeedbackId !== null &&
-      feedbacksAll &&
-      feedbacksAll.length > 0
+      fb &&
+      fb.locationData?.type === "text" &&
+      typeof fb.locationData.fromLine === "number"
     ) {
-      // Find feedback by ID instead of using index
-      const fb = feedbacksAll.find((f) => f.id === activeFeedbackId);
-      if (
-        fb &&
-        fb.fileRef === `${submissionReference}/${file.relativePath || ""}` &&
-        fb.locationData?.type === "text" &&
-        typeof fb.locationData.fromLine === "number"
-      ) {
-        // Try to scroll, if not found, retry a few times (wait for DOM render)
-        let tries = 9;
-        const tryScroll = () => {
+      let tries = 0;
+      const tryScroll = () => {
+        if (file.type === "code") {
+          const root = document.getElementById(`shiki-container`);
+          if (!root) return;
+
+          let lineEl: Element | null = null;
           if (
-            fb.locationData &&
-            fb.locationData.type === "text" &&
+            fb.locationData?.type === "text" &&
             typeof fb.locationData.fromLine === "number"
           ) {
-            if (file.type === "code") {
-              const root = document.getElementById(`shiki-container`);
-              let lineEl: Element | null = null;
-              if (!root) return;
-              lineEl = root.querySelector(
-                `.line[data-line="${fb.locationData.fromLine}"]`,
-              );
-              if (lineEl) {
-                root.scrollTo({
-                  top: (lineEl as HTMLElement).offsetTop - root.offsetTop,
-                  behavior: "smooth",
-                });
-                return;
-              }
-            } else if (file.type === "essay") {
-              console.log("essay scroll");
-              const root = document.getElementById(`essay-container`);
-              console.log("essay-container", root);
-              let lineEl: Element | null = null;
-              if (!root) return;
-              lineEl = root.querySelector(
-                `div[data-line="${fb.locationData.fromLine - 1}"]`,
-              );
-              console.log(lineEl, fb.locationData.fromLine);
-              if (lineEl) {
-                root.scrollTo({
-                  top: (lineEl as HTMLElement).offsetTop - root.offsetTop,
-                  behavior: "smooth",
-                });
-                return;
-              }
-            }
+            lineEl = root.querySelector(`.line[data-line="${fb.locationData.fromLine}"]`);
           }
-          if (tries < 10) {
-            tries++;
-            setTimeout(tryScroll, 100);
+          if (lineEl) {
+            const lineTop = (lineEl as HTMLElement).offsetTop;
+            const containerTop = root.offsetTop;
+            root.scrollTo({
+              top: lineTop - containerTop - 50,
+              behavior: "smooth",
+            });
+            return;
           }
-        };
+        }
 
-        setTimeout(tryScroll, 0);
-      }
+        if (tries < 10) {
+          tries++;
+          setTimeout(tryScroll, 100);
+        }
+      };
+
+      setTimeout(tryScroll, 0);
     }
-  }, [activeFeedbackId, feedbacksAll, file.relativePath, gradingId, submissionReference]);
+  }, [activeFeedbackId, feedbacks, file.relativePath, file.type]);
 
-  // --- Render content ---
   const renderContent = () => {
     const validFeedbacks = getAdjustedFeedbacks(file.content, feedbacks);
 
     if (file.type === "code") {
       const getShikiTheme = () => (theme === "dark" ? "github-dark" : "github-light");
+
       return (
         <ShikiHighlighter
           language={language}
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
-          className="h-full overflow-auto"
+          className="h-full w-full overflow-auto"
           transformers={[
             {
               preprocess(code, options) {
+                // eslint-disable-line @typescript-eslint/no-unused-vars
                 let decorations = validFeedbacks
                   .filter(
                     (
@@ -393,10 +292,7 @@ const HighlightableViewer = ({
                       typeof fb.locationData.toLine === "number",
                   )
                   .map((fb) => {
-                    // Use ID directly instead of finding index
                     const feedbackId = fb.id;
-
-                    // fallback về 0 nếu fromCol/toCol undefined
                     let fromLine = fb.locationData.fromLine;
                     let toLine = fb.locationData.toLine;
                     let fromCol =
@@ -407,9 +303,11 @@ const HighlightableViewer = ({
                       typeof fb.locationData.toCol === "number" ?
                         fb.locationData.toCol
                       : 0;
+
                     if (fromLine === toLine && fromCol === toCol) {
                       toLine = fromLine + 1;
                     }
+
                     return {
                       fb: {
                         ...fb,
@@ -478,7 +376,7 @@ const HighlightableViewer = ({
         </ShikiHighlighter>
       );
     }
-    // Essay
+
     function getFeedbackGroupsForLine(lineIdx: number, lineLength: number) {
       const boundaries: {
         pos: number;
@@ -506,14 +404,16 @@ const HighlightableViewer = ({
         )
         .forEach((fb) => {
           if (fb.locationData?.type !== "text") return;
-          const feedbackId = fb.id ?? "";
 
+          const feedbackId = fb.id ?? "";
           const fromCol =
             typeof fb.locationData.fromCol === "number" ? fb.locationData.fromCol : 0;
           const toCol =
             typeof fb.locationData.toCol === "number" ? fb.locationData.toCol : 0;
           const fromLine = fb.locationData.fromLine;
+
           if (lineIdx + 1 !== fromLine) return;
+
           const start = fromCol;
           const end = toCol;
           if (start < end) {
@@ -523,6 +423,7 @@ const HighlightableViewer = ({
         });
 
       boundaries.sort((a, b) => a.pos - b.pos || (a.type === "end" ? -1 : 1));
+
       const segments: {
         start: number;
         end: number;
@@ -530,17 +431,23 @@ const HighlightableViewer = ({
       }[] = [];
       let active: { fb: FeedbackItem; feedbackId: string }[] = [];
       let lastPos = 0;
+
       for (const b of boundaries) {
         if (b.pos > lastPos) {
           segments.push({ start: lastPos, end: b.pos, feedbacks: [...active] });
         }
-        if (b.type === "start") active.push({ fb: b.fb, feedbackId: b.feedbackId });
-        else active = active.filter((f) => f.fb !== b.fb);
+        if (b.type === "start") {
+          active.push({ fb: b.fb, feedbackId: b.feedbackId });
+        } else {
+          active = active.filter((f) => f.fb !== b.fb);
+        }
         lastPos = b.pos;
       }
+
       if (lastPos < lineLength) {
         segments.push({ start: lastPos, end: lineLength, feedbacks: [...active] });
       }
+
       return segments;
     }
 
@@ -557,19 +464,19 @@ const HighlightableViewer = ({
               </div>
             );
           }
+
           const segments = getFeedbackGroupsForLine(i, line.length);
+
           return (
             <div key={i} data-line={i}>
               {segments.map((seg, idx) => {
                 let inner: React.ReactNode = line.slice(seg.start, seg.end);
-                // Nếu có activeFeedbackId, chỉ highlight feedback đó, các feedback khác không có class actived
+
                 if (activeFeedbackId !== undefined && activeFeedbackId !== null) {
-                  // Tìm feedback đang active trong seg.feedbacks
                   const activeFb = seg.feedbacks.find(
                     (f) => String(f.feedbackId) === String(activeFeedbackId),
                   );
                   if (activeFb) {
-                    // Chỉ wrap đoạn text này bằng span actived cho feedback active
                     const fb = activeFb.fb;
                     let fromLine =
                       fb.locationData?.type === "text" ?
@@ -579,22 +486,10 @@ const HighlightableViewer = ({
                       fb.locationData?.type === "text" ?
                         fb.locationData.toLine
                       : undefined;
+
                     inner = (
                       <span
-                        key={
-                          (fb.fileRef || "") +
-                          "-" +
-                          (fromLine ?? "") +
-                          "-" +
-                          (toLine ?? "") +
-                          "-" +
-                          (fb.criterion ?? "") +
-                          "-" +
-                          (fb.comment ?? "") +
-                          "-" +
-                          idx +
-                          "-active"
-                        }
+                        key={`${fb.fileRef}-${fromLine}-${toLine}-${fb.criterion}-${fb.comment}-${idx}-active`}
                         className={
                           "annotation-span actived annotation-span-focused " +
                           (seg.feedbacks.length === 1 ? "highlight-top" : "")
@@ -607,9 +502,7 @@ const HighlightableViewer = ({
                       </span>
                     );
                   }
-                  // Nếu không phải feedback active thì không wrap gì cả (bỏ highlight các feedback khác)
                 } else {
-                  // Không có feedback nào active, highlight tất cả như cũ
                   seg.feedbacks.forEach((f, fbIdx) => {
                     const fb = f.fb;
                     let fromLine =
@@ -620,23 +513,10 @@ const HighlightableViewer = ({
                       fb.locationData?.type === "text" ?
                         fb.locationData.toLine
                       : undefined;
+
                     inner = (
                       <span
-                        key={
-                          (fb.fileRef || "") +
-                          "-" +
-                          (fromLine ?? "") +
-                          "-" +
-                          (toLine ?? "") +
-                          "-" +
-                          (fb.criterion ?? "") +
-                          "-" +
-                          (fb.comment ?? "") +
-                          "-" +
-                          idx +
-                          "-" +
-                          fbIdx
-                        }
+                        key={`${fb.fileRef}-${fromLine}-${toLine}-${fb.criterion}-${fb.comment}-${idx}-${fbIdx}`}
                         className={
                           "annotation-span " +
                           (fbIdx === seg.feedbacks.length - 1 ?
@@ -652,6 +532,7 @@ const HighlightableViewer = ({
                     );
                   });
                 }
+
                 return inner;
               })}
             </div>
@@ -661,89 +542,7 @@ const HighlightableViewer = ({
     );
   };
 
-  // --- Render dialog ---
-  return (
-    <>
-      {renderContent()}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add Feedback</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="tag" className="text-sm font-medium">
-                Select Tag
-              </Label>
-              <Select value={newFeedbackTag} onValueChange={setNewFeedbackTag}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="info">Info</SelectItem>
-                  <SelectItem value="notice">Notice</SelectItem>
-                  <SelectItem value="tip">Tip</SelectItem>
-                  <SelectItem value="caution">Caution</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="criterion" className="text-sm font-medium">
-                Select Criterion
-              </Label>
-              <Select value={newCriterion} onValueChange={setNewCriterion}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select criterion" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rubricCriteria.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="grid gap-2">
-                <Label htmlFor="comment" className="text-sm font-medium">
-                  Feedback Comment
-                </Label>
-                <Textarea
-                  id="comment"
-                  rows={4}
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Enter your feedback..."
-                  className="text-sm"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsDialogOpen(false);
-                setNewComment("");
-                setNewFeedbackTag("info");
-                setNewCriterion("");
-                setSelectionRange(null);
-                // Clear parent states when canceling dialog
-                onHighlightComplete();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddFeedback}
-              disabled={!newComment.trim() || !newCriterion}
-            >
-              Add Feedback
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+  return <>{renderContent()}</>;
 };
 
 export default HighlightableViewer;

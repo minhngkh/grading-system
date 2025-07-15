@@ -1,4 +1,4 @@
-import { buildFilterExpr, contains, eq } from "@/lib/json-api-query";
+import { buildFilterExpr, eq } from "@/lib/json-api-query";
 import {
   Assessment,
   AssessmentState,
@@ -108,34 +108,24 @@ export class AssessmentService {
     return allData;
   }
 
-  static async updateFeedback(
-    id: string,
-    feedbacks: FeedbackItem[],
-    token: string,
-  ): Promise<number> {
+  static async updateFeedback(id: string, feedbacks: FeedbackItem[], token: string) {
     const configHeaders = await this.buildHeaders(token);
     const payload = { feedbacks };
-    const response = await axios.put(
+    return await axios.put(
       `${ASSESSMENT_API_URL}/${id}/feedbacks`,
       payload,
       configHeaders,
     );
-    return response.status;
   }
 
   static async updateScore(
     id: string,
     scoreBreakdowns: Partial<ScoreBreakdown>[],
     token: string,
-  ): Promise<Assessment> {
+  ) {
     const configHeaders = await this.buildHeaders(token);
     const payload = { scoreBreakdowns };
-    const response = await axios.post(
-      `${ASSESSMENT_API_URL}/${id}/scores`,
-      payload,
-      configHeaders,
-    );
-    return this.ConvertToAssessment(response.data);
+    return await axios.post(`${ASSESSMENT_API_URL}/${id}/scores`, payload, configHeaders);
   }
 
   static async rerunAssessment(id: string, token: string) {

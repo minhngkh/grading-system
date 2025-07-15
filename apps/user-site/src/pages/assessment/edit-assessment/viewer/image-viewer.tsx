@@ -31,7 +31,7 @@ interface ImageViewerProps {
   submissionReference: string;
 }
 
-export const ImageViewer = ({
+const ImageViewer = ({
   src,
   file,
   addFeedback,
@@ -52,17 +52,13 @@ export const ImageViewer = ({
   const handleAddFeedback = () => {
     if (!newComment.trim() || !newCriterion) return;
 
-    // Format fileRef with gradingId and file.relativePath
-    let fileRef = `${gradingId}/${submissionReference}/${file.relativePath || ""}`;
-
     const newFeedback: FeedbackItem = {
+      id: `fb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       criterion: newCriterion,
-      fileRef,
+      fileRef: `${gradingId}/${submissionReference}/${file.relativePath || ""}`,
       comment: newComment.trim(),
       tag: newFeedbackTag,
-      locationData: {
-        type: "image",
-      },
+      locationData: { type: "image" },
     };
 
     addFeedback(newFeedback);
@@ -73,11 +69,8 @@ export const ImageViewer = ({
     onHighlightComplete();
   };
 
-  // Show dialog automatically when isHighlightMode is true
-  useEffect(() => {
-    if (isHighlightMode) setIsDialogOpen(true);
-    else setIsDialogOpen(false);
-  }, [isHighlightMode]);
+  // Show dialog automatically when isHighlightMode is true - REMOVED
+  // Dialog now only opens when image is clicked in highlight mode
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       // If modal is open and click is outside the image
@@ -109,10 +102,24 @@ export const ImageViewer = ({
     if (onHighlightComplete) onHighlightComplete();
   };
 
+  const handleImageClick = () => {
+    if (isHighlightMode) {
+      // If in highlight mode, show feedback dialog instead of zooming
+      setIsDialogOpen(true);
+    } else {
+      // Normal behavior - zoom the image
+      setOpen(true);
+    }
+  };
+
   return (
     <>
       <div className={`flex justify-center items-center w-full`}>
-        <img className="hover:cursor-zoom-in" src={src} onClick={() => setOpen(true)} />
+        <img 
+          className={isHighlightMode ? "hover:cursor-crosshair" : "hover:cursor-zoom-in"} 
+          src={src} 
+          onClick={handleImageClick} 
+        />
       </div>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">

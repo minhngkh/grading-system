@@ -1,25 +1,7 @@
 // PDFViewer.tsx
 import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { FeedbackItem } from "@/types/assessment";
-import { FileItem } from "@/types/file";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -27,48 +9,23 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 
 interface PDFViewerProps {
   fileUrl: string;
-  file: FileItem;
   feedbacks: FeedbackItem[];
-  feedbacksAll: FeedbackItem[];
-  addFeedback: (fb: FeedbackItem) => void;
-  updateFeedback: (index: number, fb: FeedbackItem) => void;
-  isHighlightMode: boolean;
-  onHighlightComplete: () => void;
-  rubricCriteria?: string[];
-  gradingId: string;
-  submissionReference: string;
-  onTotalPagesChange?: (n: number) => void;
+  updateFeedback: (feedbackId: string, fb: FeedbackItem) => void;
   activeFeedbackId?: string | null;
-  onFeedbackValidated?: (adjusted: FeedbackItem[]) => void;
-  onPageClick?: (page: number) => void;
-  onPageClear?: () => void; // Add new prop to clear page selection
+  onPageSelect?: (page: number | null) => void;
 }
 
 const PDFViewer = ({
   fileUrl,
-  file,
   feedbacks,
-  feedbacksAll,
-  addFeedback,
   updateFeedback,
-  isHighlightMode,
-  onHighlightComplete,
-  rubricCriteria = [],
-  gradingId,
-  submissionReference,
-  onTotalPagesChange,
   activeFeedbackId,
-  onFeedbackValidated,
-  onPageClick,
-  onPageClear,
+  onPageSelect,
 }: PDFViewerProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [newComment, setNewComment] = useState("");
-  const [newFeedbackTag, setNewFeedbackTag] = useState("info");
-  const [newCriterion, setNewCriterion] = useState("");
+  void currentPage; // Keep variable for potential future use
   const [scale, setScale] = useState<number>(1.0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -101,10 +58,9 @@ const PDFViewer = ({
   const handleLoadSuccess = ({ numPages }: any) => {
     setNumPages(numPages);
     setTotalPages(numPages);
-    onTotalPagesChange?.(numPages);
   };
 
-  // Sửa feedbacks vượt giới hạn trang
+  // Simplified feedback validation - use ID-based updates
   useEffect(() => {
     if (totalPages > 0 && feedbacks.length) {
       const adjusted = feedbacks.map((fb) => {
@@ -117,30 +73,22 @@ const PDFViewer = ({
         return fb;
       });
 
-      const changed = adjusted.some(
-        (fb, i) => JSON.stringify(fb) !== JSON.stringify(feedbacks[i]),
-      );
-      if (changed) {
-        adjusted.forEach((fb) => {
-          const idx = feedbacksAll.findIndex((f) => f.id === fb.id);
-          if (idx !== -1) updateFeedback(idx, fb);
-        });
-        onFeedbackValidated?.(adjusted);
+      // Use ID-based updates instead of global index lookups
+      for (let i = 0; i < adjusted.length; i++) {
+        if (JSON.stringify(adjusted[i]) !== JSON.stringify(feedbacks[i])) {
+          const originalFeedback = feedbacks[i];
+          if (originalFeedback.id) {
+            updateFeedback(originalFeedback.id, adjusted[i]);
+          }
+        }
       }
     }
-  }, [totalPages, feedbacks, feedbacksAll, updateFeedback, onFeedbackValidated]);
+  }, [totalPages, feedbacks, updateFeedback]);
 
-  // Remove automatic dialog opening - only open when explicitly triggered
-  useEffect(() => {
-    if (isHighlightMode) {
-      setIsDialogOpen(true);
-    }
-  }, [isHighlightMode]);
-
-  // Add page click handler
+  // Internal page click handler
   const handlePageClick = (pageNumber: number) => {
     setCurrentPage(pageNumber);
-    onPageClick?.(pageNumber);
+    onPageSelect?.(pageNumber);
   };
 
   if (!fileUrl) {
@@ -151,47 +99,25 @@ const PDFViewer = ({
     );
   }
 
-  const handleAddFeedback = () => {
-    if (!newComment.trim() || !newCriterion) return;
-
-    const fb: FeedbackItem = {
-      criterion: newCriterion,
-      fileRef: `${gradingId}/${submissionReference}/${file.relativePath || ""}`,
-      comment: newComment.trim(),
-      tag: newFeedbackTag,
-      locationData: { type: "pdf", page: currentPage },
-    };
-    addFeedback(fb);
-    setNewComment("");
-    setNewCriterion("");
-    setNewFeedbackTag("info");
-    setIsDialogOpen(false);
-    onHighlightComplete();
-    // Clear page selection after successful feedback addition
-    onPageClear?.();
-  };
-
+  // Simplified scroll to active feedback
   useEffect(() => {
     if (!activeFeedbackId) return;
 
-    const fb = feedbacksAll.find((f) => f.id === activeFeedbackId);
+    const fb = feedbacks.find((f) => f.id === activeFeedbackId);
     if (fb?.locationData?.type === "pdf") {
       const pageNum = fb.locationData.page;
-      const selector = `[data-page-number="${pageNum + 1}"]`;
+      const selector = `[data-page-number="${pageNum}"]`;
       const el = document.querySelector<HTMLDivElement>(selector);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
         setCurrentPage(pageNum);
       }
     }
-  }, [activeFeedbackId, feedbacksAll]);
+  }, [activeFeedbackId, feedbacks]);
 
   return (
-    <div className="flex-col h-full relative">
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-auto flex justify-center bg-white py-4"
-      >
+    <div className="flex-col h-full overflow-auto relative">
+      <div ref={containerRef} className="flex-1 flex justify-center bg-white py-4">
         <Document
           key={fileUrl}
           file={fileUrl}
@@ -210,111 +136,6 @@ const PDFViewer = ({
           ))}
         </Document>
       </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add PDF Feedback</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="tag" className="text-sm font-medium">
-                Select Tag
-              </Label>
-              <Select value={newFeedbackTag} onValueChange={setNewFeedbackTag}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="info">Info</SelectItem>
-                  <SelectItem value="notice">Notice</SelectItem>
-                  <SelectItem value="tip">Tip</SelectItem>
-                  <SelectItem value="caution">Caution</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="criterion" className="text-sm font-medium">
-                Select Criterion
-              </Label>
-              <Select value={newCriterion} onValueChange={setNewCriterion}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select criterion" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rubricCriteria.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="page" className="text-sm font-medium">
-                Select Page
-              </Label>
-              <Select
-                value={currentPage.toString()}
-                onValueChange={(value) => setCurrentPage(Number(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select page" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <SelectItem key={i + 1} value={(i + 1).toString()}>
-                      Page {i + 1}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="comment" className="text-sm font-medium">
-                Comment
-              </Label>
-              <Textarea
-                id="comment"
-                rows={4}
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Enter your feedback..."
-                className="text-sm"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsDialogOpen(false);
-                setNewComment("");
-                setNewFeedbackTag("info");
-                setNewCriterion("");
-                // Clear parent states when canceling dialog
-                onHighlightComplete();
-                // Also clear the page selection
-                onPageClear?.();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={
-                !newComment.trim() ||
-                !newCriterion ||
-                !currentPage ||
-                currentPage < 1 ||
-                currentPage > totalPages
-              }
-              onClick={handleAddFeedback}
-            >
-              Add Feedback
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

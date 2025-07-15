@@ -31,18 +31,6 @@ function buildFileTree(files: any[]) {
 }
 
 // Helper for feedback badge (backward compatible)
-function countFeedbackForFile(feedbacks: any[], file: any) {
-  return feedbacks.filter(
-    (f) =>
-      f.fileRef === file.relativePath ||
-      f.fileRef === file.blobPath ||
-      f.fileRef === file.name ||
-      f.fileRef === file.path,
-  ).length;
-}
-function hasFeedbackForFile(feedbacks: any[], file: any) {
-  return countFeedbackForFile(feedbacks, file) > 0;
-}
 
 interface FileExplorerProps {
   files: any[]; // <-- truyền mảng file có relativePath
@@ -255,7 +243,7 @@ function renderTree(
   );
 }
 
-export const FileExplorer: React.FC<FileExplorerProps> = ({
+export const FileExplorer: React.FC<FileExplorerProps> = React.memo(({
   files,
   selectedFile,
   setSelectedFile,
@@ -313,9 +301,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             {selectors.length > 0 ?
               <div className="space-y-2 max-h-60 overflow-auto">
                 {selectors.map((selector) => {
-                  // Check if pattern looks like regex
-                  const regexChars = /[.*+?^${}()|[\]\\]/;
-
                   return (
                     <div key={selector.criterion} className="flex items-start space-x-2">
                       <Checkbox
@@ -377,4 +362,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       </div>
     </div>
   );
-};
+});
+
+FileExplorer.displayName = 'FileExplorer';
