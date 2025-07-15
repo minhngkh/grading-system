@@ -1,4 +1,5 @@
-﻿using EventFlow.Aggregates;
+﻿using AssignmentFlow.Application.Assessments.AutoGrading;
+using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
@@ -17,7 +18,9 @@ public class Assessment
     IAmReadModelFor<AssessmentAggregate, AssessmentId, Assess.AssessedEvent>,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, Assess.AssessmentFailedEvent>,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.CriterionAssessedEvent>,
-    IAmReadModelFor<AssessmentAggregate, AssessmentId, UpdateFeedBack.FeedbacksUpdatedEvent>
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, UpdateFeedBack.FeedbacksUpdatedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.ManualGradingRequestedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.AssessmentGradingCompletedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -203,7 +206,20 @@ public class Assessment
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGrading.AutoGradingFinishedEvent> domainEvent, CancellationToken cancellationToken)
     {
         StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
 
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, ManualGradingRequestedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        StateMachine.Fire(AssessmentTrigger.WaitForManualGrading);
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AssessmentGradingCompletedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        StateMachine.Fire(AssessmentTrigger.Complete);
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
