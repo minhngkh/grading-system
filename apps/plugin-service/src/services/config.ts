@@ -1,18 +1,18 @@
-import type { ZodSchema, } from "zod";
+import type { z, ZodSchema } from "zod";
+import type { pluginConfigSchema } from "@/plugins/info";
 import { CustomError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { zodParse } from "@grading-system/utils/zod";
 import { errAsync, fromPromise, okAsync, safeTry } from "neverthrow";
-import { z } from "zod";
 import { PluginConfigModel } from "@/db/models";
-import { testRunnerConfigSchema } from "@/plugins/test-runner/config";
-
-export const pluginConfigSchema = z.discriminatedUnion("type", [testRunnerConfigSchema]);
 
 // TODO: it currently doesn't failed
-export async function createConfig(config: z.infer<typeof pluginConfigSchema>) {
+export async function createConfig(
+  config: z.infer<typeof pluginConfigSchema>,
+  pluginId: string,
+) {
   logger.debug("Creating plugin config", { config });
-  return (await PluginConfigModel.create({ config })).toObject();
+  return (await PluginConfigModel.create({ config, plugin: pluginId })).toObject();
 }
 
 export async function updateConfig(
@@ -26,6 +26,12 @@ export async function updateConfig(
 
 export async function getConfig(id: string) {
   return await PluginConfigModel.findById(id).lean().exec();
+}
+
+export async function getConfigOfPlugin(configId: string, pluginId: string) {
+  return await PluginConfigModel.findOne({ _id: configId, plugin: pluginId })
+    .lean()
+    .exec();
 }
 
 class GetConfigError extends CustomError.withTag("GetConfigError")<void> {}

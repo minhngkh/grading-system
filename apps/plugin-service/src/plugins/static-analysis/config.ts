@@ -21,28 +21,36 @@ export const rulesetSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("auto") }),
 ]);
 
-export const staticAnalysisConfigSchema = z
-  .object({
-    type: z.literal("static-analysis"),
-    crossFileAnalysis: z
-      .boolean()
-      .default(true)
-      .describe("Whether to enable cross-file analysis"),
-    preset: rulesetSchema.describe("Semgrep ruleset to use for analysis").optional(),
-    additionalRulesets: z
-      .array(z.string())
-      .optional()
-      .describe("Semgrep rulesets from the registry, required if 'preset' is not set")
-      .optional(),
-    deductionMap: z.object({
-      critical: z.number().default(20),
-      error: z.number().default(15),
-      warning: z.number().default(2),
-      info: z.number().default(0),
-    }),
-  })
-  .refine((data) => data.preset === undefined && data.additionalRulesets === undefined, {
-    message: "Either 'preset' or 'additionalRulesets' must be set",
-  });
+export const baseStaticAnalysisConfigSchema = z.object({
+  type: z.literal("static-analysis"),
+  version: z.literal(1).default(1),
+  crossFileAnalysis: z
+    .boolean()
+    .default(false)
+    .describe("Whether to enable cross-file analysis"),
+  preset: rulesetSchema.describe("Semgrep ruleset to use for analysis").optional(),
+  additionalRulesets: z
+    .array(z.string())
+    .optional()
+    .describe("Semgrep rulesets from the registry, required if 'preset' is not set")
+    .optional(),
+  deductionMap: z.object({
+    critical: z.number().default(20),
+    error: z.number().default(15),
+    warning: z.number().default(2),
+    info: z.number().default(0),
+  }),
+});
+
+export const checkStaticAnalysisConfigSchema = {
+  func: (data: z.infer<typeof baseStaticAnalysisConfigSchema>) =>
+    data.preset === undefined && data.additionalRulesets === undefined,
+  message: "Either 'preset' or 'additionalRulesets' must be set",
+};
+
+export const staticAnalysisConfigSchema = baseStaticAnalysisConfigSchema.refine(
+  checkStaticAnalysisConfigSchema.func,
+  { message: checkStaticAnalysisConfigSchema.message },
+);
 
 export type StaticAnalysisConfig = z.infer<typeof staticAnalysisConfigSchema>;
