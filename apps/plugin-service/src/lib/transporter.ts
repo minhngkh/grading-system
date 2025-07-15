@@ -1,6 +1,6 @@
 import type { EventTransporter } from "@grading-system/utils/event-transporter/core";
 import process from "node:process";
-import { RabbitMQTransporter } from "@grading-system/utils/event-transporter/rabbitmq";
+import { AzureServiceBusTransporter } from "@grading-system/utils/event-transporter/azure-service-bus";
 import { masstransitTransformer } from "@grading-system/utils/event-transporter/transformers/masstransit";
 
 const CONNECTION_STRING = process.env.ConnectionStrings__messaging as string;
@@ -9,7 +9,7 @@ let transporter: EventTransporter;
 
 export async function getTransporter() {
   if (!transporter) {
-    const result = await RabbitMQTransporter.create({
+    const result = await AzureServiceBusTransporter.create({
       connectionString: CONNECTION_STRING,
       transformer: masstransitTransformer(),
     });
