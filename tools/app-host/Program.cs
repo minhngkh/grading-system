@@ -59,11 +59,12 @@ var dbgate = dbgateContainer
         ctx.EnvironmentVariables["ENGINE_con2"] = "mongo@dbgate-plugin-mongo";
     });
 
-var rabbitmq = builder
-    .AddRabbitMQ("messaging", username, password)
-    .WithManagementPlugin(
-        port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
-    );
+var serviceBus = builder
+    .AddAzureServiceBus("messaging")
+    .RunAsEmulator(emulator =>
+    {
+        emulator.WithHostPort(builder.Configuration.GetValue<int?>("Infra:ServiceBus:Management:Port"));
+    });
 
 var storage = builder
     .AddAzureStorage("storage")
@@ -88,8 +89,8 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
         .WaitFor(rubricDb)
         .WithReference(rubricContextStore)
         .WaitFor(rubricContextStore)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq);
+        .WithReference(serviceBus)
+        .WaitFor(serviceBus);
 }
 
 IResourceBuilder<ProjectResource>? assignmentFlow = null;
@@ -105,8 +106,8 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
         .WaitFor(assignmentFlowDb)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(serviceBus)
+        .WaitFor(serviceBus)
         .WithReference(rubricEngine)
         .WaitFor(rubricEngine);
 }
@@ -126,8 +127,8 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
         )
         .WithReference(pluginDb)
         .WaitFor(pluginDb)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(serviceBus)
+        .WaitFor(serviceBus)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
@@ -143,8 +144,8 @@ if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(serviceBus)
+        .WaitFor(serviceBus)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)

@@ -105,9 +105,9 @@ public static class ServiceCollectionExtensions
             if (assembly != null)
                 config.AddConsumers(assembly);
 
-            config.UsingRabbitMq((context, configurator) =>
+            config.UsingAzureServiceBus((context, configurator) =>
             {
-                configurator.Host(new Uri(configuration.GetConnectionString("messaging")!));
+                configurator.Host(configuration.GetConnectionString("messaging"));
                 configurator.ConfigureEndpoints(context);
                 configurator.UseRawJsonDeserializer(isDefault: true);
             });
