@@ -41,7 +41,7 @@ export function ViewRubricDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         aria-describedby={undefined}
-        className="min-w-[80%] max-w-[95%] max-h-[90vh] flex flex-col gap-0"
+        className="min-w-[60%] max-w-[80%] max-h-[90vh] flex flex-col gap-0"
       >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -53,7 +53,7 @@ export function ViewRubricDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden mt-4">
-          <div className="w-full h-[60vh] overflow-y-auto flex flex-col">
+          <div className="grid w-full h-[60vh] overflow-auto">
             {initialRubric ?
               <RubricView rubricData={initialRubric} />
             : <p>No rubric available</p>}

@@ -92,6 +92,10 @@ export default function RubricGenerationPage({
         queryKey: ["rubrics"],
       });
 
+      queryClient.invalidateQueries({
+        queryKey: ["rubric", updatedRubric.id],
+      });
+
       form.reset(updatedRubric);
     },
     [formValues, auth],

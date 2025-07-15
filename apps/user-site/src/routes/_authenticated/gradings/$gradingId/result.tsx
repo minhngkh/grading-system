@@ -10,12 +10,6 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/gradings/$gradingId/result")({
   component: RouteComponent,
-  loader: ({ params: { gradingId }, context: { auth, queryClient } }) => {
-    queryClient.ensureQueryData(getGradingAttemptQueryOptions(gradingId, auth));
-    queryClient.ensureQueryData(getAllGradingAssessmentsQueryOptions(gradingId, auth));
-  },
-  errorComponent: () => <ErrorComponent message="Failed to load grading result" />,
-  pendingComponent: () => <PendingComponent message="Loading grading result..." />,
 });
 
 function RouteComponent() {

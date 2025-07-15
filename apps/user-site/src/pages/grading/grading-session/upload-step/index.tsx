@@ -58,6 +58,12 @@ export default function UploadStep({ form }: UploadStepProps) {
 
   const gradingAttempt = form.watch();
 
+  useEffect(() => {
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempt", gradingAttempt.id],
+    });
+  }, [gradingAttempt, queryClient]);
+
   const { data: rubricData } = useQuery(
     getRubricQueryOptions(gradingAttempt.rubricId, auth, {
       placeholderData: keepPreviousData,
@@ -99,11 +105,8 @@ export default function UploadStep({ form }: UploadStepProps) {
   const handleNameUpdate = useCallback(
     (name: string) => {
       updateNameMutation.mutate(name);
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempt", gradingAttempt.id],
-      });
     },
-    [updateNameMutation, queryClient, gradingAttempt.id],
+    [updateNameMutation, gradingAttempt.id],
   );
 
   const handleScaleFactorUpdate = useCallback(
@@ -111,11 +114,8 @@ export default function UploadStep({ form }: UploadStepProps) {
       if (scaleFactor == undefined) return;
 
       updateScaleFactorMutation.mutate(scaleFactor);
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempt", gradingAttempt.id],
-      });
     },
-    [updateScaleFactorMutation, queryClient, gradingAttempt.id],
+    [updateScaleFactorMutation, gradingAttempt.id],
   );
 
   useDebounceUpdate(gradingAttempt.name, 500, handleNameUpdate);
@@ -124,9 +124,6 @@ export default function UploadStep({ form }: UploadStepProps) {
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
     await updateSelectorsMutation.mutateAsync(selectors);
     setValue("selectors", selectors);
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
   };
 
   const handleSelectRubric = async (rubric: Rubric) => {
@@ -169,9 +166,6 @@ export default function UploadStep({ form }: UploadStepProps) {
       ];
 
       setValue("submissions", newSubmissions);
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempt", gradingAttempt.id],
-      });
     } catch (error) {
       console.error("Error uploading files:", error);
       toast.error("Failed to upload some files");
@@ -196,10 +190,6 @@ export default function UploadStep({ form }: UploadStepProps) {
           (sub) => sub.reference !== submission.reference,
         ),
       );
-
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempt", gradingAttempt.id],
-      });
     } catch (error) {
       console.error("Error removing submission:", error);
       toast.error(`Failed to remove submission: ${submission.reference}`);
@@ -219,10 +209,6 @@ export default function UploadStep({ form }: UploadStepProps) {
     setUploadedFiles([]);
     setValue("submissions", []);
     setFileDialogOpen(false);
-
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
   };
 
   return (

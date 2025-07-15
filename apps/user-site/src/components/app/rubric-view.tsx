@@ -24,7 +24,7 @@ export function RubricView({
   }
 
   return (
-    <div className="border rounded-md overflow-auto h-full">
+    <div className="border rounded-md h-full">
       <table className="w-full h-full table-fixed text-sm">
         <thead>
           <tr className="bg-muted/50">

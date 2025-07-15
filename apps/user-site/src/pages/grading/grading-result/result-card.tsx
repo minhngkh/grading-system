@@ -109,8 +109,8 @@ export function AssessmentResultCard({
                   <div key={index} className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className={colorStyle.text}>{score.criterionName}</span>
-                      {score.grader === "None" ?
-                        <span className="text-warning">Require manual grading</span>
+                      {score.grader === "None" || score.status === "Mannual" ?
+                        <span className="text-orange-400">Require manual grading</span>
                       : <span className={colorStyle.text}>
                           {finalScore} ({score.rawScore}%)
                         </span>

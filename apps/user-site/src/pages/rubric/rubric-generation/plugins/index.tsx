@@ -42,8 +42,6 @@ export default function PluginRubricTable({
     updateRubricMutationOptions(rubricData.id, auth),
   );
 
-  console.log("Rubric Config:", rubricData.criteria[0]?.configuration);
-
   const openPluginDialog = (criterionIndex: number) => {
     setSelectedCriterionIndex(criterionIndex);
     setPluginDialogOpen(true);
@@ -105,7 +103,7 @@ export default function PluginRubricTable({
   };
 
   return (
-    <Card className="w-full h-full flex flex-col">
+    <Card className="w-full flex flex-col">
       <CardHeader>
         <CardTitle className="text-lg">{rubricData.rubricName}</CardTitle>
         <CardDescription>
@@ -113,7 +111,7 @@ export default function PluginRubricTable({
           plugin, click on the plugin name to select a different one.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1">
+      <CardContent>
         <RubricView
           rubricData={rubricData}
           showPlugins
