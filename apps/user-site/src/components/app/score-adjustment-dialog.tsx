@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { ScoreBreakdown } from "@/types/assessment";
 
 interface ScoreAdjustmentDialogProps {
@@ -31,6 +32,8 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
   onOpenChange,
   scoreAdjustment,
 }) => {
+  const [expandedRows, setExpandedRows] = React.useState<Set<number>>(new Set());
+
   // Sort score adjustments by createdAt date in descending order (newest first)
   const sortedScoreAdjustment = React.useMemo(() => {
     if (!scoreAdjustment || !Array.isArray(scoreAdjustment)) return [];
@@ -42,13 +45,24 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
     });
   }, [scoreAdjustment]);
 
+  const toggleRow = (adjustmentIndex: number) => {
+    const newExpandedRows = new Set(expandedRows);
+    if (newExpandedRows.has(adjustmentIndex)) {
+      newExpandedRows.delete(adjustmentIndex);
+    } else {
+      newExpandedRows.add(adjustmentIndex);
+    }
+    setExpandedRows(newExpandedRows);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="min-w-[60%] max-w-[95%] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-base font-semibold">Score Adjustments</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            History of score adjustments for this assessment
+            History of score adjustments for this assessment. Click on any row to view
+            criterion breakdown.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0 overflow-hidden">
@@ -57,45 +71,81 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
               <Table>
                 <TableHeader className="sticky top-0 bg-background">
                   <TableRow>
+                    <TableHead className="text-xs font-medium w-8"></TableHead>
                     <TableHead className="text-xs font-medium">Adjustment Date</TableHead>
                     <TableHead className="text-xs font-medium">Total Score</TableHead>
-                    <TableHead className="text-xs font-medium">Criterion Name</TableHead>
-                    <TableHead className="text-xs font-medium">Raw Score</TableHead>
+                    <TableHead className="text-xs font-medium">Source</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedScoreAdjustment.flatMap((adjustment, adjustmentIndex) =>
-                    adjustment.attributes.scoreBreakdowns.map(
-                      (scoreBreakdown: ScoreBreakdown, scoreIndex: number) => (
-                        <TableRow key={`${adjustmentIndex}-${scoreIndex}`}>
-                          {scoreIndex === 0 && (
-                            <>
-                              <TableCell
-                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
-                                className="font-medium min-w-[180px] text-xs"
+                  {sortedScoreAdjustment.map((adjustment, adjustmentIndex) => (
+                    <React.Fragment key={adjustmentIndex}>
+                      {/* Main row with total score */}
+                      <TableRow
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => toggleRow(adjustmentIndex)}
+                      >
+                        <TableCell className="text-xs p-2">
+                          {expandedRows.has(adjustmentIndex) ?
+                            <ChevronDown className="h-3 w-3" />
+                          : <ChevronRight className="h-3 w-3" />}
+                        </TableCell>
+                        <TableCell className="font-medium text-xs">
+                          {new Date(adjustment.attributes.createdAt).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <span className="font-medium">
+                            {((adjustment.attributes.score * scaleFactor) / 100).toFixed(
+                              2,
+                            )}{" "}
+                            / {scaleFactor}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {adjustment.attributes.adjustmentSource || "Manual Adjustment"}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Expanded rows showing criterion breakdown */}
+                      {expandedRows.has(adjustmentIndex) && (
+                        <>
+                          {/* Header for breakdown */}
+                          <TableRow className="bg-muted/30">
+                            <TableCell className="text-xs font-medium" colSpan={4}>
+                              <div className="grid grid-cols-2 gap-4 pl-4">
+                                <span>Criterion Name</span>
+                                <span>Score</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+
+                          {/* Criterion breakdown rows */}
+                          {adjustment.attributes.scoreBreakdowns.map(
+                            (scoreBreakdown: ScoreBreakdown, scoreIndex: number) => (
+                              <TableRow
+                                key={`${adjustmentIndex}-breakdown-${scoreIndex}`}
+                                className="bg-muted/10"
                               >
-                                {new Date(
-                                  adjustment.attributes.createdAt,
-                                ).toLocaleString()}
-                              </TableCell>
-                              <TableCell
-                                rowSpan={adjustment.attributes.scoreBreakdowns.length}
-                                className="min-w-[120px] text-xs"
-                              >
-                                {(adjustment.attributes.score * scaleFactor) / 100}
-                              </TableCell>
-                            </>
+                                <TableCell className="text-xs" colSpan={4}>
+                                  <div className="grid grid-cols-2 gap-4 pl-8">
+                                    <span className="text-muted-foreground">
+                                      {scoreBreakdown.criterionName}
+                                    </span>
+                                    <span>
+                                      {(
+                                        (scoreBreakdown.rawScore * scaleFactor) /
+                                        100
+                                      ).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ),
                           )}
-                          <TableCell className="min-w-[150px] text-xs">
-                            {scoreBreakdown.criterionName}
-                          </TableCell>
-                          <TableCell className="min-w-[120px] text-xs">
-                            {(scoreBreakdown.rawScore * scaleFactor) / 100}
-                          </TableCell>
-                        </TableRow>
-                      ),
-                    ),
-                  )}
+                        </>
+                      )}
+                    </React.Fragment>
+                  ))}
                 </TableBody>
               </Table>
             </div>

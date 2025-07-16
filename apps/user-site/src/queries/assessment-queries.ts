@@ -81,12 +81,30 @@ export function getAssessmentStatusQueryOptions(
   };
 }
 
+// Query options for fetching score adjustments for an assessment
+export function getScoreAdjustmentsQueryOptions(
+  assessmentId: string,
+  auth: Auth,
+  options?: Partial<UseQueryOptions<any[]>>,
+): UseQueryOptions<any[]> {
+  return {
+    queryKey: ["scoreAdjustments", assessmentId],
+    queryFn: async () => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication token is required");
+      return AssessmentService.getScoreAdjustments(assessmentId, token);
+    },
+    enabled: Boolean(assessmentId),
+    ...options,
+  };
+}
+
 // Mutation options for updating feedback
 export function updateFeedbackMutationOptions(
   id: string,
   auth: Auth,
-  options?: Partial<UseMutationOptions<Assessment, unknown, FeedbackItem[]>>,
-): UseMutationOptions<Assessment, unknown, FeedbackItem[]> {
+  options?: Partial<UseMutationOptions<unknown, unknown, FeedbackItem[]>>,
+): UseMutationOptions<unknown, unknown, FeedbackItem[]> {
   return {
     mutationFn: async (feedbacks: FeedbackItem[]) => {
       const token = await auth.getToken();
@@ -101,8 +119,8 @@ export function updateFeedbackMutationOptions(
 export function updateScoreMutationOptions(
   id: string,
   auth: Auth,
-  options?: Partial<UseMutationOptions<Assessment, unknown, Partial<ScoreBreakdown>[]>>,
-): UseMutationOptions<Assessment, unknown, Partial<ScoreBreakdown>[]> {
+  options?: Partial<UseMutationOptions<unknown, unknown, Partial<ScoreBreakdown>[]>>,
+): UseMutationOptions<unknown, unknown, Partial<ScoreBreakdown>[]> {
   return {
     mutationFn: async (scoreBreakdowns: Partial<ScoreBreakdown>[]) => {
       const token = await auth.getToken();

@@ -444,7 +444,7 @@ export class GradingExporter implements DataExporter {
       : new Date().toISOString().slice(0, 16).replace(/[T:]/g, "_");
 
     const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${createdTime}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    XLSXWriteFile(workbook, fileName);
   }
 }
 
@@ -464,7 +464,7 @@ export class AssessmentExporter implements DataExporter {
     doc.text(`Submission: ${this.assessment.submissionReference}`, 14, 30);
     doc.text(`Total Score (%): ${this.assessment.rawScore}`, 14, 40);
     doc.text(
-      `Total Score (Scale Factor): ${(this.assessment.rawScore * this.grading.scaleFactor) / 100}`,
+      `Total Score (Scale Factor): ${((this.assessment.rawScore ?? 0) * (this.grading.scaleFactor ?? 1)) / 100}`,
       14,
       50,
     );
@@ -484,7 +484,7 @@ export class AssessmentExporter implements DataExporter {
         sb.criterionName,
         sb.performanceTag,
         sb.rawScore.toString(),
-        ((sb.rawScore * this.grading.scaleFactor) / 100).toString(),
+        (((sb.rawScore ?? 0) * (this.grading.scaleFactor ?? 1)) / 100).toString(),
         this.assessment.feedbacks.find(
           (fb) => fb.criterion === sb.criterionName && fb.tag === "summary",
         )?.comment ?? "",
@@ -501,7 +501,7 @@ export class AssessmentExporter implements DataExporter {
 
     autoTable(doc, {
       startY: yAfter + 10,
-      head: [["Criterion", "Comment", "Tag", "File", "Position", "Location Data"]],
+      head: [["Criterion", "Comment", "Tag", "File", "Position"]],
       body: this.assessment.feedbacks
         .map((fb) => {
           // Format position based on locationData type
@@ -527,7 +527,6 @@ export class AssessmentExporter implements DataExporter {
               fb.tag,
               fb.fileRef.split("/").pop() ?? "",
               position,
-              JSON.stringify(fb.locationData),
             ];
           }
           return undefined;
@@ -553,7 +552,7 @@ export class AssessmentExporter implements DataExporter {
     wsData.push(["Total Score (%)", this.assessment.rawScore]);
     wsData.push([
       "Total Score (ScaleFactor)",
-      (this.assessment.rawScore * this.grading.scaleFactor) / 100,
+      ((this.assessment.rawScore ?? 0) * (this.grading.scaleFactor ?? 1)) / 100,
     ]);
     wsData.push(["Adjusted Count", this.assessment.adjustedCount ?? 0]);
     wsData.push(["Created at", this.assessment.createdAt?.toLocaleString() ?? ""]);
@@ -568,7 +567,7 @@ export class AssessmentExporter implements DataExporter {
         sb.criterionName,
         sb.performanceTag,
         sb.rawScore,
-        (sb.rawScore * this.grading.scaleFactor) / 100,
+        ((sb.rawScore ?? 0) * (this.grading.scaleFactor ?? 1)) / 100,
         this.assessment.feedbacks.find(
           (fb) => fb.criterion === sb.criterionName && fb.tag === "summary",
         )?.comment ?? "",
@@ -577,7 +576,7 @@ export class AssessmentExporter implements DataExporter {
     wsData.push([]);
 
     const feedbackHeaderRow = wsData.length;
-    wsData.push(["Criterion", "Comment", "Tag", "File", "Position", "Location Data"]);
+    wsData.push(["Criterion", "Comment", "Tag", "File", "Position"]);
 
     this.assessment.feedbacks.forEach((fb) => {
       // Format position based on locationData type
@@ -603,7 +602,6 @@ export class AssessmentExporter implements DataExporter {
           fb.tag,
           fb.fileRef.split("/").pop() ?? "",
           position,
-          JSON.stringify(fb.locationData),
         ]);
       }
     });

@@ -8,51 +8,29 @@ import { FileItem } from "@/types/file";
 interface FileViewerProps {
   file: FileItem;
   feedbacks: FeedbackItem[];
-  feedbacksAll: FeedbackItem[];
-  addFeedback: (newFeedback: FeedbackItem) => void;
-  updateFeedback: (index: number, adjustedFeedback: FeedbackItem) => void;
-  isHighlightMode: boolean;
-  onHighlightComplete: () => void;
+  updateFeedback: (feedbackId: string, adjustedFeedback: FeedbackItem) => void;
   activeFeedbackId?: string | null;
-  rubricCriteria?: string[];
-  gradingId: string;
-  submissionReference: string;
-  onFeedbackValidated?: (validatedFeedbacks: FeedbackItem[]) => void;
   onSelectionMade?: () => void;
-  onPageClick?: (page: number) => void;
-  onPageClear?: () => void; // Add new prop
+  onPageSelect?: (page: number | null) => void;
+  onSelectionChange?: (selection: any) => void;
 }
 
 const FileViewer: React.FC<FileViewerProps> = ({
   file,
   feedbacks,
-  feedbacksAll,
-  addFeedback,
   updateFeedback,
-  isHighlightMode,
-  onHighlightComplete,
   activeFeedbackId,
-  rubricCriteria = [],
-  gradingId,
-  submissionReference,
-  onFeedbackValidated,
   onSelectionMade,
-  onPageClick,
-  onPageClear,
+  onPageSelect,
+  onSelectionChange,
 }) => {
   // Gộp logic xác định loại file
   if (file.type === "image") {
     return (
       <ImageViewer
         src={file.content}
-        file={file}
-        addFeedback={addFeedback}
-        // updateFeedback={updateFeedback}
-        isHighlightMode={isHighlightMode}
-        onHighlightComplete={onHighlightComplete}
-        rubricCriteria={rubricCriteria}
-        gradingId={gradingId}
-        submissionReference={submissionReference}
+        onSelectionMade={onSelectionMade}
+        onSelectionChange={onSelectionChange}
       />
     );
   }
@@ -60,20 +38,10 @@ const FileViewer: React.FC<FileViewerProps> = ({
     return (
       <PDFViewer
         fileUrl={file.content}
-        file={file}
         feedbacks={feedbacks}
-        feedbacksAll={feedbacksAll}
-        addFeedback={addFeedback}
         updateFeedback={updateFeedback}
-        isHighlightMode={isHighlightMode}
-        onHighlightComplete={onHighlightComplete}
-        rubricCriteria={rubricCriteria}
-        gradingId={gradingId}
-        submissionReference={submissionReference}
-        activeFeedbackId={activeFeedbackId} // truyền activeFeedbackId
-        onFeedbackValidated={onFeedbackValidated}
-        onPageClick={onPageClick}
-        onPageClear={onPageClear}
+        activeFeedbackId={activeFeedbackId}
+        onPageSelect={onPageSelect}
       />
     );
   }
@@ -82,17 +50,10 @@ const FileViewer: React.FC<FileViewerProps> = ({
       <HighlightableViewer
         file={file}
         feedbacks={feedbacks}
-        feedbacksAll={feedbacksAll}
-        addFeedback={addFeedback}
         updateFeedback={updateFeedback}
-        isHighlightMode={isHighlightMode}
-        onHighlightComplete={onHighlightComplete}
         activeFeedbackId={activeFeedbackId}
-        rubricCriteria={rubricCriteria}
-        gradingId={gradingId}
-        submissionReference={submissionReference}
-        onFeedbackValidated={onFeedbackValidated}
         onSelectionMade={onSelectionMade}
+        onSelectionChange={onSelectionChange}
       />
     );
   }
