@@ -8,6 +8,15 @@ var username = builder.AddParameter("dev-username", secret: true);
 var password = builder.AddParameter("dev-password", secret: true);
 var toProxy = builder.Configuration.GetValue<bool>("ProxyEnabled", true);
 
+// var piston = builder
+//     .AddContainer("piston", "ghcr.io/engineer-man/piston")
+//     .WithHttpEndpoint(port: 2000, targetPort: 2000)
+//     .WithBindMount(
+//         source: Path.Combine(rootPath, "tmp", "piston", "packages"),
+//         target: "/piston/packages"
+//     )
+//     .WithContainerRuntimeArgs(["--privileged"]);
+
 var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
 
 var rubricDb = postgres.AddDatabase("rubricdb");
@@ -167,6 +176,8 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
                 assignmentFlowEndpoint?.Url ?? "";
+
+            ctx.EnvironmentVariables["VITE_BLOB_STORAGE_URL"] = "http://127.0.0.1:27000/devstoreaccount1";
         });
 }
 

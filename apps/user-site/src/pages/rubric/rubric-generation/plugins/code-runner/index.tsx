@@ -16,13 +16,6 @@ import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { CodeRunnerConfig, CodeRunnerConfigSchema } from "@/types/plugin";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import EnvironmentVariablesTable from "./environment-variables-table";
 import TestCasesTable from "./test-cases-table";
 import {
@@ -36,7 +29,7 @@ import {
 import {
   createCodeRunnerConfigMutationOptions,
   getTestRunnerConfigQueryOptions,
-  getTestRunnerSupportedLanguagesQueryOptions,
+  updateCodeRunnerConfigMutationOptions,
 } from "@/queries/plugin-queries";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
@@ -49,7 +42,6 @@ export default function CodeRunnerConfigDialog({
   const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultConfig, setDefaultConfig] = useState<CodeRunnerConfig>({
-    language: "",
     initCommand: "",
     runCommand: "",
     testCases: [],
@@ -57,6 +49,10 @@ export default function CodeRunnerConfigDialog({
   });
 
   const createConfigMutation = useMutation(createCodeRunnerConfigMutationOptions(auth));
+
+  const updateConfigMutation = useMutation(
+    updateCodeRunnerConfigMutationOptions(configId || "", auth),
+  );
 
   const { data: initialConfig, isLoading: isLoadingConfig } = useQuery(
     getTestRunnerConfigQueryOptions(configId!, auth, {
@@ -73,12 +69,6 @@ export default function CodeRunnerConfigDialog({
       reset(initialConfig);
     }
   }, [isLoadingConfig]);
-
-  const { data: languages, isFetching: isFetchingLanguages } = useQuery(
-    getTestRunnerSupportedLanguagesQueryOptions(auth, {
-      staleTime: Infinity,
-    }),
-  );
 
   const form = useForm<CodeRunnerConfig>({
     resolver: zodResolver(CodeRunnerConfigSchema),
@@ -170,8 +160,17 @@ export default function CodeRunnerConfigDialog({
       const isValid = await trigger();
       if (!isValid) return;
 
-      const configId = await createConfigMutation.mutateAsync(config);
-      onCriterionConfigChange?.(configId);
+      let resultConfigId: string;
+
+      if (configId && initialConfig) {
+        // Update existing config
+        resultConfigId = await updateConfigMutation.mutateAsync(config);
+      } else {
+        // Create new config
+        resultConfigId = await createConfigMutation.mutateAsync(config);
+      }
+
+      onCriterionConfigChange?.(resultConfigId);
       setDefaultConfig(config);
     } catch (error) {
       toast.error("Failed to save Code Runner configuration. Please try again.");
@@ -206,34 +205,6 @@ export default function CodeRunnerConfigDialog({
                 <form>
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
-                      <FormField
-                        control={control}
-                        name="language"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Language</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select a language" />
-                                </SelectTrigger>
-                              </FormControl>
-                              {isFetchingLanguages ?
-                                <div>Loading languages...</div>
-                              : <SelectContent>
-                                  {languages?.map((lang) => (
-                                    <SelectItem key={lang} value={lang}>
-                                      {lang}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              }
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
                       <FormField
                         control={control}
                         name="initCommand"

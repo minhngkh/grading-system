@@ -7,8 +7,13 @@ import { ScoringPanel } from "@/components/app/scoring-panel";
 import { FileService } from "@/services/file-service";
 import MainWorkspace from "@/components/app/main-workspace";
 import { AssessmentHeader } from "@/components/app/assessment-header";
-import { useAssessmentState } from "@/hooks/use-assessment-state";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import useAssessmentForm from "@/hooks/use-assessment-form";
+import {
+  useMutation,
+  useQueryClient,
+  useQuery,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import {
   updateFeedbackMutationOptions,
@@ -32,26 +37,35 @@ export function EditAssessmentUI({
   rubric: Rubric;
 }) {
   const auth = useAuth();
-  
-  // Subscribe to assessment data to get updates when rerun completes
+  const queryClient = useQueryClient();
+
+  // Simple useQuery pattern like rubric page
   const { data: assessment } = useQuery({
     ...getAssessmentQueryOptions(initialAssessment.id, auth),
-    initialData: initialAssessment,
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
-  // Use current assessment data or fallback to initial
+  // Use latest data or fallback to initial
   const currentAssessment = assessment || initialAssessment;
 
   const {
     form,
     formData,
-    canRevert,
-
+    validationState,
     updateLastSavedData,
-    markCurrentAsValidated,
-    resetToInitial,
-  } = useAssessmentState(currentAssessment);
+    revertToLastSaved,
+  } = useAssessmentForm(currentAssessment);
 
+  const { canRevert, hasUnsavedChanges } = validationState;
+
+  // Simple revert function
+  const handleRevert = useCallback(() => {
+    revertToLastSaved();
+    toast.success("Reverted to saved data.");
+  }, [revertToLastSaved]);
+
+  // Only essential state
   const [files, setFiles] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
   const [showBottomPanel, setShowBottomPanel] = useState(true);
@@ -59,47 +73,23 @@ export function EditAssessmentUI({
     rubric.criteria[0]?.name || "",
   );
 
+  // Memoize callbacks to prevent unnecessary re-renders
   const handleFileSelect = useCallback((file: any) => {
     setSelectedFile(file);
   }, []);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [fileLoadError, setFileLoadError] = useState<string | null>(null);
 
-  const queryClient = useQueryClient();
+  // Simple mutations without complex callbacks (like rubric page)
   const updateFeedbackMutation = useMutation(
-    updateFeedbackMutationOptions(currentAssessment.id, auth, {
-      onSuccess: (_, feedbacks) => {
-        toast.success("Feedback updated successfully");
-        updateLastSavedData({ feedbacks });
-      },
-      onError: (error) => {
-        console.error("Failed to update feedback:", error);
-        toast.error("Failed to update feedback");
-      },
-    }),
+    updateFeedbackMutationOptions(currentAssessment.id, auth),
   );
 
   const updateScoreMutation = useMutation(
-    updateScoreMutationOptions(currentAssessment.id, auth, {
-      onSuccess: (_, scoreBreakdowns) => {
-        toast.success("Score updated successfully");
-        updateLastSavedData({
-          scoreBreakdowns: scoreBreakdowns as Assessment["scoreBreakdowns"],
-        });
-
-        queryClient.invalidateQueries({ queryKey: ["assessment", currentAssessment.id] });
-        queryClient.invalidateQueries({ queryKey: ["gradingAssessments", grading.id] });
-        queryClient.invalidateQueries({
-          queryKey: ["scoreAdjustments", currentAssessment.id],
-        });
-      },
-      onError: (error) => {
-        console.error("Failed to update score:", error);
-        toast.error("Failed to update score");
-      },
-    }),
+    updateScoreMutationOptions(currentAssessment.id, auth),
   );
 
+  // Load files with proper error handling and loading states
   useEffect(() => {
     async function loadFiles() {
       if (!formData.submissionReference) return;
@@ -127,22 +117,43 @@ export function EditAssessmentUI({
     loadFiles();
   }, [formData.submissionReference, grading.id]);
 
+  // Set initial selected file when files are loaded
   useEffect(() => {
     if (files.length > 0 && !selectedFile) {
       setSelectedFile(files[0]);
     }
   }, [files, selectedFile]);
 
-  useEffect(() => {
-    if (files.length > 0 && !isLoadingFiles && !fileLoadError) {
-      const timer = setTimeout(() => {
-        markCurrentAsValidated();
-      }, 1500);
-
-      return () => clearTimeout(timer);
+  // Simple save handlers like rubric page
+  const handleSaveFeedback = async () => {
+    if (updateFeedbackMutation.isPending) return;
+    try {
+      await updateFeedbackMutation.mutateAsync(formData.feedbacks);
+      toast.success("Feedback updated successfully");
+      updateLastSavedData({ feedbacks: formData.feedbacks });
+    } catch (error) {
+      console.error("Failed to update feedback:", error);
+      toast.error("Failed to update feedback");
     }
-  }, [files.length, isLoadingFiles, fileLoadError, markCurrentAsValidated]);
+  };
 
+  const handleSaveScore = async () => {
+    if (updateScoreMutation.isPending) return;
+    try {
+      await updateScoreMutation.mutateAsync(formData.scoreBreakdowns);
+      toast.success("Score updated successfully");
+      updateLastSavedData({ scoreBreakdowns: formData.scoreBreakdowns });
+
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ["assessment", currentAssessment.id] });
+      queryClient.invalidateQueries({ queryKey: ["gradingAssessments", grading.id] });
+    } catch (error) {
+      console.error("Failed to update score:", error);
+      toast.error("Failed to update score");
+    }
+  };
+
+  // Score update handler with validation
   const handleUpdateScore = useCallback(
     (criterionName: string, newScore: number) => {
       const criterion = rubric.criteria.find((c) => c.name === criterionName);
@@ -151,11 +162,13 @@ export function EditAssessmentUI({
         return;
       }
 
+      // Validate score range
       if (newScore < 0 || newScore > 100) {
         toast.error("Score must be between 0 and 100");
         return;
       }
 
+      // Find the appropriate performance level
       let matchedLevel = criterion.levels
         .filter((l) => l.weight <= newScore)
         .sort((a, b) => b.weight - a.weight)[0];
@@ -182,24 +195,10 @@ export function EditAssessmentUI({
     [rubric.criteria, formData.scoreBreakdowns, form],
   );
 
-  const handleSaveFeedback = async () => {
-    if (updateFeedbackMutation.isPending) return;
-
-    try {
-      await updateFeedbackMutation.mutateAsync(formData.feedbacks);
-    } catch (error) {}
-  };
-
-  const handleSaveScore = async () => {
-    if (updateScoreMutation.isPending) return;
-
-    try {
-      await updateScoreMutation.mutateAsync(formData.scoreBreakdowns);
-    } catch (error) {}
-  };
-
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+S or Cmd+S to save feedback
       if ((event.ctrlKey || event.metaKey) && event.key === "s") {
         event.preventDefault();
         if (!updateFeedbackMutation.isPending) {
@@ -207,6 +206,7 @@ export function EditAssessmentUI({
         }
       }
 
+      // Ctrl+Shift+S to save score
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "S") {
         event.preventDefault();
         if (!updateScoreMutation.isPending) {
@@ -214,7 +214,9 @@ export function EditAssessmentUI({
         }
       }
 
+      // Escape to close panels
       if (event.key === "Escape") {
+        // Can be used to close dialogs or panels
       }
     };
 
@@ -234,15 +236,12 @@ export function EditAssessmentUI({
     <div className="-mb-21 -mt-13 h-[92.5vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-hidden">
       {/* Header */}
       <AssessmentHeader
-        form={form}
         assessment={formData}
         grading={grading}
         rubric={rubric}
         canRevert={canRevert}
-        handleRevert={() => {
-          resetToInitial();
-          toast.success("Reverted to saved data.");
-        }}
+        hasUnsavedChanges={hasUnsavedChanges}
+        handleRevert={handleRevert}
         updateLastSavedData={updateLastSavedData}
       />
 

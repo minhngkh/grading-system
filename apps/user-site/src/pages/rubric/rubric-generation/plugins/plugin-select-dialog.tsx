@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getAllPluginsQueryOptions } from "@/queries/plugin-queries";
+import { plugins } from "@/consts/plugins";
 
 interface PluginSelectDialogProps {
   open: boolean;
@@ -32,7 +33,11 @@ const PluginItem = React.memo<PluginItemProps>(({ plugin, isSelected, onSelect }
   >
     <CardHeader>
       <CardTitle className="flex items-center justify-between">
-        <div>{plugin.name}</div>
+        <div>
+          {plugin.id ?
+            plugins[plugin.id as keyof typeof plugins] || "Unknown"
+          : plugins["ai"]}
+        </div>
         {isSelected && <Check className="size-4" />}
       </CardTitle>
       <Separator orientation="horizontal" />
@@ -66,8 +71,6 @@ export function PluginSelectDialog({
       categories: [],
     },
   ];
-
-  console.log("Plugins loaded:", plugins);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

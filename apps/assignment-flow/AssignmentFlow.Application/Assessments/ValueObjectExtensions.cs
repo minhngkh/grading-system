@@ -52,15 +52,17 @@ public static class ValueObjectExtensions
             Grader = grader
         };
 
-        var summary = Feedback.Summary(
+        List<Feedback> feedbackItems = [];
+        if (string.IsNullOrEmpty(apiContract.Summary))
+        {
+            var summary = Feedback.Summary(
                 FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result),
                 criterionName,
                 Comment.New(apiContract.Summary));
-
-        List<Feedback> feedbackItems = [
-            summary,
-            ..apiContract.FeedbackItems.Select(fb => fb.ToValueObject(criterionName, sequenceRepository))
-        ];
+            feedbackItems.Add(summary);
+        }
+        feedbackItems.AddRange(apiContract.FeedbackItems
+            .Select(fb => fb.ToValueObject(criterionName, sequenceRepository)));
 
         return (breakdownItem, feedbackItems);
     }

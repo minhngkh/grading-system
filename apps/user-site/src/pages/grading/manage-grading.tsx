@@ -263,7 +263,7 @@ export default function ManageGradingsPage({
                               to="/gradings/$gradingId/result"
                               params={{ gradingId: grading.id }}
                             >
-                              View Grading
+                              View Result
                             </Link>
                           </DropdownMenuItem>
                         : <DropdownMenuItem asChild>

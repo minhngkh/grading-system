@@ -63,6 +63,16 @@ public class AssessmentWriteModel
         StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
     }
 
+    internal void Apply(AutoGrading.ManualGradingRequestedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.WaitForManualGrading);
+    }
+
+    internal void Apply(AutoGrading.AssessmentGradingCompletedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.Complete);
+    }
+
     internal void Apply(Assess.AssessmentFailedEvent _)
     {
         StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);

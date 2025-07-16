@@ -5,26 +5,31 @@ import { getRubricsQueryOptions } from "@/queries/rubric-queries";
 import { SearchParams, searchParams } from "@/types/search-params";
 import { createFileRoute, retainSearchParams } from "@tanstack/react-router";
 import { useCallback } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/rubrics/view")({
   component: RouteComponent,
   validateSearch: searchParams,
-  loaderDeps: ({ search }) => search,
-  loader: ({ deps, context: { auth, queryClient } }) =>
-    queryClient.fetchQuery(getRubricsQueryOptions(deps, auth)),
   search: {
     middlewares: [retainSearchParams(["perPage", "page", "search"])],
   },
-  errorComponent: () => (
-    <ErrorComponent message="Failed to load rubrics. Please try again later." />
-  ),
-  pendingComponent: () => <PendingComponent message="Loading rubrics..." />,
 });
 
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const search = Route.useSearch();
-  const rubricsData = Route.useLoaderData();
+  const { auth } = Route.useRouteContext();
+
+  const {
+    data: rubricsData,
+    isPending,
+    error,
+  } = useQuery(
+    getRubricsQueryOptions(search, auth, {
+      placeholderData: keepPreviousData,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    }),
+  );
 
   const setSearchParam = useCallback(
     (partial: Partial<SearchParams>) => {
@@ -40,6 +45,18 @@ function RouteComponent() {
     },
     [navigate],
   );
+
+  if (isPending) {
+    return <PendingComponent message="Loading rubrics..." />;
+  }
+
+  if (error) {
+    return <ErrorComponent message="Failed to load rubrics. Please try again later." />;
+  }
+
+  if (!rubricsData) {
+    return <ErrorComponent message="No data available" />;
+  }
 
   return (
     <ManageRubricsPage

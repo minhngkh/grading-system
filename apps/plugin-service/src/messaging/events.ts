@@ -76,7 +76,7 @@ export const criterionGradingSuccessEvent = {
           tag: z.string(),
           locationData: z.record(z.unknown()),
         }),
-      ),
+      ).optional(),
     }),
   }),
 };

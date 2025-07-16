@@ -2,13 +2,13 @@ import type { CliOptions } from "repomix";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { CustomError, wrapError } from "@grading-system/utils/error";
-import { deleteDirectory, deleteFile } from "@grading-system/utils/file";
+import { deleteDirectory } from "@grading-system/utils/file";
 import logger from "@grading-system/utils/logger";
 import fg from "fast-glob";
 import { okAsync, ResultAsync, safeTry } from "neverthrow";
 import { runDefaultAction } from "repomix";
 import { submissionStore } from "@/lib/blob-storage";
-import { createDirectoryOnSystemTemp, createTempDirectory, getFiles } from "@/lib/file";
+import { createTempDirectory, getFiles } from "@/lib/file";
 
 const DELETE_PACKED_FILE = true;
 
@@ -68,7 +68,7 @@ export type FilesSubset = {
   blobNameRestList: string[];
 };
 
-class PackFilesError extends CustomError<{
+class PackFilesError extends CustomError.withTag("PackFilesError")<{
   ids: string[];
 }> {}
 
@@ -166,7 +166,7 @@ export function packFilesSubsets(
             new PackFilesError({
               data: { ids: task.subsetIds },
               message: `Failed to pack files for criteria`,
-              options: { cause: error },
+              cause: error,
             }),
         ),
     );

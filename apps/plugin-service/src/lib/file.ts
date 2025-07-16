@@ -1,9 +1,12 @@
 import type { BlobContainer } from "@grading-system/utils/azure-storage-blob";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { Cache } from "@grading-system/utils/cache";
-import { wrapError } from "@grading-system/utils/error";
+import { CustomError, wrapError } from "@grading-system/utils/error";
 import * as fileUtils from "@grading-system/utils/file";
-import { errAsync, okAsync, ResultAsync, safeTry } from "neverthrow";
+import logger from "@grading-system/utils/logger";
+import { errAsync, fromPromise, okAsync, ResultAsync, safeTry } from "neverthrow";
+import { EmptyListError } from "@/lib/error";
 
 const PREFIX = "plugin-service";
 
@@ -33,9 +36,6 @@ const downloadCache = new Cache<DownloadDirectory>();
 /**
  * Attempt to download files if not cached
  *
- * @param urls array of blob URLs to download
- * @param cacheKey cache key to use for storing downloaded files
- * @returns directory path and a map of blob URLs to their "names" (aka relative path)
  */
 export function getFiles(
   container: BlobContainer,
@@ -80,5 +80,54 @@ export function getFiles(
       });
 
     return okAsync({ path: downloadDir });
+  });
+}
+
+class SymlinkError extends CustomError.withTag("SymlinkError")<void> {}
+
+// TODO: rename this to link instead of symlink (it now uses hardlink)
+export function symlinkFiles(originalDirectory: string, fileList: string[], tag: string) {
+  return safeTry(async function* () {
+    if (fileList.length === 0) {
+      return errAsync(new EmptyListError({ message: "No files to symlink" }));
+    }
+
+    const newDir = yield* createTempDirectory(tag);
+
+    const symlinkPromises = [];
+
+    const createdDirs = new Set<string>();
+    for (const filePath of fileList) {
+      const absolutePath = path.join(newDir, filePath);
+      const dirPath = path.dirname(absolutePath);
+
+      // check to create folder if it does not exist
+      if (!createdDirs.has(dirPath)) {
+        yield* fileUtils.createDirectory(dirPath).andTee(() => createdDirs.add(dirPath));
+      }
+
+      symlinkPromises.push(
+        fromPromise(
+          fs.link(path.join(originalDirectory, filePath), path.join(newDir, filePath)),
+          (error) =>
+            new SymlinkError({
+              message: `Failed to symlink file ${filePath}`,
+              cause: error,
+            }),
+        ),
+      );
+    }
+
+    yield* ResultAsync.combine(symlinkPromises).orTee((error) => {
+      logger.info("Failed to symlink files:", error);
+
+      cleanTempDirectory(newDir).orTee((error) => {
+        logger.info(`Failed to clean temporary directory after symlinking`, error);
+      });
+    });
+
+    return okAsync({
+      path: newDir,
+    });
   });
 }

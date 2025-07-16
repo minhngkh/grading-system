@@ -193,8 +193,8 @@ function ChatRubricTable({
         <CardContent className="flex-1">
           {isApplyingEdit ?
             <LoadingFallback message="Agent is modifying the rubric. Please wait..." />
-          : <div className="h-full overflow-y-auto relative">
-              <div className="h-full absolute top-0 left-0 right-0">
+          : <div className="h-full overflow-auto relative">
+              <div className="grid absolute top-0 left-0 right-0">
                 <Suspense
                   fallback={
                     <LoadingFallback message="Loading rubric view. Please wait..." />

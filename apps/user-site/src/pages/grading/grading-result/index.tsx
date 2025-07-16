@@ -191,7 +191,7 @@ export default function GradingResult({
             onClick={() => setChangeScaleFactorOpen(true)}
           >
             <Scale className="w-4 h-4" />
-            Change Grade Scale
+            Change Grade
           </Button>
           <Button
             variant="outline"
@@ -205,7 +205,7 @@ export default function GradingResult({
           <Link to="/analytics" search={{ id: gradingAttempt.id }}>
             <Button variant="outline" size="sm" disabled={isGrading}>
               <ChartColumn className="w-4 h-4" />
-              View Analytics
+              Analytics
             </Button>
           </Link>
           <Button size="sm" disabled={isGrading} onClick={handleRegradeAll}>

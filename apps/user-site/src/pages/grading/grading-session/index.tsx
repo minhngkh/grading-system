@@ -46,7 +46,7 @@ export default function UploadAssignmentPage({
   const gradingAttemptValues = gradingAttempt.watch();
 
   useEffect(() => {
-    if (initialGradingAttempt.status === GradingStatus.Started) {
+    if (initialGradingAttempt.status !== GradingStatus.Created) {
       stepper.goTo(steps[1].id);
       sessionStorage.setItem("gradingStep", steps[1].id);
     }
@@ -91,7 +91,11 @@ export default function UploadAssignmentPage({
   };
 
   const isNextButtonDisabled = () => {
-    if (currentIndex === 1) return gradingAttemptValues.status === GradingStatus.Started;
+    if (currentIndex === 1)
+      return (
+        gradingAttemptValues.status === GradingStatus.Started ||
+        gradingAttemptValues.status === GradingStatus.Created
+      );
     return false;
   };
 

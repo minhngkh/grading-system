@@ -5,7 +5,6 @@ import z from "zod";
 import { ScrollableSelectMemo } from "@/components/app/scrollable-select";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
 import { useCallback } from "react";
-import PendingComponent from "@/components/app/route-pending";
 import ErrorComponent from "@/components/app/route-error";
 import {
   getGradingAttemptQueryOptions,
@@ -21,34 +20,28 @@ export const Route = createFileRoute("/_authenticated/analytics")({
     id: z.string().optional(),
   }),
   loaderDeps: ({ search }) => search,
-  loader: ({ deps: { id }, context: { auth, queryClient } }) => {
-    if (!id) return;
-    queryClient.ensureQueryData(getGradingSummaryQueryOptions(id, auth));
-    queryClient.ensureQueryData(getGradingAttemptQueryOptions(id, auth));
-  },
-  errorComponent: () => <ErrorComponent message="Failed to load grading analytics" />,
-  pendingComponent: () => <PendingComponent message="Loading grading analytics..." />,
 });
 
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const auth = useAuth();
+  const { id } = Route.useSearch();
 
-  const { data: gradingAnalytics } = useQuery(
-    getGradingSummaryQueryOptions(Route.useSearch().id ?? "", auth, {
+  const { data: gradingAnalytics, isError: gradingAnalyticsError } = useQuery(
+    getGradingSummaryQueryOptions(id ?? "", auth, {
       placeholderData: keepPreviousData,
     }),
   );
 
-  const { data: grading } = useQuery(
-    getGradingAttemptQueryOptions(gradingAnalytics?.gradingId ?? "", auth, {
+  const { data: gradingAttempt } = useQuery(
+    getGradingAttemptQueryOptions(id ?? "", auth, {
       placeholderData: keepPreviousData,
     }),
   );
 
   const setSearchParam = useCallback(
     (newId?: string) => {
-      if (newId === gradingAnalytics?.gradingId) return;
+      if (newId === id) return;
 
       navigate({
         search: { id: newId ?? undefined },
@@ -57,6 +50,10 @@ function RouteComponent() {
     },
     [navigate],
   );
+
+  if (gradingAnalyticsError) {
+    return <ErrorComponent message="Failed to load grading analytics" />;
+  }
 
   return (
     <div className="flex flex-col size-full gap-8">
@@ -67,10 +64,11 @@ function RouteComponent() {
             View detailed grading analytics and performance insights.
           </p>
         </div>
+
         <div className="flex items-center space-x-2">
           <Label>View grading:</Label>
           <ScrollableSelectMemo<GradingAttempt>
-            value={grading}
+            value={gradingAttempt}
             onValueChange={(grading) => setSearchParam(grading.id)}
             queryOptionsFn={getInfiniteGradingAttemptsQueryOptions(auth, {
               status: GradingStatus.Graded,
@@ -87,7 +85,13 @@ function RouteComponent() {
             No grading analytics to view. Please select a grading to view analytics.
           </p>
         </div>
-      : <GradingAnalyticsPage gradingAnalytics={gradingAnalytics} />}
+      : !gradingAttempt ?
+        <ErrorComponent message="Failed to load grading attempt" />
+      : <GradingAnalyticsPage
+          gradingAnalytics={gradingAnalytics}
+          grading={gradingAttempt}
+        />
+      }
     </div>
   );
 }

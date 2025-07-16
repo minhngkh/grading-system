@@ -93,8 +93,8 @@ function ScrollableSelect<T extends Item>({
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
-          {items.length === 0 && !isFetching ?
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
+          {items.length === 0 ?
+            <CommandEmpty>{isFetching ? "Loading..." : emptyMessage}</CommandEmpty>
           : <CommandGroup>
               <CommandList
                 defaultValue={value?.id}

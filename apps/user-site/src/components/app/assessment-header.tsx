@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import { Save, History, ArrowLeft, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +16,6 @@ import { Assessment } from "@/types/assessment";
 import { GradingAttempt } from "@/types/grading";
 import { Rubric } from "@/types/rubric";
 import { Navigate } from "@tanstack/react-router";
-import { UseFormReturn } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
@@ -27,11 +26,11 @@ import {
 } from "@/queries/assessment-queries";
 
 interface AssessmentHeaderProps {
-  form: UseFormReturn<Assessment>;
   assessment: Assessment;
   grading: GradingAttempt;
   rubric: Rubric;
   canRevert: boolean;
+  hasUnsavedChanges: boolean;
   handleRevert: () => void;
   updateLastSavedData: (
     updates: Partial<{
@@ -42,19 +41,19 @@ interface AssessmentHeaderProps {
 }
 
 export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
-  form,
   assessment,
   grading,
   rubric,
   canRevert,
+  hasUnsavedChanges,
   handleRevert,
   updateLastSavedData,
 }) => {
-  const [open, setOpen] = React.useState(false);
-  const [revertDialogOpen, setRevertDialogOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
 
   // Get form data
-  const formData = form.watch();
+  const formData = assessment;
 
   // Setup mutations
   const queryClient = useQueryClient();
@@ -129,11 +128,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         queryKey: ["assessment", assessment.id],
       });
 
-      // Also invalidate grading attempts list
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempts"],
-      });
-
       toast.success("Assessment rerun completed successfully");
     } catch (error) {
       console.error("Failed to rerun assessment:", error);
@@ -169,6 +163,10 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   });
 
   const handleExport = () => {
+    if (hasUnsavedChanges) {
+      toast.warning("Please save your changes before exporting the assessment.");
+      return;
+    }
     setOpen(true);
   };
 
@@ -260,7 +258,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
           <Button
             className="cursor-pointer"
             size="sm"
-            onClick={handleRerunAssessment || handleSaveScore}
+            onClick={handleRerunAssessment}
             disabled={isLoading}
           >
             <RotateCcw className="h-4 w-4 mr-2" />

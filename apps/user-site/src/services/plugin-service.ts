@@ -1,7 +1,12 @@
-import { CodeRunnerConfig, Plugin } from "@/types/plugin";
+import {
+  CodeRunnerConfig,
+  Plugin,
+  StaticAnalysisConfig,
+  StaticAnalysisPreset,
+} from "@/types/plugin";
 import axios, { AxiosRequestConfig } from "axios";
 
-const API_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1`;
+const API_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/plugins`;
 
 export class PluginService {
   private static async buildHeaders(token: string): Promise<AxiosRequestConfig> {
@@ -16,7 +21,7 @@ export class PluginService {
 
   static async getAll(token: string): Promise<Plugin[]> {
     const configHeaders = await this.buildHeaders(token);
-    const response = await axios.get(`${API_URL}/plugins`, configHeaders);
+    const response = await axios.get(`${API_URL}`, configHeaders);
     return response.data;
   }
 
@@ -26,7 +31,7 @@ export class PluginService {
   ): Promise<string> {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.post(
-      `${API_URL}/test-runner/config`,
+      `${API_URL}/test-runner/configs`,
       config,
       configHeaders,
     );
@@ -39,18 +44,88 @@ export class PluginService {
   ): Promise<CodeRunnerConfig> {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.get(
-      `${API_URL}/test-runner/config/${configId}`,
+      `${API_URL}/test-runner/configs/${configId}`,
       configHeaders,
     );
     return response.data;
   }
 
-  static async getTestRunnerSupportedLanguages(token: string): Promise<string[]> {
+  static async updateTestRunnerConfig(
+    configId: string,
+    config: CodeRunnerConfig,
+    token: string,
+  ): Promise<string> {
     const configHeaders = await this.buildHeaders(token);
-    const response = await axios.get(
-      `${API_URL}/test-runner/config/languages`,
+    const response = await axios.put(
+      `${API_URL}/test-runner/configs/${configId}`,
+      config,
       configHeaders,
     );
-    return response.data;
+    return response.data.id;
+  }
+
+  static async configStaticAnalysis(
+    config: StaticAnalysisConfig,
+    token: string,
+  ): Promise<string> {
+    const configHeaders = await this.buildHeaders(token);
+
+    const { preset, ...restConfig } = config;
+
+    const response = await axios.post(
+      `${API_URL}/static-analysis/configs`,
+      {
+        type: "static-analysis",
+        preset: {
+          type: preset,
+        },
+        ...restConfig,
+      },
+      configHeaders,
+    );
+    return response.data.id;
+  }
+
+  static async getStaticAnalysisConfig(
+    configId: string,
+    token: string,
+  ): Promise<StaticAnalysisConfig> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(
+      `${API_URL}/static-analysis/configs/${configId}`,
+      configHeaders,
+    );
+
+    const presetType =
+      (response.data.preset.type as StaticAnalysisPreset) ||
+      StaticAnalysisPreset["Auto Detect"];
+
+    return {
+      ...response.data,
+      preset: presetType,
+    };
+  }
+
+  static async updateStaticAnalysisConfig(
+    configId: string,
+    config: StaticAnalysisConfig,
+    token: string,
+  ): Promise<string> {
+    const configHeaders = await this.buildHeaders(token);
+
+    const { preset, ...restConfig } = config;
+
+    const response = await axios.put(
+      `${API_URL}/static-analysis/configs/${configId}`,
+      {
+        type: "static-analysis",
+        preset: {
+          type: preset,
+        },
+        ...restConfig,
+      },
+      configHeaders,
+    );
+    return response.data.id;
   }
 }

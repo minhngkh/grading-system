@@ -77,6 +77,7 @@ public class Rubric :
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId;
         UpdatedOn = domainEvent.Timestamp.ToUniversalTime();
+        RubricName = "Untitled"; // Default name, can be updated later
 
         return Task.CompletedTask;
     }

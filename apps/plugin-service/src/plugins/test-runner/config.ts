@@ -8,6 +8,7 @@ export const testCaseSchema = z.object({
 
 export const testRunnerConfigSchema = z.object({
   type: z.literal("test-runner"),
+  version: z.literal(1).default(1),
   runCommand: z.string().describe("Command to run tests"),
   initCommand: z
     .string()

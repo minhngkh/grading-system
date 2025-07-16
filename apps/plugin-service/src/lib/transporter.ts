@@ -1,4 +1,4 @@
-import type { EventTransporter } from "@grading-system/utils/event-transporter/core.d";
+import type { EventTransporter } from "@grading-system/utils/event-transporter/core";
 import process from "node:process";
 import { RabbitMQTransporter } from "@grading-system/utils/event-transporter/rabbitmq";
 import { masstransitTransformer } from "@grading-system/utils/event-transporter/transformers/masstransit";

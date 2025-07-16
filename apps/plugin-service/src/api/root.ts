@@ -1,10 +1,12 @@
 import "zod-openapi/extend";
 
 import type { ServiceBroker } from "moleculer";
+import logger from "@grading-system/utils/logger";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { resolver, validator } from "hono-openapi/zod";
 import z from "zod";
+import { configurablePluginsMap, pluginConfigSchema, plugins } from "@/plugins/info";
 import * as categoryService from "@/services/category";
 import * as configService from "@/services/config";
 import * as pluginService from "@/services/plugin";
@@ -175,13 +177,23 @@ export function route(_broker?: ServiceBroker) {
     },
   );
 
+  app.use("/plugins/:pluginId/configs/*", async (c, next) => {
+    const pluginId = c.req.param("pluginId");
+
+    if (!configurablePluginsMap.has(pluginId)) {
+      return c.json({ error: "Invalid plugin" }, 404);
+    }
+
+    await next();
+  });
+
   // Get plugin config by ID
-  const getPluginConfigResponseSchema = configService.pluginConfigSchema;
+  const getPluginConfigResponseSchema = pluginConfigSchema;
 
   app.get(
-    "/configs/:id",
+    "/plugins/:pluginId/configs/:configId",
     describeRoute({
-      tags: ["General"],
+      tags: ["Config"],
       description: "Get plugin config by ID",
       responses: {
         200: {
@@ -198,9 +210,10 @@ export function route(_broker?: ServiceBroker) {
       },
     }),
     async (c) => {
-      const id = c.req.param("id");
+      const pluginId = c.req.param("pluginId");
+      const configId = c.req.param("configId");
 
-      const plugin = await configService.getConfig(id);
+      const plugin = await configService.getConfigOfPlugin(configId, pluginId);
 
       if (!plugin) {
         return c.json({ error: "Plugin config not found" }, 404);
@@ -212,16 +225,15 @@ export function route(_broker?: ServiceBroker) {
     },
   );
 
-  // Create plugin config
-  const createPluginConfigSchema = configService.pluginConfigSchema;
+  const createPluginConfigSchema = pluginConfigSchema;
   const createPluginConfigResponseSchema = z.object({
     id: z.string(),
   });
 
   app.post(
-    "/configs",
+    "/plugins/:pluginId/configs",
     describeRoute({
-      tags: ["General"],
+      tags: ["Config"],
       description: "Create a new plugin config",
       responses: {
         201: {
@@ -237,8 +249,16 @@ export function route(_broker?: ServiceBroker) {
     validator("json", createPluginConfigSchema),
     async (c) => {
       const data = c.req.valid("json");
+      const pluginId = c.req.param("pluginId");
 
-      const config = await configService.createConfig(data);
+      const pluginKey = configurablePluginsMap.get(pluginId)!;
+      const check = plugins[pluginKey].checkConfig;
+
+      if (check !== undefined && !check.func(data as unknown as any)) {
+        return c.json({ error: check.message }, 400);
+      }
+
+      const config = await configService.createConfig(data, pluginId);
 
       const response = {
         id: config._id.toString(),
@@ -249,12 +269,12 @@ export function route(_broker?: ServiceBroker) {
   );
 
   // Update plugin config
-  const updatePluginConfigSchema = configService.pluginConfigSchema;
+  const updatePluginConfigSchema = pluginConfigSchema;
 
   app.put(
-    "/configs/:id",
+    "/plugins/:pluginId/configs/:id",
     describeRoute({
-      tags: ["General"],
+      tags: ["Config"],
       description: "Update plugin config by ID",
       responses: {
         200: {
@@ -270,13 +290,22 @@ export function route(_broker?: ServiceBroker) {
       const id = c.req.param("id");
       const data = c.req.valid("json");
 
+      const pluginId = c.req.param("pluginId");
+
+      const pluginKey = configurablePluginsMap.get(pluginId)!;
+      const check = plugins[pluginKey].checkConfig;
+
+      if (check !== undefined && check.func(data as unknown as any)) {
+        return c.json({ error: check.message }, 400);
+      }
+
       const config = await configService.updateConfig(id, data);
 
       if (!config) {
         return c.json({ error: "Plugin config not found" }, 404);
       }
 
-      return c.status(200);
+      return c.text("", 200);
     },
   );
 

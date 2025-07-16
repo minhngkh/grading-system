@@ -1,5 +1,6 @@
 import type { Rubric } from "@/types/rubric";
 import { cn } from "@/lib/utils";
+import { plugins } from "@/consts/plugins";
 
 interface RubricViewProps {
   rubricData: Rubric;
@@ -23,7 +24,7 @@ export function RubricView({
   }
 
   return (
-    <div className="border rounded-md overflow-auto h-full">
+    <div className="border rounded-md h-full">
       <table className="w-full h-full table-fixed text-sm">
         <thead>
           <tr className="bg-muted/50">
@@ -72,7 +73,7 @@ export function RubricView({
                           <div className="font-semibold text-blue-400 mb-1">
                             {criterionLevel.weight} %
                           </div>
-                          <div>{criterionLevel.description}</div>
+                          <div className="flex-1">{criterionLevel.description}</div>
                         </div>
                       )}
                     </td>
@@ -95,7 +96,9 @@ export function RubricView({
                         editPlugin && "underline cursor-pointer",
                       )}
                     >
-                      {criterion.plugin || "AI (Default)"}
+                      {criterion.plugin ?
+                        plugins[criterion.plugin as keyof typeof plugins] || "Unknown"
+                      : plugins["ai"]}
                     </div>
                   </td>
                 )}

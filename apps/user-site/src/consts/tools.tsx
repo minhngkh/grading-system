@@ -28,11 +28,12 @@ export const SystemTools: Tool[] = [
     collapseSidebar: true,
   },
   {
-    name: "AI Assistant",
-    details: "Channels, direct messages, and file sharing to keep your team connected.",
-    types: [ToolType.AI],
+    name: "Manage Gradings",
+    details:
+      "Track and review student submissions, provide feedback, and manage grading criteria.",
+    types: [ToolType.Review, ToolType.Grading],
     isFavorite: false,
-    navigation: "/chat",
+    navigation: "/gradings/view",
   },
   {
     name: "Analytics Dashboard",
@@ -40,13 +41,5 @@ export const SystemTools: Tool[] = [
     types: [ToolType.Review],
     isFavorite: false,
     navigation: "/analytics",
-  },
-  {
-    name: "Manage Gradings",
-    details:
-      "Track and review student submissions, provide feedback, and manage grading criteria.",
-    types: [ToolType.Review, ToolType.Grading],
-    isFavorite: false,
-    navigation: "/gradings/view",
   },
 ];

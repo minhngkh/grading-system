@@ -42,74 +42,77 @@ export class Plugin extends TimeStamps {
 
 export const PluginModel = getModelForClass(Plugin);
 
-@modelOptions({
-  schemaOptions: {
-    _id: false,
-    discriminatorKey: "type",
-  },
-})
-export abstract class BasePluginConfig {
-  @prop({ required: true })
-  public type!: string;
-}
+// @modelOptions({
+//   schemaOptions: {
+//     _id: false,
+//     discriminatorKey: "type",
+//   },
+// })
+// export abstract class BasePluginConfig {
+//   @prop({ required: true })
+//   public type!: string;
+// }
 
-enum PluginConfigType {
-  AI = "ai",
-  TestRunner = "test-runner",
-}
+// export class AIPluginConfig extends BasePluginConfig {
+//   @prop({ required: true })
+//   public model!: string; // e.g., "google:gemini-2.5-flash", "openai:gpt-4o-mini"
 
-export class AIPluginConfig extends BasePluginConfig {
-  @prop({ required: true })
-  public model!: string; // e.g., "google:gemini-2.5-flash", "openai:gpt-4o-mini"
+//   @prop({ required: true })
+//   public promptTemplate!: string; // e.g., "Generate a rubric for {task}"
 
-  @prop({ required: true })
-  public promptTemplate!: string; // e.g., "Generate a rubric for {task}"
+//   @prop({
+//     allowMixed: Severity.ALLOW,
+//     type: () => mongoose.Schema.Types.Mixed,
+//     default: {},
+//   })
+//   public additionalSettings?: Record<string, any>; // e.g., temperature, max tokens
+// }
 
-  @prop({
-    allowMixed: Severity.ALLOW,
-    type: () => mongoose.Schema.Types.Mixed,
-    default: {},
-  })
-  public additionalSettings?: Record<string, any>; // e.g., temperature, max tokens
-}
+// class TestCase {
+//   @prop({ required: true })
+//   public input!: string; // stdin input for the test case
 
-class TestCase {
-  @prop({ required: true })
-  public input!: string; // stdin input for the test case
+//   @prop({ required: true })
+//   public output!: string; // expected stdout output
 
-  @prop({ required: true })
-  public output!: string; // expected stdout output
+//   @prop()
+//   public description?: string; // optional description of the test case
+// }
 
-  @prop()
-  public description?: string; // optional description of the test case
-}
+// export class TestRunnerConfig extends BasePluginConfig {
+//   @prop({ required: true })
+//   public runCommand!: string;
 
-export class TestRunnerConfig extends BasePluginConfig {
-  @prop({ required: true })
-  public runCommand!: string;
+//   @prop()
+//   public initCommand!: string;
 
-  @prop()
-  public initCommand!: string;
+//   @prop({ _id: false, type: TestCase })
+//   public testCases!: TestCase[];
+// }
 
-  @prop({ _id: false, type: TestCase })
-  public testCases!: TestCase[];
-}
+// @modelOptions({
+//   schemaOptions: {
+//     _id: false,
+//   },
+// })
+// export class BasePluginConfig {
+//   @prop({ required: true })
+//   public type!: string;
+
+// }
 
 @modelOptions({ schemaOptions: { collection: "plugins.configs" } })
 export class PluginConfig extends TimeStamps {
-  // @prop({ ref: () => Plugin, type: () => String, required: true })
-  // public plugin!: Ref<Plugin>;
+  @prop({ ref: () => Plugin, type: () => String, required: true })
+  public plugin!: Ref<Plugin>;
 
   @prop({
     _id: false,
     required: true,
-    type: BasePluginConfig,
-    discriminators: () => [
-      { type: AIPluginConfig, value: "ai" },
-      { type: TestRunnerConfig, value: "test-runner" },
-    ],
+    allowMixed: Severity.ALLOW,
+    type: () => mongoose.Schema.Types.Mixed,
   })
-  public config!: BasePluginConfig;
+  public config!: any;
 }
 
 export const PluginConfigModel = getModelForClass(PluginConfig);

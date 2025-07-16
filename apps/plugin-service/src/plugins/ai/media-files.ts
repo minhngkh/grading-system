@@ -9,6 +9,7 @@ import { readFile } from "@grading-system/utils/file";
 import dedent from "dedent";
 import mime from "mime";
 import { err, errAsync, ok, okAsync, ResultAsync, safeTry } from "neverthrow";
+import { multimodalFileManifestHeader } from "@/plugins/ai/prompts/grade";
 
 const SUPPORTED_CONTENT_TYPES = [
   "image/png",
@@ -52,7 +53,9 @@ function signSupportedBlobs(container: BlobContainer, blobNameList: string[]) {
   });
 }
 
-class NotSupportedInProductionError extends CustomError<void> {}
+class NotSupportedInProductionError extends CustomError.withTag(
+  "NotSupportedInProductionError",
+)<void> {}
 
 export function createLlmFileParts(data: {
   // blobNameRoot: string;
@@ -69,8 +72,7 @@ export function createLlmFileParts(data: {
       // Should not download files in production, just sign the URLs
       return errAsync(
         new NotSupportedInProductionError({
-          message: "Signing blob Urls in production is not yet implemented.",
-          data: undefined,
+          message: "Signing blob Urls in production is not yet implemented",
         }),
       );
     }
@@ -120,18 +122,11 @@ export function createLlmFileParts(data: {
   });
 }
 
-export const GRADING_FILES_HEADER = dedent`
-  ### MULTIMODAL FILE MANIFEST ###
-  - Addition to all of the text files listed above, this prompt includes the following non-text files, which have been uploaded separately. Please use this manifest to correlate the files with their original paths in the directory.
-  - Remember to use the file original path instead of the uploaded file name when referring to the files in your response.
-    - For example, if the uploaded file name is \`file_1.txt\` the original path is \`/path/to/text.txt\`, you should refer to the file as \`/path/to/text.txt\` in your response.
-`;
-
 const SEPARATOR = "\n---\n";
 
 export function createFileAliasManifest(
   BlobNameRestAliasMap: Map<string, string>,
-  header = GRADING_FILES_HEADER,
+  header = multimodalFileManifestHeader,
 ) {
   return safeTry(function* () {
     // yield* getBlobName(url, DEFAULT_CONTAINER)

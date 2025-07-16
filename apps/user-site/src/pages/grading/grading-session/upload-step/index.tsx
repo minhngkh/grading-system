@@ -3,7 +3,7 @@ import type { CriteriaSelector, GradingAttempt, Submission } from "@/types/gradi
 import { RubricStatus, type Rubric } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileUploader } from "@/components/app/file-uploader";
 import { InfoToolTip } from "@/components/app/info-tooltip";
@@ -58,6 +58,12 @@ export default function UploadStep({ form }: UploadStepProps) {
 
   const gradingAttempt = form.watch();
 
+  useEffect(() => {
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempt", gradingAttempt.id],
+    });
+  }, [gradingAttempt, queryClient]);
+
   const { data: rubricData } = useQuery(
     getRubricQueryOptions(gradingAttempt.rubricId, auth, {
       placeholderData: keepPreviousData,
@@ -96,27 +102,28 @@ export default function UploadStep({ form }: UploadStepProps) {
     deleteSubmissionMutationOptions(gradingAttempt.id, auth),
   );
 
-  useDebounceUpdate(gradingAttempt.name, 500, (name) => {
-    updateNameMutation.mutate(name);
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
-  });
-  useDebounceUpdate(gradingAttempt.scaleFactor, 500, (scaleFactor) => {
-    if (scaleFactor == undefined) return;
+  const handleNameUpdate = useCallback(
+    (name: string) => {
+      updateNameMutation.mutate(name);
+    },
+    [updateNameMutation, gradingAttempt.id],
+  );
 
-    updateScaleFactorMutation.mutate(scaleFactor);
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
-  });
+  const handleScaleFactorUpdate = useCallback(
+    (scaleFactor: number | undefined) => {
+      if (scaleFactor == undefined) return;
+
+      updateScaleFactorMutation.mutate(scaleFactor);
+    },
+    [updateScaleFactorMutation, gradingAttempt.id],
+  );
+
+  useDebounceUpdate(gradingAttempt.name, 500, handleNameUpdate);
+  useDebounceUpdate(gradingAttempt.scaleFactor, 500, handleScaleFactorUpdate);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
     await updateSelectorsMutation.mutateAsync(selectors);
     setValue("selectors", selectors);
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
   };
 
   const handleSelectRubric = async (rubric: Rubric) => {
@@ -146,24 +153,8 @@ export default function UploadStep({ form }: UploadStepProps) {
     setFileDialogOpen(true);
 
     try {
-      // Split files into chunks of 10
-      const chunkSize = 10;
-      const chunks = [];
-      for (let i = 0; i < newFiles.length; i += chunkSize) {
-        chunks.push(newFiles.slice(i, i + chunkSize));
-      }
-
-      const allUploadRefs = [];
-
-      // Upload each chunk sequentially
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        setFileDialogAction(`Uploading ${chunk.length} files of ${newFiles.length}`);
-
-        const uploadRefs = await uploadFileMutation.mutateAsync(chunk);
-        allUploadRefs.push(...uploadRefs);
-        setUploadedFiles((prev) => [...prev, ...chunk]);
-      }
+      const allUploadRefs = await uploadFileMutation.mutateAsync(newFiles);
+      console.log("Uploaded files:", allUploadRefs);
 
       const newSubmissions = [
         ...gradingAttempt.submissions,
@@ -175,9 +166,6 @@ export default function UploadStep({ form }: UploadStepProps) {
       ];
 
       setValue("submissions", newSubmissions);
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempt", gradingAttempt.id],
-      });
     } catch (error) {
       console.error("Error uploading files:", error);
       toast.error("Failed to upload some files");
@@ -202,10 +190,6 @@ export default function UploadStep({ form }: UploadStepProps) {
           (sub) => sub.reference !== submission.reference,
         ),
       );
-
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempt", gradingAttempt.id],
-      });
     } catch (error) {
       console.error("Error removing submission:", error);
       toast.error(`Failed to remove submission: ${submission.reference}`);
@@ -225,10 +209,6 @@ export default function UploadStep({ form }: UploadStepProps) {
     setUploadedFiles([]);
     setValue("submissions", []);
     setFileDialogOpen(false);
-
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
   };
 
   return (
@@ -246,8 +226,14 @@ export default function UploadStep({ form }: UploadStepProps) {
         </DialogContent>
       </Dialog>
 
+      <div>
+        <h1 className="text-3xl font-semibold">Grade Assignments</h1>
+        <p className="text-muted-foreground">
+          Upload files for grading and configure the grading settings.
+        </p>
+      </div>
       <div className="space-y-1">
-        <Label className="text-lg">Session Name</Label>
+        <Label className="text-lg">Name</Label>
         <Input
           defaultValue={gradingAttempt.name}
           {...register("name")}
@@ -264,7 +250,7 @@ export default function UploadStep({ form }: UploadStepProps) {
           <Label className="text-lg">Select Rubric</Label>
           <InfoToolTip description="Choose a rubric to use for grading. If you don't have a rubric, you can create one." />
         </div>
-        <div className="flex items-center w-full gap-4">
+        <div className="flex items-center w-full gap-2">
           <ScrollableSelectMemo<Rubric>
             value={rubricData}
             onValueChange={handleSelectRubric}
@@ -276,7 +262,7 @@ export default function UploadStep({ form }: UploadStepProps) {
           <span>or</span>
           <Button variant="outline" asChild>
             <Link preload={false} to="/rubrics/create">
-              Create New Rubric
+              New Rubric
             </Link>
           </Button>
           {gradingAttempt.rubricId && (
@@ -330,9 +316,8 @@ export default function UploadStep({ form }: UploadStepProps) {
         </div>
         <FileUploader
           onFileUpload={handleFileUpload}
-          accept=".zip"
           multiple={!moodleMode}
-          maxSize={10} // 10 MB
+          maxSize={20} // 20 MB
         />
       </div>
 
