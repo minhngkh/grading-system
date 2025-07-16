@@ -34,7 +34,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
 }) => {
   const auth = useAuth();
 
-  // Helper function to generate unique IDs
   const generateUID = useCallback(() => {
     const first = (Math.random() * 46656) | 0;
     const second = (Math.random() * 46656) | 0;
@@ -139,7 +138,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   ).toFixed(2);
 
   return (
-    <div className="flex flex-col bg-background w-full h-full overflow-hidden">
+    <div className="flex flex-col bg-background w-full h-full overflow-hidden px-4">
       <div className="flex flex-col flex-1 min-h-0">
         <Tabs
           value={activeScoringTab}
@@ -162,7 +161,9 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold">Total Score:</span>
                 <span className="text-sm font-bold text-blue-600">{totalScore}</span>
-                <span className="text-sm font-bold">/ {grading.scaleFactor}</span>
+                <span className="text-sm text-muted-foreground font-semibold">
+                  / {grading.scaleFactor}
+                </span>
               </div>
               <Button
                 variant="outline"
@@ -181,7 +182,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
             </div>
           </div>
           <div className="flex-1 min-h-0 flex flex-col">
-            {rubric.criteria.map((criterion) => {
+            {rubric.criteria.map((criterion, index) => {
               if (activeScoringTab !== criterion.name) return null;
 
               // Use formData instead of form.getValues for real-time data
@@ -231,7 +232,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
 
               return (
                 <TabsContent
-                  key={criterion.id}
+                  key={index}
                   value={criterion.name}
                   className="flex-1 min-h-0 overflow-auto"
                 >
@@ -243,7 +244,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
 
                       <span className="text-xs text-gray-500">
                         <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400">Custom Score:</span>
+                          <span className="text-xs">Score:</span>
                           <input
                             type="number"
                             min={0}
@@ -350,11 +351,11 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         }
                       </div>
                     }
-                    <div className="flex gap-4">
+                    <div className="grid auto-cols-auto grid-flow-col gap-4">
                       {criterion.levels
                         .slice()
                         .sort((a, b) => a.weight - b.weight)
-                        .map((level) => {
+                        .map((level, index) => {
                           // So sánh tag và criterionName để border blue
                           const breakdown = formData.scoreBreakdowns.find(
                             (sb) => sb.criterionName === criterion.name,
@@ -364,15 +365,15 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                             breakdown.performanceTag === level.tag &&
                             breakdown.criterionName === criterion.name;
                           return (
-                            <div key={level.tag} className="flex-1">
-                              <div className="text-center mb-2">
+                            <div key={index} className="grid grid-rows-[auto_1fr] h-full">
+                              <div className="text-center">
                                 <span className="text-xs text-gray-400">
                                   {level.weight}%
                                 </span>
                               </div>
                               <button
                                 onClick={() => updateScore(criterion.name, level.weight)}
-                                className={`w-full h-20 p-3 rounded text-center flex items-center justify-center ${
+                                className={`w-full p-3 rounded text-center flex items-center justify-center ${
                                   isSelected ?
                                     "border-2 border-blue-400"
                                   : "border border-gray-300"

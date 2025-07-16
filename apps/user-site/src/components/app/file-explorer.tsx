@@ -1,16 +1,11 @@
-import React, { useState } from "react";
-import { FolderOpen, Folder, Filter } from "lucide-react";
+import React from "react";
+import { FolderOpen, Folder } from "lucide-react";
 import { getFileIcon } from "../../pages/assessment/edit-assessment/icon-utils";
 import { GradingAttempt } from "@/types/grading";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 
-// Build a recursive tree from files
 function buildFileTree(files: any[]) {
   const root: any = {};
-  if (!Array.isArray(files)) return root; // phòng thủ nếu files undefined/null
+  if (!Array.isArray(files)) return root;
   files.forEach((file) => {
     if (!file || typeof file.relativePath !== "string") return;
     const parts = file.relativePath.split("/");
@@ -253,103 +248,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = React.memo(
     feedbacks,
     grading,
   }) => {
-    const safeFiles = Array.isArray(files) ? files : []; // đảm bảo luôn là mảng
-    const tree = React.useMemo(() => buildFileTree(safeFiles), [safeFiles]);
+    const tree = React.useMemo(() => buildFileTree(files), [files]);
 
-    // Access selectors directly from grading
-    const selectors = grading?.selectors || [];
-
-    // State for multiple criterion selection
-    const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
-
-    // Toggle criterion selection
-    const toggleCriterion = (criterion: string) => {
-      setSelectedCriteria((prev) =>
-        prev.includes(criterion) ?
-          prev.filter((c) => c !== criterion)
-        : [...prev, criterion],
-      );
-    };
-
-    const toggleAllCriteria = () => {
-      if (selectedCriteria.length === selectors.length) {
-        // If all criteria are selected, deselect all
-        setSelectedCriteria([]);
-      } else {
-        // Otherwise select all criteria
-        setSelectedCriteria(selectors.map((selector) => selector.criterion));
-      }
-    };
-    const allSelected =
-      selectors.length > 0 && selectedCriteria.length === selectors.length;
     return (
-      <div className="pt-2 px-2 h-full w-full flex flex-col min-w-0">
-        <div className="justify-between flex items-center mb-2">
-          <h3 className="text-xs font-medium truncate min-w-0 flex-1">Explorer</h3>
-          <Popover>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {selectedCriteria.length > 0 && (
-                <Badge className="text-[10px] h-4 px-1">{selectedCriteria.length}</Badge>
-              )}
-              <PopoverTrigger asChild>
-                <button className="p-1 rounded hover:bg-muted transition-colors">
-                  <Filter className="h-3.5 w-3.5 text-gray-500 hover:text-gray-700" />
-                </button>
-              </PopoverTrigger>
-            </div>
-            <PopoverContent className="w-80">
-              <h3 className="text-sm font-medium mb-2">Filter files by criterion</h3>
-              {selectors.length > 0 ?
-                <div className="space-y-2 max-h-60 overflow-auto">
-                  {selectors.map((selector) => {
-                    return (
-                      <div
-                        key={selector.criterion}
-                        className="flex items-start space-x-2"
-                      >
-                        <Checkbox
-                          id={`criterion-${selector.criterion}`}
-                          checked={selectedCriteria.includes(selector.criterion)}
-                          onCheckedChange={() => toggleCriterion(selector.criterion)}
-                        />
-                        <div className="grid gap-1.5 leading-none flex-1">
-                          <Label
-                            htmlFor={`criterion-${selector.criterion}`}
-                            className="text-xs font-medium cursor-pointer"
-                          >
-                            {selector.criterion}
-                          </Label>
-                          {selector.pattern && (
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-1">
-                                <p className="text-xs text-muted-foreground">
-                                  Pattern: {selector.pattern}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div className="flex items-start space-x-2 pt-2 mt-2 border-t">
-                    <Checkbox
-                      id="criterion-all"
-                      checked={allSelected}
-                      onCheckedChange={toggleAllCriteria}
-                    />
-                    <Label
-                      htmlFor="criterion-all"
-                      className="text-xs font-medium cursor-pointer"
-                    >
-                      All Criteria
-                    </Label>
-                  </div>
-                </div>
-              : <p className="text-xs text-muted-foreground">No criteria available</p>}
-            </PopoverContent>
-          </Popover>
-        </div>
+      <div className="p-4 h-full w-full flex flex-col min-w-0">
+        <h3 className="text-sm font-medium mb-2">File Explorer</h3>
 
         <div className="flex-1 overflow-auto space-y-0.5 min-w-0">
           {renderTree(
@@ -360,8 +263,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = React.memo(
             selectedFile,
             setSelectedFile,
             feedbacks,
-            selectedCriteria,
-            selectors,
+            [],
+            grading.selectors,
           )}
         </div>
       </div>

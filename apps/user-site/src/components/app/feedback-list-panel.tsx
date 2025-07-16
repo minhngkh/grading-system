@@ -23,9 +23,23 @@ interface FeedbackListPanelProps {
   onAddFeedback?: (feedback: Partial<FeedbackItem>) => void;
   onCancelAdd?: () => void;
   rubricCriteria?: string[];
-  currentFile?: any;
   locationData?: LocationData;
   form: UseFormReturn<Assessment>;
+}
+
+function getFeedbackTagName(tag: string): string {
+  switch (tag) {
+    case "info":
+      return "Info";
+    case "notice":
+      return "Notice";
+    case "tip":
+      return "Tip";
+    case "caution":
+      return "Caution";
+    default:
+      return tag;
+  }
 }
 
 export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
@@ -37,7 +51,6 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
   onAddFeedback,
   onCancelAdd,
   rubricCriteria = [],
-  currentFile,
   locationData,
   form,
 }) => {
@@ -383,39 +396,44 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                     </div>
                   </div>
                 : <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {feedback.criterion}
-                        </span>
-                        <span className="text-xs text-gray-500">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-medium">
+                            {feedback.criterion}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Trash
+                              className="h-4 w-4 text-gray-500 cursor-pointer hover:text-red-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(feedback.id ?? "");
+                              }}
+                            />
+                            <Pen
+                              className="h-4 w-4 text-gray-500 cursor-pointer hover:text-blue-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditClick(feedback);
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Location:{" "}
                           {feedback.locationData?.type === "text" &&
                             `L${feedback.locationData.fromLine}-${feedback.locationData.toLine}`}
                           {feedback.locationData?.type === "pdf" &&
                             `Page ${feedback.locationData.page}`}
                           {feedback.locationData?.type === "image" && `Image`}
-                        </span>
-                        <Trash
-                          className="h-4 w-4 text-gray-500 cursor-pointer hover:text-red-600"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(feedback.id ?? "");
-                          }}
-                        />
-                        <Pen
-                          className="h-4 w-4 text-gray-500 cursor-pointer hover:text-blue-600"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditClick(feedback);
-                          }}
-                        />
+                        </div>
                       </div>
                       <Badge
                         className={`${getTagColor(feedback.tag)} text-gray-800 text-xs`}
                       >
-                        {feedback.tag}
+                        {getFeedbackTagName(feedback.tag)}
                       </Badge>
-                      <p className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
+                      <p className="text-xs break-words whitespace-pre-wrap">
                         {feedback.comment}
                       </p>
                     </div>

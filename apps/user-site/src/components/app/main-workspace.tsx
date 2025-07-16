@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { Files, MessageSquare, Code, PanelLeftOpen, PanelRightOpen } from "lucide-react";
+import { Files, MessageSquare, Code } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { FileExplorer } from "@/components/app/file-explorer";
@@ -15,6 +15,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { cn } from "@/lib/utils";
 
 interface MainWorkspaceProps {
   files: any[];
@@ -93,6 +94,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     const [sidebarView, setSidebarView] = useState<"files" | "testcases" | "feedback">(
       "files",
     );
+
     const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">(
       "file",
     );
@@ -340,6 +342,11 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       setSelectedPage(null);
       setIsHighlightMode(false);
       setSelectionRange(null);
+
+      if (window.getSelection) {
+        const selection = window.getSelection();
+        if (selection) selection.removeAllRanges();
+      }
     }, []);
 
     const handleSelectionMade = useCallback((locationData?: any) => {
@@ -370,9 +377,18 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       }
     }, []);
 
-    const handleSidebarToggle = useCallback(() => {
-      setIsSidebarOpen((prev) => !prev);
-    }, []);
+    const handleSidebarToggle = useCallback(
+      (view: "files" | "testcases" | "feedback") => {
+        if (sidebarView === view) {
+          setIsSidebarOpen((prev) => !prev);
+          return;
+        }
+
+        setIsSidebarOpen(true);
+        setSidebarView(view);
+      },
+      [sidebarView, isSidebarOpen],
+    );
 
     const fileExplorerProps = useMemo(
       () => ({
@@ -430,7 +446,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
         case "testcases":
           return (
             <div className="p-4">
-              <h3 className="text-sm font-medium mb-3">Test Cases</h3>
+              <h3 className="text-sm font-medium mb-2">Test Cases</h3>
               <div className="text-xs text-muted-foreground">
                 Test cases will be displayed here
               </div>
@@ -468,7 +484,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
                     onAddFeedback={handleAddFeedback}
                     onCancelAdd={handleCancelSelection}
                     rubricCriteria={rubricCriteria}
-                    currentFile={selectedFile}
                     locationData={locationData}
                     form={form}
                   />
@@ -489,7 +504,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
                     onAddFeedback={handleAddFeedback}
                     onCancelAdd={handleCancelSelection}
                     rubricCriteria={rubricCriteria}
-                    currentFile={selectedFile}
                     locationData={locationData}
                     form={form}
                   />
@@ -574,104 +588,87 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     ]);
 
     return (
-      <div className="h-full flex flex-col">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Sidebar */}
-          {isSidebarOpen && (
-            <>
-              <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
-                <div className="h-full flex bg-background border-r">
-                  {/* Sidebar Icons */}
-                  <div className="w-10 border-r flex flex-col">
-                    <button
-                      onClick={() => setSidebarView("files")}
-                      className={`flex items-center justify-center h-10 w-full transition-colors ${
-                        sidebarView === "files" ?
-                          "bg-primary/5 text-primary border-r-2 border-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      }`}
-                      title="Files"
-                    >
-                      <Files className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => setSidebarView("testcases")}
-                      className={`flex items-center justify-center h-10 w-full transition-colors ${
-                        sidebarView === "testcases" ?
-                          "bg-primary/5 text-primary border-r-2 border-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      }`}
-                      title="Test Cases"
-                    >
-                      <Code className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => setSidebarView("feedback")}
-                      className={`flex items-center justify-center h-10 w-full transition-colors ${
-                        sidebarView === "feedback" ?
-                          "bg-primary/5 text-primary border-r-2 border-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      }`}
-                      title="Feedback"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </button>
+      <div className="h-full flex">
+        <div className="h-full flex bg-background border-r">
+          <div className="w-10 flex flex-col">
+            <button
+              onClick={() => handleSidebarToggle("files")}
+              className={`flex items-center justify-center h-10 w-full transition-colors ${
+                sidebarView === "files" ?
+                  "bg-primary/5 text-primary border-r-2 border-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+              title="Files"
+            >
+              <Files className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => handleSidebarToggle("testcases")}
+              className={`flex items-center justify-center h-10 w-full transition-colors ${
+                sidebarView === "testcases" ?
+                  "bg-primary/5 text-primary border-r-2 border-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+              title="Test Cases"
+            >
+              <Code className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => handleSidebarToggle("feedback")}
+              className={`flex items-center justify-center h-10 w-full transition-colors ${
+                sidebarView === "feedback" ?
+                  "bg-primary/5 text-primary border-r-2 border-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+              title="Feedback"
+            >
+              <MessageSquare className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel
+            className={cn(isSidebarOpen ? "block" : "hidden")}
+            defaultSize={20}
+            minSize={20}
+            maxSize={30}
+          >
+            <div className="h-full flex flex-col min-w-0">{renderSidebarContent}</div>
+          </ResizablePanel>
 
-                    <div className="flex-1" />
-                  </div>
+          <ResizableHandle className={cn(isSidebarOpen ? "block" : "hidden")} />
 
-                  {/* Sidebar Content */}
-                  <div className="flex-1 flex flex-col h-full min-w-0">
-                    {renderSidebarContent}
-                  </div>
-                </div>
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-            </>
-          )}
-
-          {/* Main Content Area */}
-          <ResizablePanel defaultSize={isSidebarOpen ? 75 : 100}>
-            <div className="h-full flex flex-col">
-              {/* Header with file info and controls */}
-              <div className="flex items-center justify-between border-b">
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" onClick={handleSidebarToggle}>
-                    {!isSidebarOpen ?
-                      <PanelLeftOpen className="h-4 w-4" />
-                    : <PanelRightOpen className="h-4 w-4" />}
-                  </Button>
-                  <h2 className="text-sm font-medium truncate">
-                    {selectedFile?.name || "No file selected"}
-                  </h2>
-                </div>
-
+          <ResizablePanel defaultSize={isSidebarOpen ? 80 : 100}>
+            <div className="h-full flex flex-col min-w-0">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b px-2 py-1">
+                <h2 className="font-semibold truncate">
+                  {selectedFile?.name || "No file selected"}
+                </h2>
                 <div className="flex items-center gap-2">
                   {(canAddFeedback || selectedPage) && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCancelSelection}
-                        className="text-xs"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleAddFeedbackClick}
-                        className="text-xs"
-                        disabled={isHighlightMode || (!canAddFeedback && !selectedPage)}
-                      >
-                        {isHighlightMode ? "Adding Highlight" : "Add Feedback"}
-                      </Button>
-                    </>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelSelection}
+                      className="text-xs"
+                    >
+                      Cancel
+                    </Button>
                   )}
+                  <Button
+                    size="sm"
+                    onClick={handleAddFeedbackClick}
+                    className="text-xs"
+                    disabled={isHighlightMode || (!canAddFeedback && !selectedPage)}
+                  >
+                    {isHighlightMode ? "Adding Highlight" : "Add Feedback"}
+                  </Button>
                 </div>
               </div>
 
               {/* File Viewer */}
-              {renderFileViewer}
+              <div className="flex-1 overflow-auto">{renderFileViewer}</div>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

@@ -4,16 +4,14 @@ import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
 import { toast } from "sonner";
 import { ScoringPanel } from "@/components/app/scoring-panel";
-import { FileService } from "@/services/file-service";
 import MainWorkspace from "@/components/app/main-workspace";
 import { AssessmentHeader } from "@/components/app/assessment-header";
 import { useAssessmentState } from "@/hooks/use-assessment-state";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import {
   updateFeedbackMutationOptions,
   updateScoreMutationOptions,
-  getAssessmentQueryOptions,
 } from "@/queries/assessment-queries";
 import {
   ResizablePanelGroup,
@@ -21,9 +19,10 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
+import { getFileItemsQueryOptions } from "@/queries/file-queries";
 
 export function EditAssessmentUI({
-  assessment: initialAssessment,
+  assessment,
   grading,
   rubric,
 }: {
@@ -33,15 +32,6 @@ export function EditAssessmentUI({
 }) {
   const auth = useAuth();
 
-  // Subscribe to assessment data to get updates when rerun completes
-  const { data: assessment } = useQuery({
-    ...getAssessmentQueryOptions(initialAssessment.id, auth),
-    initialData: initialAssessment,
-  });
-
-  // Use current assessment data or fallback to initial
-  const currentAssessment = assessment || initialAssessment;
-
   const {
     form,
     formData,
@@ -50,7 +40,7 @@ export function EditAssessmentUI({
     updateLastSavedData,
     markCurrentAsValidated,
     resetToInitial,
-  } = useAssessmentState(currentAssessment);
+  } = useAssessmentState(assessment);
 
   const [files, setFiles] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
@@ -59,15 +49,9 @@ export function EditAssessmentUI({
     rubric.criteria[0]?.name || "",
   );
 
-  const handleFileSelect = useCallback((file: any) => {
-    setSelectedFile(file);
-  }, []);
-  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
-  const [fileLoadError, setFileLoadError] = useState<string | null>(null);
-
   const queryClient = useQueryClient();
   const updateFeedbackMutation = useMutation(
-    updateFeedbackMutationOptions(currentAssessment.id, auth, {
+    updateFeedbackMutationOptions(assessment.id, auth, {
       onSuccess: (_, feedbacks) => {
         toast.success("Feedback updated successfully");
         updateLastSavedData({ feedbacks });
@@ -80,17 +64,17 @@ export function EditAssessmentUI({
   );
 
   const updateScoreMutation = useMutation(
-    updateScoreMutationOptions(currentAssessment.id, auth, {
+    updateScoreMutationOptions(assessment.id, auth, {
       onSuccess: (_, scoreBreakdowns) => {
         toast.success("Score updated successfully");
         updateLastSavedData({
           scoreBreakdowns: scoreBreakdowns as Assessment["scoreBreakdowns"],
         });
 
-        queryClient.invalidateQueries({ queryKey: ["assessment", currentAssessment.id] });
+        queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
         queryClient.invalidateQueries({ queryKey: ["gradingAssessments", grading.id] });
         queryClient.invalidateQueries({
-          queryKey: ["scoreAdjustments", currentAssessment.id],
+          queryKey: ["scoreAdjustments", assessment.id],
         });
       },
       onError: (error) => {
@@ -100,48 +84,22 @@ export function EditAssessmentUI({
     }),
   );
 
-  useEffect(() => {
-    async function loadFiles() {
-      if (!formData.submissionReference) return;
-
-      setIsLoadingFiles(true);
-      setFileLoadError(null);
-
-      try {
-        const items = await FileService.loadFileItems(
-          `${grading.id}/${formData.submissionReference}`,
-        );
-        setFiles(items || []);
-      } catch (error) {
-        console.error("Error loading files:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to load files";
-        setFileLoadError(errorMessage);
-        setFiles([]);
-        toast.error(errorMessage);
-      } finally {
-        setIsLoadingFiles(false);
-      }
-    }
-
-    loadFiles();
-  }, [formData.submissionReference, grading.id]);
+  const {
+    data: fileItems,
+    isFetching: isLoadingFiles,
+    error: fileLoadError,
+  } = useQuery(getFileItemsQueryOptions(grading.id, formData.submissionReference, auth));
 
   useEffect(() => {
-    if (files.length > 0 && !selectedFile) {
-      setSelectedFile(files[0]);
-    }
-  }, [files, selectedFile]);
+    if (isLoadingFiles) return;
+    if (fileLoadError) return;
 
-  useEffect(() => {
-    if (files.length > 0 && !isLoadingFiles && !fileLoadError) {
-      const timer = setTimeout(() => {
-        markCurrentAsValidated();
-      }, 1500);
-
-      return () => clearTimeout(timer);
+    if (fileItems && fileItems.length > 0) {
+      setFiles(fileItems);
+      setSelectedFile(fileItems[0]);
+      markCurrentAsValidated();
     }
-  }, [files.length, isLoadingFiles, fileLoadError, markCurrentAsValidated]);
+  }, [isLoadingFiles, fileItems, fileLoadError]);
 
   const handleUpdateScore = useCallback(
     (criterionName: string, newScore: number) => {
@@ -184,18 +142,12 @@ export function EditAssessmentUI({
 
   const handleSaveFeedback = async () => {
     if (updateFeedbackMutation.isPending) return;
-
-    try {
-      await updateFeedbackMutation.mutateAsync(formData.feedbacks);
-    } catch (error) {}
+    updateFeedbackMutation.mutateAsync(formData.feedbacks);
   };
 
   const handleSaveScore = async () => {
     if (updateScoreMutation.isPending) return;
-
-    try {
-      await updateScoreMutation.mutateAsync(formData.scoreBreakdowns);
-    } catch (error) {}
+    updateScoreMutation.mutateAsync(formData.scoreBreakdowns);
   };
 
   useEffect(() => {
@@ -227,12 +179,8 @@ export function EditAssessmentUI({
     handleSaveScore,
   ]);
 
-  // Just use the current formData directly, React.memo will handle the optimization
-  // The issue is not about preventing re-renders but ensuring they only happen when needed
-
   return (
-    <div className="-mb-21 -mt-13 h-[92.5vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-hidden">
-      {/* Header */}
+    <div className="h-full relative flex flex-col bg-background text-foreground overflow-hidden space-y-4">
       <AssessmentHeader
         form={form}
         assessment={formData}
@@ -246,8 +194,7 @@ export function EditAssessmentUI({
         updateLastSavedData={updateLastSavedData}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 min-h-0 pt-2">
+      <div className="border rounded-md overflow-hidden flex-1">
         <ResizablePanelGroup direction="vertical" className="h-full">
           <ResizablePanel defaultSize={showBottomPanel ? 60 : 100} minSize={25}>
             {isLoadingFiles ?
@@ -261,13 +208,13 @@ export function EditAssessmentUI({
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <p className="text-sm text-destructive mb-2">Error loading files</p>
-                  <p className="text-xs text-muted-foreground">{fileLoadError}</p>
+                  <p className="text-xs text-muted-foreground">{fileLoadError.message}</p>
                 </div>
               </div>
             : <MainWorkspace
                 files={files}
                 selectedFile={selectedFile}
-                onFileSelect={handleFileSelect}
+                onFileSelect={setSelectedFile}
                 assessment={formData}
                 grading={grading}
                 rubric={rubric}
@@ -293,14 +240,14 @@ export function EditAssessmentUI({
           )}
           {showBottomPanel && (
             <>
-              <ResizableHandle withHandle />
+              <ResizableHandle />
               <ResizablePanel defaultSize={40} minSize={30} maxSize={75}>
                 <ScoringPanel
                   rubric={rubric}
                   grading={grading}
                   formData={formData}
                   updateScore={handleUpdateScore}
-                  assessmentId={currentAssessment.id}
+                  assessmentId={assessment.id}
                   activeScoringTab={activeScoringTab}
                   setActiveScoringTab={setActiveScoringTab}
                   form={form}

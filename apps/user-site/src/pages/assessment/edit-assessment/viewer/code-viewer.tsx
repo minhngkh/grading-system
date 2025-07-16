@@ -22,7 +22,7 @@ const HighlightableViewer = ({
   onSelectionMade,
   onSelectionChange,
 }: HighlightableViewerProps) => {
-  const { theme = "light" } = useTheme?.() || {};
+  const { theme } = useTheme();
   const [selectionRange, setSelectionRange] = useState<{
     from: { line: number; col: number };
     to: { line: number; col: number };
@@ -125,7 +125,7 @@ const HighlightableViewer = ({
         if (from.line !== to.line || Math.abs(from.col - to.col) > 0) {
           const selection = { from, to };
           setSelectionRange(selection);
-          void selectionRange; // Keep variable for potential future use
+          void selectionRange;
           onSelectionChange?.(selection);
           onSelectionMade?.();
         }
@@ -188,18 +188,6 @@ const HighlightableViewer = ({
       };
     });
   }
-
-  // Scroll to active feedback when it changes
-  useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        "🎯 CodeViewer activeFeedbackId changed:",
-        activeFeedbackId,
-        "file:",
-        file.relativePath,
-      );
-    }
-  }, [activeFeedbackId, file.relativePath]);
 
   useEffect(() => {
     const adjusted = getAdjustedFeedbacks(file.content, feedbacks);
@@ -272,8 +260,7 @@ const HighlightableViewer = ({
           className="h-full w-full overflow-auto"
           transformers={[
             {
-              preprocess(code, options) {
-                // eslint-disable-line @typescript-eslint/no-unused-vars
+              preprocess(_, options) {
                 let decorations = validFeedbacks
                   .filter(
                     (

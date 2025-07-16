@@ -33,8 +33,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         onSelectionChange={onSelectionChange}
       />
     );
-  }
-  if (file.type === "pdf") {
+  } else if (file.type === "pdf") {
     return (
       <PDFViewer
         fileUrl={file.content}
@@ -44,8 +43,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         onPageSelect={onPageSelect}
       />
     );
-  }
-  if (file.type === "code" || file.type === "document" || file.type === "essay") {
+  } else if (file.type === "code" || file.type === "document" || file.type === "essay") {
     return (
       <HighlightableViewer
         file={file}
@@ -57,6 +55,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
       />
     );
   }
+
   return (
     <div className="flex justify-center items-center h-full text-gray-500">
       File type not supported for preview.
