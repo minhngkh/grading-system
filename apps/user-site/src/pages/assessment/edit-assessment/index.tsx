@@ -8,11 +8,12 @@ import { FileService } from "@/services/file-service";
 import MainWorkspace from "@/components/app/main-workspace";
 import { AssessmentHeader } from "@/components/app/assessment-header";
 import { useAssessmentState } from "@/hooks/use-assessment-state";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import {
   updateFeedbackMutationOptions,
   updateScoreMutationOptions,
+  getAssessmentQueryOptions,
 } from "@/queries/assessment-queries";
 import {
   ResizablePanelGroup,
@@ -22,7 +23,7 @@ import {
 import { ChevronsDown, ChevronsUp } from "lucide-react";
 
 export function EditAssessmentUI({
-  assessment,
+  assessment: initialAssessment,
   grading,
   rubric,
 }: {
@@ -30,17 +31,27 @@ export function EditAssessmentUI({
   grading: GradingAttempt;
   rubric: Rubric;
 }) {
+  const auth = useAuth();
+  
+  // Subscribe to assessment data to get updates when rerun completes
+  const { data: assessment } = useQuery({
+    ...getAssessmentQueryOptions(initialAssessment.id, auth),
+    initialData: initialAssessment,
+  });
+
+  // Use current assessment data or fallback to initial
+  const currentAssessment = assessment || initialAssessment;
+
   const {
     form,
     formData,
     canRevert,
-    // hasUnsavedChanges, // TEMPORARILY UNUSED due to auto-save disabled
+
     updateLastSavedData,
     markCurrentAsValidated,
     resetToInitial,
-  } = useAssessmentState(assessment);
+  } = useAssessmentState(currentAssessment);
 
-  // Only essential state
   const [files, setFiles] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
   const [showBottomPanel, setShowBottomPanel] = useState(true);
@@ -48,26 +59,18 @@ export function EditAssessmentUI({
     rubric.criteria[0]?.name || "",
   );
 
-  // Memoize callbacks to prevent unnecessary re-renders
   const handleFileSelect = useCallback((file: any) => {
     setSelectedFile(file);
   }, []);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [fileLoadError, setFileLoadError] = useState<string | null>(null);
 
-  // Setup mutations directly like rubric page
   const queryClient = useQueryClient();
-  const auth = useAuth();
   const updateFeedbackMutation = useMutation(
-    updateFeedbackMutationOptions(assessment.id, auth, {
+    updateFeedbackMutationOptions(currentAssessment.id, auth, {
       onSuccess: (_, feedbacks) => {
         toast.success("Feedback updated successfully");
         updateLastSavedData({ feedbacks });
-
-        // TEMPORARILY DISABLED: Query invalidation may cause feedback duplication
-        // TODO: Re-enable with proper race condition handling
-        // queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
-        // queryClient.invalidateQueries({ queryKey: ["gradingAssessments", grading.id] });
       },
       onError: (error) => {
         console.error("Failed to update feedback:", error);
@@ -77,18 +80,17 @@ export function EditAssessmentUI({
   );
 
   const updateScoreMutation = useMutation(
-    updateScoreMutationOptions(assessment.id, auth, {
+    updateScoreMutationOptions(currentAssessment.id, auth, {
       onSuccess: (_, scoreBreakdowns) => {
         toast.success("Score updated successfully");
         updateLastSavedData({
           scoreBreakdowns: scoreBreakdowns as Assessment["scoreBreakdowns"],
         });
 
-        // Invalidate related queries
-        queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
+        queryClient.invalidateQueries({ queryKey: ["assessment", currentAssessment.id] });
         queryClient.invalidateQueries({ queryKey: ["gradingAssessments", grading.id] });
         queryClient.invalidateQueries({
-          queryKey: ["scoreAdjustments", assessment.id],
+          queryKey: ["scoreAdjustments", currentAssessment.id],
         });
       },
       onError: (error) => {
@@ -98,7 +100,6 @@ export function EditAssessmentUI({
     }),
   );
 
-  // Load files with proper error handling and loading states
   useEffect(() => {
     async function loadFiles() {
       if (!formData.submissionReference) return;
@@ -124,19 +125,16 @@ export function EditAssessmentUI({
     }
 
     loadFiles();
-  }, [formData.submissionReference, grading.id]); // Remove selectedFile dependency
+  }, [formData.submissionReference, grading.id]);
 
-  // Set initial selected file when files are loaded
   useEffect(() => {
     if (files.length > 0 && !selectedFile) {
       setSelectedFile(files[0]);
     }
   }, [files, selectedFile]);
 
-  // Mark current state as validated after files are loaded and initial validation is complete
   useEffect(() => {
     if (files.length > 0 && !isLoadingFiles && !fileLoadError) {
-      // Longer delay to ensure all validation and internal updates are complete
       const timer = setTimeout(() => {
         markCurrentAsValidated();
       }, 1500);
@@ -145,7 +143,6 @@ export function EditAssessmentUI({
     }
   }, [files.length, isLoadingFiles, fileLoadError, markCurrentAsValidated]);
 
-  // Score update handler with validation
   const handleUpdateScore = useCallback(
     (criterionName: string, newScore: number) => {
       const criterion = rubric.criteria.find((c) => c.name === criterionName);
@@ -154,13 +151,11 @@ export function EditAssessmentUI({
         return;
       }
 
-      // Validate score range
       if (newScore < 0 || newScore > 100) {
         toast.error("Score must be between 0 and 100");
         return;
       }
 
-      // Find the appropriate performance level
       let matchedLevel = criterion.levels
         .filter((l) => l.weight <= newScore)
         .sort((a, b) => b.weight - a.weight)[0];
@@ -186,15 +181,13 @@ export function EditAssessmentUI({
     },
     [rubric.criteria, formData.scoreBreakdowns, form],
   );
-  // Save handlers
+
   const handleSaveFeedback = async () => {
     if (updateFeedbackMutation.isPending) return;
 
     try {
       await updateFeedbackMutation.mutateAsync(formData.feedbacks);
-    } catch (error) {
-      // Error handling is done in the mutation onError callback
-    }
+    } catch (error) {}
   };
 
   const handleSaveScore = async () => {
@@ -202,15 +195,11 @@ export function EditAssessmentUI({
 
     try {
       await updateScoreMutation.mutateAsync(formData.scoreBreakdowns);
-    } catch (error) {
-      // Error handling is done in the mutation onError callback
-    }
+    } catch (error) {}
   };
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl+S or Cmd+S to save feedback
       if ((event.ctrlKey || event.metaKey) && event.key === "s") {
         event.preventDefault();
         if (!updateFeedbackMutation.isPending) {
@@ -218,7 +207,6 @@ export function EditAssessmentUI({
         }
       }
 
-      // Ctrl+Shift+S to save score
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "S") {
         event.preventDefault();
         if (!updateScoreMutation.isPending) {
@@ -226,9 +214,7 @@ export function EditAssessmentUI({
         }
       }
 
-      // Escape to close panels
       if (event.key === "Escape") {
-        // Can be used to close dialogs or panels
       }
     };
 
@@ -241,46 +227,6 @@ export function EditAssessmentUI({
     handleSaveScore,
   ]);
 
-  // Auto-save functionality (disabled to prevent duplicate feedback issue)
-  // NOTE: Auto-save was causing feedback duplication due to dependency loop
-  // Re-enable with careful dependency management if needed
-  /* 
-  useEffect(() => {
-    if (!hasUnsavedChanges) return;
-
-    const autoSaveTimer = setTimeout(async () => {
-      // Only auto-save if there are changes and no manual save is in progress
-      const isLoading =
-        updateFeedbackMutation.isPending ||
-        updateScoreMutation.isPending;
-      
-      if (hasUnsavedChanges && !isLoading) {
-        try {
-          await updateFeedbackMutation.mutateAsync(formData.feedbacks);
-        } catch (error) {
-          console.error("Auto-save failed:", error);
-        }
-      }
-    }, 30000); // Auto-save after 30 seconds of inactivity
-
-    return () => clearTimeout(autoSaveTimer);
-  }, [
-    hasUnsavedChanges,
-    updateFeedbackMutation.isPending,
-    updateScoreMutation.isPending,
-    rerunAssessmentMutation.isPending,
-    // Remove handleSaveFeedback from dependencies to prevent loop
-  ]);
-  */
-
-  // Create current assessment data with form data
-  const currentAssessment: Assessment = {
-    ...assessment,
-    feedbacks: formData.feedbacks || [],
-    scoreBreakdowns: formData.scoreBreakdowns || [],
-    rawScore: formData.rawScore || 0,
-  };
-
   // Just use the current formData directly, React.memo will handle the optimization
   // The issue is not about preventing re-renders but ensuring they only happen when needed
 
@@ -289,7 +235,7 @@ export function EditAssessmentUI({
       {/* Header */}
       <AssessmentHeader
         form={form}
-        assessment={currentAssessment}
+        assessment={formData}
         grading={grading}
         rubric={rubric}
         canRevert={canRevert}
@@ -322,7 +268,7 @@ export function EditAssessmentUI({
                 files={files}
                 selectedFile={selectedFile}
                 onFileSelect={handleFileSelect}
-                assessment={currentAssessment}
+                assessment={formData}
                 grading={grading}
                 rubric={rubric}
                 activeScoringTab={activeScoringTab}
@@ -333,14 +279,14 @@ export function EditAssessmentUI({
 
           {!showBottomPanel && (
             <ChevronsUp
-              className="absolute bottom-3 left-1/2 transform -translate-x-1/2 h-6 w-6 text-muted-foreground cursor-pointer z-50"
+              className="absolute bottom-3 left-1/2 transform -translate-x-1/2 h-6 w-6 text-foreground cursor-pointer z-50"
               onClick={() => setShowBottomPanel(true)}
             />
           )}
           {showBottomPanel && (
             <div className="relative">
               <ChevronsDown
-                className="absolute bottom-2 left-1/2 transform -translate-x-1/2 h-6 w-6 text-muted-foreground cursor-pointer z-50 "
+                className="absolute bottom-2 left-1/2 transform -translate-x-1/2 h-6 w-6 text-foreground cursor-pointer z-50 "
                 onClick={() => setShowBottomPanel(false)}
               />
             </div>
@@ -354,7 +300,7 @@ export function EditAssessmentUI({
                   grading={grading}
                   formData={formData}
                   updateScore={handleUpdateScore}
-                  assessmentId={assessment.id}
+                  assessmentId={currentAssessment.id}
                   activeScoringTab={activeScoringTab}
                   setActiveScoringTab={setActiveScoringTab}
                   form={form}

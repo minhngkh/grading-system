@@ -83,7 +83,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
 
         // Invalidate related queries
         queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
-        queryClient.invalidateQueries({ queryKey: ["gradingAssessments", grading.id] });
         queryClient.invalidateQueries({
           queryKey: ["scoreAdjustments", assessment.id],
         });
@@ -95,21 +94,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     }),
   );
 
-  const rerunAssessmentMutation = useMutation(
-    rerunAssessmentMutationOptions(auth, {
-      onSuccess: () => {
-        toast.success("Assessment rerun started successfully");
-
-        // Invalidate related queries
-        queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
-        queryClient.invalidateQueries({ queryKey: ["assessmentStatus", assessment.id] });
-      },
-      onError: (error) => {
-        console.error("Failed to rerun assessment:", error);
-        toast.error("Failed to rerun assessment");
-      },
-    }),
-  );
+  const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
 
   // Save handlers
   const handleSaveFeedback = async () => {
@@ -133,9 +118,28 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   const handleRerunAssessment = async () => {
     if (rerunAssessmentMutation.isPending) return;
     try {
+      // Start rerun
       await rerunAssessmentMutation.mutateAsync(assessment.id);
+
+      // Wait a moment for backend to process
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Refetch assessment data to get updated results
+      await queryClient.refetchQueries({
+        queryKey: ["assessment", assessment.id],
+      });
+
+      // Also invalidate grading attempts list
+      queryClient.invalidateQueries({
+        queryKey: ["gradingAttempts"],
+      });
+
+      toast.success("Assessment rerun completed successfully");
     } catch (error) {
-      // Error handled in mutation
+      console.error("Failed to rerun assessment:", error);
+      toast.error(
+        `Failed to rerun assessment: ${formData.submissionReference}. Please try again.`,
+      );
     }
   };
 

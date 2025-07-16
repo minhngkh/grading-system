@@ -42,30 +42,36 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
   form,
 }) => {
   // Helper functions for feedback operations (no toast - direct form updates)
-  const updateFeedback = useCallback((feedbackId: string, feedback: FeedbackItem) => {
-    try {
-      const currentFeedbacks = form.getValues("feedbacks") || [];
-      const index = currentFeedbacks.findIndex((f) => f.id === feedbackId);
-      
-      if (index !== -1) {
-        const updated = [...currentFeedbacks];
-        updated[index] = { ...updated[index], ...feedback };
-        form.setValue("feedbacks", updated, { shouldValidate: false });
-      }
-    } catch (error) {
-      console.error("Error updating feedback:", error);
-    }
-  }, [form]);
+  const updateFeedback = useCallback(
+    (feedbackId: string, feedback: FeedbackItem) => {
+      try {
+        const currentFeedbacks = form.getValues("feedbacks") || [];
+        const index = currentFeedbacks.findIndex((f) => f.id === feedbackId);
 
-  const deleteFeedback = useCallback((feedbackId: string) => {
-    try {
-      const currentFeedbacks = form.getValues("feedbacks") || [];
-      const filtered = currentFeedbacks.filter((f) => f.id !== feedbackId);
-      form.setValue("feedbacks", filtered, { shouldValidate: false });
-    } catch (error) {
-      console.error("Error deleting feedback:", error);
-    }
-  }, [form]);
+        if (index !== -1) {
+          const updated = [...currentFeedbacks];
+          updated[index] = { ...updated[index], ...feedback };
+          form.setValue("feedbacks", updated, { shouldValidate: false });
+        }
+      } catch (error) {
+        console.error("Error updating feedback:", error);
+      }
+    },
+    [form],
+  );
+
+  const deleteFeedback = useCallback(
+    (feedbackId: string) => {
+      try {
+        const currentFeedbacks = form.getValues("feedbacks") || [];
+        const filtered = currentFeedbacks.filter((f) => f.id !== feedbackId);
+        form.setValue("feedbacks", filtered, { shouldValidate: false });
+      } catch (error) {
+        console.error("Error deleting feedback:", error);
+      }
+    },
+    [form],
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
@@ -77,7 +83,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
   const [addComment, setAddComment] = useState("");
   const [addTag, setAddTag] = useState("info");
   const [addCriterion, setAddCriterion] = useState("");
-  
+
   // Memoize available criteria for performance
   const allCriteria = useMemo(() => {
     const availableCriteria = Array.from(
@@ -121,13 +127,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
     setAddComment("");
     setAddTag("info");
     setAddCriterion("");
-  }, [
-    addComment,
-    addCriterion,
-    addTag,
-    onAddFeedback,
-    locationData,
-  ]);
+  }, [addComment, addCriterion, addTag, onAddFeedback, locationData]);
 
   const handleCancelAdd = useCallback(() => {
     setAddComment("");
@@ -192,7 +192,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
       {/* Add Feedback Form */}
       {isAddingFeedback && (
         <div
-          className="border rounded-lg p-2 bg-primary/5 border-primary w-full"
+          className="border rounded-lg p-2 border-primary w-full"
           style={{ contain: "layout" }}
         >
           <div className="space-y-3 w-full">
@@ -286,8 +286,19 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                   isEditing ? "" : (
                     "hover:bg-primary-foreground cursor-pointer hover:shadow-sm"
                   )
-                } ${isActive && !isEditing ? "bg-primary-foreground/5 " : ""}`}
-                onClick={isEditing ? undefined : () => onSelect(feedback)}
+                } ${isActive && !isEditing ? "bg-primary-foreground " : ""}`}
+                onClick={
+                  isEditing ? undefined : (
+                    () => {
+                      // If already active, deactivate it; otherwise, activate it
+                      if (isActive) {
+                        onSelect({ ...feedback, id: "" }); // Pass empty id to deactivate
+                      } else {
+                        onSelect(feedback);
+                      }
+                    }
+                  )
+                }
               >
                 {isEditing ?
                   <div className="space-y-3">

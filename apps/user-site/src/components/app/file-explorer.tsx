@@ -243,125 +243,130 @@ function renderTree(
   );
 }
 
-export const FileExplorer: React.FC<FileExplorerProps> = React.memo(({
-  files,
-  selectedFile,
-  setSelectedFile,
-  expandedFolders,
-  setExpandedFolders,
-  feedbacks,
-  grading,
-}) => {
-  const safeFiles = Array.isArray(files) ? files : []; // đảm bảo luôn là mảng
-  const tree = React.useMemo(() => buildFileTree(safeFiles), [safeFiles]);
+export const FileExplorer: React.FC<FileExplorerProps> = React.memo(
+  ({
+    files,
+    selectedFile,
+    setSelectedFile,
+    expandedFolders,
+    setExpandedFolders,
+    feedbacks,
+    grading,
+  }) => {
+    const safeFiles = Array.isArray(files) ? files : []; // đảm bảo luôn là mảng
+    const tree = React.useMemo(() => buildFileTree(safeFiles), [safeFiles]);
 
-  // Access selectors directly from grading
-  const selectors = grading?.selectors || [];
+    // Access selectors directly from grading
+    const selectors = grading?.selectors || [];
 
-  // State for multiple criterion selection
-  const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
+    // State for multiple criterion selection
+    const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
 
-  // Toggle criterion selection
-  const toggleCriterion = (criterion: string) => {
-    setSelectedCriteria((prev) =>
-      prev.includes(criterion) ?
-        prev.filter((c) => c !== criterion)
-      : [...prev, criterion],
-    );
-  };
+    // Toggle criterion selection
+    const toggleCriterion = (criterion: string) => {
+      setSelectedCriteria((prev) =>
+        prev.includes(criterion) ?
+          prev.filter((c) => c !== criterion)
+        : [...prev, criterion],
+      );
+    };
 
-  const toggleAllCriteria = () => {
-    if (selectedCriteria.length === selectors.length) {
-      // If all criteria are selected, deselect all
-      setSelectedCriteria([]);
-    } else {
-      // Otherwise select all criteria
-      setSelectedCriteria(selectors.map((selector) => selector.criterion));
-    }
-  };
-  const allSelected =
-    selectors.length > 0 && selectedCriteria.length === selectors.length;
-  return (
-    <div className="pt-2 px-2 h-full w-full flex flex-col min-w-0">
-      <div className="justify-between flex items-center mb-2">
-        <h3 className="text-xs font-medium truncate min-w-0 flex-1">Explorer</h3>
-        <Popover>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {selectedCriteria.length > 0 && (
-              <Badge className="text-[10px] h-4 px-1">{selectedCriteria.length}</Badge>
-            )}
-            <PopoverTrigger asChild>
-              <button className="p-1 rounded hover:bg-muted transition-colors">
-                <Filter className="h-3.5 w-3.5 text-gray-500 hover:text-gray-700" />
-              </button>
-            </PopoverTrigger>
-          </div>
-          <PopoverContent className="w-80">
-            <h3 className="text-sm font-medium mb-2">Filter files by criterion</h3>
-            {selectors.length > 0 ?
-              <div className="space-y-2 max-h-60 overflow-auto">
-                {selectors.map((selector) => {
-                  return (
-                    <div key={selector.criterion} className="flex items-start space-x-2">
-                      <Checkbox
-                        id={`criterion-${selector.criterion}`}
-                        checked={selectedCriteria.includes(selector.criterion)}
-                        onCheckedChange={() => toggleCriterion(selector.criterion)}
-                      />
-                      <div className="grid gap-1.5 leading-none flex-1">
-                        <Label
-                          htmlFor={`criterion-${selector.criterion}`}
-                          className="text-xs font-medium cursor-pointer"
-                        >
-                          {selector.criterion}
-                        </Label>
-                        {selector.pattern && (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1">
-                              <p className="text-xs text-muted-foreground">
-                                Pattern: {selector.pattern}
-                              </p>
+    const toggleAllCriteria = () => {
+      if (selectedCriteria.length === selectors.length) {
+        // If all criteria are selected, deselect all
+        setSelectedCriteria([]);
+      } else {
+        // Otherwise select all criteria
+        setSelectedCriteria(selectors.map((selector) => selector.criterion));
+      }
+    };
+    const allSelected =
+      selectors.length > 0 && selectedCriteria.length === selectors.length;
+    return (
+      <div className="pt-2 px-2 h-full w-full flex flex-col min-w-0">
+        <div className="justify-between flex items-center mb-2">
+          <h3 className="text-xs font-medium truncate min-w-0 flex-1">Explorer</h3>
+          <Popover>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {selectedCriteria.length > 0 && (
+                <Badge className="text-[10px] h-4 px-1">{selectedCriteria.length}</Badge>
+              )}
+              <PopoverTrigger asChild>
+                <button className="p-1 rounded hover:bg-muted transition-colors">
+                  <Filter className="h-3.5 w-3.5 text-gray-500 hover:text-gray-700" />
+                </button>
+              </PopoverTrigger>
+            </div>
+            <PopoverContent className="w-80">
+              <h3 className="text-sm font-medium mb-2">Filter files by criterion</h3>
+              {selectors.length > 0 ?
+                <div className="space-y-2 max-h-60 overflow-auto">
+                  {selectors.map((selector) => {
+                    return (
+                      <div
+                        key={selector.criterion}
+                        className="flex items-start space-x-2"
+                      >
+                        <Checkbox
+                          id={`criterion-${selector.criterion}`}
+                          checked={selectedCriteria.includes(selector.criterion)}
+                          onCheckedChange={() => toggleCriterion(selector.criterion)}
+                        />
+                        <div className="grid gap-1.5 leading-none flex-1">
+                          <Label
+                            htmlFor={`criterion-${selector.criterion}`}
+                            className="text-xs font-medium cursor-pointer"
+                          >
+                            {selector.criterion}
+                          </Label>
+                          {selector.pattern && (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1">
+                                <p className="text-xs text-muted-foreground">
+                                  Pattern: {selector.pattern}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-                <div className="flex items-start space-x-2 pt-2 mt-2 border-t">
-                  <Checkbox
-                    id="criterion-all"
-                    checked={allSelected}
-                    onCheckedChange={toggleAllCriteria}
-                  />
-                  <Label
-                    htmlFor="criterion-all"
-                    className="text-xs font-medium cursor-pointer"
-                  >
-                    All Criteria
-                  </Label>
+                    );
+                  })}
+                  <div className="flex items-start space-x-2 pt-2 mt-2 border-t">
+                    <Checkbox
+                      id="criterion-all"
+                      checked={allSelected}
+                      onCheckedChange={toggleAllCriteria}
+                    />
+                    <Label
+                      htmlFor="criterion-all"
+                      className="text-xs font-medium cursor-pointer"
+                    >
+                      All Criteria
+                    </Label>
+                  </div>
                 </div>
-              </div>
-            : <p className="text-xs text-muted-foreground">No criteria available</p>}
-          </PopoverContent>
-        </Popover>
-      </div>
+              : <p className="text-xs text-muted-foreground">No criteria available</p>}
+            </PopoverContent>
+          </Popover>
+        </div>
 
-      <div className="flex-1 overflow-auto space-y-0.5 min-w-0">
-        {renderTree(
-          tree,
-          "",
-          expandedFolders,
-          setExpandedFolders,
-          selectedFile,
-          setSelectedFile,
-          feedbacks,
-          selectedCriteria,
-          selectors,
-        )}
+        <div className="flex-1 overflow-auto space-y-0.5 min-w-0">
+          {renderTree(
+            tree,
+            "",
+            expandedFolders,
+            setExpandedFolders,
+            selectedFile,
+            setSelectedFile,
+            feedbacks,
+            selectedCriteria,
+            selectors,
+          )}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
-FileExplorer.displayName = 'FileExplorer';
+FileExplorer.displayName = "FileExplorer";

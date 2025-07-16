@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
@@ -20,8 +20,6 @@ interface ScoringPanelProps {
   activeScoringTab: string;
   setActiveScoringTab: (tab: string) => void;
   form: UseFormReturn<Assessment>;
-  onScoreAdjustmentRefresh?: () => void; // Optional callback for triggering refresh
-  onScoreHistoryReady?: (refreshFn: () => void) => void; // Callback to pass refresh function to parent
 }
 
 export const ScoringPanel: React.FC<ScoringPanelProps> = ({
@@ -33,11 +31,9 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   activeScoringTab,
   setActiveScoringTab,
   form,
-  onScoreAdjustmentRefresh,
-  onScoreHistoryReady,
 }) => {
   const auth = useAuth();
-  
+
   // Helper function to generate unique IDs
   const generateUID = useCallback(() => {
     const first = (Math.random() * 46656) | 0;
@@ -48,32 +44,38 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   }, []);
 
   // Helper functions for feedback operations (no toast - direct form updates)
-  const addFeedbackDirect = useCallback((feedback: FeedbackItem) => {
-    try {
-      const feedbackWithId = { ...feedback, id: feedback.id || generateUID() };
-      const currentFeedbacks = form.getValues("feedbacks") || [];
-      form.setValue("feedbacks", [...currentFeedbacks, feedbackWithId], {
-        shouldValidate: false,
-      });
-    } catch (error) {
-      console.error("Error adding feedback:", error);
-    }
-  }, [form, generateUID]);
-
-  const updateFeedbackDirect = useCallback((feedbackId: string, feedback: FeedbackItem) => {
-    try {
-      const currentFeedbacks = form.getValues("feedbacks") || [];
-      const index = currentFeedbacks.findIndex((f) => f.id === feedbackId);
-      
-      if (index !== -1) {
-        const updated = [...currentFeedbacks];
-        updated[index] = { ...updated[index], ...feedback };
-        form.setValue("feedbacks", updated, { shouldValidate: false });
+  const addFeedbackDirect = useCallback(
+    (feedback: FeedbackItem) => {
+      try {
+        const feedbackWithId = { ...feedback, id: feedback.id || generateUID() };
+        const currentFeedbacks = form.getValues("feedbacks") || [];
+        form.setValue("feedbacks", [...currentFeedbacks, feedbackWithId], {
+          shouldValidate: false,
+        });
+      } catch (error) {
+        console.error("Error adding feedback:", error);
       }
-    } catch (error) {
-      console.error("Error updating feedback:", error);
-    }
-  }, [form]);
+    },
+    [form, generateUID],
+  );
+
+  const updateFeedbackDirect = useCallback(
+    (feedbackId: string, feedback: FeedbackItem) => {
+      try {
+        const currentFeedbacks = form.getValues("feedbacks") || [];
+        const index = currentFeedbacks.findIndex((f) => f.id === feedbackId);
+
+        if (index !== -1) {
+          const updated = [...currentFeedbacks];
+          updated[index] = { ...updated[index], ...feedback };
+          form.setValue("feedbacks", updated, { shouldValidate: false });
+        }
+      } catch (error) {
+        console.error("Error updating feedback:", error);
+      }
+    },
+    [form],
+  );
 
   // Internal state - component manages its own dialogs
   const [editingSummaryId, setEditingSummaryId] = useState<string | null>(null);
@@ -125,18 +127,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
     }
   };
 
-  // Trigger score adjustment fetch when score is saved
-  const triggerScoreAdjustmentRefresh = () => {
-    fetchScoreAdjustmentMutation.mutate();
-    onScoreAdjustmentRefresh?.(); // Call external callback if provided
-  };
-
-  // Pass refresh function to parent component
-  useEffect(() => {
-    onScoreHistoryReady?.(triggerScoreAdjustmentRefresh);
-  }, [onScoreHistoryReady, triggerScoreAdjustmentRefresh]);
-
-  // Tính điểm giống bên index
   const calcScore = (rawScore: number, weight: number) => {
     const scale = grading.scaleFactor ?? 10;
     return ((rawScore / weight) * (weight * scale)) / 100;
@@ -183,7 +173,9 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               >
                 <History className="h-4 w-4" />
                 <span className="text-xs">
-                  {fetchScoreAdjustmentMutation.isPending ? "Loading..." : "Score History"}
+                  {fetchScoreAdjustmentMutation.isPending ?
+                    "Loading..."
+                  : "Score History"}
                 </span>
               </Button>
             </div>

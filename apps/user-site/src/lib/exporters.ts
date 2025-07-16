@@ -501,7 +501,7 @@ export class AssessmentExporter implements DataExporter {
 
     autoTable(doc, {
       startY: yAfter + 10,
-      head: [["Criterion", "Comment", "Tag", "File", "Position", "Location Data"]],
+      head: [["Criterion", "Comment", "Tag", "File", "Position"]],
       body: this.assessment.feedbacks
         .map((fb) => {
           // Format position based on locationData type
@@ -527,7 +527,6 @@ export class AssessmentExporter implements DataExporter {
               fb.tag,
               fb.fileRef.split("/").pop() ?? "",
               position,
-              JSON.stringify(fb.locationData),
             ];
           }
           return undefined;
@@ -577,7 +576,7 @@ export class AssessmentExporter implements DataExporter {
     wsData.push([]);
 
     const feedbackHeaderRow = wsData.length;
-    wsData.push(["Criterion", "Comment", "Tag", "File", "Position", "Location Data"]);
+    wsData.push(["Criterion", "Comment", "Tag", "File", "Position"]);
 
     this.assessment.feedbacks.forEach((fb) => {
       // Format position based on locationData type
@@ -603,7 +602,6 @@ export class AssessmentExporter implements DataExporter {
           fb.tag,
           fb.fileRef.split("/").pop() ?? "",
           position,
-          JSON.stringify(fb.locationData),
         ]);
       }
     });

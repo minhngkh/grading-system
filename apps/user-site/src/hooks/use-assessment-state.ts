@@ -10,7 +10,7 @@ export function useAssessmentState(assessment: Assessment) {
   });
 
   const formData = form.watch();
-  
+
   // Keep track of the original assessment data (never changes)
   const [originalData] = useState<{
     scoreBreakdowns: Assessment["scoreBreakdowns"];
@@ -32,7 +32,7 @@ export function useAssessmentState(assessment: Assessment) {
       feedbacks: assessment.feedbacks,
     };
     setLastSavedData(initialState);
-    
+
     // Reset form with new assessment data
     form.reset(assessment);
   }, [assessment.id]); // Only re-initialize when assessment ID changes
@@ -75,12 +75,17 @@ export function useAssessmentState(assessment: Assessment) {
   }, []);
 
   // Helper functions for updating state
-  const updateLastSavedData = useCallback((updates: Partial<{
-    scoreBreakdowns: Assessment["scoreBreakdowns"];
-    feedbacks: Assessment["feedbacks"];
-  }>) => {
-    setLastSavedData(prev => prev ? { ...prev, ...updates } : null);
-  }, []);
+  const updateLastSavedData = useCallback(
+    (
+      updates: Partial<{
+        scoreBreakdowns: Assessment["scoreBreakdowns"];
+        feedbacks: Assessment["feedbacks"];
+      }>,
+    ) => {
+      setLastSavedData((prev) => (prev ? { ...prev, ...updates } : null));
+    },
+    [],
+  );
 
   // Note: We removed updateInitialData since we now use originalData which never changes
   // This was the source of the bug - markCurrentAsInitial was resetting initialData
