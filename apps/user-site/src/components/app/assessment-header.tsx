@@ -1,4 +1,4 @@
-import React from "react";
+import { useState, useEffect } from "react";
 import { Save, History, ArrowLeft, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,6 @@ import { AssessmentExporter } from "@/lib/exporters";
 import { Assessment } from "@/types/assessment";
 import { GradingAttempt } from "@/types/grading";
 import { Rubric } from "@/types/rubric";
-import { UseFormReturn } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
@@ -26,11 +25,11 @@ import {
 } from "@/queries/assessment-queries";
 
 interface AssessmentHeaderProps {
-  form: UseFormReturn<Assessment>;
   assessment: Assessment;
   grading: GradingAttempt;
   rubric: Rubric;
   canRevert: boolean;
+  hasUnsavedChanges: boolean;
   handleRevert: () => void;
   updateLastSavedData: (
     updates: Partial<{
@@ -41,18 +40,32 @@ interface AssessmentHeaderProps {
 }
 
 export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
-  form,
   assessment,
   grading,
   rubric,
   canRevert,
+  hasUnsavedChanges,
   handleRevert,
   updateLastSavedData,
 }) => {
-  const [open, setOpen] = React.useState(false);
-  const [revertDialogOpen, setRevertDialogOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
+  const [showRevertButton, setShowRevertButton] = useState(false);
+
+  // Delay showing revert button
+  useEffect(() => {
+    if (canRevert) {
+      const timer = setTimeout(() => {
+        setShowRevertButton(true);
+      }, 500); // 500ms delay
+      return () => clearTimeout(timer);
+    } else {
+      setShowRevertButton(false);
+    }
+  }, [canRevert]);
+
   // Get form data
-  const formData = form.watch();
+  const formData = assessment;
 
   // Setup mutations
   const queryClient = useQueryClient();
@@ -94,7 +107,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
 
   const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
 
-  // Save handlers
   const handleSaveFeedback = async () => {
     if (updateFeedbackMutation.isPending) return;
     try {
@@ -125,11 +137,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
       // Refetch assessment data to get updated results
       await queryClient.refetchQueries({
         queryKey: ["assessment", assessment.id],
-      });
-
-      // Also invalidate grading attempts list
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempts"],
       });
 
       toast.success("Assessment rerun completed successfully");
@@ -166,6 +173,14 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     }
   });
 
+  const handleExport = () => {
+    if (hasUnsavedChanges) {
+      toast.warning("Please save your changes before exporting the assessment.");
+      return;
+    }
+    setOpen(true);
+  };
+
   const handleConfirmRevert = () => {
     handleRevert();
     setRevertDialogOpen(false);
@@ -192,7 +207,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
       </div>
       <div className="flex gap-2">
         <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
-          {canRevert && (
+          {showRevertButton && (
             <DialogTrigger asChild>
               <Button
                 disabled={
@@ -257,7 +272,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         <Button
           className="cursor-pointer"
           size="sm"
-          onClick={handleRerunAssessment || handleSaveScore}
+          onClick={handleRerunAssessment}
           disabled={isLoading}
         >
           <RotateCcw className="h-4 w-4 mr-2" />

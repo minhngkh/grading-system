@@ -154,6 +154,23 @@ code {
   background-color: rgba(220, 53, 69, 0.35) !important;
 }
 
-/* .annotation-span.actived::after {
-  opacity: 1;
-} */
+.tippy-box {
+  max-width: 900px; /* Adjust as needed */
+}
+
+.tippy-content {
+  padding: 0px;
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 3px solid var(--border);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+
+.custom-tooltip {
+  max-width: 100%; /* hoặc giá trị bạn muốn */
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}

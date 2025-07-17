@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
@@ -118,6 +118,15 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
     },
   });
 
+  // Clear score adjustment cache when score breakdowns change
+  useEffect(() => {
+    setScoreAdjustment([]);
+    // If the dialog is open, refetch immediately
+    if (showScoreAdjustmentDialog) {
+      fetchScoreAdjustmentMutation.mutate();
+    }
+  }, [formData.scoreBreakdowns]);
+
   const handleShowScoreHistory = () => {
     setShowScoreAdjustmentDialog(true);
     // Only fetch when user explicitly wants to see score history
@@ -138,7 +147,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   ).toFixed(2);
 
   return (
-    <div className="flex flex-col bg-background w-full h-full overflow-hidden px-4">
+    <div className="flex flex-col bg-background w-full h-full overflow-hidden">
       <div className="flex flex-col flex-1 min-h-0">
         <Tabs
           value={activeScoringTab}
@@ -161,9 +170,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold">Total Score:</span>
                 <span className="text-sm font-bold text-blue-600">{totalScore}</span>
-                <span className="text-sm text-muted-foreground font-semibold">
-                  / {grading.scaleFactor}
-                </span>
+                <span className="text-sm font-bold">/ {grading.scaleFactor}</span>
               </div>
               <Button
                 variant="outline"
@@ -232,7 +239,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
 
               return (
                 <TabsContent
-                  key={index}
+                  key={criterion.id}
                   value={criterion.name}
                   className="flex-1 min-h-0 overflow-auto"
                 >
@@ -244,7 +251,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
 
                       <span className="text-xs text-gray-500">
                         <div className="flex items-center gap-3">
-                          <span className="text-xs">Score:</span>
+                          <span className="text-xs text-gray-400">Custom Score:</span>
                           <input
                             type="number"
                             min={0}
@@ -373,7 +380,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                               </div>
                               <button
                                 onClick={() => updateScore(criterion.name, level.weight)}
-                                className={`w-full p-3 rounded text-center flex items-center justify-center ${
+                                className={`w-full h-20 p-3 rounded text-center flex items-center justify-center ${
                                   isSelected ?
                                     "border-2 border-blue-400"
                                   : "border border-gray-300"

@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { Files, MessageSquare, Code } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Files, MessageSquare, Code, PanelLeftOpen, PanelRightOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FileExplorer } from "@/components/app/file-explorer";
 import { FeedbackListPanel } from "@/components/app/feedback-list-panel";
@@ -15,7 +14,6 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { cn } from "@/lib/utils";
 
 interface MainWorkspaceProps {
   files: any[];
@@ -26,6 +24,7 @@ interface MainWorkspaceProps {
   form: UseFormReturn<Assessment>;
   selectedFile?: any;
   onFileSelect?: (file: any) => void;
+  updateLastSavedData?: (updates: { feedbacks: FeedbackItem[] }) => void;
 }
 
 export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
@@ -38,6 +37,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     form,
     selectedFile: externalSelectedFile,
     onFileSelect: externalOnFileSelect,
+    updateLastSavedData,
   }) => {
     const [internalSelectedFile, setInternalSelectedFile] = useState<any | null>(null);
     const [activeFeedbackId, setActiveFeedbackId] = useState<string | null>(null);
@@ -93,10 +93,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [sidebarView, setSidebarView] = useState<"files" | "testcases" | "feedback">(
       "files",
-    );
-
-    const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">(
-      "file",
     );
     const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
       src: true,
@@ -171,11 +167,13 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
           return;
         }
 
+        // If clicking on currently active feedback, deselect it
         if (activeFeedbackId === feedback.id) {
           handleFeedbackSelect(null);
           return;
         }
 
+        // If feedback belongs to a different file, switch to that file first
         if (feedback.fileRef) {
           const feedbackFile = files.find((f) => {
             const fileName = f.relativePath || f.name;
@@ -191,6 +189,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
           }
         }
 
+        // Select the feedback
         handleFeedbackSelect(feedback.id);
       },
       [activeFeedbackId, selectedFile, files, onFileSelect, handleFeedbackSelect],
@@ -331,9 +330,8 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
         setSelectedPage(null);
       } else if (canAddFeedback || selectedPage) {
         setIsHighlightMode(true);
-
+        setIsSidebarOpen(true);
         setSidebarView("feedback");
-        setFeedbackViewMode("file");
       }
     }, [isHighlightMode, canAddFeedback, selectedPage]);
 
@@ -353,7 +351,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       setCanAddFeedback(true);
 
       setSidebarView("feedback");
-      setFeedbackViewMode("file");
     }, []);
 
     const handlePageSelect = useCallback((page: number | null) => {
@@ -455,60 +452,21 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
         case "feedback":
           return (
             <div className="p-2 w-full h-full flex flex-col">
-              <Tabs
-                value={feedbackViewMode}
-                onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
-                className="flex flex-col h-full"
-              >
-                <TabsList className="text-xs font-medium rounded-md w-full shrink-0">
-                  <TabsTrigger value="file" className="text-xs">
-                    By File
-                  </TabsTrigger>
-                  <TabsTrigger value="criterion" className="text-xs">
-                    By Criterion
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent
-                  value="file"
-                  className="flex flex-col flex-1 overflow-hidden"
-                >
-                  <h3 className="text-xs font-medium mb-3 shrink-0">
-                    Feedback for {selectedFile?.name || "No file"}
-                  </h3>
-                  <FeedbackListPanel
-                    feedbacks={currentFileFeedbacks}
-                    selectedFeedbackId={activeFeedbackId}
-                    onSelect={handleFeedbackClick}
-                    assessment={assessment}
-                    isAddingFeedback={isHighlightMode}
-                    onAddFeedback={handleAddFeedback}
-                    onCancelAdd={handleCancelSelection}
-                    rubricCriteria={rubricCriteria}
-                    locationData={locationData}
-                    form={form}
-                  />
-                </TabsContent>
-                <TabsContent
-                  value="criterion"
-                  className="flex flex-col flex-1 overflow-hidden"
-                >
-                  <h3 className="text-xs font-medium mb-3">
-                    Feedback for {activeScoringTab || "No criterion"}
-                  </h3>
-                  <FeedbackListPanel
-                    feedbacks={currentCriterionFeedbacks}
-                    selectedFeedbackId={activeFeedbackId}
-                    onSelect={handleFeedbackClick}
-                    assessment={assessment}
-                    isAddingFeedback={isHighlightMode && feedbackViewMode === "criterion"}
-                    onAddFeedback={handleAddFeedback}
-                    onCancelAdd={handleCancelSelection}
-                    rubricCriteria={rubricCriteria}
-                    locationData={locationData}
-                    form={form}
-                  />
-                </TabsContent>
-              </Tabs>
+              <h3 className="text-xs font-medium mb-3 shrink-0">
+                Feedback for {selectedFile?.name || "No file"}
+              </h3>
+              <FeedbackListPanel
+                feedbacks={currentFileFeedbacks}
+                selectedFeedbackId={activeFeedbackId}
+                onSelect={handleFeedbackClick}
+                assessment={assessment}
+                isAddingFeedback={isHighlightMode}
+                onAddFeedback={handleAddFeedback}
+                onCancelAdd={handleCancelSelection}
+                rubricCriteria={rubricCriteria}
+                locationData={locationData}
+                form={form}
+              />
             </div>
           );
         default:
@@ -517,7 +475,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     }, [
       sidebarView,
       fileExplorerProps,
-      feedbackViewMode,
       currentFileFeedbacks,
       currentCriterionFeedbacks,
       activeFeedbackId,
@@ -556,6 +513,8 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
               onSelectionMade={handleSelectionMade}
               onPageSelect={handlePageSelect}
               onSelectionChange={handleSelectionChange}
+              updateLastSavedData={updateLastSavedData}
+              formData={assessment}
             />
           </div>
         );
@@ -588,88 +547,141 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     ]);
 
     return (
-      <div className="h-full flex">
-        <div className="h-full flex bg-background border-r">
-          <div className="w-10 flex flex-col">
-            <button
-              onClick={() => handleSidebarToggle("files")}
-              className={`flex items-center justify-center h-10 w-full transition-colors ${
-                sidebarView === "files" ?
-                  "bg-primary/5 text-primary border-r-2 border-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-              title="Files"
-            >
-              <Files className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => handleSidebarToggle("testcases")}
-              className={`flex items-center justify-center h-10 w-full transition-colors ${
-                sidebarView === "testcases" ?
-                  "bg-primary/5 text-primary border-r-2 border-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-              title="Test Cases"
-            >
-              <Code className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => handleSidebarToggle("feedback")}
-              className={`flex items-center justify-center h-10 w-full transition-colors ${
-                sidebarView === "feedback" ?
-                  "bg-primary/5 text-primary border-r-2 border-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-              title="Feedback"
-            >
-              <MessageSquare className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel
-            className={cn(isSidebarOpen ? "block" : "hidden")}
-            defaultSize={20}
-            minSize={20}
-            maxSize={30}
-          >
-            <div className="h-full flex flex-col min-w-0">{renderSidebarContent}</div>
-          </ResizablePanel>
-
-          <ResizableHandle className={cn(isSidebarOpen ? "block" : "hidden")} />
-
-          <ResizablePanel defaultSize={isSidebarOpen ? 80 : 100}>
-            <div className="h-full flex flex-col min-w-0">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b px-2 py-1">
-                <h2 className="font-semibold truncate">
-                  {selectedFile?.name || "No file selected"}
-                </h2>
-                <div className="flex items-center gap-2">
-                  {(canAddFeedback || selectedPage) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCancelSelection}
-                      className="text-xs"
+      <div className="h-full flex flex-col">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          {/* Sidebar */}
+          {isSidebarOpen && (
+            <>
+              <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+                <div className="h-full flex bg-background border-r">
+                  {/* Sidebar Icons */}
+                  <div className="w-10 border-r flex flex-col">
+                    <button
+                      onClick={() => setSidebarView("files")}
+                      className={`flex items-center justify-center h-10 w-full transition-colors ${
+                        sidebarView === "files" ?
+                          "bg-primary/5 text-primary border-r-2 border-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      }`}
+                      title="Files"
                     >
-                      Cancel
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    onClick={handleAddFeedbackClick}
-                    className="text-xs"
-                    disabled={isHighlightMode || (!canAddFeedback && !selectedPage)}
-                  >
-                    {isHighlightMode ? "Adding Highlight" : "Add Feedback"}
-                  </Button>
-                </div>
-              </div>
+                      <Files className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setSidebarView("testcases")}
+                      className={`flex items-center justify-center h-10 w-full transition-colors ${
+                        sidebarView === "testcases" ?
+                          "bg-primary/5 text-primary border-r-2 border-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      }`}
+                      title="Test Cases"
+                    >
+                      <Code className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setSidebarView("feedback")}
+                      className={`flex items-center justify-center h-10 w-full transition-colors ${
+                        sidebarView === "feedback" ?
+                          "bg-primary/5 text-primary border-r-2 border-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      }`}
+                      title="Feedback"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </button>
 
+                    <div className="flex-1" />
+                  </div>
+
+                  {/* Sidebar Content */}
+                  <div className="flex-1 flex flex-col h-full min-w-0">
+                    {renderSidebarContent}
+                  </div>
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+            </>
+          )}
+
+          {/* Main Content Area */}
+          <ResizablePanel defaultSize={isSidebarOpen ? 80 : 100}>
+            <ResizablePanelGroup direction="horizontal" className="h-full">
               {/* File Viewer */}
-              <div className="flex-1 overflow-auto">{renderFileViewer}</div>
-            </div>
+              <ResizablePanel defaultSize={80} minSize={50}>
+                <div className="h-full flex flex-col">
+                  {/* Header with file info and controls */}
+                  <div className="flex items-center justify-between border-b">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSidebarToggle(sidebarView)}
+                      >
+                        {!isSidebarOpen ?
+                          <PanelLeftOpen className="h-4 w-4" />
+                        : <PanelRightOpen className="h-4 w-4" />}
+                      </Button>
+                      <h2 className="text-sm font-medium truncate">
+                        {selectedFile?.name || "No file selected"}
+                      </h2>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {(canAddFeedback || selectedPage) && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCancelSelection}
+                            className="text-xs"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={handleAddFeedbackClick}
+                            className="text-xs"
+                            disabled={
+                              isHighlightMode || (!canAddFeedback && !selectedPage)
+                            }
+                          >
+                            {isHighlightMode ? "Adding Feedback" : "Add Feedback"}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* File Viewer Content */}
+                  {renderFileViewer}
+                </div>
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
+              {/* Right Panel - Criterion Feedback */}
+              <ResizablePanel defaultSize={20} minSize={20} maxSize={40}>
+                <div className="h-full flex flex-col border-l bg-background">
+                  <h3 className="p-2 text-xs font-medium">
+                    Feedback for {activeScoringTab || "No criterion"}
+                  </h3>
+                  <div className="flex-1 p-2 overflow-y-auto">
+                    <FeedbackListPanel
+                      feedbacks={currentCriterionFeedbacks}
+                      selectedFeedbackId={activeFeedbackId}
+                      onSelect={handleFeedbackClick}
+                      assessment={assessment}
+                      isAddingFeedback={false}
+                      onAddFeedback={handleAddFeedback}
+                      onCancelAdd={handleCancelSelection}
+                      rubricCriteria={rubricCriteria}
+                      locationData={locationData}
+                      form={form}
+                    />
+                  </div>
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
