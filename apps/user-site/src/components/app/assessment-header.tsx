@@ -95,7 +95,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
 
   const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
 
-  // Save handlers
   const handleSaveFeedback = async () => {
     if (updateFeedbackMutation.isPending) return;
     try {

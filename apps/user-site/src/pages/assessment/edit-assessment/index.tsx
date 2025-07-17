@@ -39,23 +39,15 @@ export function EditAssessmentUI({
   const auth = useAuth();
   const queryClient = useQueryClient();
 
-  // Simple useQuery pattern like rubric page
   const { data: assessment } = useQuery({
     ...getAssessmentQueryOptions(initialAssessment.id, auth),
     placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 2,
   });
-
-  // Use latest data or fallback to initial
   const currentAssessment = assessment || initialAssessment;
 
-  const {
-    form,
-    formData,
-    validationState,
-    updateLastSavedData,
-    revertToLastSaved,
-  } = useAssessmentForm(currentAssessment);
+  const { form, formData, validationState, updateLastSavedData, revertToLastSaved } =
+    useAssessmentForm(currentAssessment);
 
   const { canRevert, hasUnsavedChanges } = validationState;
 
@@ -117,14 +109,12 @@ export function EditAssessmentUI({
     loadFiles();
   }, [formData.submissionReference, grading.id]);
 
-  // Set initial selected file when files are loaded
   useEffect(() => {
     if (files.length > 0 && !selectedFile) {
       setSelectedFile(files[0]);
     }
   }, [files, selectedFile]);
 
-  // Simple save handlers like rubric page
   const handleSaveFeedback = async () => {
     if (updateFeedbackMutation.isPending) return;
     try {
@@ -229,9 +219,6 @@ export function EditAssessmentUI({
     handleSaveScore,
   ]);
 
-  // Just use the current formData directly, React.memo will handle the optimization
-  // The issue is not about preventing re-renders but ensuring they only happen when needed
-
   return (
     <div className="-mb-21 -mt-13 h-[92.5vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-hidden">
       {/* Header */}
@@ -272,6 +259,7 @@ export function EditAssessmentUI({
                 rubric={rubric}
                 activeScoringTab={activeScoringTab}
                 form={form}
+                updateLastSavedData={updateLastSavedData}
               />
             }
           </ResizablePanel>

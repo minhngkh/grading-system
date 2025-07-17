@@ -135,7 +135,6 @@ export const AssessmentSidebar: React.FC<AssessmentSidebarProps> = ({
                   assessment={assessment}
                   form={form}
                   rubricCriteria={rubricCriteria}
-                  currentFile={selectedFile}
                 />
               </TabsContent>
               <TabsContent
@@ -152,7 +151,6 @@ export const AssessmentSidebar: React.FC<AssessmentSidebarProps> = ({
                   assessment={assessment}
                   form={form}
                   rubricCriteria={rubricCriteria}
-                  currentFile={selectedFile}
                 />
               </TabsContent>
             </Tabs>

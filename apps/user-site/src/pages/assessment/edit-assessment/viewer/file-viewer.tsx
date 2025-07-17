@@ -13,6 +13,7 @@ interface FileViewerProps {
   onSelectionMade?: () => void;
   onPageSelect?: (page: number | null) => void;
   onSelectionChange?: (selection: any) => void;
+  updateLastSavedData?: (updates: { feedbacks: FeedbackItem[] }) => void;
 }
 
 const FileViewer: React.FC<FileViewerProps> = ({
@@ -23,6 +24,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   onSelectionMade,
   onPageSelect,
   onSelectionChange,
+  updateLastSavedData,
 }) => {
   // Gộp logic xác định loại file
   if (file.type === "image") {
@@ -42,6 +44,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         updateFeedback={updateFeedback}
         activeFeedbackId={activeFeedbackId}
         onPageSelect={onPageSelect}
+        updateLastSavedData={updateLastSavedData}
       />
     );
   }
@@ -54,6 +57,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         activeFeedbackId={activeFeedbackId}
         onSelectionMade={onSelectionMade}
         onSelectionChange={onSelectionChange}
+        updateLastSavedData={updateLastSavedData}
       />
     );
   }
