@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
@@ -34,7 +34,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
 }) => {
   const auth = useAuth();
 
-  // Helper function to generate unique IDs
   const generateUID = useCallback(() => {
     const first = (Math.random() * 46656) | 0;
     const second = (Math.random() * 46656) | 0;
@@ -119,6 +118,15 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
     },
   });
 
+  // Clear score adjustment cache when score breakdowns change
+  useEffect(() => {
+    setScoreAdjustment([]);
+    // If the dialog is open, refetch immediately
+    if (showScoreAdjustmentDialog) {
+      fetchScoreAdjustmentMutation.mutate();
+    }
+  }, [formData.scoreBreakdowns]);
+
   const handleShowScoreHistory = () => {
     setShowScoreAdjustmentDialog(true);
     // Only fetch when user explicitly wants to see score history
@@ -181,7 +189,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
             </div>
           </div>
           <div className="flex-1 min-h-0 flex flex-col">
-            {rubric.criteria.map((criterion) => {
+            {rubric.criteria.map((criterion, index) => {
               if (activeScoringTab !== criterion.name) return null;
 
               // Use formData instead of form.getValues for real-time data
@@ -350,11 +358,11 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         }
                       </div>
                     }
-                    <div className="flex gap-4">
+                    <div className="grid auto-cols-auto grid-flow-col gap-4">
                       {criterion.levels
                         .slice()
                         .sort((a, b) => a.weight - b.weight)
-                        .map((level) => {
+                        .map((level, index) => {
                           // So sánh tag và criterionName để border blue
                           const breakdown = formData.scoreBreakdowns.find(
                             (sb) => sb.criterionName === criterion.name,
@@ -364,8 +372,8 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                             breakdown.performanceTag === level.tag &&
                             breakdown.criterionName === criterion.name;
                           return (
-                            <div key={level.tag} className="flex-1">
-                              <div className="text-center mb-2">
+                            <div key={index} className="grid grid-rows-[auto_1fr] h-full">
+                              <div className="text-center">
                                 <span className="text-xs text-gray-400">
                                   {level.weight}%
                                 </span>

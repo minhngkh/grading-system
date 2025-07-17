@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, History, ArrowLeft, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,6 @@ import { AssessmentExporter } from "@/lib/exporters";
 import { Assessment } from "@/types/assessment";
 import { GradingAttempt } from "@/types/grading";
 import { Rubric } from "@/types/rubric";
-import { Navigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
@@ -51,6 +50,19 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
+  const [showRevertButton, setShowRevertButton] = useState(false);
+
+  // Delay showing revert button
+  useEffect(() => {
+    if (canRevert) {
+      const timer = setTimeout(() => {
+        setShowRevertButton(true);
+      }, 500); // 500ms delay
+      return () => clearTimeout(timer);
+    } else {
+      setShowRevertButton(false);
+    }
+  }, [canRevert]);
 
   // Get form data
   const formData = assessment;
@@ -175,95 +187,97 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   };
 
   return (
-    <div className="p-4 mb-4" style={{ height: "72px" }}>
-      <div className="flex items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              Navigate({
-                to: "/gradings/$gradingId/result",
-                params: { gradingId: grading.id },
-              });
-            }}
-            className="p-2"
-            title="Back to results"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-lg font-semibold">
-              Review Assessment: {formData.submissionReference}
-            </h1>
-            <p className="text-xs text-muted-foreground">Rubric: {rubric.rubricName}</p>
-          </div>
+    <div className="flex items-center md:justify-between">
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.history.back()}
+          className="p-2"
+          title="Back to results"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="text-lg font-semibold">
+            Review Assessment: {formData.submissionReference}
+          </h1>
+          <p className="text-xs text-muted-foreground">Rubric: {rubric.rubricName}</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleExport} size="sm">
-            <Save className="h-4 w-4 mr-2" />
-            <span className="text-xs">Export</span>
-          </Button>
+      </div>
+      <div className="flex gap-2">
+        <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
+          {showRevertButton && (
+            <DialogTrigger asChild>
+              <Button
+                disabled={
+                  updateScoreMutation.isPending || updateFeedbackMutation.isPending
+                }
+                size="sm"
+                variant="destructive"
+              >
+                <History className="h-4 w-4 mr-2" />
+                <span className="text-xs">Revert Changes</span>
+              </Button>
+            </DialogTrigger>
+          )}
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Revert Changes</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to revert all changes? This will discard all unsaved
+                feedback and scoring adjustments and restore them to the last saved state.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRevertDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmRevert}>Revert Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Button onClick={() => setOpen(true)} size="sm">
+          <Save className="h-4 w-4 mr-2" />
+          <span className="text-xs">Export</span>
+        </Button>
+        {open && (
           <ExportDialog
             open={open}
             onOpenChange={setOpen}
             exporterClass={AssessmentExporter}
             args={[formData, grading]}
           />
+        )}
 
-          <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="cursor-pointer" size="sm" disabled={!canRevert}>
-                <History className="h-4 w-4 mr-2" />
-                <span className="text-xs">Revert Changes</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Revert Changes</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to revert all changes? This will discard all
-                  unsaved feedback and scoring adjustments and restore them to the last
-                  saved state.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setRevertDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleConfirmRevert}>Revert Changes</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <Button
-            className="cursor-pointer"
-            size="sm"
-            onClick={handleSaveFeedback}
-            disabled={isLoading}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            <span className="text-xs">Save Feedback</span>
-          </Button>
-          <Button
-            className="cursor-pointer"
-            size="sm"
-            onClick={handleSaveScore}
-            disabled={isLoading}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            <span className="text-xs">Save Scoring</span>
-          </Button>
-          <Button
-            className="cursor-pointer"
-            size="sm"
-            onClick={handleRerunAssessment}
-            disabled={isLoading}
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            <span className="text-xs">Regrade</span>
-          </Button>
-        </div>
+        <Button
+          className="cursor-pointer"
+          size="sm"
+          onClick={handleSaveFeedback}
+          disabled={isLoading}
+        >
+          <Save className="h-4 w-4 mr-2" />
+          <span className="text-xs">Save Feedback</span>
+        </Button>
+        <Button
+          className="cursor-pointer"
+          size="sm"
+          onClick={handleSaveScore}
+          disabled={isLoading}
+        >
+          <Save className="h-4 w-4 mr-2" />
+          <span className="text-xs">Save Scoring</span>
+        </Button>
+        <Button
+          className="cursor-pointer"
+          size="sm"
+          onClick={handleRerunAssessment}
+          disabled={isLoading}
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          <span className="text-xs">Regrade</span>
+        </Button>
       </div>
     </div>
   );

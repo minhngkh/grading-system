@@ -14,6 +14,7 @@ interface HighlightableViewerProps {
   onSelectionMade?: () => void;
   onSelectionChange?: (selection: any) => void;
   updateLastSavedData?: (updates: { feedbacks: FeedbackItem[] }) => void;
+  formData?: { feedbacks: FeedbackItem[] };
 }
 
 const HighlightableViewer = ({
@@ -24,8 +25,9 @@ const HighlightableViewer = ({
   onSelectionMade,
   onSelectionChange,
   updateLastSavedData,
+  formData,
 }: HighlightableViewerProps) => {
-  const { theme = "light" } = useTheme?.() || {};
+  const { theme } = useTheme();
   const [selectionRange, setSelectionRange] = useState<{
     from: { line: number; col: number };
     to: { line: number; col: number };
@@ -131,7 +133,7 @@ const HighlightableViewer = ({
         if (from.line !== to.line || Math.abs(from.col - to.col) > 0) {
           const selection = { from, to };
           setSelectionRange(selection);
-          void selectionRange; // Keep variable for potential future use
+          void selectionRange;
           onSelectionChange?.(selection);
           onSelectionMade?.();
         }
@@ -210,12 +212,18 @@ const HighlightableViewer = ({
     }
 
     // Update lastSavedData after normalization to prevent revert button from being enabled
-    if (hasChanges && updateLastSavedData) {
+    if (hasChanges && updateLastSavedData && formData) {
+      // Use a longer timeout to ensure form state has been updated
       setTimeout(() => {
-        updateLastSavedData({ feedbacks: adjusted });
-      }, 0);
+        // Create the updated feedbacks list with normalized data
+        const updatedFeedbacks = formData.feedbacks.map((fb) => {
+          const adjustedFb = adjusted.find((adj) => adj.id === fb.id);
+          return adjustedFb || fb;
+        });
+        updateLastSavedData({ feedbacks: updatedFeedbacks });
+      }, 150);
     }
-  }, [file.content, feedbacks, updateFeedback, updateLastSavedData]);
+  }, [file.content, feedbacks, updateFeedback, updateLastSavedData, formData]);
 
   useEffect(() => {
     if (!activeFeedbackId) {
@@ -246,9 +254,7 @@ const HighlightableViewer = ({
             const endEl = root.querySelector(
               `.line[data-line="${fb.locationData.toLine}"]`,
             );
-            setStartLineElement(startEl as HTMLElement);
-            setEndLineElement(endEl as HTMLElement);
-            setTooltipFb(fb);
+
             if (startEl) {
               const lineRect = (startEl as HTMLElement).getBoundingClientRect();
               const rootRect = root.getBoundingClientRect();
@@ -258,6 +264,17 @@ const HighlightableViewer = ({
                 top: scrollTop,
                 behavior: "smooth",
               });
+
+              // Set tooltip and elements after scroll completes
+              setStartLineElement(null);
+              setEndLineElement(null);
+              setTooltipFb(null);
+
+              setTimeout(() => {
+                setStartLineElement(startEl as HTMLElement);
+                setEndLineElement(endEl as HTMLElement);
+                setTooltipFb(fb);
+              }, 100); // Wait for smooth scroll to complete
             }
           }
         }
@@ -282,8 +299,7 @@ const HighlightableViewer = ({
           className="h-full w-full overflow-auto"
           transformers={[
             {
-              preprocess(code, options) {
-                // eslint-disable-line @typescript-eslint/no-unused-vars
+              preprocess(_, options) {
                 let decorations = validFeedbacks
                   .filter(
                     (

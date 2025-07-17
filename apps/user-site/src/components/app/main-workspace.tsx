@@ -340,6 +340,11 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       setSelectedPage(null);
       setIsHighlightMode(false);
       setSelectionRange(null);
+
+      if (window.getSelection) {
+        const selection = window.getSelection();
+        if (selection) selection.removeAllRanges();
+      }
     }, []);
 
     const handleSelectionMade = useCallback((locationData?: any) => {
@@ -369,9 +374,18 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       }
     }, []);
 
-    const handleSidebarToggle = useCallback(() => {
-      setIsSidebarOpen((prev) => !prev);
-    }, []);
+    const handleSidebarToggle = useCallback(
+      (view: "files" | "testcases" | "feedback") => {
+        if (sidebarView === view) {
+          setIsSidebarOpen((prev) => !prev);
+          return;
+        }
+
+        setIsSidebarOpen(true);
+        setSidebarView(view);
+      },
+      [sidebarView, isSidebarOpen],
+    );
 
     const fileExplorerProps = useMemo(
       () => ({
@@ -429,7 +443,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
         case "testcases":
           return (
             <div className="p-4">
-              <h3 className="text-sm font-medium mb-3">Test Cases</h3>
+              <h3 className="text-sm font-medium mb-2">Test Cases</h3>
               <div className="text-xs text-muted-foreground">
                 Test cases will be displayed here
               </div>
@@ -500,6 +514,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
               onPageSelect={handlePageSelect}
               onSelectionChange={handleSelectionChange}
               updateLastSavedData={updateLastSavedData}
+              formData={assessment}
             />
           </div>
         );
@@ -592,12 +607,16 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
           <ResizablePanel defaultSize={isSidebarOpen ? 80 : 100}>
             <ResizablePanelGroup direction="horizontal" className="h-full">
               {/* File Viewer */}
-              <ResizablePanel defaultSize={70} minSize={50}>
+              <ResizablePanel defaultSize={80} minSize={50}>
                 <div className="h-full flex flex-col">
                   {/* Header with file info and controls */}
                   <div className="flex items-center justify-between border-b">
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={handleSidebarToggle}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSidebarToggle(sidebarView)}
+                      >
                         {!isSidebarOpen ?
                           <PanelLeftOpen className="h-4 w-4" />
                         : <PanelRightOpen className="h-4 w-4" />}

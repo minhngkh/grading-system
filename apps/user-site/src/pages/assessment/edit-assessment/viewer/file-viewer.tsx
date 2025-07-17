@@ -14,6 +14,7 @@ interface FileViewerProps {
   onPageSelect?: (page: number | null) => void;
   onSelectionChange?: (selection: any) => void;
   updateLastSavedData?: (updates: { feedbacks: FeedbackItem[] }) => void;
+  formData?: { feedbacks: FeedbackItem[] };
 }
 
 const FileViewer: React.FC<FileViewerProps> = ({
@@ -25,6 +26,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
   onPageSelect,
   onSelectionChange,
   updateLastSavedData,
+  formData,
 }) => {
   // Gộp logic xác định loại file
   if (file.type === "image") {
@@ -35,8 +37,7 @@ const FileViewer: React.FC<FileViewerProps> = ({
         onSelectionChange={onSelectionChange}
       />
     );
-  }
-  if (file.type === "pdf") {
+  } else if (file.type === "pdf") {
     return (
       <PDFViewer
         fileUrl={file.content}
@@ -45,10 +46,10 @@ const FileViewer: React.FC<FileViewerProps> = ({
         activeFeedbackId={activeFeedbackId}
         onPageSelect={onPageSelect}
         updateLastSavedData={updateLastSavedData}
+        formData={formData}
       />
     );
-  }
-  if (file.type === "code" || file.type === "document" || file.type === "essay") {
+  } else if (file.type === "code" || file.type === "document" || file.type === "essay") {
     return (
       <HighlightableViewer
         file={file}
@@ -58,9 +59,11 @@ const FileViewer: React.FC<FileViewerProps> = ({
         onSelectionMade={onSelectionMade}
         onSelectionChange={onSelectionChange}
         updateLastSavedData={updateLastSavedData}
+        formData={formData}
       />
     );
   }
+
   return (
     <div className="flex justify-center items-center h-full text-gray-500">
       File type not supported for preview.

@@ -4,21 +4,14 @@ import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
 import { toast } from "sonner";
 import { ScoringPanel } from "@/components/app/scoring-panel";
-import { FileService } from "@/services/file-service";
 import MainWorkspace from "@/components/app/main-workspace";
 import { AssessmentHeader } from "@/components/app/assessment-header";
 import useAssessmentForm from "@/hooks/use-assessment-form";
-import {
-  useMutation,
-  useQueryClient,
-  useQuery,
-  keepPreviousData,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import {
   updateFeedbackMutationOptions,
   updateScoreMutationOptions,
-  getAssessmentQueryOptions,
 } from "@/queries/assessment-queries";
 import {
   ResizablePanelGroup,
@@ -26,9 +19,10 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
+import { FileService } from "@/services/file-service";
 
 export function EditAssessmentUI({
-  assessment: initialAssessment,
+  assessment,
   grading,
   rubric,
 }: {
@@ -39,15 +33,8 @@ export function EditAssessmentUI({
   const auth = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: assessment } = useQuery({
-    ...getAssessmentQueryOptions(initialAssessment.id, auth),
-    placeholderData: keepPreviousData,
-    staleTime: 1000 * 60 * 2,
-  });
-  const currentAssessment = assessment || initialAssessment;
-
   const { form, formData, validationState, updateLastSavedData, revertToLastSaved } =
-    useAssessmentForm(currentAssessment);
+    useAssessmentForm(assessment);
 
   const { canRevert, hasUnsavedChanges } = validationState;
 
@@ -74,11 +61,11 @@ export function EditAssessmentUI({
 
   // Simple mutations without complex callbacks (like rubric page)
   const updateFeedbackMutation = useMutation(
-    updateFeedbackMutationOptions(currentAssessment.id, auth),
+    updateFeedbackMutationOptions(assessment.id, auth),
   );
 
   const updateScoreMutation = useMutation(
-    updateScoreMutationOptions(currentAssessment.id, auth),
+    updateScoreMutationOptions(assessment.id, auth),
   );
 
   // Load files with proper error handling and loading states
@@ -135,8 +122,11 @@ export function EditAssessmentUI({
       updateLastSavedData({ scoreBreakdowns: formData.scoreBreakdowns });
 
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ["assessment", currentAssessment.id] });
+      queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
       queryClient.invalidateQueries({ queryKey: ["gradingAssessments", grading.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["scoreAdjustments", assessment.id],
+      });
     } catch (error) {
       console.error("Failed to update score:", error);
       toast.error("Failed to update score");
@@ -220,7 +210,7 @@ export function EditAssessmentUI({
   ]);
 
   return (
-    <div className="-mb-21 -mt-13 h-[92.5vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-hidden">
+    <div className="-mb-21 -mt-7 h-[89vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-hidden">
       {/* Header */}
       <AssessmentHeader
         assessment={formData}
@@ -233,9 +223,9 @@ export function EditAssessmentUI({
       />
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0 pt-2">
+      <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="vertical" className="h-full">
-          <ResizablePanel defaultSize={showBottomPanel ? 60 : 100} minSize={25}>
+          <ResizablePanel defaultSize={showBottomPanel ? 80 : 100} minSize={25}>
             {isLoadingFiles ?
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -280,14 +270,14 @@ export function EditAssessmentUI({
           )}
           {showBottomPanel && (
             <>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={40} minSize={30} maxSize={75}>
+              <ResizableHandle />
+              <ResizablePanel defaultSize={40} minSize={20} maxSize={75}>
                 <ScoringPanel
                   rubric={rubric}
                   grading={grading}
                   formData={formData}
                   updateScore={handleUpdateScore}
-                  assessmentId={currentAssessment.id}
+                  assessmentId={assessment.id}
                   activeScoringTab={activeScoringTab}
                   setActiveScoringTab={setActiveScoringTab}
                   form={form}

@@ -39,30 +39,30 @@ export default function FeedbackTooltip({ fb, startEl, endEl }: FeedbackTooltipP
 
   return (
     <Tippy
-      // reference={children}
       getReferenceClientRect={() => getVirtualRect([startEl, endEl])}
       content={
-        <div className="flex flex-col gap-2 p-3 bg-white shadow-md rounded-md break-words">
-          <h1 className="font-bold text-lg text-gray-800">{fb.criterion}</h1>
-          <Badge variant="outline" className={`text-gray-700 ${getTagColor(fb.tag)}`}>
+        <div className="flex flex-col gap-2 p-3 bg-white shadow-md break-words">
+          <h1 className="font-bold text-lg text-black">{fb.criterion}</h1>
+          <Badge variant="outline" className={`text-black ${getTagColor(fb.tag)}`}>
             {fb.tag}
           </Badge>
-          <p className="custom-tooltip text-sm text-gray-600 wrap-break-word">
+          <p className="custom-tooltip text-sm text-black wrap-break-word">
             {fb.comment}
           </p>
         </div>
       }
       interactive
       animation="scale"
-      trigger="manual"
       visible={true}
+      trigger="mouseenter"
       popperOptions={{
         modifiers: [{ name: "flip", options: { fallbackPlacements: ["bottom-start"] } }],
       }}
       placement="top-start"
       appendTo={() => document.getElementById("shiki-container")!}
       maxWidth={700}
-      delay={300}
+      delay={[1000, null]}
+      zIndex={1}
     />
   );
 }

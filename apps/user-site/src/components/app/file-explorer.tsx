@@ -31,6 +31,18 @@ function buildFileTree(files: any[]) {
 }
 
 // Helper for feedback badge (backward compatible)
+function countFeedbackForFile(feedbacks: any[], file: any) {
+  return feedbacks.filter(
+    (f) =>
+      f.fileRef === file.relativePath ||
+      f.fileRef === file.blobPath ||
+      f.fileRef === file.name ||
+      f.fileRef === file.path,
+  ).length;
+}
+function hasFeedbackForFile(feedbacks: any[], file: any) {
+  return countFeedbackForFile(feedbacks, file) > 0;
+}
 
 interface FileExplorerProps {
   files: any[]; // <-- truyền mảng file có relativePath
@@ -49,53 +61,68 @@ function fileMatchesCriteria(file: any, selectedCriteria: string[], selectors: a
 
   return selectedCriteria.some((criterionName) => {
     const selector = selectors.find((sel) => sel.criterion === criterionName);
-    if (!selector) return false;
+    if (!selector || !selector.pattern) return false;
+
+    const pattern = selector.pattern.trim();
+    if (!pattern) return false;
 
     // Handle wildcard pattern that matches all files
-    if (selector.pattern === "*" || selector.pattern === "**/*") return true;
+    if (pattern === "*" || pattern === "**/*") return true;
 
-    // Split pattern by spaces to handle multiple file patterns
-    const patterns = selector.pattern.split(" ").filter((p: string) => p.trim());
+    // Split pattern by spaces to handle multiple file patterns like "file1.cpp file2.cpp"
+    const patterns = pattern.split(/\s+/).filter((p: string) => p.trim());
 
     // Check if the file name matches any of the patterns
-    return patterns.some((pattern: string) => {
-      pattern = pattern.trim();
-      if (!pattern) return false;
+    return patterns.some((singlePattern: string) => {
+      singlePattern = singlePattern.trim();
+      if (!singlePattern) return false;
 
       try {
-        // Check if pattern contains glob-like characters or regex special chars
-        const hasGlobChars = /[*?[\]{}]/.test(pattern);
-        const hasRegexChars = /[.*+?^${}()|[\]\\]/.test(pattern);
+        // Check if pattern is a regex (enclosed in forward slashes)
+        if (singlePattern.startsWith("/") && singlePattern.endsWith("/")) {
+          const regexPattern = singlePattern.slice(1, -1); // Remove surrounding slashes
+          const regex = new RegExp(regexPattern, "i");
+          return (
+            regex.test(file.name) ||
+            regex.test(file.relativePath || "") ||
+            regex.test(file.path || "")
+          );
+        }
 
-        if (hasGlobChars || hasRegexChars) {
-          // Convert glob pattern to regex or treat as regex
-          let regexPattern = pattern;
+        // Check if pattern contains glob-like characters
+        const hasGlobChars = /[*?[\]]/.test(singlePattern);
 
-          // If it looks like a glob pattern, convert to regex
-          if (hasGlobChars && !pattern.startsWith("/") && !pattern.endsWith("/")) {
-            // Convert glob to regex
-            regexPattern = pattern
-              .replace(/\*\*/g, ".*") // ** matches anything including /
-              .replace(/\*/g, "[^/]*") // * matches anything except /
-              .replace(/\?/g, "[^/]") // ? matches single character except /
-              .replace(/\./g, "\\."); // escape dots
-            regexPattern = `^${regexPattern}$`;
-          }
+        if (hasGlobChars) {
+          // Convert glob pattern to regex
+          let regexPattern = singlePattern
+            .replace(/\./g, "\\.") // escape dots first
+            .replace(/\*\*/g, "DOUBLE_STAR") // temporarily replace ** to avoid conflicts
+            .replace(/\*/g, "[^/]*") // * matches anything except /
+            .replace(/DOUBLE_STAR/g, ".*") // ** matches anything including /
+            .replace(/\?/g, "[^/]") // ? matches single character except /
+            .replace(/\[/g, "\\[") // escape square brackets
+            .replace(/\]/g, "\\]");
 
-          const regex = new RegExp(regexPattern, "i"); // case insensitive
+          regexPattern = `^${regexPattern}$`;
+          const regex = new RegExp(regexPattern, "i");
           return (
             regex.test(file.name) ||
             regex.test(file.relativePath || "") ||
             regex.test(file.path || "")
           );
         } else {
-          // Simple file name matching - exact match
-          return file.name === pattern;
+          // Simple exact file name matching (case insensitive)
+          return (
+            file.name.toLowerCase() === singlePattern.toLowerCase() ||
+            (file.relativePath &&
+              file.relativePath.toLowerCase().endsWith(singlePattern.toLowerCase())) ||
+            (file.path && file.path.toLowerCase().endsWith(singlePattern.toLowerCase()))
+          );
         }
       } catch (error) {
         // If regex is invalid, fall back to simple string matching
-        console.warn(`Invalid pattern: ${pattern}`, error);
-        return file.name === pattern;
+        console.warn(`Invalid pattern: ${singlePattern}`, error);
+        return file.name.toLowerCase() === singlePattern.toLowerCase();
       }
     });
   });
@@ -243,130 +270,99 @@ function renderTree(
   );
 }
 
-export const FileExplorer: React.FC<FileExplorerProps> = React.memo(
-  ({
-    files,
-    selectedFile,
-    setSelectedFile,
-    expandedFolders,
-    setExpandedFolders,
-    feedbacks,
-    grading,
-  }) => {
-    const safeFiles = Array.isArray(files) ? files : []; // đảm bảo luôn là mảng
-    const tree = React.useMemo(() => buildFileTree(safeFiles), [safeFiles]);
+export const FileExplorer: React.FC<FileExplorerProps> = ({
+  files,
+  selectedFile,
+  setSelectedFile,
+  expandedFolders,
+  setExpandedFolders,
+  feedbacks,
+  grading,
+}) => {
+  const safeFiles = Array.isArray(files) ? files : []; // đảm bảo luôn là mảng
+  const tree = React.useMemo(() => buildFileTree(safeFiles), [safeFiles]);
 
-    // Access selectors directly from grading
-    const selectors = grading?.selectors || [];
+  // Access selectors directly from grading
+  const selectors = grading?.selectors || [];
 
-    // State for multiple criterion selection
-    const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
+  // State for multiple criterion selection
+  const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
 
-    // Toggle criterion selection
-    const toggleCriterion = (criterion: string) => {
-      setSelectedCriteria((prev) =>
-        prev.includes(criterion) ?
-          prev.filter((c) => c !== criterion)
-        : [...prev, criterion],
-      );
-    };
-
-    const toggleAllCriteria = () => {
-      if (selectedCriteria.length === selectors.length) {
-        // If all criteria are selected, deselect all
-        setSelectedCriteria([]);
-      } else {
-        // Otherwise select all criteria
-        setSelectedCriteria(selectors.map((selector) => selector.criterion));
-      }
-    };
-    const allSelected =
-      selectors.length > 0 && selectedCriteria.length === selectors.length;
-    return (
-      <div className="pt-2 px-2 h-full w-full flex flex-col min-w-0">
-        <div className="justify-between flex items-center mb-2">
-          <h3 className="text-xs font-medium truncate min-w-0 flex-1">Explorer</h3>
-          <Popover>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {selectedCriteria.length > 0 && (
-                <Badge className="text-[10px] h-4 px-1">{selectedCriteria.length}</Badge>
-              )}
-              <PopoverTrigger asChild>
-                <button className="p-1 rounded hover:bg-muted transition-colors">
-                  <Filter className="h-3.5 w-3.5 text-gray-500 hover:text-gray-700" />
-                </button>
-              </PopoverTrigger>
-            </div>
-            <PopoverContent className="w-80">
-              <h3 className="text-sm font-medium mb-2">Filter files by criterion</h3>
-              {selectors.length > 0 ?
-                <div className="space-y-2 max-h-60 overflow-auto">
-                  {selectors.map((selector) => {
-                    return (
-                      <div
-                        key={selector.criterion}
-                        className="flex items-start space-x-2"
-                      >
-                        <Checkbox
-                          id={`criterion-${selector.criterion}`}
-                          checked={selectedCriteria.includes(selector.criterion)}
-                          onCheckedChange={() => toggleCriterion(selector.criterion)}
-                        />
-                        <div className="grid gap-1.5 leading-none flex-1">
-                          <Label
-                            htmlFor={`criterion-${selector.criterion}`}
-                            className="text-xs font-medium cursor-pointer"
-                          >
-                            {selector.criterion}
-                          </Label>
-                          {selector.pattern && (
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-1">
-                                <p className="text-xs text-muted-foreground">
-                                  Pattern: {selector.pattern}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div className="flex items-start space-x-2 pt-2 mt-2 border-t">
-                    <Checkbox
-                      id="criterion-all"
-                      checked={allSelected}
-                      onCheckedChange={toggleAllCriteria}
-                    />
-                    <Label
-                      htmlFor="criterion-all"
-                      className="text-xs font-medium cursor-pointer"
-                    >
-                      All Criteria
-                    </Label>
-                  </div>
-                </div>
-              : <p className="text-xs text-muted-foreground">No criteria available</p>}
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div className="flex-1 overflow-auto space-y-0.5 min-w-0">
-          {renderTree(
-            tree,
-            "",
-            expandedFolders,
-            setExpandedFolders,
-            selectedFile,
-            setSelectedFile,
-            feedbacks,
-            selectedCriteria,
-            selectors,
-          )}
-        </div>
-      </div>
+  // Toggle criterion selection
+  const toggleCriterion = (criterion: string) => {
+    setSelectedCriteria((prev) =>
+      prev.includes(criterion) ?
+        prev.filter((c) => c !== criterion)
+      : [...prev, criterion],
     );
-  },
-);
+  };
 
-FileExplorer.displayName = "FileExplorer";
+  return (
+    <div className="pt-2 px-2 h-full w-full flex flex-col min-w-0">
+      <div className="justify-between flex items-center mb-2">
+        <h3 className="text-xs font-medium truncate min-w-0 flex-1">Explorer</h3>
+        <Popover>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {selectedCriteria.length > 0 && (
+              <Badge className="text-[10px] h-4 px-1">{selectedCriteria.length}</Badge>
+            )}
+            <PopoverTrigger asChild>
+              <button className="p-1 rounded hover:bg-muted transition-colors">
+                <Filter className="h-3.5 w-3.5 text-gray-500 hover:text-gray-700" />
+              </button>
+            </PopoverTrigger>
+          </div>
+          <PopoverContent className="w-80">
+            <h3 className="text-sm font-medium mb-2">Filter files by criterion</h3>
+            {selectors.length > 0 ?
+              <div className="space-y-2 max-h-60 overflow-auto">
+                {selectors.map((selector) => {
+                  return (
+                    <div key={selector.criterion} className="flex items-start space-x-2">
+                      <Checkbox
+                        id={`criterion-${selector.criterion}`}
+                        checked={selectedCriteria.includes(selector.criterion)}
+                        onCheckedChange={() => toggleCriterion(selector.criterion)}
+                      />
+                      <div className="grid gap-1.5 leading-none flex-1">
+                        <Label
+                          htmlFor={`criterion-${selector.criterion}`}
+                          className="text-xs font-medium cursor-pointer"
+                        >
+                          {selector.criterion}
+                        </Label>
+                        {selector.pattern && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1">
+                              <p className="text-xs text-muted-foreground">
+                                Pattern: {selector.pattern}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            : <p className="text-xs text-muted-foreground">No criteria available</p>}
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div className="flex-1 overflow-auto space-y-0.5 min-w-0">
+        {renderTree(
+          tree,
+          "",
+          expandedFolders,
+          setExpandedFolders,
+          selectedFile,
+          setSelectedFile,
+          feedbacks,
+          selectedCriteria,
+          selectors,
+        )}
+      </div>
+    </div>
+  );
+};

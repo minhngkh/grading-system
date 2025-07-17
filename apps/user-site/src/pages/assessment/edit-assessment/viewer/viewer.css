@@ -162,7 +162,7 @@ code {
   padding: 0px;
   background-color: var(--background);
   color: var(--foreground);
-  border: 2px solid var(--border);
+  border: 3px solid var(--border);
   word-wrap: break-word;
   overflow-wrap: break-word;
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;

@@ -14,6 +14,7 @@ interface PDFViewerProps {
   activeFeedbackId?: string | null;
   onPageSelect?: (page: number | null) => void;
   updateLastSavedData?: (updates: { feedbacks: FeedbackItem[] }) => void;
+  formData?: { feedbacks: FeedbackItem[] };
 }
 
 const PDFViewer = ({
@@ -23,6 +24,7 @@ const PDFViewer = ({
   activeFeedbackId,
   onPageSelect,
   updateLastSavedData,
+  formData,
 }: PDFViewerProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
@@ -69,8 +71,8 @@ const PDFViewer = ({
         if (fb.locationData?.type === "pdf" && typeof fb.locationData.page === "number") {
           const valid = Math.max(1, Math.min(fb.locationData.page, totalPages));
           if (valid !== fb.locationData.page) {
-            return { 
-              ...fb, 
+            return {
+              ...fb,
               locationData: { ...fb.locationData, page: valid },
             };
           }
@@ -91,13 +93,19 @@ const PDFViewer = ({
       }
 
       // Update lastSavedData after normalization to prevent revert button from being enabled
-      if (hasChanges && updateLastSavedData) {
+      if (hasChanges && updateLastSavedData && formData) {
+        // Use a longer timeout to ensure form state has been updated
         setTimeout(() => {
-          updateLastSavedData({ feedbacks: adjusted });
-        }, 0);
+          // Create the updated feedbacks list with normalized data
+          const updatedFeedbacks = formData.feedbacks.map((fb) => {
+            const adjustedFb = adjusted.find((adj) => adj.id === fb.id);
+            return adjustedFb || fb;
+          });
+          updateLastSavedData({ feedbacks: updatedFeedbacks });
+        }, 150);
       }
     }
-  }, [totalPages, feedbacks, updateFeedback, updateLastSavedData]);
+  }, [totalPages, feedbacks, updateFeedback, updateLastSavedData, formData]);
 
   // Internal page click handler
   const handlePageClick = (pageNumber: number) => {
