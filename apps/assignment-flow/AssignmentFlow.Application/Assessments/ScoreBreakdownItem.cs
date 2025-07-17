@@ -12,8 +12,8 @@ namespace AssignmentFlow.Application.Assessments;
 [JsonConverter(typeof(ScoreBreakdownItemConverter))]
 public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakdownItem>
 {
-    public static ScoreBreakdownItem Pending(string criterion) => new(CriterionName.New(criterion)) { Status = "Pending" };
-    public static ScoreBreakdownItem Mannual(string criterion) => new(CriterionName.New(criterion)) { Status = "Mannual" };
+    public static ScoreBreakdownItem Pending(string criterion) => new(CriterionName.New(criterion)) { Status = "Pending" , Grader = Grader.AIGrader };
+    public static ScoreBreakdownItem Mannual(string criterion) => new(CriterionName.New(criterion)) { Status = "Mannual", Grader = Grader.Teacher };
 
     public Grader Grader { get; init; } = Grader.AIGrader;
 
