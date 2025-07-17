@@ -150,6 +150,10 @@ public class Assessment
     {
         foreach (var feedback in domainEvent.AggregateEvent.Feedbacks.ToApiContracts())
         {
+            if (Feedbacks.Contains(feedback))
+            {
+                Feedbacks.Remove(feedback);
+            }
             Feedbacks.Add(feedback);
         }
 
