@@ -108,7 +108,7 @@ export const AssessmentStatusCard = memo(
                   to="/gradings/$gradingId/assessments/$assessmentId"
                   params={{ gradingId: gradingId, assessmentId: status.assessmentId }}
                 >
-                  <Button className="flex items-center gap-2 w-full">
+                  <Button size="sm" className="flex items-center gap-2 w-full">
                     <FileSearch className="h-4 w-4" />
                     Review
                   </Button>

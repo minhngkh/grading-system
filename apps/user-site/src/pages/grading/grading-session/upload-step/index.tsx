@@ -61,12 +61,6 @@ export default function UploadStep({ form }: UploadStepProps) {
 
   const gradingAttempt = form.watch();
 
-  useEffect(() => {
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
-  }, [gradingAttempt, queryClient]);
-
   const { data: rubricData } = useQuery(
     getRubricQueryOptions(gradingAttempt.rubricId, auth, {
       placeholderData: keepPreviousData,
@@ -93,34 +87,63 @@ export default function UploadStep({ form }: UploadStepProps) {
   }, [errors]);
 
   const updateNameMutation = useMutation(
-    updateGradingNameMutationOptions(gradingAttempt.id, auth),
+    updateGradingNameMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const updateScaleFactorMutation = useMutation(
-    updateGradingScaleFactorMutationOptions(gradingAttempt.id, auth),
+    updateGradingScaleFactorMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const updateRubricMutation = useMutation(
-    updateGradingRubricMutationOptions(gradingAttempt.id, auth),
+    updateGradingRubricMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const updateSelectorsMutation = useMutation(
-    updateGradingSelectorsMutationOptions(gradingAttempt.id, auth),
+    updateGradingSelectorsMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const uploadFileMutation = useMutation(
-    uploadSubmissionMutationOptions(gradingAttempt.id, auth),
+    uploadSubmissionMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const removeFileMutation = useMutation(
-    deleteSubmissionMutationOptions(gradingAttempt.id, auth),
-  );
-
-  const handleNameUpdate = useCallback(
-    (name: string) => {
-      updateNameMutation.mutate(name);
-    },
-    [updateNameMutation, gradingAttempt.id],
+    deleteSubmissionMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const handleScaleFactorUpdate = useCallback(
@@ -132,7 +155,7 @@ export default function UploadStep({ form }: UploadStepProps) {
     [updateScaleFactorMutation, gradingAttempt.id],
   );
 
-  useDebounceUpdate(gradingAttempt.name, 500, handleNameUpdate);
+  useDebounceUpdate(gradingAttempt.name, 500, updateNameMutation.mutate);
   useDebounceUpdate(gradingAttempt.scaleFactor, 500, handleScaleFactorUpdate);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
@@ -173,6 +196,7 @@ export default function UploadStep({ form }: UploadStepProps) {
       ];
 
       setValue("submissions", newSubmissions);
+      setUploadedFiles((prev) => [...prev, ...newFiles]);
     } catch (error) {
       console.error("Error uploading files:", error);
       toast.error("Failed to upload some files");

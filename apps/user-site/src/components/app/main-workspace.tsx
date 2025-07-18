@@ -551,7 +551,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
 
       try {
         return (
-          <div className="flex-1 overflow-hidden">
+          <div className="w-full overflow-hidden">
             <FileViewer
               file={selectedFile}
               feedbacks={fileFeedbacks}
@@ -583,12 +583,9 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       handleHighlightComplete,
       activeFeedbackId,
       rubricCriteria,
-      grading?.id,
-      assessment?.submissionReference,
       handlePageSelect,
       handleSelectionChange,
       selectedPage,
-      form,
     ]);
 
     return (
@@ -637,18 +634,15 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
             minSize={20}
             maxSize={30}
           >
-            <div className="h-full flex flex-col min-w-0">{renderSidebarContent}</div>
+            {renderSidebarContent}
           </ResizablePanel>
 
           <ResizableHandle className={cn(isSidebarOpen ? "block" : "hidden")} />
 
           <ResizablePanel defaultSize={isSidebarOpen ? 80 : 100}>
-            <div className="h-full flex flex-col min-w-0">
-              {/* Header */}
+            <div className="h-full flex flex-col">
               <div className="flex items-center justify-between border-b px-2 py-1">
-                <h2 className="font-semibold truncate">
-                  {selectedFile?.name || "No file selected"}
-                </h2>
+                <h2 className="font-semibold truncate">{selectedFile?.name}</h2>
                 <div className="flex items-center gap-2">
                   {(canAddFeedback || selectedPage) && (
                     <Button
@@ -672,7 +666,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
               </div>
 
               {/* File Viewer */}
-              <div className="flex-1 overflow-auto">{renderFileViewer}</div>
+              <div className="grid">{renderFileViewer}</div>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

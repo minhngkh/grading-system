@@ -131,7 +131,7 @@ const VirtualizedAssessmentList = memo(
     return (
       <div
         ref={parentRef}
-        className="pl-1 pr-2 h-[70vh] max-h-[800px] min-h-[400px] custom-scrollbar overflow-auto"
+        className="pl-1 pr-2 h-[30vh] max-h-[800px] custom-scrollbar overflow-auto"
       >
         <div
           style={{

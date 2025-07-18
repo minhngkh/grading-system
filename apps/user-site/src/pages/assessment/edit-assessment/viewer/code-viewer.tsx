@@ -296,7 +296,6 @@ const HighlightableViewer = ({
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
-          className="h-full w-full overflow-auto"
           transformers={[
             {
               preprocess(_, options) {
@@ -390,7 +389,9 @@ const HighlightableViewer = ({
               pre(node) {
                 node.properties = {
                   ...node.properties,
-                  style: "background: var(--background)",
+                  style:
+                    "background: var(--background); padding: 0.5rem; margin: 0 0.5rem;",
+                  className: "custom-scrollbar",
                 };
               },
             },

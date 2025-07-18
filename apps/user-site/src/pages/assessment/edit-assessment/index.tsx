@@ -152,7 +152,7 @@ export function EditAssessmentUI({
   );
 
   return (
-    <div className="h-full relative flex flex-col bg-background text-foreground overflow-hidden space-y-4">
+    <div className="h-full flex flex-col gap-2">
       {/* Header */}
       <AssessmentHeader
         assessment={formData}
@@ -165,9 +165,13 @@ export function EditAssessmentUI({
       />
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0 border rounded-md overflow-hidden">
+      <div className="flex-1 border rounded-md overflow-hidden">
         <ResizablePanelGroup direction="vertical" className="h-full">
-          <ResizablePanel defaultSize={showBottomPanel ? 80 : 100} minSize={25}>
+          <ResizablePanel
+            id="content"
+            defaultSize={showBottomPanel ? 60 : 100}
+            minSize={25}
+          >
             {isLoadingFiles ?
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -195,24 +199,24 @@ export function EditAssessmentUI({
             }
           </ResizablePanel>
 
-          {!showBottomPanel && (
-            <ChevronsUp
-              className="absolute bottom-3 left-1/2 transform -translate-x-1/2 h-6 w-6 text-foreground cursor-pointer z-50"
-              onClick={() => setShowBottomPanel(true)}
-            />
-          )}
-          {showBottomPanel && (
-            <div className="relative">
+          <div className="relative">
+            {!showBottomPanel && (
+              <ChevronsUp
+                className="absolute bottom-1 left-1/2 -translate-x-1/2 h-6 w-6 text-foreground cursor-pointer z-50"
+                onClick={() => setShowBottomPanel(true)}
+              />
+            )}
+            {showBottomPanel && (
               <ChevronsDown
-                className="absolute bottom-2 left-1/2 transform -translate-x-1/2 h-6 w-6 text-foreground cursor-pointer z-50 "
+                className="absolute top-1 left-1/2 -translate-x-1/2 h-6 w-6 text-foreground cursor-pointer z-50 "
                 onClick={() => setShowBottomPanel(false)}
               />
-            </div>
-          )}
+            )}
+          </div>
           {showBottomPanel && (
             <>
               <ResizableHandle />
-              <ResizablePanel defaultSize={40} minSize={20} maxSize={75}>
+              <ResizablePanel id="scoring" defaultSize={40} minSize={20} maxSize={75}>
                 <ScoringPanel
                   rubric={rubric}
                   grading={grading}

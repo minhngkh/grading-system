@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
@@ -114,7 +114,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   ).toFixed(2);
 
   return (
-    <div className="p-4 flex flex-col bg-background w-full h-full overflow-hidden">
+    <div className="px-4 flex flex-col bg-background w-full h-full overflow-hidden">
       <div className="flex flex-col flex-1 min-h-0">
         <Tabs
           value={activeScoringTab}

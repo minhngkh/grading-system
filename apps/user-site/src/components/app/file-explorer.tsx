@@ -2,7 +2,6 @@ import React from "react";
 import { FolderOpen, Folder } from "lucide-react";
 import { getFileIcon } from "../../pages/assessment/edit-assessment/icon-utils";
 import { GradingAttempt } from "@/types/grading";
-import { Separator } from "@/components/ui/separator";
 
 // Build a recursive tree from files
 function buildFileTree(files: any[]) {
@@ -271,7 +270,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   return (
     <div className="h-full w-full flex flex-col min-w-0">
       <h3 className="text-sm font-medium mb-2">Explorer</h3>
-      <Separator className="mb-2" />
 
       <div className="flex-1 overflow-auto space-y-0.5 min-w-0">
         {renderTree(
