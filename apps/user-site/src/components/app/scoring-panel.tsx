@@ -6,10 +6,10 @@ import { GradingAttempt } from "@/types/grading";
 import { Button } from "@/components/ui/button";
 import { History } from "lucide-react";
 import { ScoreAdjustmentDialog } from "@/components/app/score-adjustment-dialog";
-import { AssessmentService } from "@/services/assessment-service";
 import { useAuth } from "@clerk/clerk-react";
 import { UseFormReturn } from "react-hook-form";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { getScoreAdjustmentsQueryOptions } from "@/queries/assessment-queries";
 
 interface ScoringPanelProps {
   rubric: Rubric;
@@ -59,7 +59,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   );
 
   const updateFeedbackDirect = useCallback(
-    (feedbackId: string, feedback: FeedbackItem) => {
+    (feedbackId: string, feedback: Partial<FeedbackItem>) => {
       try {
         const currentFeedbacks = form.getValues("feedbacks") || [];
         const index = currentFeedbacks.findIndex((f) => f.id === feedbackId);
@@ -81,7 +81,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   const [editingSummaryComment, setEditingSummaryComment] = useState("");
   const [addingSummary, setAddingSummary] = useState<string | null>(null);
   const [showScoreAdjustmentDialog, setShowScoreAdjustmentDialog] = useState(false);
-  const [scoreAdjustment, setScoreAdjustment] = useState<any[]>([]);
 
   // Internal feedback operations using direct form updates
   const addFeedback = (feedback: FeedbackItem) => {
@@ -92,39 +91,16 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
 
   const updateFeedback = (feedbackId: string, updatedFeedback: Partial<FeedbackItem>) => {
     // Update feedback directly without toast
-    updateFeedbackDirect(feedbackId, updatedFeedback as FeedbackItem);
+    updateFeedbackDirect(feedbackId, updatedFeedback);
   };
 
   // Use mutation for score adjustment fetching
-  const fetchScoreAdjustmentMutation = useMutation({
-    mutationFn: async () => {
-      const token = await auth.getToken();
-      if (!token) {
-        throw new Error("No authentication token available");
-      }
-      return AssessmentService.getScoreAdjustments(assessmentId, token);
-    },
-    onSuccess: (data) => {
-      if (Array.isArray(data)) {
-        setScoreAdjustment(data);
-      } else {
-        console.warn("Adjustment data is not an array:", data);
-        setScoreAdjustment([]);
-      }
-    },
-    onError: (error) => {
-      console.error("Failed to fetch score adjustment:", error);
-      setScoreAdjustment([]);
-    },
-  });
-
-  const handleShowScoreHistory = () => {
-    setShowScoreAdjustmentDialog(true);
-    // Only fetch when user explicitly wants to see score history
-    if (scoreAdjustment.length === 0) {
-      fetchScoreAdjustmentMutation.mutate();
-    }
-  };
+  const { data: scoreAdjustments, isFetching } = useQuery(
+    getScoreAdjustmentsQueryOptions(assessmentId, auth, {
+      enabled: showScoreAdjustmentDialog,
+      staleTime: Infinity,
+    }),
+  );
 
   const calcScore = (rawScore: number, weight: number) => {
     const scale = grading.scaleFactor ?? 10;
@@ -168,15 +144,13 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleShowScoreHistory}
+                onClick={() => setShowScoreAdjustmentDialog(true)}
                 className="flex items-center gap-2"
-                disabled={fetchScoreAdjustmentMutation.isPending}
+                disabled={isFetching}
               >
                 <History className="h-4 w-4" />
                 <span className="text-xs">
-                  {fetchScoreAdjustmentMutation.isPending ?
-                    "Loading..."
-                  : "Score History"}
+                  {isFetching ? "Loading..." : "Score History"}
                 </span>
               </Button>
             </div>
@@ -267,9 +241,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                               // rawScore = (points * weight) / scale * 100
                               const newRaw =
                                 weight > 0 ? ((clamped * 100) / scale / weight) * 100 : 0;
-                              console.log(
-                                `Updating score for ${criterion.name}: rawScore=${newRaw}, points=${clamped}, weight=${weight}, scale=${scale}`,
-                              );
                               updateScore(criterion.name, newRaw);
                             }}
                             className="w-20 rounded border border-gray-600 px-2 py-1 text-xs font-semibold"
@@ -400,7 +371,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
         scaleFactor={grading.scaleFactor ?? 10}
         open={showScoreAdjustmentDialog}
         onOpenChange={setShowScoreAdjustmentDialog}
-        scoreAdjustment={scoreAdjustment}
+        scoreAdjustment={scoreAdjustments || []}
       />
     </div>
   );

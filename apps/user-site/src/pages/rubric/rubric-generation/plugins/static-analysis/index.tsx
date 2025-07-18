@@ -164,7 +164,7 @@ export default function StaticAnalysisConfigDialog({
         reset(defaultConfig);
       }}
     >
-      <DialogContent className="min-w-2xl">
+      <DialogContent className="min-w-2xl max-h-[80vh] overflow-auto">
         <DialogHeader>
           <DialogTitle>Static Analysis Configuration</DialogTitle>
           <DialogDescription>

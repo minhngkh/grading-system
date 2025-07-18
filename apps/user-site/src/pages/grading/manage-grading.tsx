@@ -257,13 +257,25 @@ export default function ManageGradingsPage({
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {grading.status !== GradingStatus.Created ?
+                        {(
+                          grading.status === GradingStatus.Graded ||
+                          grading.status === GradingStatus.Failed
+                        ) ?
                           <DropdownMenuItem asChild>
                             <Link
                               to="/gradings/$gradingId/result"
                               params={{ gradingId: grading.id }}
                             >
                               View Result
+                            </Link>
+                          </DropdownMenuItem>
+                        : grading.status === GradingStatus.Started ?
+                          <DropdownMenuItem asChild>
+                            <Link
+                              to="/gradings/$gradingId"
+                              params={{ gradingId: grading.id }}
+                            >
+                              View Progress
                             </Link>
                           </DropdownMenuItem>
                         : <DropdownMenuItem asChild>

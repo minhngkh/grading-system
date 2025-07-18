@@ -72,7 +72,9 @@ export function EditAssessmentUI({
         });
 
         queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
-        queryClient.invalidateQueries({ queryKey: ["gradingAssessments", grading.id] });
+        queryClient.invalidateQueries({
+          queryKey: ["allGradingAssessments", grading.id],
+        });
         queryClient.invalidateQueries({
           queryKey: ["scoreAdjustments", assessment.id],
         });

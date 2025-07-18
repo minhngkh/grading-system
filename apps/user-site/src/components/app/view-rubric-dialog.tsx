@@ -53,7 +53,7 @@ export function ViewRubricDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden mt-4">
-          <div className="grid w-full h-[60vh] overflow-auto">
+          <div className="grid w-full overflow-auto">
             {initialRubric ?
               <RubricView rubricData={initialRubric} />
             : <p>No rubric available</p>}
