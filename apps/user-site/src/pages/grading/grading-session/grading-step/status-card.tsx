@@ -37,6 +37,11 @@ const assessmentStateStyles: Partial<Record<AssessmentState, AssessmentStyle>> =
     label: "Grading completed",
     icon: <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />,
   },
+  [AssessmentState.Completed]: {
+    color: "text-green-600 dark:text-green-400",
+    label: "Grading completed",
+    icon: <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />,
+  },
   [AssessmentState.AutoGradingFailed]: {
     color: "text-red-600 dark:text-red-400",
     label: "Grading failed",
@@ -78,8 +83,9 @@ export const AssessmentStatusCard = memo(
           "gap-0 bg-background",
           status.status === AssessmentState.AutoGradingFailed &&
             "border-red-200 dark:border-red-800",
-          status.status === AssessmentState.AutoGradingFinished &&
-            "border-green-200 dark:border-green-800",
+          status.status === AssessmentState.AutoGradingFinished ||
+            (status.status === AssessmentState.Completed &&
+              "border-green-200 dark:border-green-800"),
           isUndergoingGrading && "border-blue-200 dark:border-blue-800",
         )}
       >
@@ -136,7 +142,8 @@ export const AssessmentStatusCard = memo(
                 index < currentStatuses.length - 1 ||
                 (isCurrent &&
                   (status.status === AssessmentState.AutoGradingFinished ||
-                    status.status === AssessmentState.AutoGradingFailed));
+                    status.status === AssessmentState.AutoGradingFailed ||
+                    status.status === AssessmentState.Completed));
 
               const isFailed =
                 status.status === AssessmentState.AutoGradingFailed &&

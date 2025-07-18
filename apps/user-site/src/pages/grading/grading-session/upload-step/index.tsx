@@ -145,12 +145,6 @@ export default function UploadStep({ form }: UploadStepProps) {
 
     await updateRubricMutation.mutateAsync(rubric.id);
     setValue("rubricId", rubric.id);
-
-    const selectors = rubric.criteria.map((criterion) => {
-      return { criterion: criterion.name, pattern: "*" };
-    });
-
-    handleSelectorsChange(selectors);
   };
 
   const handleFileUpload = async (files: File[]) => {

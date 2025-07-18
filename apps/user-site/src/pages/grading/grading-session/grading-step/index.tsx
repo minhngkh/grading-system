@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "@tanstack/react-router";
 import { CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 // Memoized loading component to prevent unnecessary re-renders
 const LoadingState = memo(() => (
@@ -104,6 +105,69 @@ const getHeaderStyling = (status: GradingStatus) => {
       };
   }
 };
+
+// Virtualized Assessment List Component
+interface VirtualizedAssessmentListProps {
+  assessments: AssessmentGradingStatus[];
+  gradingId: string;
+  onRegrade: (assessmentId: string) => void;
+}
+
+const VirtualizedAssessmentList = memo(
+  ({ assessments, gradingId, onRegrade }: VirtualizedAssessmentListProps) => {
+    const parentRef = useRef<HTMLDivElement>(null);
+
+    const virtualizer = useVirtualizer({
+      count: assessments.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 210, // Card height + padding bottom (16px)
+      overscan: 3, // Number of items to render outside visible area
+      measureElement:
+        typeof ResizeObserver !== "undefined" ?
+          (element) => element?.getBoundingClientRect().height
+        : undefined,
+    });
+
+    return (
+      <div
+        ref={parentRef}
+        className="pl-1 pr-2 h-[70vh] max-h-[800px] min-h-[400px] custom-scrollbar overflow-auto"
+      >
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: "100%",
+            position: "relative",
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualItem) => (
+            <div
+              key={virtualItem.key}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            >
+              <div className="space-y-4">
+                <AssessmentStatusCard
+                  status={assessments[virtualItem.index]}
+                  gradingId={gradingId}
+                  onRegrade={onRegrade}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
+);
+
+VirtualizedAssessmentList.displayName = "VirtualizedAssessmentList";
 
 interface GradingProgressStepProps {
   gradingAttempt: UseFormReturn<GradingAttempt>;
@@ -375,16 +439,12 @@ export default function GradingProgressStep({
       {/* Assessment Status Cards */}
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-foreground">Grading Details</h3>
-        <div className="p-4 border rounded-2xl max-h-[60vh] overflow-y-auto custom-scrollbar space-y-4">
-          {sortedAssessmentStatus.map((assessmentStatus) => (
-            <AssessmentStatusCard
-              key={assessmentStatus.assessmentId}
-              status={assessmentStatus}
-              gradingId={gradingAttemptValues.id}
-              onRegrade={handleRegradeAssessment}
-            />
-          ))}
-        </div>
+
+        <VirtualizedAssessmentList
+          assessments={sortedAssessmentStatus}
+          gradingId={gradingAttemptValues.id}
+          onRegrade={handleRegradeAssessment}
+        />
       </div>
 
       {/* Action Section */}

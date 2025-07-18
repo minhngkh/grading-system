@@ -121,7 +121,7 @@ export function AssessmentResultCard({
               const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(2);
 
               return (
-                <div key={index} className="space-y-1">
+                <div key={index} className="mt-2">
                   <div className="flex justify-between text-sm">
                     <span className={colorStyle.text}>{score.criterionName}</span>
                     {score.grader === "None" || score.status === "Mannual" ?
@@ -131,7 +131,9 @@ export function AssessmentResultCard({
                       </span>
                     }
                   </div>
-                  {index !== item.scoreBreakdowns.length - 1 && <Separator />}
+                  {index !== item.scoreBreakdowns.length - 1 && (
+                    <Separator className="mt-2" />
+                  )}
                 </div>
               );
             })}

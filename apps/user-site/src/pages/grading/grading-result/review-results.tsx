@@ -1,4 +1,4 @@
-import { Assessment } from "@/types/assessment";
+import { Assessment, AssessmentState } from "@/types/assessment";
 import { createCriteriaColorMap } from "./colors";
 import { memo, useState, useMemo, useRef } from "react";
 import { AssessmentResultCard } from "@/pages/grading/grading-result/result-card";
@@ -6,15 +6,19 @@ import { Input } from "@/components/ui/input";
 import { FilterSortDropdown } from "./filter-sort-dropdown";
 import { Search } from "lucide-react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { AssessmentGradingStatus } from "@/types/grading-progress";
+import { AssessmentStatusCard } from "@/pages/grading/grading-session/grading-step/status-card";
 
 interface ReviewResultsProps {
   assessments: Assessment[];
   scaleFactor: number;
+  gradingStatus: AssessmentGradingStatus[];
 }
 
 const ReviewResults = memo(function ReviewResults({
   assessments,
   scaleFactor,
+  gradingStatus,
 }: ReviewResultsProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const parentRef = useRef<HTMLDivElement>(null);
@@ -150,33 +154,50 @@ const ReviewResults = memo(function ReviewResults({
               position: "relative",
             }}
           >
-            {virtualizer.getVirtualItems().map((virtualItem) => (
-              <div
-                key={virtualItem.key}
-                data-index={virtualItem.index}
-                ref={virtualizer.measureElement}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  transform: `translateY(${virtualItem.start}px)`,
-                }}
-              >
-                <div className="py-2">
-                  {/* Add padding around items */}
-                  <AssessmentResultCard
-                    key={
-                      filteredAndSortedAssessments[virtualItem.index].id ||
-                      virtualItem.index
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const currentState = gradingStatus.find(
+                (s) =>
+                  s.assessmentId === filteredAndSortedAssessments[virtualItem.index].id,
+              );
+              return (
+                <div
+                  key={virtualItem.key}
+                  data-index={virtualItem.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  <div className="py-2">
+                    {/* Add padding around items */}
+                    {(
+                      filteredAndSortedAssessments[virtualItem.index].status ===
+                        AssessmentState.AutoGradingStarted && currentState
+                    ) ?
+                      <AssessmentStatusCard
+                        status={currentState}
+                        gradingId={
+                          filteredAndSortedAssessments[virtualItem.index].gradingId
+                        }
+                      />
+                    : <AssessmentResultCard
+                        key={
+                          filteredAndSortedAssessments[virtualItem.index].id ||
+                          virtualItem.index
+                        }
+                        item={filteredAndSortedAssessments[virtualItem.index]}
+                        scaleFactor={scaleFactor}
+                        criteriaColorMap={criteriaColorMap}
+                      />
                     }
-                    item={filteredAndSortedAssessments[virtualItem.index]}
-                    scaleFactor={scaleFactor}
-                    criteriaColorMap={criteriaColorMap}
-                  />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       }

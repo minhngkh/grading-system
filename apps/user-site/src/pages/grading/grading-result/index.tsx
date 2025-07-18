@@ -220,7 +220,11 @@ export default function GradingResult({
       </Suspense>
 
       <Suspense fallback={<ResultCardSkeleton />}>
-        <ReviewResults assessments={sortedAssessments} scaleFactor={scaleFactor} />
+        <ReviewResults
+          assessments={sortedAssessments}
+          gradingStatus={assessments}
+          scaleFactor={scaleFactor}
+        />
       </Suspense>
 
       <ViewRubricDialog
