@@ -7,7 +7,7 @@ import { ScoringPanel } from "@/components/app/scoring-panel";
 import MainWorkspace from "@/components/app/main-workspace";
 import { AssessmentHeader } from "@/components/app/assessment-header";
 import useAssessmentForm from "@/hooks/use-assessment-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import {
   updateFeedbackMutationOptions,
@@ -19,7 +19,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
-import { FileService } from "@/services/file-service";
+import { getFileItemsQueryOptions } from "@/queries/file-queries";
 
 export function EditAssessmentUI({
   assessment,
@@ -56,12 +56,19 @@ export function EditAssessmentUI({
   const handleFileSelect = useCallback((file: any) => {
     setSelectedFile(file);
   }, []);
-  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
-  const [fileLoadError, setFileLoadError] = useState<string | null>(null);
 
   // Simple mutations without complex callbacks (like rubric page)
   const updateFeedbackMutation = useMutation(
-    updateFeedbackMutationOptions(assessment.id, auth),
+    updateFeedbackMutationOptions(assessment.id, auth, {
+      onSuccess: () => {
+        toast.success("Feedback updated successfully");
+        queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
+      },
+      onError: (error) => {
+        console.error("Failed to update feedback:", error);
+        toast.error("Failed to update feedback");
+      },
+    }),
   );
 
   const updateScoreMutation = useMutation(
@@ -100,7 +107,6 @@ export function EditAssessmentUI({
     if (fileItems && fileItems.length > 0) {
       setFiles(fileItems);
       setSelectedFile(fileItems[0]);
-      markCurrentAsValidated();
     }
   }, [isLoadingFiles, fileItems, fileLoadError]);
 
@@ -145,42 +151,8 @@ export function EditAssessmentUI({
     [rubric.criteria, formData.scoreBreakdowns, form],
   );
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl+S or Cmd+S to save feedback
-      if ((event.ctrlKey || event.metaKey) && event.key === "s") {
-        event.preventDefault();
-        if (!updateFeedbackMutation.isPending) {
-          handleSaveFeedback();
-        }
-      }
-
-      // Ctrl+Shift+S to save score
-      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "S") {
-        event.preventDefault();
-        if (!updateScoreMutation.isPending) {
-          handleSaveScore();
-        }
-      }
-
-      // Escape to close panels
-      if (event.key === "Escape") {
-        // Can be used to close dialogs or panels
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [
-    updateFeedbackMutation.isPending,
-    updateScoreMutation.isPending,
-    handleSaveFeedback,
-    handleSaveScore,
-  ]);
-
   return (
-    <div className="-mb-21 -mt-7 h-[89vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-hidden">
+    <div className="h-full relative flex flex-col bg-background text-foreground overflow-hidden space-y-4">
       {/* Header */}
       <AssessmentHeader
         assessment={formData}
@@ -193,7 +165,7 @@ export function EditAssessmentUI({
       />
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 border rounded-md overflow-hidden">
         <ResizablePanelGroup direction="vertical" className="h-full">
           <ResizablePanel defaultSize={showBottomPanel ? 80 : 100} minSize={25}>
             {isLoadingFiles ?
@@ -207,7 +179,7 @@ export function EditAssessmentUI({
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <p className="text-sm text-destructive mb-2">Error loading files</p>
-                  <p className="text-xs text-muted-foreground">{fileLoadError}</p>
+                  <p className="text-xs text-muted-foreground">{fileLoadError.message}</p>
                 </div>
               </div>
             : <MainWorkspace
@@ -219,7 +191,6 @@ export function EditAssessmentUI({
                 rubric={rubric}
                 activeScoringTab={activeScoringTab}
                 form={form}
-                updateLastSavedData={updateLastSavedData}
               />
             }
           </ResizablePanel>

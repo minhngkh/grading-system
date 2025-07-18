@@ -204,7 +204,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
 
               return (
                 <TabsContent
-                  key={criterion.id}
+                  key={index}
                   value={criterion.name}
                   className="flex-1 min-h-0 overflow-auto"
                 >
