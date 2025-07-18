@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { RubricService } from "@/services/rubric-service";
 import { useAuth } from "@clerk/clerk-react";
 import { lazy, Suspense } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import {
   updateRubricMutationOptions,
   uploadContextMutationOptions,
@@ -74,8 +74,6 @@ function ChatRubricTable({
   const { isPending, mutateAsync: uploadContext } = useMutation(
     uploadContextMutationOptions(rubricData.id, auth),
   );
-
-  const queryClient = useQueryClient();
 
   const updateRubricMutation = useMutation(
     updateRubricMutationOptions(rubricData.id, auth),
@@ -155,9 +153,6 @@ function ChatRubricTable({
     async (updatedRubric: Partial<Rubric>) => {
       try {
         await updateRubricMutation.mutateAsync(updatedRubric);
-        queryClient.invalidateQueries({
-          queryKey: ["rubric", rubricData.id],
-        });
         onUpdate?.(updatedRubric);
         toast.success("Rubric updated successfully.");
       } catch (error) {
@@ -193,6 +188,8 @@ function ChatRubricTable({
         <CardContent className="flex-1">
           {isApplyingEdit ?
             <LoadingFallback message="Agent is modifying the rubric. Please wait..." />
+          : updateRubricMutation.isPending ?
+            <LoadingFallback message="Updating rubric..." />
           : <div className="h-full overflow-auto relative">
               <div className="grid absolute top-0 left-0 right-0">
                 <Suspense

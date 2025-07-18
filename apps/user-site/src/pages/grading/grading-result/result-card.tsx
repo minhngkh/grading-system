@@ -18,6 +18,25 @@ interface AssessmentResultCardProps {
   criteriaColorMap: Record<string, { text: string; bg: string }>;
 }
 
+const getCardClassName = (state: AssessmentState) => {
+  if (state === AssessmentState.AutoGradingFailed) {
+    return "overflow-hidden py-0 border-red-200 dark:border-red-800";
+  }
+
+  if (state === AssessmentState.AutoGradingFinished) {
+    return "overflow-hidden py-0 border-green-200 dark:border-green-800";
+  }
+
+  if (state === AssessmentState.AutoGradingStarted || state === AssessmentState.Created) {
+    return "overflow-hidden py-0 border-blue-200 dark:border-blue-800";
+  }
+
+  if (state === AssessmentState.ManualGradingRequired) {
+    return "overflow-hidden py-0 border-orange-200 dark:border-orange-800";
+  }
+
+  return "overflow-hidden py-0";
+};
 export function AssessmentResultCard({
   item,
   scaleFactor,
@@ -25,47 +44,27 @@ export function AssessmentResultCard({
 }: AssessmentResultCardProps) {
   const auth = useAuth();
   const queryClient = useQueryClient();
-  const {
-    isPending: isRerunning,
-    isError,
-    mutateAsync: rerunAssessment,
-  } = useMutation(rerunAssessmentMutationOptions(auth));
+  const { isPending: isRerunning, mutate: rerunAssessment } = useMutation(
+    rerunAssessmentMutationOptions(auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempts"],
+        });
 
-  const handleRerun = async () => {
-    try {
-      await rerunAssessment(item.id);
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempts"],
-      });
+        queryClient.invalidateQueries({
+          queryKey: ["assessment", item.id],
+        });
+      },
+      onError: (error) => {
+        console.error("Failed to rerun assessment:", error);
+        toast.error(
+          `Failed to rerun assessment: ${item.submissionReference}. Please try again.`,
+        );
+      },
+    }),
+  );
 
-      queryClient.invalidateQueries({
-        queryKey: ["assessment", item.id],
-      });
-    } catch (error) {
-      console.error("Failed to rerun assessment:", error);
-      toast.error(
-        `Failed to rerun assessment: ${item.submissionReference}. Please try again.`,
-      );
-    }
-  };
-
-  const isGradingFailed = item.status === AssessmentState.AutoGradingFailed || isError;
-  const isUndergoingGrading =
-    item.status === AssessmentState.AutoGradingStarted ||
-    item.status === AssessmentState.Created;
-
-  const getCardClassName = () => {
-    if (isGradingFailed) {
-      return "overflow-hidden py-0 border-red-200 dark:border-red-800";
-    }
-    if (item.status === AssessmentState.AutoGradingFinished) {
-      return "overflow-hidden py-0 border-green-200 dark:border-green-800";
-    }
-    if (isUndergoingGrading) {
-      return "overflow-hidden py-0 border-blue-200 dark:border-blue-800";
-    }
-    return "overflow-hidden py-0";
-  };
+  const isGradingFailed = item.status === AssessmentState.AutoGradingFailed;
 
   const sortedScoreBreakdowns = useMemo(() => {
     return item.scoreBreakdowns.sort((a, b) => {
@@ -73,11 +72,10 @@ export function AssessmentResultCard({
     });
   }, [item.scoreBreakdowns]);
 
-  if (item.status === AssessmentState.AutoGradingStarted || isRerunning)
-    return <ResultCardSkeleton />;
+  if (item.status === AssessmentState.AutoGradingStarted) return <ResultCardSkeleton />;
 
   return (
-    <Card className={getCardClassName()}>
+    <Card className={getCardClassName(item.status)}>
       <div className="flex flex-col md:flex-row">
         <div className="flex-1 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -92,42 +90,36 @@ export function AssessmentResultCard({
           </div>
 
           <div className="space-y-3">
-            {isGradingFailed ?
-              <div className="text-destructive text-sm">
-                Grading for this submission has failed. Please regrade or manually grade
-                this submission.
-              </div>
-            : sortedScoreBreakdowns.map((score, index) => {
-                const colorStyle = getCriteriaColorStyle(
-                  score.criterionName,
-                  criteriaColorMap,
-                );
+            {sortedScoreBreakdowns.map((score, index) => {
+              const colorStyle = getCriteriaColorStyle(
+                score.criterionName,
+                criteriaColorMap,
+              );
 
-                const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(2);
+              const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(2);
 
-                return (
-                  <div key={index} className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className={colorStyle.text}>{score.criterionName}</span>
-                      {score.grader === "None" || score.status === "Mannual" ?
-                        <span className="text-orange-400">Require manual grading</span>
-                      : <span className={colorStyle.text}>
-                          {finalScore} ({score.rawScore}%)
-                        </span>
-                      }
-                    </div>
-                    {index !== item.scoreBreakdowns.length - 1 && <Separator />}
+              return (
+                <div key={index} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className={colorStyle.text}>{score.criterionName}</span>
+                    {score.grader === "None" || score.status === "Mannual" ?
+                      <span className="text-orange-400">Require manual grading</span>
+                    : <span className={colorStyle.text}>
+                        {finalScore} ({score.rawScore}%)
+                      </span>
+                    }
                   </div>
-                );
-              })
-            }
+                  {index !== item.scoreBreakdowns.length - 1 && <Separator />}
+                </div>
+              );
+            })}
           </div>
         </div>
 
         <div className="flex md:flex-col justify-end p-4 bg-muted/40">
           <Button
             disabled={isRerunning}
-            onClick={handleRerun}
+            onClick={() => rerunAssessment(item.id)}
             variant="outline"
             className="flex items-center gap-2 mb-2 w-full"
           >

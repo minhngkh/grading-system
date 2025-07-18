@@ -92,8 +92,12 @@ export default function RubricGenerationPage({
         queryKey: ["rubrics"],
       });
 
-      queryClient.invalidateQueries({
-        queryKey: ["rubric", updatedRubric.id],
+      queryClient.setQueryData<Rubric>(["rubric", updatedRubric.id], (oldData) => {
+        if (!oldData) return updatedRubric;
+        return {
+          ...oldData,
+          ...updatedRubric,
+        };
       });
 
       form.reset(updatedRubric);

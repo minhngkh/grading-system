@@ -51,6 +51,7 @@ export enum AssessmentState {
   AutoGradingStarted = "AutoGradingStarted",
   AutoGradingFinished = "AutoGradingFinished",
   AutoGradingFailed = "AutoGradingFailed",
+  ManualGradingRequired = "ManualGradingRequired",
   Completed = "Completed",
 }
 

@@ -154,7 +154,6 @@ export default function UploadStep({ form }: UploadStepProps) {
 
     try {
       const allUploadRefs = await uploadFileMutation.mutateAsync(newFiles);
-      console.log("Uploaded files:", allUploadRefs);
 
       const newSubmissions = [
         ...gradingAttempt.submissions,

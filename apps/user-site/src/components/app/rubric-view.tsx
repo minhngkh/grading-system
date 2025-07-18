@@ -17,7 +17,7 @@ export function RubricView({
 }: RubricViewProps) {
   if (rubricData.criteria.length === 0) {
     return (
-      <div className="p-4 size-full flex justify-center items-center">
+      <div className="text-muted-foreground size-full flex justify-center items-center">
         <div>This rubric is empty.</div>
       </div>
     );

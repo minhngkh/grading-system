@@ -110,7 +110,7 @@ export default function CriteriaMapper({
             continue.
           </div>
         : <>
-            <div className="my-4 gap-2 flex items-center">
+            <div className="mb-2 gap-2 flex items-center">
               <span>Using file </span>
               <Select
                 value={gradingAttempt.submissions[chosenFileIndex].reference}
