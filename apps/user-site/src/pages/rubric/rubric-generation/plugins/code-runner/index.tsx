@@ -198,87 +198,81 @@ export default function CodeRunnerConfigDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {
-          <>
-            <div className="p-1 max-h-[80vh] overflow-y-auto">
-              <Form {...form}>
-                <form>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
-                      <FormField
-                        control={control}
-                        name="initCommand"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Install Dependencies Command</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder="e.g., npm install, pip install -r requirements.txt"
-                                className="w-full"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={control}
-                        name="runCommand"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Run Command</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder="e.g., node main.js, python main.py"
-                                className="w-full"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <TestCasesTable
-                      testCases={config.testCases}
-                      onUpdateCell={updateCell}
-                      onDeleteRow={deleteRow}
-                    />
-                    {errors.testCases && (
-                      <p className="text-sm text-red-600">
-                        {errors.testCases.message || errors.testCases.root?.message}
-                      </p>
+        <div className="p-1 max-h-[80vh] overflow-y-auto">
+          <Form {...form}>
+            <form>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <FormField
+                    control={control}
+                    name="initCommand"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Install Dependencies Command</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="e.g., npm install, pip install -r requirements.txt"
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                    {errors.testCases?.root && (
-                      <p className="text-sm text-red-600">
-                        {errors.testCases.root.message}
-                      </p>
-                    )}
+                  />
 
-                    <EnvironmentVariablesTable
-                      environmentVariables={config.environmentVariables ?? {}}
-                      onUpdateEnvVar={updateEnvVar}
-                      onDeleteEnvVar={deleteEnvVar}
-                    />
-                  </div>
-                </form>
-              </Form>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline" disabled={isSubmitting}>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button onClick={onSubmit} disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Confirm"}
-              </Button>
-            </DialogFooter>
-          </>
-        }
+                  <FormField
+                    control={control}
+                    name="runCommand"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Run Command</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="e.g., node main.js, python main.py"
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <TestCasesTable
+                  testCases={config.testCases}
+                  onUpdateCell={updateCell}
+                  onDeleteRow={deleteRow}
+                />
+                {errors.testCases && (
+                  <p className="text-sm text-red-600">
+                    {errors.testCases.message || errors.testCases.root?.message}
+                  </p>
+                )}
+                {errors.testCases?.root && (
+                  <p className="text-sm text-red-600">{errors.testCases.root.message}</p>
+                )}
+
+                <EnvironmentVariablesTable
+                  environmentVariables={config.environmentVariables ?? {}}
+                  onUpdateEnvVar={updateEnvVar}
+                  onDeleteEnvVar={deleteEnvVar}
+                />
+              </div>
+            </form>
+          </Form>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline" disabled={isSubmitting}>
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button onClick={onSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Confirm"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
