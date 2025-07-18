@@ -3,7 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { AssessmentState } from "@/types/assessment";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
-import { Check, Loader2, FileText, CheckCircle2, XCircle, RotateCw } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import {
+  Check,
+  Loader2,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  RotateCw,
+  FileSearch,
+} from "lucide-react";
 import { memo } from "react";
 
 type AssessmentStyle = {
@@ -37,26 +46,27 @@ const assessmentStateStyles: Partial<Record<AssessmentState, AssessmentStyle>> =
 
 interface AssessmentStatusCardProps {
   status: AssessmentGradingStatus;
+  gradingId: string;
   onRegrade?: (id: string) => void;
 }
 
+function getCurrentStatuses(current: AssessmentState): AssessmentState[] {
+  const states: AssessmentState[] = [AssessmentState.Created];
+
+  if (
+    current !== AssessmentState.AutoGradingStarted &&
+    current !== AssessmentState.Created
+  ) {
+    states.push(AssessmentState.AutoGradingStarted);
+  }
+
+  states.push(current);
+
+  return states;
+}
+
 export const AssessmentStatusCard = memo(
-  ({ status, onRegrade }: AssessmentStatusCardProps) => {
-    function getCurrentStatuses(current: AssessmentState): AssessmentState[] {
-      const states: AssessmentState[] = [AssessmentState.Created];
-
-      if (
-        current !== AssessmentState.AutoGradingStarted &&
-        current !== AssessmentState.Created
-      ) {
-        states.push(AssessmentState.AutoGradingStarted);
-      }
-
-      states.push(current);
-
-      return states;
-    }
-
+  ({ status, onRegrade, gradingId }: AssessmentStatusCardProps) => {
     const currentStatuses = getCurrentStatuses(status.status);
     const isUndergoingGrading =
       status.status === AssessmentState.AutoGradingStarted ||
@@ -79,14 +89,25 @@ export const AssessmentStatusCard = memo(
               {status.submissionReference}
             </CardTitle>
             {!isUndergoingGrading && (
-              <Button
-                variant="outline"
-                onClick={() => onRegrade?.(status.assessmentId)}
-                size="sm"
-              >
-                <RotateCw className="size-4" />
-                Rerun
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => onRegrade?.(status.assessmentId)}
+                  size="sm"
+                >
+                  <RotateCw className="size-4" />
+                  Rerun
+                </Button>
+                <Link
+                  to="/gradings/$gradingId/assessments/$assessmentId"
+                  params={{ gradingId: gradingId, assessmentId: status.assessmentId }}
+                >
+                  <Button className="flex items-center gap-2 w-full">
+                    <FileSearch className="h-4 w-4" />
+                    Review
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
           {status.errorMessage && (

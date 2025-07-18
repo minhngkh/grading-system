@@ -140,8 +140,6 @@ const EditRubric = memo(function EditRubric({
   }, [validateForm, onUpdate, formData]);
 
   const handleAddLevel = useCallback(() => {
-    if (formData.tags.length >= 6) return;
-
     const newHeaders = [...formData.tags, `Level ${formData.tags.length + 1}`];
     form.setValue("tags", newHeaders, { shouldValidate: true });
   }, [formData.tags, form]);
@@ -231,10 +229,7 @@ const EditRubric = memo(function EditRubric({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        aria-describedby={undefined}
-        className="flex flex-col min-w-[90vw] overflow-y-auto max-h-[90vh]"
-      >
+      <DialogContent className="flex flex-col min-w-[90vw] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Edit Rubric</DialogTitle>
           <DialogDescription>
@@ -261,8 +256,8 @@ const EditRubric = memo(function EditRubric({
           </div>
 
           <div className="flex justify-center items-center gap-4">
-            <div className="overflow-auto flex-1 max-h-[60vh] rounded-md border">
-              <table className="w-full table-fixed text-sm">
+            <div className="overflow-auto flex-1 max-h-[60vh] custom-scrollbar">
+              <table className="w-full table-fixed text-sm border rounded-md">
                 <thead>
                   <tr className="bg-muted/50 border-b">
                     <th

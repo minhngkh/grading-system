@@ -442,7 +442,11 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     const renderSidebarContent = useMemo(() => {
       switch (sidebarView) {
         case "files":
-          return <FileExplorer {...fileExplorerProps} />;
+          return (
+            <div className="p-4">
+              <FileExplorer {...fileExplorerProps} />
+            </div>
+          );
         case "testcases":
           return (
             <div className="p-4">

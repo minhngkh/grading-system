@@ -375,11 +375,12 @@ export default function GradingProgressStep({
       {/* Assessment Status Cards */}
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-foreground">Grading Details</h3>
-        <div className="p-4 border rounded-2xl max-h-[60vh] overflow-y-auto space-y-4">
+        <div className="p-4 border rounded-2xl max-h-[60vh] overflow-y-auto custom-scrollbar space-y-4">
           {sortedAssessmentStatus.map((assessmentStatus) => (
             <AssessmentStatusCard
               key={assessmentStatus.assessmentId}
               status={assessmentStatus}
+              gradingId={gradingAttemptValues.id}
               onRegrade={handleRegradeAssessment}
             />
           ))}

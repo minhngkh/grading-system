@@ -141,7 +141,7 @@ const ReviewResults = memo(function ReviewResults({
         </div>
       : <div
           ref={parentRef}
-          className="h-[70vh] max-h-[800px] min-h-[400px] overflow-auto"
+          className="h-[70vh] max-h-[800px] min-h-[400px] overflow-auto custom-scrollbar pr-1"
         >
           <div
             style={{
@@ -163,7 +163,7 @@ const ReviewResults = memo(function ReviewResults({
                   transform: `translateY(${virtualItem.start}px)`,
                 }}
               >
-                <div className="p-2">
+                <div className="py-2">
                   {/* Add padding around items */}
                   <AssessmentResultCard
                     key={

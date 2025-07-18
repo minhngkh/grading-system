@@ -51,6 +51,7 @@ export class RubricService {
     const params = new URLSearchParams();
     if (page != undefined) params.append("page[number]", page.toString());
     if (perPage != undefined) params.append("page[size]", perPage.toString());
+    params.append("sort", "-updatedOn");
 
     const filterExpr = buildFilterExpr([
       search ? contains("rubricName", search) : undefined,

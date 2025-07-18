@@ -137,11 +137,11 @@ export default function CriteriaMapper({
               </Select>
               <span> to configure the grading selectors</span>
             </div>
-            <div className="grid gap-4">
+            <div className="grid gap-2">
               <div className="grid grid-cols-3 gap-4 font-semibold">
                 <div>Criteria</div>
                 <div>Select Method</div>
-                <div></div>
+                <div>Path</div>
               </div>
 
               {gradingAttempt.selectors.map((criterion, index) => (

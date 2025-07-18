@@ -187,7 +187,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   };
 
   return (
-    <div className="flex items-center md:justify-between">
+    <div className="lg:flex items-center justify-between space-y-4">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -238,19 +238,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
           </DialogContent>
         </Dialog>
 
-        <Button onClick={() => setOpen(true)} size="sm">
-          <Save className="h-4 w-4 mr-2" />
-          <span className="text-xs">Export</span>
-        </Button>
-        {open && (
-          <ExportDialog
-            open={open}
-            onOpenChange={setOpen}
-            exporterClass={AssessmentExporter}
-            args={[formData, grading]}
-          />
-        )}
-
         <Button
           className="cursor-pointer"
           size="sm"
@@ -269,7 +256,14 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
           <Save className="h-4 w-4 mr-2" />
           <span className="text-xs">Save Scoring</span>
         </Button>
+
+        <Button variant="outline" onClick={handleExport} size="sm">
+          <Save className="h-4 w-4 mr-2" />
+          <span className="text-xs">Export</span>
+        </Button>
+
         <Button
+          variant="outline"
           className="cursor-pointer"
           size="sm"
           onClick={handleRerunAssessment}
@@ -278,6 +272,15 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
           <RotateCcw className="h-4 w-4 mr-2" />
           <span className="text-xs">Regrade</span>
         </Button>
+
+        {open && (
+          <ExportDialog
+            open={open}
+            onOpenChange={setOpen}
+            exporterClass={AssessmentExporter}
+            args={[formData, grading]}
+          />
+        )}
       </div>
     </div>
   );
