@@ -10,6 +10,8 @@ import { useAuth } from "@clerk/clerk-react";
 import { UseFormReturn } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { getScoreAdjustmentsQueryOptions } from "@/queries/assessment-queries";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 interface ScoringPanelProps {
   rubric: Rubric;
@@ -115,20 +117,16 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
 
   return (
     <div className="px-4 flex flex-col bg-background w-full h-full overflow-hidden">
-      <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex flex-col flex-1">
         <Tabs
           value={activeScoringTab}
           onValueChange={setActiveScoringTab}
-          className="flex-1 flex flex-col min-h-0"
+          className="flex-1 flex flex-col"
         >
-          <div className="flex-shrink-0 sticky top-0 bg-background flex items-center justify-between py-2">
-            <TabsList className="flex flex-wrap gap-1 py-1 rounded-lg">
+          <div className="sticky top-0 bg-background flex items-center justify-between py-2">
+            <TabsList>
               {rubric.criteria.map((criterion, index) => (
-                <TabsTrigger
-                  key={index}
-                  value={criterion.name}
-                  className="px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200"
-                >
+                <TabsTrigger key={index} value={criterion.name}>
                   {criterion.name}
                 </TabsTrigger>
               ))}
@@ -153,7 +151,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               </Button>
             </div>
           </div>
-          <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex-1 flex flex-col">
             {rubric.criteria.map((criterion, index) => {
               if (activeScoringTab !== criterion.name) return null;
 
@@ -208,16 +206,16 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                   value={criterion.name}
                   className="flex-1 min-h-0 overflow-auto"
                 >
-                  <div className="rounded-lg border p-4 flex flex-col gap-4">
+                  <div className="rounded-md border p-4 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs flex gap-3 items-center font-medium text-muted-foreground">
-                        {criterion.name} - {criterion.weight}%
+                      <span className="flex gap-3 items-center font-semibold">
+                        {criterion.name} ({criterion.weight})%
                       </span>
 
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs">
                         <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400">Custom Score:</span>
-                          <input
+                          <span className="text-xs">Score:</span>
+                          <Input
                             type="number"
                             min={0}
                             max={criterionMaxPoints}
@@ -241,7 +239,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                                 weight > 0 ? ((clamped * 100) / scale / weight) * 100 : 0;
                               updateScore(criterion.name, newRaw);
                             }}
-                            className="w-20 rounded border border-gray-600 px-2 py-1 text-xs font-semibold"
+                            className="w-16 h-8"
                           />
                           <span className="text-xs">/ {criterionMaxPoints} points</span>
                         </div>
@@ -252,8 +250,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                       <div className="text-xs font-medium flex items-center gap-2">
                         {editingSummaryId === summaryFb.id ?
                           <>
-                            <input
-                              className="border rounded px-2 py-1 text-xs w-full"
+                            <Input
                               value={editingSummaryComment}
                               onChange={(e) => setEditingSummaryComment(e.target.value)}
                             />
@@ -288,35 +285,38 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                     : <div className="text-xs font-medium flex items-center gap-2">
                         {addingSummary !== null ?
                           <>
-                            <input
-                              className="border rounded px-2 py-1 text-xs w-full"
+                            <Input
                               value={addingSummary}
                               onChange={(e) => setAddingSummary(e.target.value)}
-                              placeholder="Add summary feedback..."
+                              placeholder="Input summary feedback..."
+                              className="h-8"
                             />
-                            <button
-                              className="text-blue-500 underline text-xs"
-                              type="button"
+                            <Button
+                              size="sm"
+                              className="text-sm"
+                              variant="outline"
                               onClick={handleSaveAddSummary}
                               disabled={!addingSummary.trim()}
                             >
                               Save
-                            </button>
-                            <button
-                              className="text-gray-500 underline text-xs"
-                              type="button"
+                            </Button>
+                            <Button
+                              className="text-sm"
+                              size="sm"
+                              variant="destructive"
                               onClick={() => setAddingSummary(null)}
                             >
                               Cancel
-                            </button>
+                            </Button>
                           </>
-                        : <button
-                            className="text-blue-500 underline text-xs"
-                            type="button"
+                        : <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-400 hover:text-blue-500 underline text-sm"
                             onClick={handleAddSummary}
                           >
                             + Add summary feedback
-                          </button>
+                          </Button>
                         }
                       </div>
                     }
@@ -342,13 +342,19 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                               </div>
                               <button
                                 onClick={() => updateScore(criterion.name, level.weight)}
-                                className={`w-full h-20 p-3 rounded text-center flex items-center justify-center ${
+                                className={cn(
+                                  `w-full h-20 p-3 rounded text-center flex items-center justify-center`,
                                   isSelected ?
                                     "border-2 border-blue-400"
-                                  : "border border-gray-300"
-                                }`}
+                                  : "border border-gray-300",
+                                )}
                               >
-                                <div className="text-xs leading-tight">
+                                <div
+                                  className={cn(
+                                    "text-xs leading-tight",
+                                    isSelected && "font-semibold",
+                                  )}
+                                >
                                   {level.description}
                                 </div>
                               </button>

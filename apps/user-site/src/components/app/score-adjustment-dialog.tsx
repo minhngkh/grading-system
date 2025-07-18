@@ -113,7 +113,7 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                               <div className="grid grid-cols-3 gap-4 pl-4">
                                 <span>Criterion Name</span>
                                 <span>Score</span>
-                                <span>Delta</span>
+                                <span>Delta Change</span>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -147,15 +147,17 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                                       </span>
                                       <span
                                         className={cn(
-                                          deltaScore > 0 ? "text-green-500" : (
-                                            "text-red-500"
-                                          ),
+                                          deltaScore > 0 ? "text-green-500"
+                                          : deltaScore < 0 ? "text-red-500"
+                                          : "text-muted-foreground",
                                         )}
                                       >
                                         {deltaScore}%
                                         {deltaScore > 0 ?
                                           <TrendingUp className="ml-1 inline h-3 w-3" />
-                                        : <TrendingDown className="ml-1 inline h-3 w-3" />
+                                        : deltaScore < 0 && (
+                                            <TrendingDown className="ml-1 inline h-3 w-3" />
+                                          )
                                         }
                                       </span>
                                     </div>
