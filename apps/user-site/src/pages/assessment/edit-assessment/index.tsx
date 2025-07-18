@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { ScoringPanel } from "@/components/app/scoring-panel";
 import MainWorkspace from "@/components/app/main-workspace";
 import { AssessmentHeader } from "@/components/app/assessment-header";
-import { useAssessmentState } from "@/hooks/use-assessment-state";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import useAssessmentForm from "@/hooks/use-assessment-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import {
   updateFeedbackMutationOptions,
@@ -19,7 +19,7 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
-import { getFileItemsQueryOptions } from "@/queries/file-queries";
+import { FileService } from "@/services/file-service";
 
 export function EditAssessmentUI({
   assessment,
@@ -31,17 +31,20 @@ export function EditAssessmentUI({
   rubric: Rubric;
 }) {
   const auth = useAuth();
+  const queryClient = useQueryClient();
 
-  const {
-    form,
-    formData,
-    canRevert,
+  const { form, formData, validationState, updateLastSavedData, revertToLastSaved } =
+    useAssessmentForm(assessment);
 
-    updateLastSavedData,
-    markCurrentAsValidated,
-    resetToInitial,
-  } = useAssessmentState(assessment);
+  const { canRevert, hasUnsavedChanges } = validationState;
 
+  // Simple revert function
+  const handleRevert = useCallback(() => {
+    revertToLastSaved();
+    toast.success("Reverted to saved data.");
+  }, [revertToLastSaved]);
+
+  // Only essential state
   const [files, setFiles] = useState<any[]>([]);
   const [selectedFile, setSelectedFile] = useState<any | null>(null);
   const [showBottomPanel, setShowBottomPanel] = useState(true);
@@ -49,18 +52,16 @@ export function EditAssessmentUI({
     rubric.criteria[0]?.name || "",
   );
 
-  const queryClient = useQueryClient();
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleFileSelect = useCallback((file: any) => {
+    setSelectedFile(file);
+  }, []);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [fileLoadError, setFileLoadError] = useState<string | null>(null);
+
+  // Simple mutations without complex callbacks (like rubric page)
   const updateFeedbackMutation = useMutation(
-    updateFeedbackMutationOptions(assessment.id, auth, {
-      onSuccess: (_, feedbacks) => {
-        toast.success("Feedback updated successfully");
-        updateLastSavedData({ feedbacks });
-      },
-      onError: (error) => {
-        console.error("Failed to update feedback:", error);
-        toast.error("Failed to update feedback");
-      },
-    }),
+    updateFeedbackMutationOptions(assessment.id, auth),
   );
 
   const updateScoreMutation = useMutation(
@@ -111,11 +112,13 @@ export function EditAssessmentUI({
         return;
       }
 
+      // Validate score range
       if (newScore < 0 || newScore > 100) {
         toast.error("Score must be between 0 and 100");
         return;
       }
 
+      // Find the appropriate performance level
       let matchedLevel = criterion.levels
         .filter((l) => l.weight <= newScore)
         .sort((a, b) => b.weight - a.weight)[0];
@@ -142,18 +145,10 @@ export function EditAssessmentUI({
     [rubric.criteria, formData.scoreBreakdowns, form],
   );
 
-  const handleSaveFeedback = async () => {
-    if (updateFeedbackMutation.isPending) return;
-    updateFeedbackMutation.mutateAsync(formData.feedbacks);
-  };
-
-  const handleSaveScore = async () => {
-    if (updateScoreMutation.isPending) return;
-    updateScoreMutation.mutateAsync(formData.scoreBreakdowns);
-  };
-
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+S or Cmd+S to save feedback
       if ((event.ctrlKey || event.metaKey) && event.key === "s") {
         event.preventDefault();
         if (!updateFeedbackMutation.isPending) {
@@ -161,6 +156,7 @@ export function EditAssessmentUI({
         }
       }
 
+      // Ctrl+Shift+S to save score
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "S") {
         event.preventDefault();
         if (!updateScoreMutation.isPending) {
@@ -168,7 +164,9 @@ export function EditAssessmentUI({
         }
       }
 
+      // Escape to close panels
       if (event.key === "Escape") {
+        // Can be used to close dialogs or panels
       }
     };
 
@@ -182,23 +180,22 @@ export function EditAssessmentUI({
   ]);
 
   return (
-    <div className="h-full relative flex flex-col bg-background text-foreground overflow-hidden space-y-4">
+    <div className="-mb-21 -mt-7 h-[89vh] max-h-[100vh] min-w-250 relative flex flex-col bg-background text-foreground overflow-hidden">
+      {/* Header */}
       <AssessmentHeader
-        form={form}
         assessment={formData}
         grading={grading}
         rubric={rubric}
         canRevert={canRevert}
-        handleRevert={() => {
-          resetToInitial();
-          toast.success("Reverted to saved data.");
-        }}
+        hasUnsavedChanges={hasUnsavedChanges}
+        handleRevert={handleRevert}
         updateLastSavedData={updateLastSavedData}
       />
 
-      <div className="border rounded-md overflow-hidden flex-1">
+      {/* Main Content */}
+      <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="vertical" className="h-full">
-          <ResizablePanel defaultSize={showBottomPanel ? 60 : 100} minSize={25}>
+          <ResizablePanel defaultSize={showBottomPanel ? 80 : 100} minSize={25}>
             {isLoadingFiles ?
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -210,18 +207,19 @@ export function EditAssessmentUI({
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <p className="text-sm text-destructive mb-2">Error loading files</p>
-                  <p className="text-xs text-muted-foreground">{fileLoadError.message}</p>
+                  <p className="text-xs text-muted-foreground">{fileLoadError}</p>
                 </div>
               </div>
             : <MainWorkspace
                 files={files}
                 selectedFile={selectedFile}
-                onFileSelect={setSelectedFile}
+                onFileSelect={handleFileSelect}
                 assessment={formData}
                 grading={grading}
                 rubric={rubric}
                 activeScoringTab={activeScoringTab}
                 form={form}
+                updateLastSavedData={updateLastSavedData}
               />
             }
           </ResizablePanel>
@@ -243,7 +241,7 @@ export function EditAssessmentUI({
           {showBottomPanel && (
             <>
               <ResizableHandle />
-              <ResizablePanel defaultSize={40} minSize={30} maxSize={75}>
+              <ResizablePanel defaultSize={40} minSize={20} maxSize={75}>
                 <ScoringPanel
                   rubric={rubric}
                   grading={grading}

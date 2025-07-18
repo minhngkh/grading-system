@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import ShikiHighlighter from "react-shiki";
 import { FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
 import "./viewer.css";
 import { FileItem } from "@/types/file";
+import FeedbackTooltip from "@/pages/assessment/edit-assessment/viewer/feedback-tooltip";
 
 interface HighlightableViewerProps {
   file: FileItem;
@@ -12,6 +13,8 @@ interface HighlightableViewerProps {
   activeFeedbackId?: string | null;
   onSelectionMade?: () => void;
   onSelectionChange?: (selection: any) => void;
+  updateLastSavedData?: (updates: { feedbacks: FeedbackItem[] }) => void;
+  formData?: { feedbacks: FeedbackItem[] };
 }
 
 const HighlightableViewer = ({
@@ -21,12 +24,17 @@ const HighlightableViewer = ({
   activeFeedbackId,
   onSelectionMade,
   onSelectionChange,
+  updateLastSavedData,
+  formData,
 }: HighlightableViewerProps) => {
   const { theme } = useTheme();
   const [selectionRange, setSelectionRange] = useState<{
     from: { line: number; col: number };
     to: { line: number; col: number };
   } | null>(null);
+  const [tooltipFb, setTooltipFb] = useState<FeedbackItem | null>(null);
+  const [startLineElement, setStartLineElement] = useState<HTMLElement | null>(null);
+  const [endLineElement, setEndLineElement] = useState<HTMLElement | null>(null);
 
   let language = "plaintext";
   if (file.relativePath) {
@@ -191,19 +199,39 @@ const HighlightableViewer = ({
 
   useEffect(() => {
     const adjusted = getAdjustedFeedbacks(file.content, feedbacks);
+    let hasChanges = false;
 
     for (let i = 0; i < adjusted.length; i++) {
       if (JSON.stringify(adjusted[i]) !== JSON.stringify(feedbacks[i])) {
         const originalFeedback = feedbacks[i];
         if (originalFeedback.id) {
           updateFeedback(originalFeedback.id, adjusted[i]);
+          hasChanges = true;
         }
       }
     }
-  }, [file.content, feedbacks, updateFeedback]);
+
+    // Update lastSavedData after normalization to prevent revert button from being enabled
+    if (hasChanges && updateLastSavedData && formData) {
+      // Use a longer timeout to ensure form state has been updated
+      setTimeout(() => {
+        // Create the updated feedbacks list with normalized data
+        const updatedFeedbacks = formData.feedbacks.map((fb) => {
+          const adjustedFb = adjusted.find((adj) => adj.id === fb.id);
+          return adjustedFb || fb;
+        });
+        updateLastSavedData({ feedbacks: updatedFeedbacks });
+      }, 150);
+    }
+  }, [file.content, feedbacks, updateFeedback, updateLastSavedData, formData]);
 
   useEffect(() => {
-    if (!activeFeedbackId) return;
+    if (!activeFeedbackId) {
+      setTooltipFb(null);
+      setStartLineElement(null);
+      setEndLineElement(null);
+      return;
+    }
 
     const fb = feedbacks.find((f) => f.id === activeFeedbackId);
     if (
@@ -211,39 +239,50 @@ const HighlightableViewer = ({
       fb.locationData?.type === "text" &&
       typeof fb.locationData.fromLine === "number"
     ) {
-      let tries = 0;
       const tryScroll = () => {
         if (file.type === "code") {
           const root = document.getElementById(`shiki-container`);
           if (!root) return;
 
-          let lineEl: Element | null = null;
           if (
-            fb.locationData?.type === "text" &&
+            fb.locationData.type === "text" &&
             typeof fb.locationData.fromLine === "number"
           ) {
-            lineEl = root.querySelector(`.line[data-line="${fb.locationData.fromLine}"]`);
-          }
-          if (lineEl) {
-            const lineTop = (lineEl as HTMLElement).offsetTop;
-            const containerTop = root.offsetTop;
-            root.scrollTo({
-              top: lineTop - containerTop - 50,
-              behavior: "smooth",
-            });
-            return;
-          }
-        }
+            const startEl = root.querySelector(
+              `.line[data-line="${fb.locationData.fromLine}"]`,
+            );
+            const endEl = root.querySelector(
+              `.line[data-line="${fb.locationData.toLine}"]`,
+            );
 
-        if (tries < 10) {
-          tries++;
-          setTimeout(tryScroll, 100);
+            if (startEl) {
+              const lineRect = (startEl as HTMLElement).getBoundingClientRect();
+              const rootRect = root.getBoundingClientRect();
+              const scrollTop = root.scrollTop + (lineRect.top - rootRect.top) - 120;
+
+              root.scrollTo({
+                top: scrollTop,
+                behavior: "smooth",
+              });
+
+              // Set tooltip and elements after scroll completes
+              setStartLineElement(null);
+              setEndLineElement(null);
+              setTooltipFb(null);
+
+              setTimeout(() => {
+                setStartLineElement(startEl as HTMLElement);
+                setEndLineElement(endEl as HTMLElement);
+                setTooltipFb(fb);
+              }, 100); // Wait for smooth scroll to complete
+            }
+          }
         }
       };
 
       setTimeout(tryScroll, 0);
     }
-  }, [activeFeedbackId, feedbacks, file.relativePath, file.type]);
+  }, [activeFeedbackId, feedbacks, file.type]);
 
   const renderContent = () => {
     const validFeedbacks = getAdjustedFeedbacks(file.content, feedbacks);
@@ -338,9 +377,7 @@ const HighlightableViewer = ({
                         " annotation-span-focused"
                       : ""),
                     "data-id": feedbackId,
-                    "data-comment": fb.comment,
                     "data-tag": fb.tag,
-                    "data-criterion": fb.criterion,
                   },
                 }));
               },
@@ -363,173 +400,20 @@ const HighlightableViewer = ({
         </ShikiHighlighter>
       );
     }
-
-    function getFeedbackGroupsForLine(lineIdx: number, lineLength: number) {
-      const boundaries: {
-        pos: number;
-        type: "start" | "end";
-        fb: FeedbackItem;
-        feedbackId: string;
-      }[] = [];
-
-      validFeedbacks
-        .filter(
-          (
-            fb,
-          ): fb is FeedbackItem & {
-            locationData: {
-              type: "text";
-              fromLine: number;
-              toLine: number;
-              fromCol?: number;
-              toCol?: number;
-            };
-          } =>
-            fb.locationData?.type === "text" &&
-            typeof fb.locationData.fromLine === "number" &&
-            typeof fb.locationData.toLine === "number",
-        )
-        .forEach((fb) => {
-          if (fb.locationData?.type !== "text") return;
-
-          const feedbackId = fb.id ?? "";
-          const fromCol =
-            typeof fb.locationData.fromCol === "number" ? fb.locationData.fromCol : 0;
-          const toCol =
-            typeof fb.locationData.toCol === "number" ? fb.locationData.toCol : 0;
-          const fromLine = fb.locationData.fromLine;
-
-          if (lineIdx + 1 !== fromLine) return;
-
-          const start = fromCol;
-          const end = toCol;
-          if (start < end) {
-            boundaries.push({ pos: start, type: "start", fb, feedbackId });
-            boundaries.push({ pos: end, type: "end", fb, feedbackId });
-          }
-        });
-
-      boundaries.sort((a, b) => a.pos - b.pos || (a.type === "end" ? -1 : 1));
-
-      const segments: {
-        start: number;
-        end: number;
-        feedbacks: { fb: FeedbackItem; feedbackId: string }[];
-      }[] = [];
-      let active: { fb: FeedbackItem; feedbackId: string }[] = [];
-      let lastPos = 0;
-
-      for (const b of boundaries) {
-        if (b.pos > lastPos) {
-          segments.push({ start: lastPos, end: b.pos, feedbacks: [...active] });
-        }
-        if (b.type === "start") {
-          active.push({ fb: b.fb, feedbackId: b.feedbackId });
-        } else {
-          active = active.filter((f) => f.fb !== b.fb);
-        }
-        lastPos = b.pos;
-      }
-
-      if (lastPos < lineLength) {
-        segments.push({ start: lastPos, end: lineLength, feedbacks: [...active] });
-      }
-
-      return segments;
-    }
-
-    return (
-      <div
-        className="font-serif text-md leading-relaxed whitespace-pre-wrap p-3 overflow-auto"
-        id="essay-container"
-      >
-        {file.content.split("\n").map((line, i) => {
-          if (line === "") {
-            return (
-              <div key={i} data-line={i}>
-                <br />
-              </div>
-            );
-          }
-
-          const segments = getFeedbackGroupsForLine(i, line.length);
-
-          return (
-            <div key={i} data-line={i}>
-              {segments.map((seg, idx) => {
-                let inner: React.ReactNode = line.slice(seg.start, seg.end);
-
-                if (activeFeedbackId !== undefined && activeFeedbackId !== null) {
-                  const activeFb = seg.feedbacks.find(
-                    (f) => String(f.feedbackId) === String(activeFeedbackId),
-                  );
-                  if (activeFb) {
-                    const fb = activeFb.fb;
-                    let fromLine =
-                      fb.locationData?.type === "text" ?
-                        fb.locationData.fromLine
-                      : undefined;
-                    let toLine =
-                      fb.locationData?.type === "text" ?
-                        fb.locationData.toLine
-                      : undefined;
-
-                    inner = (
-                      <span
-                        key={`${fb.fileRef}-${fromLine}-${toLine}-${fb.criterion}-${fb.comment}-${idx}-active`}
-                        className={
-                          "annotation-span actived annotation-span-focused " +
-                          (seg.feedbacks.length === 1 ? "highlight-top" : "")
-                        }
-                        data-id={String(activeFb.feedbackId)}
-                        data-comment={fb.comment}
-                        data-tag={fb.tag}
-                      >
-                        {inner}
-                      </span>
-                    );
-                  }
-                } else {
-                  seg.feedbacks.forEach((f, fbIdx) => {
-                    const fb = f.fb;
-                    let fromLine =
-                      fb.locationData?.type === "text" ?
-                        fb.locationData.fromLine
-                      : undefined;
-                    let toLine =
-                      fb.locationData?.type === "text" ?
-                        fb.locationData.toLine
-                      : undefined;
-
-                    inner = (
-                      <span
-                        key={`${fb.fileRef}-${fromLine}-${toLine}-${fb.criterion}-${fb.comment}-${idx}-${fbIdx}`}
-                        className={
-                          "annotation-span " +
-                          (fbIdx === seg.feedbacks.length - 1 ?
-                            "highlight-top"
-                          : "highlight-under")
-                        }
-                        data-id={String(f.feedbackId)}
-                        data-comment={fb.comment}
-                        data-tag={fb.tag}
-                      >
-                        {inner}
-                      </span>
-                    );
-                  });
-                }
-
-                return inner;
-              })}
-            </div>
-          );
-        })}
-      </div>
-    );
   };
 
-  return <>{renderContent()}</>;
+  return (
+    <>
+      {renderContent()}
+      {tooltipFb && (
+        <FeedbackTooltip
+          fb={tooltipFb}
+          startEl={startLineElement}
+          endEl={endLineElement}
+        />
+      )}
+    </>
+  );
 };
 
 export default HighlightableViewer;

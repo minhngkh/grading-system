@@ -13,6 +13,8 @@ interface PDFViewerProps {
   updateFeedback: (feedbackId: string, fb: FeedbackItem) => void;
   activeFeedbackId?: string | null;
   onPageSelect?: (page: number | null) => void;
+  updateLastSavedData?: (updates: { feedbacks: FeedbackItem[] }) => void;
+  formData?: { feedbacks: FeedbackItem[] };
 }
 
 const PDFViewer = ({
@@ -21,11 +23,13 @@ const PDFViewer = ({
   updateFeedback,
   activeFeedbackId,
   onPageSelect,
+  updateLastSavedData,
+  formData,
 }: PDFViewerProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  void currentPage; // Keep variable for potential future use
+  void currentPage;
   const [scale, setScale] = useState<number>(1.0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -67,23 +71,41 @@ const PDFViewer = ({
         if (fb.locationData?.type === "pdf" && typeof fb.locationData.page === "number") {
           const valid = Math.max(1, Math.min(fb.locationData.page, totalPages));
           if (valid !== fb.locationData.page) {
-            return { ...fb, locationData: { ...fb.locationData, page: valid } };
+            return {
+              ...fb,
+              locationData: { ...fb.locationData, page: valid },
+            };
           }
         }
         return fb;
       });
 
       // Use ID-based updates instead of global index lookups
+      let hasChanges = false;
       for (let i = 0; i < adjusted.length; i++) {
         if (JSON.stringify(adjusted[i]) !== JSON.stringify(feedbacks[i])) {
           const originalFeedback = feedbacks[i];
           if (originalFeedback.id) {
             updateFeedback(originalFeedback.id, adjusted[i]);
+            hasChanges = true;
           }
         }
       }
+
+      // Update lastSavedData after normalization to prevent revert button from being enabled
+      if (hasChanges && updateLastSavedData && formData) {
+        // Use a longer timeout to ensure form state has been updated
+        setTimeout(() => {
+          // Create the updated feedbacks list with normalized data
+          const updatedFeedbacks = formData.feedbacks.map((fb) => {
+            const adjustedFb = adjusted.find((adj) => adj.id === fb.id);
+            return adjustedFb || fb;
+          });
+          updateLastSavedData({ feedbacks: updatedFeedbacks });
+        }, 150);
+      }
     }
-  }, [totalPages, feedbacks, updateFeedback]);
+  }, [totalPages, feedbacks, updateFeedback, updateLastSavedData, formData]);
 
   // Internal page click handler
   const handlePageClick = (pageNumber: number) => {

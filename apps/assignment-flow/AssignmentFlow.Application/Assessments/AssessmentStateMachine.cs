@@ -41,6 +41,8 @@ public sealed class AssessmentStateMachine : StateMachine<AssessmentState, Asses
             .Permit(AssessmentTrigger.Complete, AssessmentState.Completed);
 
         Configure(AssessmentState.Completed)
+            .PermitReentry(AssessmentTrigger.Complete)
+            .PermitReentry(AssessmentTrigger.FinishAutoGrading)
             .Permit(AssessmentTrigger.StartAutoGrading, AssessmentState.AutoGradingStarted)
             .Permit(AssessmentTrigger.WaitForManualGrading, AssessmentState.ManualGradingRequired);
 

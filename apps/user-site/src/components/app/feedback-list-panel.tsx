@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ShortUniqueId from "short-unique-id";
 import { UseFormReturn } from "react-hook-form";
 
 interface FeedbackListPanelProps {
@@ -125,9 +126,9 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
       fromCol: 0,
       toCol: 0,
     };
-
+    const uid = new ShortUniqueId({ length: 9 });
     const newFeedback: Partial<FeedbackItem> = {
-      id: `fb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: uid.rnd(),
       criterion: addCriterion,
       comment: addComment.trim(),
       tag: addTag,
@@ -258,24 +259,24 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
               />
             </div>
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancelAdd}
-                className="h-7 px-3"
-              >
-                <X className="h-3 w-3 mr-1" />
-                <span className="text-xs">Cancel</span>
-              </Button>
+            <div className="flex flex-col gap-2">
               <Button
                 size="sm"
                 onClick={handleAddFeedbackSubmit}
                 disabled={!addComment.trim() || !addCriterion}
-                className="h-7 px-3"
+                className="h-7 px-3 w-full"
               >
                 <Check className="h-3 w-3 mr-1" />
                 <span className="text-xs">Add Feedback</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelAdd}
+                className="h-7 px-3 w-full"
+              >
+                <X className="h-3 w-3 mr-1" />
+                <span className="text-xs">Cancel</span>
               </Button>
             </div>
           </div>
@@ -303,12 +304,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                 onClick={
                   isEditing ? undefined : (
                     () => {
-                      // If already active, deactivate it; otherwise, activate it
-                      if (isActive) {
-                        onSelect({ ...feedback, id: "" }); // Pass empty id to deactivate
-                      } else {
-                        onSelect(feedback);
-                      }
+                      onSelect(feedback); // Always pass the feedback, let handleFeedbackClick decide
                     }
                   )
                 }
@@ -374,24 +370,24 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                       />
                     </div>
 
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleEditCancel}
-                        className="h-7 px-3"
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        <span className="text-xs">Cancel</span>
-                      </Button>
+                    <div className="flex flex-col gap-2">
                       <Button
                         size="sm"
                         onClick={() => handleEditSave(feedback.id ?? "")}
                         disabled={!editComment.trim()}
-                        className="h-7 px-3"
+                        className="h-7 px-3 w-full"
                       >
                         <Check className="h-3 w-3 mr-1" />
                         <span className="text-xs">Save</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleEditCancel}
+                        className="h-7 px-3 w-full"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        <span className="text-xs">Cancel</span>
                       </Button>
                     </div>
                   </div>
