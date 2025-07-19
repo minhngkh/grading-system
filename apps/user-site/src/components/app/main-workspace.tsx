@@ -8,24 +8,24 @@ import FileViewer from "@/pages/assessment/edit-assessment/viewer/file-viewer";
 import { Assessment, FeedbackItem } from "@/types/assessment";
 import { GradingAttempt } from "@/types/grading";
 import { Rubric } from "@/types/rubric";
-import { UseFormReturn } from "react-hook-form";
-import { toast } from "sonner";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
+import { FileItem } from "@/types/file";
 
 interface MainWorkspaceProps {
-  files: any[];
+  files: FileItem[];
   assessment: Assessment;
   grading: GradingAttempt;
   rubric: Rubric;
   activeScoringTab: string;
-  form: UseFormReturn<Assessment>;
-  selectedFile?: any;
-  onFileSelect?: (file: any) => void;
+  selectedFile: FileItem;
+  onFileSelect: (file: FileItem) => void;
+  onUpdate: (updatedAssessment: Partial<Assessment>) => void;
+  onUpdateLastSave: (updatedLastSaved: Partial<Assessment>) => void;
 }
 
 export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
@@ -35,60 +35,16 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     grading,
     rubric,
     activeScoringTab,
-    form,
-    selectedFile: externalSelectedFile,
-    onFileSelect: externalOnFileSelect,
+    selectedFile,
+    onFileSelect,
+    onUpdate,
+    onUpdateLastSave,
   }) => {
-    const [internalSelectedFile, setInternalSelectedFile] = useState<any | null>(null);
-    const [activeFeedbackId, setActiveFeedbackId] = useState<string | null>(null);
+    const [activeFeedbackId, setActiveFeedbackId] = useState<number | null>(null);
 
-    const selectedFile = externalSelectedFile ?? internalSelectedFile;
-    const onFileSelect = externalOnFileSelect ?? setInternalSelectedFile;
-
-    const handleFeedbackSelect = useCallback((feedbackId: string | null) => {
-      setActiveFeedbackId(feedbackId);
+    const handleFeedbackSelect = useCallback((index: number | null) => {
+      setActiveFeedbackId(index);
     }, []);
-
-    const generateUID = useCallback(() => {
-      const first = (Math.random() * 46656) | 0;
-      const second = (Math.random() * 46656) | 0;
-      const part1 = ("000" + first.toString(36)).slice(-3);
-      const part2 = ("000" + second.toString(36)).slice(-3);
-      return (part1 + part2).toUpperCase();
-    }, []);
-
-    const addFeedback = useCallback(
-      (feedback: FeedbackItem) => {
-        try {
-          const feedbackWithId = { ...feedback, id: feedback.id || generateUID() };
-          const currentFeedbacks = form.getValues("feedbacks") || [];
-          form.setValue("feedbacks", [...currentFeedbacks, feedbackWithId], {
-            shouldValidate: false,
-          });
-        } catch (error) {
-          console.error("Error adding feedback:", error);
-        }
-      },
-      [form, generateUID],
-    );
-
-    const updateFeedback = useCallback(
-      (feedbackId: string, feedback: FeedbackItem) => {
-        try {
-          const currentFeedbacks = form.getValues("feedbacks") || [];
-          const index = currentFeedbacks.findIndex((f) => f.id === feedbackId);
-
-          if (index !== -1) {
-            const updated = [...currentFeedbacks];
-            updated[index] = { ...updated[index], ...feedback };
-            form.setValue("feedbacks", updated, { shouldValidate: false });
-          }
-        } catch (error) {
-          console.error("Error updating feedback:", error);
-        }
-      },
-      [form],
-    );
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [sidebarView, setSidebarView] = useState<"files" | "testcases" | "feedback">(
@@ -108,70 +64,14 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     const [selectedPage, setSelectedPage] = useState<number | null>(null);
     const [selectionRange, setSelectionRange] = useState<any>(null);
 
-    const fileFeedbacks = useMemo(() => {
-      if (!selectedFile || !assessment?.feedbacks) return [];
-
-      try {
-        return assessment.feedbacks.filter((fb: FeedbackItem) => {
-          if (!fb?.fileRef) return false;
-          const fileName = selectedFile.relativePath || selectedFile.name;
-
-          return (
-            fb.fileRef.endsWith(fileName) ||
-            fb.fileRef.includes(`/${fileName}`) ||
-            fb.fileRef.split("/").pop() === fileName
-          );
-        });
-      } catch (error) {
-        console.error("Error filtering feedbacks:", error);
-        return [];
-      }
-    }, [selectedFile, assessment?.feedbacks]);
-
     const rubricCriteria = useMemo(
       () => rubric?.criteria?.map((c) => c.name) || [],
       [rubric?.criteria],
     );
 
-    const currentFileFeedbacks = useMemo(() => {
-      if (!selectedFile || !assessment?.feedbacks) return [];
-
-      try {
-        return assessment.feedbacks.filter((f: FeedbackItem) => {
-          if (!f?.fileRef) return false;
-          const fileName = selectedFile.relativePath || selectedFile.name;
-
-          return (
-            f.fileRef.endsWith(fileName) ||
-            f.fileRef.includes(`/${fileName}`) ||
-            f.fileRef.split("/").pop() === fileName
-          );
-        });
-      } catch (error) {
-        console.error("Error filtering feedbacks for current file:", error);
-        return [];
-      }
-    }, [selectedFile, assessment?.feedbacks]);
-
-    const currentCriterionFeedbacks = useMemo(() => {
-      if (!activeScoringTab || !assessment?.feedbacks) return [];
-
-      try {
-        return assessment.feedbacks.filter((f) => f.criterion === activeScoringTab);
-      } catch (error) {
-        console.error("Error filtering feedbacks for criterion:", error);
-        return [];
-      }
-    }, [activeScoringTab, assessment?.feedbacks]);
-
     const handleFeedbackClick = useCallback(
-      (feedback: FeedbackItem) => {
-        if (!feedback?.id) {
-          console.warn("Invalid feedback object:", feedback);
-          return;
-        }
-
-        if (activeFeedbackId === feedback.id) {
+      (feedback: FeedbackItem, index: number) => {
+        if (activeFeedbackId === index) {
           handleFeedbackSelect(null);
           return;
         }
@@ -191,12 +91,12 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
           }
         }
 
-        handleFeedbackSelect(feedback.id);
+        handleFeedbackSelect(index);
       },
       [activeFeedbackId, selectedFile, files, onFileSelect, handleFeedbackSelect],
     );
 
-    const handleFileSelectInternal = useCallback(
+    const handleFileSelect = useCallback(
       (file: any) => {
         if (file !== selectedFile) {
           onFileSelect(file);
@@ -214,10 +114,12 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       if (prevSelectedFileRef.current !== selectedFile) {
         prevSelectedFileRef.current = selectedFile;
 
-        if (activeFeedbackId && selectedFile) {
-          const activeFeedback = assessment?.feedbacks?.find(
-            (f) => f.id === activeFeedbackId,
-          );
+        if (
+          typeof activeFeedbackId === "number" &&
+          activeFeedbackId >= 0 &&
+          selectedFile
+        ) {
+          const activeFeedback = assessment?.feedbacks?.[activeFeedbackId];
           if (activeFeedback && activeFeedback.fileRef) {
             const feedbackBelongsToCurrentFile =
               activeFeedback.fileRef.endsWith(
@@ -239,90 +141,9 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
 
     useEffect(() => {
       if (files.length > 0 && !selectedFile) {
-        setInternalSelectedFile(files[0]);
+        onFileSelect(files[0]);
       }
-    }, [files, selectedFile]);
-
-    const handleAddFeedback = useCallback(
-      (newFeedback: Partial<FeedbackItem>) => {
-        if (!selectedFile) {
-          toast.error("No file selected for feedback");
-          return;
-        }
-
-        if (!newFeedback.comment?.trim()) {
-          toast.error("Feedback comment cannot be empty");
-          return;
-        }
-
-        try {
-          let locationData;
-          if (selectedFile?.type === "pdf" && selectedPage) {
-            locationData = { type: "pdf" as const, page: selectedPage };
-          } else if (
-            selectionRange &&
-            (selectedFile?.type === "code" ||
-              selectedFile?.type === "document" ||
-              selectedFile?.type === "essay")
-          ) {
-            locationData = {
-              type: "text" as const,
-              fromLine: selectionRange.from?.line || 1,
-              toLine: selectionRange.to?.line || 1,
-              fromCol: selectionRange.from?.col || 0,
-              toCol: selectionRange.to?.col || 0,
-            };
-          } else if (selectedFile?.type === "image") {
-            locationData = { type: "image" as const };
-          } else {
-            locationData = {
-              type: "text" as const,
-              fromLine: 1,
-              toLine: 1,
-              fromCol: 0,
-              toCol: 0,
-            };
-          }
-
-          const fileReference = `${assessment?.submissionReference || ""}/${selectedFile?.relativePath || selectedFile?.name || ""}`;
-
-          const completeFeedback: FeedbackItem = {
-            id: newFeedback.id || generateUID(),
-            criterion: newFeedback.criterion || "",
-            comment: newFeedback.comment.trim(),
-            tag: newFeedback.tag || "info",
-            fileRef: fileReference,
-            locationData,
-            ...newFeedback,
-          };
-
-          addFeedback(completeFeedback);
-
-          setCanAddFeedback(false);
-          setSelectedPage(null);
-          setIsHighlightMode(false);
-          setSelectionRange(null);
-        } catch (error) {
-          console.error("Error adding feedback:", error);
-          toast.error("Failed to add feedback");
-        }
-      },
-      [
-        selectedFile,
-        selectedPage,
-        selectionRange,
-        assessment?.submissionReference,
-        generateUID,
-        addFeedback,
-      ],
-    );
-
-    const handleUpdateFeedback = useCallback(
-      (feedbackId: string, updatedFeedback: FeedbackItem) => {
-        updateFeedback(feedbackId, updatedFeedback);
-      },
-      [updateFeedback],
-    );
+    }, [files, selectedFile, onFileSelect]);
 
     const handleAddFeedbackClick = useCallback(() => {
       if (isHighlightMode) {
@@ -363,13 +184,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       }
     }, []);
 
-    const handleHighlightComplete = useCallback(() => {
-      setIsHighlightMode(false);
-      setCanAddFeedback(false);
-      setSelectedPage(null);
-      setSelectionRange(null);
-    }, []);
-
     const handleSelectionChange = useCallback((range: any) => {
       setSelectionRange(range);
       if (range) {
@@ -394,7 +208,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       () => ({
         files,
         selectedFile,
-        setSelectedFile: handleFileSelectInternal,
+        setSelectedFile: handleFileSelect,
         expandedFolders,
         setExpandedFolders,
         feedbacks: assessment.feedbacks,
@@ -403,7 +217,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       [
         files,
         selectedFile,
-        handleFileSelectInternal,
+        handleFileSelect,
         expandedFolders,
         assessment.feedbacks,
         grading,
@@ -476,16 +290,17 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
                     Feedback for {selectedFile?.name || "No file"}
                   </h3>
                   <FeedbackListPanel
-                    feedbacks={currentFileFeedbacks}
-                    selectedFeedbackId={activeFeedbackId}
-                    onSelect={handleFeedbackClick}
                     assessment={assessment}
+                    selectedFeedbackIndex={activeFeedbackId}
+                    onSelect={handleFeedbackClick}
                     isAddingFeedback={isHighlightMode}
-                    onAddFeedback={handleAddFeedback}
                     onCancelAdd={handleCancelSelection}
                     rubricCriteria={rubricCriteria}
                     locationData={locationData}
-                    form={form}
+                    onUpdate={onUpdate}
+                    byFile={true}
+                    currentFile={selectedFile}
+                    currentCriterion={""}
                   />
                 </TabsContent>
                 <TabsContent
@@ -496,16 +311,17 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
                     Feedback for {activeScoringTab || "No criterion"}
                   </h3>
                   <FeedbackListPanel
-                    feedbacks={currentCriterionFeedbacks}
-                    selectedFeedbackId={activeFeedbackId}
+                    selectedFeedbackIndex={activeFeedbackId}
                     onSelect={handleFeedbackClick}
                     assessment={assessment}
                     isAddingFeedback={isHighlightMode && feedbackViewMode === "criterion"}
-                    onAddFeedback={handleAddFeedback}
                     onCancelAdd={handleCancelSelection}
                     rubricCriteria={rubricCriteria}
                     locationData={locationData}
-                    form={form}
+                    onUpdate={onUpdate}
+                    byFile={false}
+                    currentFile={selectedFile}
+                    currentCriterion={activeScoringTab}
                   />
                 </TabsContent>
               </Tabs>
@@ -518,19 +334,16 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       sidebarView,
       fileExplorerProps,
       feedbackViewMode,
-      currentFileFeedbacks,
-      currentCriterionFeedbacks,
       activeFeedbackId,
       handleFeedbackClick,
-      handleAddFeedback,
       handleCancelSelection,
       assessment,
       rubricCriteria,
       selectedFile,
       locationData,
-      form,
       isHighlightMode,
       activeScoringTab,
+      onUpdate,
     ]);
 
     const renderFileViewer = useMemo(() => {
@@ -550,12 +363,13 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
           <div className="flex-1 overflow-hidden">
             <FileViewer
               file={selectedFile}
-              feedbacks={fileFeedbacks}
-              updateFeedback={handleUpdateFeedback}
               activeFeedbackId={activeFeedbackId}
               onSelectionMade={handleSelectionMade}
               onPageSelect={handlePageSelect}
               onSelectionChange={handleSelectionChange}
+              assessment={assessment}
+              onUpdate={onUpdate}
+              onUpdateLastSave={onUpdateLastSave}
             />
           </div>
         );
@@ -572,19 +386,13 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       }
     }, [
       selectedFile,
-      fileFeedbacks,
-      handleAddFeedback,
-      handleUpdateFeedback,
-      isHighlightMode,
-      handleHighlightComplete,
       activeFeedbackId,
-      rubricCriteria,
-      grading?.id,
-      assessment?.submissionReference,
+      handleSelectionMade,
       handlePageSelect,
       handleSelectionChange,
-      selectedPage,
-      form,
+      assessment,
+      onUpdate,
+      onUpdateLastSave,
     ]);
 
     return (
@@ -676,5 +484,4 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     );
   },
 );
-
 export default React.memo(MainWorkspace);

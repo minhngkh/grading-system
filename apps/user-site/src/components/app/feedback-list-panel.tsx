@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Assessment, FeedbackItem, LocationData } from "@/types/assessment";
 import { Badge } from "@/components/ui/badge";
 import { Trash, MessageSquare, Pen, Check, X } from "lucide-react";
@@ -12,20 +12,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import ShortUniqueId from "short-unique-id";
-import { UseFormReturn } from "react-hook-form";
+import useAssessmentForm from "@/hooks/use-assessment-form";
+import { FileItem } from "@/types/file";
 
 interface FeedbackListPanelProps {
-  feedbacks: FeedbackItem[];
-  selectedFeedbackId: string | null;
-  onSelect: (feedback: FeedbackItem) => void;
+  selectedFeedbackIndex: number | null;
+  onSelect: (feedback: FeedbackItem, index: number) => void;
   assessment: Assessment;
   isAddingFeedback?: boolean;
-  onAddFeedback?: (feedback: Partial<FeedbackItem>) => void;
   onCancelAdd?: () => void;
   rubricCriteria?: string[];
   locationData?: LocationData;
-  form: UseFormReturn<Assessment>;
+  onUpdate: (updatedAssessment: Partial<Assessment>) => void;
+  byFile: boolean;
+  currentFile: FileItem;
+  currentCriterion: string;
 }
 
 function getFeedbackTagName(tag: string): string {
@@ -44,162 +45,121 @@ function getFeedbackTagName(tag: string): string {
 }
 
 export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
-  feedbacks,
-  selectedFeedbackId,
+  selectedFeedbackIndex,
   onSelect,
   assessment,
   isAddingFeedback = false,
-  onAddFeedback,
   onCancelAdd,
   rubricCriteria = [],
   locationData,
-  form,
+  onUpdate,
+  byFile,
+  currentFile,
+  currentCriterion,
 }) => {
-  // Helper functions for feedback operations (no toast - direct form updates)
-  const updateFeedback = useCallback(
-    (feedbackId: string, feedback: FeedbackItem) => {
-      try {
-        const currentFeedbacks = form.getValues("feedbacks") || [];
-        const index = currentFeedbacks.findIndex((f) => f.id === feedbackId);
-
-        if (index !== -1) {
-          const updated = [...currentFeedbacks];
-          updated[index] = { ...updated[index], ...feedback };
-          form.setValue("feedbacks", updated, { shouldValidate: false });
-        }
-      } catch (error) {
-        console.error("Error updating feedback:", error);
-      }
-    },
-    [form],
-  );
-
-  const deleteFeedback = useCallback(
-    (feedbackId: string) => {
-      try {
-        const currentFeedbacks = form.getValues("feedbacks") || [];
-        const filtered = currentFeedbacks.filter((f) => f.id !== feedbackId);
-        form.setValue("feedbacks", filtered, { shouldValidate: false });
-      } catch (error) {
-        console.error("Error deleting feedback:", error);
-      }
-    },
-    [form],
-  );
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
+  const { form, formData } = useAssessmentForm(assessment);
+  const [editingFeedbackIndex, setEditingFeedbackIndex] = useState<number | null>(null);
   const [editComment, setEditComment] = useState("");
   const [editTag, setEditTag] = useState("info");
   const [editCriterion, setEditCriterion] = useState("");
-
-  // Add feedback form states
   const [addComment, setAddComment] = useState("");
   const [addTag, setAddTag] = useState("info");
   const [addCriterion, setAddCriterion] = useState("");
 
-  // Memoize available criteria for performance
-  const allCriteria = useMemo(() => {
-    const availableCriteria = Array.from(
-      new Set(
-        (assessment?.feedbacks || [])
-          .map((fb) => fb?.criterion)
-          .filter((criterion): criterion is string => Boolean(criterion)),
-      ),
-    );
-    return Array.from(new Set([...availableCriteria, ...rubricCriteria]));
-  }, [assessment?.feedbacks, rubricCriteria]);
-
-  // Memoize safe feedbacks
-  const safeFeedbacks = useMemo(() => {
-    return Array.isArray(feedbacks) ? feedbacks : [];
-  }, [feedbacks]);
-
   const handleAddFeedbackSubmit = useCallback(() => {
-    if (!addComment.trim() || !addCriterion || !onAddFeedback) return;
-
-    // Use provided locationData or create default
+    if (!addComment.trim() || !addCriterion) return;
     const feedbackLocationData = locationData || {
-      type: "text" as const,
+      type: "text",
       fromLine: 1,
       toLine: 1,
       fromCol: 0,
       toCol: 0,
     };
-    const uid = new ShortUniqueId({ length: 9 });
-    const newFeedback: Partial<FeedbackItem> = {
-      id: uid.rnd(),
+    const newFeedback: FeedbackItem = {
       criterion: addCriterion,
       comment: addComment.trim(),
       tag: addTag,
       locationData: feedbackLocationData,
+      fileRef:
+        byFile && currentFile ?
+          `${assessment?.submissionReference || ""}/${currentFile.relativePath || currentFile.name || ""}`
+        : "",
     };
-
-    onAddFeedback(newFeedback);
-
-    // Reset form
-    setAddComment("");
-    setAddTag("info");
-    setAddCriterion("");
-  }, [addComment, addCriterion, addTag, onAddFeedback, locationData]);
-
-  const handleCancelAdd = useCallback(() => {
+    const updatedFeedbacks = [...formData.feedbacks, newFeedback];
+    form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
+    onUpdate({ feedbacks: updatedFeedbacks });
     setAddComment("");
     setAddTag("info");
     setAddCriterion("");
     onCancelAdd?.();
-  }, [onCancelAdd]);
+  }, [
+    addComment,
+    addCriterion,
+    addTag,
+    locationData,
+    byFile,
+    currentFile,
+    assessment?.submissionReference,
+    formData.feedbacks,
+    form,
+    onUpdate,
+    onCancelAdd,
+  ]);
 
-  const handleEditClick = useCallback((feedback: FeedbackItem) => {
-    setEditingFeedbackId(feedback.id ?? null);
+  const handleEditSave = useCallback(
+    (index: number) => {
+      if (!editComment.trim()) return;
+      if (index < 0 || index >= formData.feedbacks.length) return;
+      const updatedFeedbacks = [...formData.feedbacks];
+      updatedFeedbacks[index] = {
+        ...updatedFeedbacks[index],
+        comment: editComment.trim(),
+        tag: editTag,
+        criterion: editCriterion,
+        locationData: updatedFeedbacks[index].locationData,
+        fileRef: updatedFeedbacks[index].fileRef,
+      };
+      form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
+      onUpdate({ feedbacks: updatedFeedbacks });
+      setEditingFeedbackIndex(null);
+    },
+    [editComment, editTag, editCriterion, formData.feedbacks, form, onUpdate],
+  );
+
+  const handleDelete = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= formData.feedbacks.length) return;
+      const updatedFeedbacks = [...formData.feedbacks];
+      updatedFeedbacks.splice(index, 1);
+      form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
+      onUpdate({ feedbacks: updatedFeedbacks });
+    },
+    [formData.feedbacks, form, onUpdate],
+  );
+
+  const handleEditClick = useCallback((index: number, feedback: FeedbackItem) => {
+    setEditingFeedbackIndex(index);
     setEditComment(feedback.comment);
     setEditTag(feedback.tag);
     setEditCriterion(feedback.criterion || "");
   }, []);
 
-  const handleEditSave = useCallback(
-    (feedbackId: string) => {
-      if (!editComment.trim()) return;
-
-      try {
-        const updatedFeedback: Partial<FeedbackItem> = {
-          comment: editComment.trim(),
-          tag: editTag,
-          criterion: editCriterion,
-        };
-
-        // Update feedback directly without toast
-        updateFeedback(feedbackId, updatedFeedback as FeedbackItem);
-        setEditingFeedbackId(null);
-      } catch (error) {
-        console.error("Error saving feedback:", error);
-      }
-    },
-    [editComment, editTag, editCriterion, updateFeedback],
-  );
-
-  const handleDelete = useCallback(
-    (feedbackId: string) => {
-      try {
-        // Delete feedback directly without toast
-        deleteFeedback(feedbackId);
-      } catch (error) {
-        console.error("Error deleting feedback:", error);
-      }
-    },
-    [deleteFeedback],
-  );
-
   const handleEditCancel = useCallback(() => {
-    setEditingFeedbackId(null);
+    setEditingFeedbackIndex(null);
     setEditComment("");
     setEditTag("info");
     setEditCriterion("");
   }, []);
 
+  const allCriteria = useMemo(() => {
+    const availableCriteria = Array.from(
+      new Set((assessment?.feedbacks || []).map((fb) => fb?.criterion).filter(Boolean)),
+    );
+    return Array.from(new Set([...availableCriteria, ...rubricCriteria]));
+  }, [assessment?.feedbacks, rubricCriteria]);
+
   return (
     <div
-      ref={containerRef}
       className="flex-1 overflow-y-auto space-y-2 w-full"
       style={{ contain: "layout" }}
     >
@@ -272,7 +232,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleCancelAdd}
+                onClick={onCancelAdd}
                 className="h-7 px-3 w-full"
               >
                 <X className="h-3 w-3 mr-1" />
@@ -284,18 +244,40 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
       )}
 
       {/* Existing Feedbacks */}
-      {safeFeedbacks.filter((feedback) => feedback?.tag !== "summary").length > 0 ?
-        safeFeedbacks
-          .filter((feedback) => feedback?.tag !== "summary")
-          .map((feedback) => {
-            if (!feedback?.id) return null;
-
-            const isActive = selectedFeedbackId === feedback.id;
-            const isEditing = editingFeedbackId === feedback.id;
-
+      {(
+        formData.feedbacks
+          .filter((fb) => {
+            if (byFile) {
+              const fileRefRelativePath =
+                fb.fileRef ? fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) : "";
+              const fileName = currentFile.relativePath;
+              return fileRefRelativePath === fileName;
+            } else if (currentCriterion) {
+              return fb.criterion === currentCriterion;
+            }
+            return true;
+          })
+          .filter((fb) => fb?.tag !== "summary").length > 0
+      ) ?
+        formData.feedbacks
+          .map((fb, idx) => ({ fb, idx }))
+          .filter(({ fb }) => {
+            if (byFile && currentFile) {
+              const fileRefRelativePath =
+                fb.fileRef ? fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) : "";
+              return fileRefRelativePath === currentFile.relativePath;
+            } else if (currentCriterion) {
+              return fb.criterion === currentCriterion;
+            }
+            return true;
+          })
+          .filter(({ fb }) => fb?.tag !== "summary")
+          .map(({ fb, idx }) => {
+            const isActive = selectedFeedbackIndex === idx;
+            const isEditing = editingFeedbackIndex === idx;
             return (
               <div
-                key={feedback.id}
+                key={idx}
                 className={`border rounded-lg p-2 transition-all duration-200 ${
                   isEditing ? "" : (
                     "hover:bg-primary-foreground cursor-pointer hover:shadow-sm"
@@ -304,7 +286,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                 onClick={
                   isEditing ? undefined : (
                     () => {
-                      onSelect(feedback); // Always pass the feedback, let handleFeedbackClick decide
+                      onSelect(fb, idx);
                     }
                   )
                 }
@@ -373,7 +355,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                     <div className="flex flex-col gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleEditSave(feedback.id ?? "")}
+                        onClick={() => handleEditSave(idx)}
                         disabled={!editComment.trim()}
                         className="h-7 px-3 w-full"
                       >
@@ -395,42 +377,38 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
                     <div className="flex-1 min-w-0 space-y-2">
                       <div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium">
-                            {feedback.criterion}
-                          </span>
+                          <span className="text-xs font-medium">{fb.criterion}</span>
                           <div className="flex items-center gap-1">
                             <Trash
                               className="h-4 w-4 text-gray-500 cursor-pointer hover:text-red-600"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete(feedback.id ?? "");
+                                handleDelete(idx);
                               }}
                             />
                             <Pen
                               className="h-4 w-4 text-gray-500 cursor-pointer hover:text-blue-600"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleEditClick(feedback);
+                                handleEditClick(idx, fb);
                               }}
                             />
                           </div>
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Location:{" "}
-                          {feedback.locationData?.type === "text" &&
-                            `L${feedback.locationData.fromLine}-${feedback.locationData.toLine}`}
-                          {feedback.locationData?.type === "pdf" &&
-                            `Page ${feedback.locationData.page}`}
-                          {feedback.locationData?.type === "image" && `Image`}
+                          {fb.locationData?.type === "text" &&
+                            `L${fb.locationData.fromLine}-${fb.locationData.toLine}`}
+                          {fb.locationData?.type === "pdf" &&
+                            `Page ${fb.locationData.page}`}
+                          {fb.locationData?.type === "image" && `Image`}
                         </div>
                       </div>
-                      <Badge
-                        className={`${getTagColor(feedback.tag)} text-gray-800 text-xs`}
-                      >
-                        {getFeedbackTagName(feedback.tag)}
+                      <Badge className={`${getTagColor(fb.tag)} text-gray-800 text-xs`}>
+                        {getFeedbackTagName(fb.tag)}
                       </Badge>
                       <p className="text-xs break-words whitespace-pre-wrap">
-                        {feedback.comment}
+                        {fb.comment}
                       </p>
                     </div>
                   </div>
@@ -438,7 +416,6 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
               </div>
             );
           })
-          .filter(Boolean)
       : <div className="text-center py-8 text-gray-500">
           <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-xs">There is no feedback</p>

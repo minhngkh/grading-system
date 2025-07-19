@@ -21,6 +21,45 @@ import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
 import { toast } from "sonner";
 import { MainSkeleton, ScoreSkeleton } from "@/pages/assessment/edit-assessment/skeleton";
 import { SignalRService } from "@/services/realtime-service";
+import { AssessmentGradingStatus } from "@/types/grading-progress";  const handleStatusChangeRef = useRef<(newStatus: AssessmentGradingStatus) => void>();
+
+  const handleStatusChange = useCallback(
+    (newStatus: AssessmentGradingStatus) => {
+      if (newStatus.assessmentId === assessment.id) {
+        setAssessmentStatus(newStatus);
+
+        // Update form data with new status
+        form.setValue("status", newStatus.status);
+      }
+    },
+    [assessment.id, form],
+  );
+
+  // Update ref when callback changes
+  useEffect(() => {
+    handleStatusChangeRef.current = handleStatusChange;
+  }, [handleStatusChange]);chema, AssessmentState } from "@/types/assessment";
+import { Rubric } from "@/types/rubric";
+import { GradingAttempt } from "@/types/grading";
+import { ScoringPanel } from "@/components/app/scoring-panel";
+import MainWorkspace from "@/components/app/main-workspace";
+import { AssessmentHeader } from "@/components/app/assessment-header";
+import useAssessmentForm from "@/hooks/use-assessment-form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-react";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import { ChevronsDown, ChevronsUp } from "lucide-react";
+import { getFileItemsQueryOptions } from "@/queries/file-queries";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
+import { toast } from "sonner";
+import { MainSkeleton, ScoreSkeleton } from "@/pages/assessment/edit-assessment/skeleton";
+import { SignalRService } from "@/services/realtime-service";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
 
 const getCardClassName = (state: AssessmentState) => {
@@ -55,7 +94,7 @@ export function EditAssessmentUI({
   const auth = useAuth();
   const queryClient = useQueryClient();
   const hubRef = useRef<SignalRService | undefined>(undefined);
-  const handleStatusChangeRef = useRef<(newStatus: AssessmentGradingStatus) => void>(() => {});
+  const handleStatusChangeRef = useRef<(newStatus: AssessmentGradingStatus) => void>();
 
   const form = useForm<Assessment>({
     resolver: zodResolver(AssessmentSchema),
@@ -82,10 +121,15 @@ export function EditAssessmentUI({
     useState<AssessmentGradingStatus | null>(null);
   const [isRegrading, setIsRegrading] = useState(false);
 
+  const handleFileSelect = useCallback((file: any) => {
+    setSelectedFile(file);
+  }, []);
+
   const handleStatusChange = useCallback(
     (newStatus: AssessmentGradingStatus) => {
       if (newStatus.assessmentId === assessment.id) {
         setAssessmentStatus(newStatus);
+
         // Update form data with new status
         form.setValue("status", newStatus.status);
       }
@@ -93,21 +137,9 @@ export function EditAssessmentUI({
     [assessment.id, form],
   );
 
-  // Update ref when callback changes
-  useEffect(() => {
-    handleStatusChangeRef.current = handleStatusChange;
-  }, [handleStatusChange]);
-
-  const handleFileSelect = useCallback((file: any) => {
-    setSelectedFile(file);
-  }, []);
-
   // SignalR connection setup
   useEffect(() => {
     let isMounted = true;
-    
-    const assessmentId = assessment.id;
-    const gradingId = grading.id;
 
     (async () => {
       const token = await auth.getToken();
@@ -121,10 +153,10 @@ export function EditAssessmentUI({
         });
         hub.on("Complete", () => {
           queryClient.invalidateQueries({
-            queryKey: ["assessment", assessmentId],
+            queryKey: ["assessment", assessment.id],
           });
           queryClient.invalidateQueries({
-            queryKey: ["scoreAdjustments", assessmentId],
+            queryKey: ["scoreAdjustments", assessment.id],
           });
           setIsRegrading(false);
           toast.success("Assessment regrade completed successfully");
@@ -134,11 +166,11 @@ export function EditAssessmentUI({
         if (!isMounted) return;
 
         hubRef.current = hub;
-        const initialState = await hub.invoke("Register", gradingId);
+        const initialState = await hub.invoke("Register", grading.id);
 
         // Find current assessment in initial state
         const currentAssessmentStatus = initialState.find(
-          (a: AssessmentGradingStatus) => a.assessmentId === assessmentId,
+          (a: AssessmentGradingStatus) => a.assessmentId === assessment.id,
         );
         if (currentAssessmentStatus) {
           setAssessmentStatus(currentAssessmentStatus);
@@ -158,7 +190,7 @@ export function EditAssessmentUI({
         hubRef.current = undefined;
       }
     };
-  }, []); // Empty dependencies like grading-result
+  }, [assessment.id, grading.id, auth, queryClient]); // Stable dependencies only
 
   const {
     data: fileItems,
@@ -215,6 +247,7 @@ export function EditAssessmentUI({
       },
     }),
   );
+  console.log("abc");
 
   // Get current status (use realtime status if available, otherwise form data status)
   const currentStatus = assessmentStatus?.status || formData.status;

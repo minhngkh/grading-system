@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Assessment, FeedbackItem } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
@@ -7,109 +7,109 @@ import { Button } from "@/components/ui/button";
 import { History } from "lucide-react";
 import { ScoreAdjustmentDialog } from "@/components/app/score-adjustment-dialog";
 import { useAuth } from "@clerk/clerk-react";
-import { UseFormReturn } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { getScoreAdjustmentsQueryOptions } from "@/queries/assessment-queries";
+import useAssessmentForm from "@/hooks/use-assessment-form";
 
 interface ScoringPanelProps {
   rubric: Rubric;
   grading: GradingAttempt;
-  formData: Assessment;
-  updateScore: (criterionName: string, newScore: number) => void;
-  assessmentId: string;
+  assessment: Assessment;
   activeScoringTab: string;
   setActiveScoringTab: (tab: string) => void;
-  form: UseFormReturn<Assessment>;
+  onUpdate: (updatedAssessment: Partial<Assessment>) => void;
 }
 
 export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   rubric,
   grading,
-  formData,
-  updateScore,
-  assessmentId,
+  assessment,
   activeScoringTab,
   setActiveScoringTab,
-  form,
+  onUpdate,
 }) => {
   const auth = useAuth();
+  const { form, formData } = useAssessmentForm(assessment);
 
-  const generateUID = useCallback(() => {
-    const first = (Math.random() * 46656) | 0;
-    const second = (Math.random() * 46656) | 0;
-    const part1 = ("000" + first.toString(36)).slice(-3);
-    const part2 = ("000" + second.toString(36)).slice(-3);
-    return (part1 + part2).toUpperCase();
-  }, []);
-
-  // Helper functions for feedback operations (no toast - direct form updates)
-  const addFeedbackDirect = useCallback(
+  const addFeedback = useCallback(
     (feedback: FeedbackItem) => {
-      try {
-        const feedbackWithId = { ...feedback, id: feedback.id || generateUID() };
-        const currentFeedbacks = form.getValues("feedbacks") || [];
-        form.setValue("feedbacks", [...currentFeedbacks, feedbackWithId], {
-          shouldValidate: false,
-        });
-      } catch (error) {
-        console.error("Error adding feedback:", error);
-      }
+      const currentFeedbacks = formData.feedbacks || [];
+      onUpdate({ feedbacks: [...currentFeedbacks, feedback] });
     },
-    [form, generateUID],
+    [formData.feedbacks, onUpdate],
   );
 
-  const updateFeedbackDirect = useCallback(
-    (feedbackId: string, feedback: Partial<FeedbackItem>) => {
-      try {
-        const currentFeedbacks = form.getValues("feedbacks") || [];
-        const index = currentFeedbacks.findIndex((f) => f.id === feedbackId);
-
-        if (index !== -1) {
-          const updated = [...currentFeedbacks];
-          updated[index] = { ...updated[index], ...feedback };
-          form.setValue("feedbacks", updated, { shouldValidate: false });
-        }
-      } catch (error) {
-        console.error("Error updating feedback:", error);
+  const updateFeedback = useCallback(
+    (index: number, feedback: Partial<FeedbackItem>) => {
+      const currentFeedbacks = formData.feedbacks || [];
+      if (index !== -1) {
+        const updated = [...currentFeedbacks];
+        updated[index] = { ...updated[index], ...feedback };
+        onUpdate({ feedbacks: updated });
       }
     },
-    [form],
+    [formData.feedbacks, onUpdate],
   );
 
-  // Internal state - component manages its own dialogs
-  const [editingSummaryId, setEditingSummaryId] = useState<string | null>(null);
+  const [editingSummaryIndex, setEditingSummaryIndex] = useState<number | null>(null);
   const [editingSummaryComment, setEditingSummaryComment] = useState("");
   const [addingSummary, setAddingSummary] = useState<string | null>(null);
   const [showScoreAdjustmentDialog, setShowScoreAdjustmentDialog] = useState(false);
 
-  // Internal feedback operations using direct form updates
-  const addFeedback = (feedback: FeedbackItem) => {
-    const feedbackWithId = { ...feedback, id: generateUID() };
-    // Add feedback directly without toast
-    addFeedbackDirect(feedbackWithId);
-  };
-
-  const updateFeedback = (feedbackId: string, updatedFeedback: Partial<FeedbackItem>) => {
-    // Update feedback directly without toast
-    updateFeedbackDirect(feedbackId, updatedFeedback);
-  };
-
-  // Use mutation for score adjustment fetching
   const { data: scoreAdjustments, isFetching } = useQuery(
-    getScoreAdjustmentsQueryOptions(assessmentId, auth, {
+    getScoreAdjustmentsQueryOptions(formData.id, auth, {
       enabled: showScoreAdjustmentDialog,
       staleTime: Infinity,
     }),
   );
 
-  const calcScore = (rawScore: number, weight: number) => {
-    const scale = grading.scaleFactor ?? 10;
-    return ((rawScore / weight) * (weight * scale)) / 100;
-  };
+  const scale = grading.scaleFactor ?? 10;
+
+  const handleUpdateScore = useCallback(
+    (criterion: Rubric["criteria"][number], value: number, isActualScore: boolean) => {
+      let rawScore: number;
+      if (isActualScore) {
+        rawScore = (value * 100) / scale;
+      } else {
+        rawScore = (value * (criterion.weight ?? 0)) / 100;
+      }
+      let matchedLevel;
+      if (isActualScore) {
+        matchedLevel = criterion.levels
+          .filter((l) => {
+            const levelRaw = (l.weight * (criterion.weight ?? 0)) / 100;
+            const levelActual = (levelRaw * scale) / 100;
+            return levelActual <= value;
+          })
+          .sort((a, b) => b.weight - a.weight)[0];
+      } else {
+        matchedLevel = criterion.levels
+          .filter((l) => l.weight <= value)
+          .sort((a, b) => b.weight - a.weight)[0];
+      }
+      if (!matchedLevel && criterion.levels.length > 0) {
+        matchedLevel = criterion.levels.reduce(
+          (min, l) => (l.weight < min.weight ? l : min),
+          criterion.levels[0],
+        );
+      }
+      const updated = (formData.scoreBreakdowns || []).map((sb: any) =>
+        sb.criterionName === criterion.name ?
+          {
+            ...sb,
+            rawScore,
+            performanceTag: matchedLevel ? matchedLevel.tag : "",
+          }
+        : sb,
+      );
+      form.setValue("scoreBreakdowns", updated, { shouldValidate: true });
+      onUpdate({ scoreBreakdowns: updated });
+    },
+    [form, formData.scoreBreakdowns, onUpdate, scale],
+  );
 
   const totalScore = (
-    (formData.scoreBreakdowns.reduce((acc, sb) => acc + sb.rawScore, 0) *
-      (grading.scaleFactor ?? 10)) /
+    ((formData.scoreBreakdowns || []).reduce((acc, sb) => acc + sb.rawScore, 0) * scale) /
     100
   ).toFixed(2);
 
@@ -137,7 +137,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold">Total Score:</span>
                 <span className="text-sm font-bold text-blue-600">{totalScore}</span>
-                <span className="text-sm font-bold">/ {grading.scaleFactor}</span>
+                <span className="text-sm font-bold">/ {scale}</span>
               </div>
               <Button
                 variant="outline"
@@ -157,33 +157,33 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
             {rubric.criteria.map((criterion, index) => {
               if (activeScoringTab !== criterion.name) return null;
 
-              // Use formData instead of form.getValues for real-time data
-              const currentRawScore = formData.scoreBreakdowns.find(
+              const currentRawScore = (formData.scoreBreakdowns || []).find(
                 (sb) => sb.criterionName === criterion.name,
               );
-              const scale = grading.scaleFactor ?? 10;
               const rawScore = currentRawScore?.rawScore || 0;
-              const criterionMaxPoints =
-                ((grading.scaleFactor ?? 10) * (criterion.weight ?? 0)) / 100;
-              const points = calcScore(rawScore, criterion.weight ?? 0);
+              const criterionMaxPoints = (scale * (criterion.weight ?? 0)) / 100;
+              const actualScore = Number(((rawScore * scale) / 100).toFixed(2));
 
-              // Use formData for feedbacks too
-              const summaryFb = formData.feedbacks?.find(
+              const summaryFbIndex = formData.feedbacks?.findIndex(
                 (f) => f.tag === "summary" && f.criterion === criterion.name,
               );
+              const summaryFb =
+                summaryFbIndex !== undefined && summaryFbIndex !== -1 ?
+                  formData.feedbacks[summaryFbIndex]
+                : undefined;
 
               const handleEditSummary = () => {
-                if (!summaryFb || !summaryFb.id) return;
-                setEditingSummaryId(summaryFb.id);
-                setEditingSummaryComment(summaryFb.comment);
+                if (summaryFbIndex === undefined || summaryFbIndex === -1) return;
+                setEditingSummaryIndex(summaryFbIndex);
+                setEditingSummaryComment(summaryFb?.comment ?? "");
               };
 
               const handleSaveSummary = () => {
-                if (!editingSummaryId || !editingSummaryComment.trim()) return;
-                updateFeedback(editingSummaryId, {
+                if (editingSummaryIndex === null || !editingSummaryComment.trim()) return;
+                updateFeedback(editingSummaryIndex, {
                   comment: editingSummaryComment,
                 });
-                setEditingSummaryId(null);
+                setEditingSummaryIndex(null);
               };
 
               const handleAddSummary = () => {
@@ -213,7 +213,6 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                       <span className="text-xs flex gap-3 items-center font-medium text-muted-foreground">
                         {criterion.name} - {criterion.weight}%
                       </span>
-
                       <span className="text-xs text-gray-500">
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-gray-400">Custom Score:</span>
@@ -222,24 +221,16 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                             min={0}
                             max={criterionMaxPoints}
                             step={0.5}
-                            value={
-                              points !== undefined && points !== null ?
-                                Number(points.toFixed(2))
-                              : ""
-                            }
+                            value={actualScore}
                             onChange={(e) => {
                               const val = parseFloat(e.target.value);
                               const maxPoints = criterionMaxPoints;
                               if (isNaN(val) || e.target.value === "") {
-                                updateScore(criterion.name, 0);
+                                handleUpdateScore(criterion, 0, true);
                                 return;
                               }
                               const clamped = Math.max(0, Math.min(val, maxPoints));
-                              const weight = criterion.weight ?? 0;
-                              // rawScore = (points * weight) / scale * 100
-                              const newRaw =
-                                weight > 0 ? ((clamped * 100) / scale / weight) * 100 : 0;
-                              updateScore(criterion.name, newRaw);
+                              handleUpdateScore(criterion, clamped, true);
                             }}
                             className="w-20 rounded border border-gray-600 px-2 py-1 text-xs font-semibold"
                           />
@@ -247,10 +238,9 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         </div>
                       </span>
                     </div>
-                    {/* Hiển thị hoặc thêm summary feedback */}
                     {summaryFb ?
                       <div className="text-xs font-medium flex items-center gap-2">
-                        {editingSummaryId === summaryFb.id ?
+                        {editingSummaryIndex === summaryFbIndex ?
                           <>
                             <input
                               className="border rounded px-2 py-1 text-xs w-full"
@@ -268,7 +258,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                             <button
                               className="text-gray-500 underline text-xs"
                               type="button"
-                              onClick={() => setEditingSummaryId(null)}
+                              onClick={() => setEditingSummaryIndex(null)}
                             >
                               Cancel
                             </button>
@@ -324,9 +314,8 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                       {criterion.levels
                         .slice()
                         .sort((a, b) => a.weight - b.weight)
-                        .map((level, index) => {
-                          // So sánh tag và criterionName để border blue
-                          const breakdown = formData.scoreBreakdowns.find(
+                        .map((level, idx) => {
+                          const breakdown = (formData.scoreBreakdowns || []).find(
                             (sb) => sb.criterionName === criterion.name,
                           );
                           const isSelected =
@@ -334,14 +323,16 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                             breakdown.performanceTag === level.tag &&
                             breakdown.criterionName === criterion.name;
                           return (
-                            <div key={index} className="grid grid-rows-[auto_1fr] h-full">
+                            <div key={idx} className="grid grid-rows-[auto_1fr] h-full">
                               <div className="text-center">
                                 <span className="text-xs text-gray-400">
                                   {level.weight}%
                                 </span>
                               </div>
                               <button
-                                onClick={() => updateScore(criterion.name, level.weight)}
+                                onClick={() =>
+                                  handleUpdateScore(criterion, level.weight, false)
+                                }
                                 className={`w-full h-20 p-3 rounded text-center flex items-center justify-center ${
                                   isSelected ?
                                     "border-2 border-blue-400"
@@ -363,10 +354,8 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           </div>
         </Tabs>
       </div>
-
-      {/* Score Adjustment Dialog - managed internally */}
       <ScoreAdjustmentDialog
-        scaleFactor={grading.scaleFactor ?? 10}
+        scaleFactor={scale}
         open={showScoreAdjustmentDialog}
         onOpenChange={setShowScoreAdjustmentDialog}
         scoreAdjustment={scoreAdjustments || []}

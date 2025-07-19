@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { getTagColor } from "@/pages/assessment/edit-assessment/icon-utils";
 import { FeedbackItem } from "@/types/assessment";
 import Tippy from "@tippyjs/react";
+import { useState } from "react";
 
 interface FeedbackTooltipProps {
   fb: FeedbackItem;
@@ -10,6 +11,7 @@ interface FeedbackTooltipProps {
 }
 
 export default function FeedbackTooltip({ fb, startEl, endEl }: FeedbackTooltipProps) {
+  const [visible, setVisible] = useState(true);
   const getVirtualRect = (elements: (HTMLElement | null)[]): DOMRect => {
     const rects = elements
       .filter((el): el is HTMLElement => el !== null)
@@ -23,7 +25,6 @@ export default function FeedbackTooltip({ fb, startEl, endEl }: FeedbackTooltipP
     const width = right - left;
     const height = bottom - top;
 
-    // Trả về một DOMRect giả
     return {
       top,
       bottom,
@@ -46,22 +47,23 @@ export default function FeedbackTooltip({ fb, startEl, endEl }: FeedbackTooltipP
           <Badge variant="outline" className={`text-black ${getTagColor(fb.tag)}`}>
             {fb.tag}
           </Badge>
-          <p className="custom-tooltip text-sm text-black wrap-break-word">
+          <p className="white-pre custom-tooltip text-sm text-black wrap-break-word">
             {fb.comment}
           </p>
         </div>
       }
       interactive
       animation="scale"
-      visible={true}
-      trigger="mouseenter"
+      visible={visible}
+      onClickOutside={() => {
+        setVisible(false);
+      }}
       popperOptions={{
         modifiers: [{ name: "flip", options: { fallbackPlacements: ["bottom-start"] } }],
       }}
       placement="top-start"
       appendTo={() => document.getElementById("shiki-container")!}
       maxWidth={700}
-      delay={[1000, null]}
       zIndex={1}
     />
   );

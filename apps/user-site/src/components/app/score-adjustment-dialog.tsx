@@ -33,15 +33,13 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
   scoreAdjustment,
 }) => {
   const [expandedRows, setExpandedRows] = React.useState<Set<number>>(new Set());
-
-  // Sort score adjustments by createdAt date in descending order (newest first)
   const sortedScoreAdjustment = React.useMemo(() => {
     if (!scoreAdjustment || !Array.isArray(scoreAdjustment)) return [];
 
     return [...scoreAdjustment].sort((a, b) => {
       const dateA = new Date(a.attributes?.createdAt).getTime();
       const dateB = new Date(b.attributes?.createdAt).getTime();
-      return dateB - dateA; // Descending order (newest first)
+      return dateB - dateA;
     });
   }, [scoreAdjustment]);
 
@@ -73,8 +71,15 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                   <TableRow>
                     <TableHead className="text-xs font-medium w-8"></TableHead>
                     <TableHead className="text-xs font-medium">Adjustment Date</TableHead>
-                    <TableHead className="text-xs font-medium">Total Score</TableHead>
-                    <TableHead className="text-xs font-medium">Source</TableHead>
+                    <TableHead className="text-xs font-medium text-right">
+                      Delta Score
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-right">
+                      Adjust Score
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-right">
+                      Source
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -93,7 +98,16 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                         <TableCell className="font-medium text-xs">
                           {new Date(adjustment.attributes.createdAt).toLocaleString()}
                         </TableCell>
-                        <TableCell className="text-xs">
+                        <TableCell className="text-xs text-right">
+                          <span className="font-medium">
+                            {(
+                              (adjustment.attributes.deltaScore * scaleFactor) /
+                              100
+                            ).toFixed(2)}{" "}
+                            / {scaleFactor}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs text-right">
                           <span className="font-medium">
                             {((adjustment.attributes.score * scaleFactor) / 100).toFixed(
                               2,
@@ -101,7 +115,7 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                             / {scaleFactor}
                           </span>
                         </TableCell>
-                        <TableCell className="text-xs">
+                        <TableCell className="text-xs text-right">
                           {adjustment.attributes.adjustmentSource || "Manual Adjustment"}
                         </TableCell>
                       </TableRow>
@@ -111,36 +125,53 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                         <>
                           {/* Header for breakdown */}
                           <TableRow className="bg-muted/30">
-                            <TableCell className="text-xs font-medium" colSpan={4}>
-                              <div className="grid grid-cols-2 gap-4 pl-4">
-                                <span>Criterion Name</span>
-                                <span>Score</span>
-                              </div>
+                            <TableCell className="text-xs font-medium w-8"></TableCell>
+                            <TableCell className="text-xs font-medium">
+                              Criterion Name
+                            </TableCell>
+                            <TableCell className="text-xs font-medium text-right">
+                              Delta Score
+                            </TableCell>
+                            <TableCell className="text-xs font-medium text-right">
+                              Adjust Score
                             </TableCell>
                           </TableRow>
 
-                          {/* Criterion breakdown rows */}
                           {adjustment.attributes.scoreBreakdowns.map(
-                            (scoreBreakdown: ScoreBreakdown, scoreIndex: number) => (
-                              <TableRow
-                                key={`${adjustmentIndex}-breakdown-${scoreIndex}`}
-                                className="bg-muted/10"
-                              >
-                                <TableCell className="text-xs" colSpan={4}>
-                                  <div className="grid grid-cols-2 gap-4 pl-8">
-                                    <span className="text-muted-foreground">
-                                      {scoreBreakdown.criterionName}
-                                    </span>
-                                    <span>
-                                      {(
-                                        (scoreBreakdown.rawScore * scaleFactor) /
+                            (scoreBreakdown: ScoreBreakdown, scoreIndex: number) => {
+                              const deltaBreakdown =
+                                adjustment.attributes.deltaScoreBreakdowns?.find(
+                                  (delta: ScoreBreakdown) =>
+                                    delta.criterionName === scoreBreakdown.criterionName,
+                                );
+
+                              return (
+                                <TableRow
+                                  key={`${adjustmentIndex}-breakdown-${scoreIndex}`}
+                                  className="bg-muted/10"
+                                >
+                                  <TableCell className="text-xs w-8"></TableCell>
+                                  <TableCell className="text-xs text-muted-foreground break-words leading-tight">
+                                    {scoreBreakdown.criterionName}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-right">
+                                    {deltaBreakdown ?
+                                      (
+                                        (deltaBreakdown.rawScore * scaleFactor) /
                                         100
-                                      ).toFixed(2)}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ),
+                                      ).toFixed(2)
+                                    : "0.00"}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-right">
+                                    {(
+                                      (scoreBreakdown.rawScore * scaleFactor) /
+                                      100
+                                    ).toFixed(2)}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-right"></TableCell>
+                                </TableRow>
+                              );
+                            },
                           )}
                         </>
                       )}

@@ -6,11 +6,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { FileItem } from "@/types/file";
+import { FeedbackItem } from "@/types/assessment";
 
-// Build a recursive tree from files
-function buildFileTree(files: any[]) {
+function buildFileTree(files: FileItem[]) {
   const root: any = {};
-  if (!Array.isArray(files)) return root; // phòng thủ nếu files undefined/null
+  if (!Array.isArray(files)) return root;
   files.forEach((file) => {
     if (!file || typeof file.relativePath !== "string") return;
     const parts = file.relativePath.split("/");
@@ -30,33 +31,21 @@ function buildFileTree(files: any[]) {
   return root;
 }
 
-// Helper for feedback badge (backward compatible)
-function countFeedbackForFile(feedbacks: any[], file: any) {
-  return feedbacks.filter(
-    (f) =>
-      f.fileRef === file.relativePath ||
-      f.fileRef === file.blobPath ||
-      f.fileRef === file.name ||
-      f.fileRef === file.path,
-  ).length;
-}
-function hasFeedbackForFile(feedbacks: any[], file: any) {
-  return countFeedbackForFile(feedbacks, file) > 0;
-}
-
 interface FileExplorerProps {
-  files: any[]; // <-- truyền mảng file có relativePath
-  selectedFile: any;
-  setSelectedFile: (file: any) => void;
+  files: FileItem[];
+  selectedFile: FileItem;
+  setSelectedFile: (file: FileItem) => void;
   expandedFolders: Record<string, boolean>;
   setExpandedFolders: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
-  feedbacks: any[];
+  feedbacks: FeedbackItem[];
   grading: GradingAttempt;
 }
 
-// Function to check if a file matches any selected criterion
-function fileMatchesCriteria(file: any, selectedCriteria: string[], selectors: any[]) {
-  // If no criteria selected, show all files
+function fileMatchesCriteria(
+  file: FileItem,
+  selectedCriteria: string[],
+  selectors: any[],
+) {
   if (selectedCriteria.length === 0) return true;
 
   return selectedCriteria.some((criterionName) => {
@@ -66,21 +55,17 @@ function fileMatchesCriteria(file: any, selectedCriteria: string[], selectors: a
     const pattern = selector.pattern.trim();
     if (!pattern) return false;
 
-    // Handle wildcard pattern that matches all files
     if (pattern === "*" || pattern === "**/*") return true;
 
-    // Split pattern by spaces to handle multiple file patterns like "file1.cpp file2.cpp"
     const patterns = pattern.split(/\s+/).filter((p: string) => p.trim());
 
-    // Check if the file name matches any of the patterns
     return patterns.some((singlePattern: string) => {
       singlePattern = singlePattern.trim();
       if (!singlePattern) return false;
 
       try {
-        // Check if pattern is a regex (enclosed in forward slashes)
         if (singlePattern.startsWith("/") && singlePattern.endsWith("/")) {
-          const regexPattern = singlePattern.slice(1, -1); // Remove surrounding slashes
+          const regexPattern = singlePattern.slice(1, -1);
           const regex = new RegExp(regexPattern, "i");
           return (
             regex.test(file.name) ||
@@ -89,18 +74,16 @@ function fileMatchesCriteria(file: any, selectedCriteria: string[], selectors: a
           );
         }
 
-        // Check if pattern contains glob-like characters
         const hasGlobChars = /[*?[\]]/.test(singlePattern);
 
         if (hasGlobChars) {
-          // Convert glob pattern to regex
           let regexPattern = singlePattern
-            .replace(/\./g, "\\.") // escape dots first
-            .replace(/\*\*/g, "DOUBLE_STAR") // temporarily replace ** to avoid conflicts
-            .replace(/\*/g, "[^/]*") // * matches anything except /
-            .replace(/DOUBLE_STAR/g, ".*") // ** matches anything including /
-            .replace(/\?/g, "[^/]") // ? matches single character except /
-            .replace(/\[/g, "\\[") // escape square brackets
+            .replace(/\./g, "\\.")
+            .replace(/\*\*/g, "DOUBLE_STAR")
+            .replace(/\*/g, "[^/]*")
+            .replace(/DOUBLE_STAR/g, ".*")
+            .replace(/\?/g, "[^/]")
+            .replace(/\[/g, "\\[")
             .replace(/\]/g, "\\]");
 
           regexPattern = `^${regexPattern}$`;
@@ -111,7 +94,6 @@ function fileMatchesCriteria(file: any, selectedCriteria: string[], selectors: a
             regex.test(file.path || "")
           );
         } else {
-          // Simple exact file name matching (case insensitive)
           return (
             file.name.toLowerCase() === singlePattern.toLowerCase() ||
             (file.relativePath &&
@@ -120,7 +102,6 @@ function fileMatchesCriteria(file: any, selectedCriteria: string[], selectors: a
           );
         }
       } catch (error) {
-        // If regex is invalid, fall back to simple string matching
         console.warn(`Invalid pattern: ${singlePattern}`, error);
         return file.name.toLowerCase() === singlePattern.toLowerCase();
       }
@@ -128,16 +109,13 @@ function fileMatchesCriteria(file: any, selectedCriteria: string[], selectors: a
   });
 }
 
-// Function to check if a folder contains any matching files
 function folderContainsMatchingFiles(
   node: any,
   selectedCriteria: string[],
   selectors: any[],
 ): boolean {
-  // If no criteria selected, show all folders
   if (selectedCriteria.length === 0) return true;
 
-  // Check files in this folder
   if (
     node.files &&
     node.files.some((file: any) => fileMatchesCriteria(file, selectedCriteria, selectors))
@@ -145,7 +123,6 @@ function folderContainsMatchingFiles(
     return true;
   }
 
-  // Check subfolders
   if (node.folders) {
     return Object.values(node.folders).some((subfolder: any) =>
       folderContainsMatchingFiles(subfolder, selectedCriteria, selectors),
@@ -160,13 +137,13 @@ function renderTree(
   parentPath: string,
   expandedFolders: Record<string, boolean>,
   setExpandedFolders: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
-  selectedFile: any,
-  setSelectedFile: (file: any) => void,
-  feedbacks: any[],
+  selectedFile: FileItem,
+  setSelectedFile: (file: FileItem) => void,
+  feedbacks: FeedbackItem[],
   selectedCriteria: string[],
   selectors: any[],
 ) {
-  if (!node) return null; // phòng thủ nếu node undefined
+  if (!node) return null;
   const folders = node.folders ? Object.keys(node.folders) : [];
   const files = node.files || [];
 
@@ -176,8 +153,10 @@ function renderTree(
       {parentPath === "" && files.length > 0 && (
         <>
           {files
-            .filter((file: any) => fileMatchesCriteria(file, selectedCriteria, selectors))
-            .map((file: any) => (
+            .filter((file: FileItem) =>
+              fileMatchesCriteria(file, selectedCriteria, selectors),
+            )
+            .map((file: FileItem) => (
               <div
                 key={file.id}
                 className={`flex items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer transition-all duration-150 min-w-0 ${
@@ -198,7 +177,6 @@ function renderTree(
         const fullPath = parentPath ? `${parentPath}/${folder}` : folder;
         const expanded = expandedFolders[fullPath] ?? true;
 
-        // Skip folders that don't contain any matching files when filtering
         if (
           selectedCriteria.length > 0 &&
           !folderContainsMatchingFiles(node.folders[folder], selectedCriteria, selectors)
@@ -250,8 +228,10 @@ function renderTree(
       {parentPath !== "" && files.length > 0 && (
         <>
           {files
-            .filter((file: any) => fileMatchesCriteria(file, selectedCriteria, selectors))
-            .map((file: any) => (
+            .filter((file: FileItem) =>
+              fileMatchesCriteria(file, selectedCriteria, selectors),
+            )
+            .map((file: FileItem) => (
               <div
                 key={file.id}
                 className={`flex items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer transition-all duration-150 min-w-0 ${
@@ -279,16 +259,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   feedbacks,
   grading,
 }) => {
-  const safeFiles = Array.isArray(files) ? files : []; // đảm bảo luôn là mảng
+  const safeFiles = Array.isArray(files) ? files : [];
   const tree = React.useMemo(() => buildFileTree(safeFiles), [safeFiles]);
 
-  // Access selectors directly from grading
   const selectors = grading?.selectors || [];
 
-  // State for multiple criterion selection
   const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
 
-  // Toggle criterion selection
   const toggleCriterion = (criterion: string) => {
     setSelectedCriteria((prev) =>
       prev.includes(criterion) ?

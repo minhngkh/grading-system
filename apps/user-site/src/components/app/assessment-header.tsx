@@ -15,7 +15,7 @@ import { AssessmentExporter } from "@/lib/exporters";
 import { Assessment } from "@/types/assessment";
 import { GradingAttempt } from "@/types/grading";
 import { Rubric } from "@/types/rubric";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { UseMutateFunction, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import {
@@ -26,56 +26,54 @@ import {
 
 interface AssessmentHeaderProps {
   assessment: Assessment;
+  lastSavedData: Assessment;
   grading: GradingAttempt;
   rubric: Rubric;
-  canRevert: boolean;
-  hasUnsavedChanges: boolean;
-  handleRevert: () => void;
-  updateLastSavedData: (
-    updates: Partial<{
-      scoreBreakdowns: Assessment["scoreBreakdowns"];
-      feedbacks: Assessment["feedbacks"];
-    }>,
-  ) => void;
+  rerunAssessment: UseMutateFunction<unknown, unknown, string, unknown>;
+  onUpdate: (updatedAssessment: Assessment) => void;
+  onUpdateLastSave: (updatedLastSaved: Partial<Assessment>) => void;
 }
 
 export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   assessment,
+  lastSavedData,
   grading,
   rubric,
-  canRevert,
-  hasUnsavedChanges,
-  handleRevert,
-  updateLastSavedData,
+  rerunAssessment,
+  onUpdate,
+  onUpdateLastSave,
 }) => {
   const [open, setOpen] = useState(false);
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
   const [showRevertButton, setShowRevertButton] = useState(false);
 
-  // Delay showing revert button
+  const feedbackChanged =
+    JSON.stringify(assessment.feedbacks) !== JSON.stringify(lastSavedData.feedbacks);
+  const scoreChanged =
+    JSON.stringify(assessment.scoreBreakdowns) !==
+    JSON.stringify(lastSavedData.scoreBreakdowns);
+  const hasUnsavedChanges = feedbackChanged || scoreChanged;
+
   useEffect(() => {
-    if (canRevert) {
+    if (hasUnsavedChanges) {
       const timer = setTimeout(() => {
         setShowRevertButton(true);
-      }, 500); // 500ms delay
+      }, 100);
       return () => clearTimeout(timer);
     } else {
       setShowRevertButton(false);
     }
-  }, [canRevert]);
+  }, [hasUnsavedChanges]);
 
-  // Get form data
-  const formData = assessment;
-
-  // Setup mutations
   const queryClient = useQueryClient();
   const auth = useAuth();
 
   const updateFeedbackMutation = useMutation(
     updateFeedbackMutationOptions(assessment.id, auth, {
-      onSuccess: (_, feedbacks) => {
+      onSuccess: () => {
         toast.success("Feedback updated successfully");
-        updateLastSavedData({ feedbacks });
+        onUpdateLastSave({ feedbacks: assessment.feedbacks });
+        queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
       },
       onError: (error) => {
         console.error("Failed to update feedback:", error);
@@ -88,12 +86,14 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     updateScoreMutationOptions(assessment.id, auth, {
       onSuccess: (_, scoreBreakdowns) => {
         toast.success("Score updated successfully");
-        updateLastSavedData({
+        onUpdateLastSave({
           scoreBreakdowns: scoreBreakdowns as Assessment["scoreBreakdowns"],
         });
 
-        // Invalidate related queries
         queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
+        queryClient.invalidateQueries({
+          queryKey: ["allGradingAssessments", grading.id],
+        });
         queryClient.invalidateQueries({
           queryKey: ["scoreAdjustments", assessment.id],
         });
@@ -109,32 +109,42 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
 
   const handleSaveFeedback = async () => {
     if (updateFeedbackMutation.isPending) return;
-    try {
-      await updateFeedbackMutation.mutateAsync(formData.feedbacks);
-    } catch (error) {
-      // Error handled in mutation
+
+    const feedbackChanged =
+      JSON.stringify(assessment.feedbacks) !== JSON.stringify(lastSavedData.feedbacks);
+    if (!feedbackChanged) {
+      toast.info("No feedback changes to save");
+      return;
     }
+
+    try {
+      await updateFeedbackMutation.mutateAsync(assessment.feedbacks);
+    } catch (error) {}
   };
 
   const handleSaveScore = async () => {
     if (updateScoreMutation.isPending) return;
-    try {
-      await updateScoreMutation.mutateAsync(formData.scoreBreakdowns);
-    } catch (error) {
-      // Error handled in mutation
+
+    const scoreChanged =
+      JSON.stringify(assessment.scoreBreakdowns) !==
+      JSON.stringify(lastSavedData.scoreBreakdowns);
+    if (!scoreChanged) {
+      toast.info("No scoring changes to save");
+      return;
     }
+
+    try {
+      await updateScoreMutation.mutateAsync(assessment.scoreBreakdowns);
+    } catch (error) {}
   };
 
   const handleRerunAssessment = async () => {
     if (rerunAssessmentMutation.isPending) return;
     try {
-      // Start rerun
       await rerunAssessmentMutation.mutateAsync(assessment.id);
 
-      // Wait a moment for backend to process
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Refetch assessment data to get updated results
       await queryClient.refetchQueries({
         queryKey: ["assessment", assessment.id],
       });
@@ -143,7 +153,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     } catch (error) {
       console.error("Failed to rerun assessment:", error);
       toast.error(
-        `Failed to rerun assessment: ${formData.submissionReference}. Please try again.`,
+        `Failed to rerun assessment: ${assessment.submissionReference}. Please try again.`,
       );
     }
   };
@@ -152,26 +162,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     updateFeedbackMutation.isPending ||
     updateScoreMutation.isPending ||
     rerunAssessmentMutation.isPending;
-
-  // Validation logic
-  const validationErrors: string[] = [];
-  if (!formData.scoreBreakdowns || formData.scoreBreakdowns.length === 0) {
-    validationErrors.push("Assessment must have score breakdowns");
-  }
-
-  const criteriaNames = rubric.criteria.map((c) => c.name);
-  const scoredCriteria = formData.scoreBreakdowns.map((sb) => sb.criterionName);
-  const missingCriteria = criteriaNames.filter((name) => !scoredCriteria.includes(name));
-
-  if (missingCriteria.length > 0) {
-    validationErrors.push(`Missing scores for criteria: ${missingCriteria.join(", ")}`);
-  }
-
-  formData.feedbacks.forEach((feedback, index) => {
-    if (!feedback.comment || feedback.comment.trim().length === 0) {
-      validationErrors.push(`Feedback ${index + 1} is missing a comment`);
-    }
-  });
 
   const handleExport = () => {
     if (hasUnsavedChanges) {
@@ -182,8 +172,9 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   };
 
   const handleConfirmRevert = () => {
-    handleRevert();
+    onUpdate(lastSavedData);
     setRevertDialogOpen(false);
+    toast.success("Changes reverted to last saved state");
   };
 
   return (
@@ -200,7 +191,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         </Button>
         <div>
           <h1 className="text-lg font-semibold">
-            Review Assessment: {formData.submissionReference}
+            Review Assessment: {assessment.submissionReference}
           </h1>
           <p className="text-xs text-muted-foreground">Rubric: {rubric.rubricName}</p>
         </div>
@@ -209,13 +200,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
           {showRevertButton && (
             <DialogTrigger asChild>
-              <Button
-                disabled={
-                  updateScoreMutation.isPending || updateFeedbackMutation.isPending
-                }
-                size="sm"
-                variant="destructive"
-              >
+              <Button disabled={isLoading} size="sm" variant="destructive">
                 <History className="h-4 w-4 mr-2" />
                 <span className="text-xs">Revert Changes</span>
               </Button>
@@ -238,7 +223,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
           </DialogContent>
         </Dialog>
 
-        <Button onClick={() => setOpen(true)} size="sm">
+        <Button onClick={handleExport} size="sm">
           <Save className="h-4 w-4 mr-2" />
           <span className="text-xs">Export</span>
         </Button>
@@ -247,7 +232,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
             open={open}
             onOpenChange={setOpen}
             exporterClass={AssessmentExporter}
-            args={[formData, grading]}
+            args={[assessment, grading]}
           />
         )}
 
@@ -255,7 +240,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
           className="cursor-pointer"
           size="sm"
           onClick={handleSaveFeedback}
-          disabled={isLoading}
+          disabled={isLoading || !feedbackChanged}
         >
           <Save className="h-4 w-4 mr-2" />
           <span className="text-xs">Save Feedback</span>
@@ -264,7 +249,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
           className="cursor-pointer"
           size="sm"
           onClick={handleSaveScore}
-          disabled={isLoading}
+          disabled={isLoading || !scoreChanged}
         >
           <Save className="h-4 w-4 mr-2" />
           <span className="text-xs">Save Scoring</span>
@@ -272,7 +257,10 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         <Button
           className="cursor-pointer"
           size="sm"
-          onClick={handleRerunAssessment}
+          onClick={() => {
+            console.log("Rerun assessment");
+            rerunAssessment(assessment.id);
+          }}
           disabled={isLoading}
         >
           <RotateCcw className="h-4 w-4 mr-2" />
