@@ -1,13 +1,14 @@
 import type { FilePart } from "ai";
 import type { LanguageModelWithOptions } from "@/core/llm/types";
 import type { Criterion, CriterionData } from "@/plugins/data";
-import { mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import {
   getBlobNameParts,
   getBlobNameRest,
 } from "@grading-system/utils/azure-storage-blob";
+import { asError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { generateObject } from "ai";
 import { errAsync, fromPromise, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
@@ -57,27 +58,29 @@ export function gradeCriteria(options: {
   const systemPrompt = createGradingSystemPrompt(options.partOfRubric);
   const prompt = `${options.header || ""}\n${options.prompt}\n${options.footer || ""}`;
 
-  fromPromise(mkdir(path.join(process.cwd(), "tmp")), () => {
-    logger.debug("Failed to create tmp directory for grading system prompt");
-  });
+  if (process.env.NODE_ENV === "development") {
+    const tmpDir = path.join(process.cwd(), "tmp");
 
-  fromPromise(
-    writeFile(
-      path.join(process.cwd(), "tmp/grading-system-prompt.txt"),
-      systemPrompt,
-      "utf-8",
-    ),
-    () => {
-      logger.debug("Failed to write grading system prompt to file");
-    },
-  );
+    fromPromise(access(tmpDir), asError).orElse(() =>
+      fromPromise(mkdir(tmpDir), () => {
+        logger.debug("Failed to create tmp directory for grading system prompt");
+      }),
+    );
 
-  fromPromise(
-    writeFile(path.join(process.cwd(), "tmp/grading-prompt.txt"), prompt, "utf-8"),
-    () => {
-      logger.debug("Failed to write grading prompt to file");
-    },
-  );
+    fromPromise(
+      writeFile(path.join(tmpDir, "grading-system-prompt.txt"), systemPrompt, "utf-8"),
+      () => {
+        logger.debug("Failed to write grading system prompt to file");
+      },
+    );
+
+    fromPromise(
+      writeFile(path.join(tmpDir, "grading-prompt.txt"), prompt, "utf-8"),
+      () => {
+        logger.debug("Failed to write grading prompt to file");
+      },
+    );
+  }
 
   return ResultAsync.fromPromise(
     generateObject({

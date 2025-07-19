@@ -19,7 +19,6 @@ function packFiles(options: {
   includePattern?: string;
 }) {
   return safeTry(async function* () {
-    console.log(options);
     logger.debug("includePattern:", options);
 
     const runOptions = {

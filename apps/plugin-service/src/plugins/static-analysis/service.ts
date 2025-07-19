@@ -63,6 +63,7 @@ export const staticAnalysisService = defineTypedService2({
                 scoreBreakdown: {
                   tag: "0",
                   rawScore: value.score,
+                  feedbackItems: [],
                   // feedbackItems: value.feedback.map((feedbackItem) => ({
                   //   comment: feedbackItem.message || "",
                   //   fileRef: feedbackItem.fileRef,

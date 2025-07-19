@@ -10,7 +10,11 @@ import {
 import { LocalCommandExecutor } from "@grading-system/utils/local-command";
 import logger from "@grading-system/utils/logger";
 import { errAsync, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
-import { downloadBlobBatch, submissionStore } from "@/lib/blob-storage";
+import {
+  downloadBlobBatch,
+  IDENTIFIER_PATH_LEVELS,
+  submissionStore,
+} from "@/lib/blob-storage";
 import { cleanTempDirectory, symlinkFiles } from "@/lib/file";
 import { ErrorWithCriterionInfo } from "@/plugins/error";
 import { rulesetMap, staticAnalysisConfigSchema } from "@/plugins/static-analysis/config";
@@ -43,7 +47,7 @@ export function gradeSubmission(data: {
     const { downloadDir, blobNameRoot } = yield* downloadBlobBatch(
       submissionStore,
       allBlobNames,
-      2,
+      IDENTIFIER_PATH_LEVELS,
       `download-${data.attemptId}`,
     );
 
@@ -117,10 +121,10 @@ export function gradeSubmission(data: {
               cause: error,
             });
           })
-          .map((result) => {
+          .map((gradeResult) => {
             clean();
 
-            const scannedFilesSet = new Set(result.scannedFiles);
+            const scannedFilesSet = new Set(gradeResult.scannedFiles);
             const ignoredFiles = [];
             for (const filePath of value.fileList) {
               if (!scannedFilesSet.has(filePath)) {
@@ -128,15 +132,19 @@ export function gradeSubmission(data: {
               }
             }
 
-            return {
+            const result = {
               criterion: value.criterionData.criterionName,
-              score: result.score,
-              feedback: result.feedbacks.map((item) => ({
+              score: gradeResult.score,
+              feedback: gradeResult.feedbacks.map((item) => ({
                 ...item,
                 fileRef: toFileRef(item.filePath),
               })),
               ignoredFiles,
             };
+
+            logger.debug("Graded criterion result", result);
+
+            return result;
           });
       }),
     );
