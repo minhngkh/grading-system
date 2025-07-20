@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AssignmentFlow.Application.Assessments;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace AssignmentFlow.Application.Assessments.Hub;
+namespace AssignmentFlow.Application.Hub;
 
 [Authorize]
 public class GradingsHub(AssignmentFlowDbContext dbContext) : Hub<IGradingClient>
@@ -43,7 +44,7 @@ public class GradingsHub(AssignmentFlowDbContext dbContext) : Hub<IGradingClient
             })
             .ToListAsync();
 
-        if (progress.All(p => p.Status == AssessmentState.AutoGradingFinished.ToString()))
+        if (progress.All(p => p.Status == AssessmentState.Completed.ToString()))
         {
             _ = Clients.Groups(gradingId).Complete();
         }
