@@ -93,6 +93,11 @@ export function gradeSubmission(data: {
         });
     });
 
+    logger.debug("info:", {
+      submissionRef,
+      blobNameRoot,
+    });
+
     function toFileRef(filePath: string) {
       return path.join(submissionRef, filePath);
     }
@@ -110,6 +115,7 @@ export function gradeSubmission(data: {
           fileList: value.fileList,
           directory: value.directory,
           config: value.config,
+          stripFunc: (fullPath) => fullPath.replace(`${value.directory}/`, ""),
         })
           .mapErr((error) => {
             clean();
@@ -122,18 +128,13 @@ export function gradeSubmission(data: {
           .map((result) => {
             clean();
 
-            logger.debug("filePath:", value.fileList[0]);
-            logger.debug("filePath:", result.scannedFiles[0]);
+            logger.debug("file[0]:", result.feedbacks[0].filePath);
 
-            const scannedFilesSet = new Set(
-              result.scannedFiles.map((fullPath) =>
-                fullPath.replace(`${value.directory}/`, ""),
-              ),
-            );
+            const scannedFilesSet = new Set(result.scannedFiles);
             const ignoredFiles = [];
             for (const filePath of value.fileList) {
               if (!scannedFilesSet.has(filePath)) {
-                ignoredFiles.push(toFileRef(filePath));
+                ignoredFiles.push(filePath);
               }
             }
 
@@ -142,7 +143,7 @@ export function gradeSubmission(data: {
               score: result.score,
               feedback: result.feedbacks.map((item) => ({
                 ...item,
-                fileRef: toFileRef(item.filePath),
+                fileRef: item.filePath,
               })),
               ignoredFiles,
             };
@@ -162,6 +163,7 @@ export function gradeCriterion(data: {
   fileList: string[];
   directory: string;
   config: StaticAnalysisConfig;
+  stripFunc: (filePath: string) => string;
 }) {
   return safeTry(async function* () {
     const args = ["run", "semgrep", "scan", data.directory];
@@ -215,20 +217,21 @@ export function gradeCriterion(data: {
       };
       const message = result.extra.message || undefined;
 
+      logger.debug("result:", result.path);
+      logger.debug("filePath:", data.stripFunc(result.path));
+
       return {
-        filePath: result.path,
+        filePath: data.stripFunc(result.path),
         position,
         severity: result.extra.severity,
         message,
       };
     });
 
-    logger.debug("Scanned files", { files: paths.scanned });
-
     return okAsync({
       score,
       feedbacks,
-      scannedFiles: paths.scanned,
+      scannedFiles: paths.scanned.map(data.stripFunc),
     });
   });
 }
