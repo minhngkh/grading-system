@@ -15,7 +15,7 @@ import { AssessmentExporter } from "@/lib/exporters";
 import { Assessment } from "@/types/assessment";
 import { GradingAttempt } from "@/types/grading";
 import { Rubric } from "@/types/rubric";
-import { UseMutateFunction, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import {
@@ -29,7 +29,6 @@ interface AssessmentHeaderProps {
   lastSavedData: Assessment;
   grading: GradingAttempt;
   rubric: Rubric;
-  rerunAssessment?: UseMutateFunction<unknown, unknown, string, unknown>;
   onUpdate: (updatedAssessment: Assessment) => void;
   onUpdateLastSave: (updatedLastSaved: Partial<Assessment>) => void;
 }
@@ -115,6 +114,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         queryClient.invalidateQueries({
           queryKey: ["scoreAdjustments", assessment.id],
         });
+        onUpdateLastSave(assessment);
         toast.success("Assessment regrade started successfully");
       },
       onError: (error) => {
@@ -248,7 +248,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
           className="cursor-pointer"
           size="sm"
           onClick={() => {
-            console.log("Rerun assessment");
             rerunAssessment(assessment.id);
           }}
           disabled={isLoading}

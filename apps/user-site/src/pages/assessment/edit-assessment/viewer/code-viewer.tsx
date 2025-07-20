@@ -570,7 +570,6 @@ const HighlightableViewer = ({
             );
 
             if (startEl) {
-              console.log(startEl);
               const lineRect = (startEl as HTMLElement).getBoundingClientRect();
               const rootRect = root.getBoundingClientRect();
               const scrollTop = root.scrollTop + (lineRect.top - rootRect.top) - 120;

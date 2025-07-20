@@ -135,7 +135,6 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
 
   const handleDelete = useCallback(
     (index: number) => {
-      console.log("Delete feedback at index:", index);
       if (index < 0 || index >= formData.feedbacks.length) return;
       const updatedFeedbacks = [...formData.feedbacks];
       updatedFeedbacks[index] = {
