@@ -23,7 +23,7 @@ const pluginToolProjectPath = path.join(
   "plugin-tools",
   "static-analysis",
 );
-const pluginToolPath = path.join(pluginToolProjectPath, ".venv", "bin", "semgrep");
+const pluginToolPath = "uv";
 
 const tool = new LocalCommandExecutor({
   path: pluginToolPath,
@@ -157,7 +157,7 @@ export function gradeCriterion(data: {
   config: StaticAnalysisConfig;
 }) {
   return safeTry(async function* () {
-    const args = ["scan"];
+    const args = ["run", "semgrep", "scan", data.directory];
 
     if (EXPERIMENTAL_MODE) {
       args.push("--experimental");
@@ -172,7 +172,8 @@ export function gradeCriterion(data: {
     args.push("--json", "--quiet");
 
     const execResult = yield* tool.execute(args, {
-      cwd: data.directory,
+      cwd: pluginToolProjectPath,
+      // cwd: data.directory,
     });
 
     const { results, paths } = JSON.parse(execResult.stdout) as CliOutput;
@@ -214,6 +215,8 @@ export function gradeCriterion(data: {
         message,
       };
     });
+
+    logger.debug("Scanned files", { files: paths.scanned });
 
     return okAsync({
       score,
