@@ -53,7 +53,13 @@ export default function GradingResult({
   );
 
   const { mutateAsync: rerunGrading } = useMutation(
-    rerunGradingMutationOptions(gradingAttempt.id, auth),
+    rerunGradingMutationOptions(gradingAttempt.id, auth, {
+      onError: (error) => {
+        setIsGrading(false);
+        console.error("Error regrading assessments:", error);
+        toast.error("Failed to regrade assessments. Please try again later.");
+      },
+    }),
   );
 
   const { mutateAsync: updateScaleFactor } = useMutation(
@@ -111,7 +117,6 @@ export default function GradingResult({
         });
 
         await hub.start();
-        if (!isMounted) return;
 
         hubRef.current = hub;
         const initialState = await hub.invoke("Register", gradingAttempt.id);
@@ -133,27 +138,21 @@ export default function GradingResult({
     };
   }, []);
 
-  const handleRegradeAll = useCallback(async () => {
-    try {
-      setIsGrading(true);
+  const handleRegradeAll = useCallback(() => {
+    setIsGrading(true);
 
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempt", gradingAttempt.id],
-      });
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempt", gradingAttempt.id],
+    });
 
-      queryClient.invalidateQueries({
-        predicate: (query) => {
-          const key = query.queryKey;
-          return key[0] === "gradingAttempts";
-        },
-      });
+    queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey;
+        return key[0] === "gradingAttempts";
+      },
+    });
 
-      await rerunGrading();
-    } catch (error) {
-      setIsGrading(false);
-      console.error("Error regrading all assessments:", error);
-      toast.error("Failed to regrade all assessments. Please try again later.");
-    }
+    rerunGrading();
   }, [rerunGrading]);
 
   const sortedAssessments = useMemo(() => {
