@@ -53,7 +53,7 @@ public static class ValueObjectExtensions
         };
 
         List<Feedback> feedbackItems = [];
-        if (string.IsNullOrEmpty(apiContract.Summary))
+        if (!string.IsNullOrEmpty(apiContract.Summary))
         {
             var summary = Feedback.Summary(
                 FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result),
