@@ -122,7 +122,14 @@ export function gradeSubmission(data: {
           .map((result) => {
             clean();
 
-            const scannedFilesSet = new Set(result.scannedFiles);
+            logger.debug("filePath:", value.fileList[0]);
+            logger.debug("filePath:", result.scannedFiles[0]);
+
+            const scannedFilesSet = new Set(
+              result.scannedFiles.map((fullPath) =>
+                fullPath.replace(`${value.directory}/`, ""),
+              ),
+            );
             const ignoredFiles = [];
             for (const filePath of value.fileList) {
               if (!scannedFilesSet.has(filePath)) {
