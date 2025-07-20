@@ -84,7 +84,7 @@ export function gradeSubmission(data: {
           };
         })
         .mapErr((error) => {
-          logger.info(`internal: Failed to grade ${criterionData.criterionName}: ${error.message}`);
+          logger.info(`internal: Failed to grade ${criterionData.criterionName}:`, error);
 
           return new ErrorWithCriterionInfo({
             data: { criterionName: criterionData.criterionName },

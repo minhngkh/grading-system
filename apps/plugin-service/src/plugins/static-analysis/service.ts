@@ -36,7 +36,7 @@ export const staticAnalysisService = defineTypedService2({
         const promises = result.value.map((value) =>
           value
             .orTee((error) => {
-              logger.info(`internal: Grading failed for ${error.data.criterionName}: ${error.message}`);
+              logger.info(`internal: Grading failed for ${error.data.criterionName}`, error);
 
               transporter.emit(criterionGradingFailedEvent, {
                 assessmentId: params.assessmentId,
