@@ -58,13 +58,11 @@ export const AssessmentSidebar: React.FC<AssessmentSidebarProps> = ({
           feedback.fileRef?.includes(f.relativePath) ||
           feedback.fileRef?.includes(f.name),
       );
-      console.log("Feedback file:", feedbackFile);
       if (feedbackFile) {
         onFileSelect(feedbackFile);
       }
 
       setSelectedFeedbackId(feedback.id);
-      console.log("Selected feedback:", feedback);
     },
     [selectedFeedbackId, files, onFileSelect],
   );
