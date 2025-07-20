@@ -31,7 +31,6 @@ function RouteComponent() {
   } = useQuery(
     getAssessmentQueryOptions(assessmentId, auth, {
       placeholderData: keepPreviousData,
-      staleTime: 1000 * 60 * 5, // 5 minutes
     }),
   );
 
@@ -42,7 +41,6 @@ function RouteComponent() {
   } = useQuery(
     getGradingAttemptQueryOptions(gradingId, auth, {
       placeholderData: keepPreviousData,
-      staleTime: Infinity,
     }),
   );
 
@@ -53,7 +51,6 @@ function RouteComponent() {
   } = useQuery(
     getRubricQueryOptions(grading?.rubricId || "", auth, {
       placeholderData: keepPreviousData,
-      staleTime: Infinity,
     }),
   );
 

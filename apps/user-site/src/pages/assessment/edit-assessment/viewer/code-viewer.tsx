@@ -160,7 +160,8 @@ const HighlightableViewer = ({
     return feedbacks.map((fb) => {
       if (
         fb.locationData?.type !== "text" ||
-        fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) !== file.relativePath
+        fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) !== file.relativePath ||
+        fb.tag === "discard"
       )
         return fb;
 
@@ -476,7 +477,12 @@ const HighlightableViewer = ({
       });
 
       if (!isFirstInGroup) {
-        result.splice(index, 1);
+        if (result[index]) {
+          result[index] = {
+            ...result[index],
+            tag: "discard",
+          };
+        }
       }
     });
 
@@ -564,6 +570,7 @@ const HighlightableViewer = ({
             );
 
             if (startEl) {
+              console.log(startEl);
               const lineRect = (startEl as HTMLElement).getBoundingClientRect();
               const rootRect = root.getBoundingClientRect();
               const scrollTop = root.scrollTop + (lineRect.top - rootRect.top) - 120;
@@ -587,7 +594,7 @@ const HighlightableViewer = ({
         }
       };
 
-      setTimeout(tryScroll, 0);
+      setTimeout(tryScroll, 50);
     }
   }, [activeFeedbackId, formData.feedbacks, file.type]);
 
@@ -598,7 +605,8 @@ const HighlightableViewer = ({
       .map((fb, idx) => ({ fb, idx }))
       .filter(
         ({ fb }) =>
-          fb.fileRef && fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) === fileName,
+          fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) === fileName &&
+          fb.tag !== "discard",
       );
 
     if (file.type === "code") {
@@ -607,10 +615,10 @@ const HighlightableViewer = ({
       return (
         <ShikiHighlighter
           language={language}
+          className="overflow-auto custom-scrollbar"
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
-          className="h-full w-full overflow-auto"
           transformers={[
             {
               preprocess(_, options) {
@@ -702,7 +710,8 @@ const HighlightableViewer = ({
               pre(node) {
                 node.properties = {
                   ...node.properties,
-                  style: "background: var(--background)",
+                  style: "background: var(--background); margin: 0 0.5rem;",
+                  class: "custom-scrollbar ",
                 };
               },
             },

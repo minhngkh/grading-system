@@ -35,6 +35,8 @@ import {
   updateGradingSelectorsMutationOptions,
   uploadSubmissionMutationOptions,
 } from "@/queries/grading-queries";
+import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
+import { Eye, Pencil, Plus } from "lucide-react";
 
 interface UploadStepProps {
   form: UseFormReturn<GradingAttempt>;
@@ -45,6 +47,7 @@ export default function UploadStep({ form }: UploadStepProps) {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isFileDialogOpen, setFileDialogOpen] = useState(false);
   const [fileDialogAction, setFileDialogAction] = useState("");
+  const [viewRubricDialogOpen, setViewRubricDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [moodleMode, setMoodleMode] = useState(false);
   const queryClient = useQueryClient();
@@ -58,18 +61,23 @@ export default function UploadStep({ form }: UploadStepProps) {
 
   const gradingAttempt = form.watch();
 
-  useEffect(() => {
-    queryClient.invalidateQueries({
-      queryKey: ["gradingAttempt", gradingAttempt.id],
-    });
-  }, [gradingAttempt, queryClient]);
-
   const { data: rubricData } = useQuery(
     getRubricQueryOptions(gradingAttempt.rubricId, auth, {
       placeholderData: keepPreviousData,
-      staleTime: Infinity,
     }),
   );
+
+  useEffect(() => {
+    if (!rubricData) return;
+
+    if (gradingAttempt.selectors.length !== rubricData?.criteria.length) {
+      const selectors = rubricData.criteria.map((criterion) => ({
+        criterion: criterion.name,
+        pattern: "*",
+      }));
+      handleSelectorsChange(selectors);
+    }
+  }, [rubricData]);
 
   useEffect(() => {
     const fields = Object.keys(errors);
@@ -79,34 +87,63 @@ export default function UploadStep({ form }: UploadStepProps) {
   }, [errors]);
 
   const updateNameMutation = useMutation(
-    updateGradingNameMutationOptions(gradingAttempt.id, auth),
+    updateGradingNameMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const updateScaleFactorMutation = useMutation(
-    updateGradingScaleFactorMutationOptions(gradingAttempt.id, auth),
+    updateGradingScaleFactorMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const updateRubricMutation = useMutation(
-    updateGradingRubricMutationOptions(gradingAttempt.id, auth),
+    updateGradingRubricMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const updateSelectorsMutation = useMutation(
-    updateGradingSelectorsMutationOptions(gradingAttempt.id, auth),
+    updateGradingSelectorsMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const uploadFileMutation = useMutation(
-    uploadSubmissionMutationOptions(gradingAttempt.id, auth),
+    uploadSubmissionMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const removeFileMutation = useMutation(
-    deleteSubmissionMutationOptions(gradingAttempt.id, auth),
-  );
-
-  const handleNameUpdate = useCallback(
-    (name: string) => {
-      updateNameMutation.mutate(name);
-    },
-    [updateNameMutation, gradingAttempt.id],
+    deleteSubmissionMutationOptions(gradingAttempt.id, auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempt", gradingAttempt.id],
+        });
+      },
+    }),
   );
 
   const handleScaleFactorUpdate = useCallback(
@@ -118,7 +155,7 @@ export default function UploadStep({ form }: UploadStepProps) {
     [updateScaleFactorMutation, gradingAttempt.id],
   );
 
-  useDebounceUpdate(gradingAttempt.name, 500, handleNameUpdate);
+  useDebounceUpdate(gradingAttempt.name, 500, updateNameMutation.mutate);
   useDebounceUpdate(gradingAttempt.scaleFactor, 500, handleScaleFactorUpdate);
 
   const handleSelectorsChange = async (selectors: CriteriaSelector[]) => {
@@ -131,12 +168,6 @@ export default function UploadStep({ form }: UploadStepProps) {
 
     await updateRubricMutation.mutateAsync(rubric.id);
     setValue("rubricId", rubric.id);
-
-    const selectors = rubric.criteria.map((criterion) => {
-      return { criterion: criterion.name, pattern: "*" };
-    });
-
-    handleSelectorsChange(selectors);
   };
 
   const handleFileUpload = async (files: File[]) => {
@@ -165,6 +196,7 @@ export default function UploadStep({ form }: UploadStepProps) {
       ];
 
       setValue("submissions", newSubmissions);
+      setUploadedFiles((prev) => [...prev, ...newFiles]);
     } catch (error) {
       console.error("Error uploading files:", error);
       toast.error("Failed to upload some files");
@@ -212,6 +244,11 @@ export default function UploadStep({ form }: UploadStepProps) {
 
   return (
     <div className="size-full space-y-4">
+      <ViewRubricDialog
+        initialRubric={rubricData}
+        open={viewRubricDialogOpen}
+        onOpenChange={setViewRubricDialogOpen}
+      />
       {/* Upload Dialog */}
       <Dialog open={isFileDialogOpen} onOpenChange={setFileDialogOpen}>
         <DialogContent aria-describedby={undefined} className="sm:max-w-md">
@@ -259,21 +296,29 @@ export default function UploadStep({ form }: UploadStepProps) {
             selectFn={(rubric) => rubric.rubricName}
           />
           <span>or</span>
-          <Button variant="outline" asChild>
+          <Button asChild>
             <Link preload={false} to="/rubrics/create">
+              <Plus className="h-4 w-4" />
               New Rubric
             </Link>
           </Button>
           {gradingAttempt.rubricId && (
-            <Button asChild>
-              <Link
-                to="/rubrics/$id"
-                params={{ id: gradingAttempt.rubricId }}
-                search={{ redirect: location.pathname }}
-              >
-                Edit Rubric
-              </Link>
-            </Button>
+            <>
+              <Button variant="outline" asChild>
+                <Link
+                  to="/rubrics/$id"
+                  params={{ id: gradingAttempt.rubricId }}
+                  search={{ redirect: location.pathname }}
+                >
+                  <Pencil className="h-4 w-4" />
+                  Edit Rubric
+                </Link>
+              </Button>
+              <Button variant="outline" onClick={() => setViewRubricDialogOpen(true)}>
+                <Eye className="h-4 w-4" />
+                View Rubric
+              </Button>
+            </>
           )}
           {errors.rubricId?.message && (
             <p className="text-sm text-destructive">{errors.rubricId.message}</p>
@@ -282,7 +327,10 @@ export default function UploadStep({ form }: UploadStepProps) {
       </div>
 
       <div className="space-y-1">
-        <Label className="text-lg">Grade Scale</Label>
+        <div className="flex items-center space-x-1">
+          <Label className="text-lg">Grade Scale</Label>
+          <InfoToolTip description="Set a grade scale for the assignment. This will determine how grades are calculated and displayed." />
+        </div>
         <Input
           className="w-24"
           type="number"

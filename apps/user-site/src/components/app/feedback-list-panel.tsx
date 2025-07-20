@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Assessment, FeedbackItem, LocationData } from "@/types/assessment";
 import { Badge } from "@/components/ui/badge";
 import { Trash, MessageSquare, Pen, Check, X } from "lucide-react";
@@ -65,6 +65,13 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
   const [addComment, setAddComment] = useState("");
   const [addTag, setAddTag] = useState("info");
   const [addCriterion, setAddCriterion] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isAddingFeedback && containerRef.current) {
+      containerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isAddingFeedback]);
 
   const handleAddFeedbackSubmit = useCallback(() => {
     if (!addComment.trim() || !addCriterion) return;
@@ -128,9 +135,13 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
 
   const handleDelete = useCallback(
     (index: number) => {
+      console.log("Delete feedback at index:", index);
       if (index < 0 || index >= formData.feedbacks.length) return;
       const updatedFeedbacks = [...formData.feedbacks];
-      updatedFeedbacks.splice(index, 1);
+      updatedFeedbacks[index] = {
+        ...updatedFeedbacks[index],
+        tag: "discard",
+      };
       form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
       onUpdate({ feedbacks: updatedFeedbacks });
     },
@@ -160,8 +171,9 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
 
   return (
     <div
-      className="flex-1 overflow-y-auto space-y-2 w-full"
-      style={{ contain: "layout" }}
+      ref={containerRef}
+      className="custom-scrollbar flex-1 overflow-y-auto space-y-2 w-full"
+      style={{ contain: "layout", padding: "0.5rem" }}
     >
       {/* Add Feedback Form */}
       {isAddingFeedback && (
@@ -257,7 +269,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
             }
             return true;
           })
-          .filter((fb) => fb?.tag !== "summary").length > 0
+          .filter((fb) => fb?.tag !== "summary" && fb?.tag !== "discard").length > 0
       ) ?
         formData.feedbacks
           .map((fb, idx) => ({ fb, idx }))
@@ -271,7 +283,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
             }
             return true;
           })
-          .filter(({ fb }) => fb?.tag !== "summary")
+          .filter(({ fb }) => fb?.tag !== "summary" && fb?.tag !== "discard")
           .map(({ fb, idx }) => {
             const isActive = selectedFeedbackIndex === idx;
             const isEditing = editingFeedbackIndex === idx;

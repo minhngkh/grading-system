@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { FileItem } from "@/types/file";
 import { FeedbackItem } from "@/types/assessment";
-
 function buildFileTree(files: FileItem[]) {
   const root: any = {};
   if (!Array.isArray(files)) return root;
@@ -275,9 +274,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   };
 
   return (
-    <div className="pt-2 px-2 h-full w-full flex flex-col min-w-0">
-      <div className="justify-between flex items-center mb-2">
-        <h3 className="text-xs font-medium truncate min-w-0 flex-1">Explorer</h3>
+    <div className="h-full w-full flex flex-col min-w-0">
+      <div className="justify-between flex items-center">
+        <h3 className="text-sm font-medium mb-2">Explorer</h3>
         <Popover>
           <div className="flex items-center gap-1 flex-shrink-0">
             {selectedCriteria.length > 0 && (
@@ -327,7 +326,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </Popover>
       </div>
 
-      <div className="flex-1 overflow-auto space-y-0.5 min-w-0">
+      <div className="h-full overflow-auto space-y-0.5 custom-scrollbar">
         {renderTree(
           tree,
           "",

@@ -47,6 +47,16 @@ code {
   background-color: rgba(220, 53, 69, 0.15); /* Red for caution */
 }
 
+.annotation-span[data-tag="critical"] {
+  background-color: rgba(200, 0, 0, 0.35); /* Dark red for critical */
+}
+.annotation-span[data-tag="error"] {
+  background-color: rgba(255, 0, 0, 0.25); /* Red for error */
+}
+.annotation-span[data-tag="warning"] {
+  background-color: rgba(255, 140, 0, 0.22); /* Orange for warning */
+}
+
 .annotation-span.actived {
   transition: background-color 0.2s ease-in-out;
   cursor: pointer;
@@ -67,6 +77,15 @@ code {
 .annotation-span.actived[data-tag="caution"] {
   background-color: rgba(220, 53, 70, 0.425); /* Darker red for caution */
 }
+.annotation-span.actived[data-tag="critical"] {
+  background-color: rgba(200, 0, 0, 0.55);
+}
+.annotation-span.actived[data-tag="error"] {
+  background-color: rgba(255, 0, 0, 0.45);
+}
+.annotation-span.actived[data-tag="warning"] {
+  background-color: rgba(255, 140, 0, 0.42);
+}
 
 .annotation-span-focused[data-tag="info"] {
   background-color: rgba(0, 123, 255, 0.35) !important;
@@ -80,78 +99,17 @@ code {
 .annotation-span-focused[data-tag="caution"] {
   background-color: rgba(220, 53, 69, 0.35) !important;
 }
-
-/* Force shiki/code background to use theme background */
-.react-shiki,
-.react-shiki pre,
-.react-shiki code {
-  background: var(--background) !important;
-  box-shadow: none !important;
+.annotation-span-focused[data-tag="critical"] {
+  background-color: rgba(200, 0, 0, 0.45) !important;
 }
-
-/* Plain text renderer styles */
-.plain-text-container {
-  font-family: "Consolas", "Monaco", "Courier New", monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  background: var(--background);
-  color: var(--foreground);
+.annotation-span-focused[data-tag="error"] {
+  background-color: rgba(255, 0, 0, 0.35) !important;
 }
-
-.plain-text-container .line {
-  counter-increment: count;
-  display: flex;
-  position: relative;
-  min-height: 1.5em;
+.annotation-span-focused[data-tag="warning"] {
+  background-color: rgba(255, 140, 0, 0.32) !important;
 }
-
-.plain-text-container .line::before {
-  content: counter(count);
-  padding-inline: 0.5em;
-  opacity: 0.4;
-  position: absolute;
-  right: 100%;
-  text-align: right;
-  user-select: none;
-}
-
-/* Ensure annotation spans work in plain text mode */
-.plain-text-container .annotation-span {
-  position: relative;
-  cursor: pointer;
-  background-color: rgba(255, 0, 0, 0.15);
-}
-
-.plain-text-container .annotation-span[data-tag="info"] {
-  background-color: rgba(0, 123, 255, 0.15);
-}
-
-.plain-text-container .annotation-span[data-tag="notice"] {
-  background-color: rgba(40, 167, 70, 0.233);
-}
-
-.plain-text-container .annotation-span[data-tag="tip"] {
-  background-color: rgba(255, 193, 7, 0.212);
-}
-
-.plain-text-container .annotation-span[data-tag="caution"] {
-  background-color: rgba(220, 53, 69, 0.15);
-}
-
-.plain-text-container .annotation-span-focused[data-tag="info"] {
-  background-color: rgba(0, 123, 255, 0.35) !important;
-}
-
-.plain-text-container .annotation-span-focused[data-tag="notice"] {
-  background-color: rgba(40, 167, 69, 0.35) !important;
-}
-
-.plain-text-container .annotation-span-focused[data-tag="tip"] {
-  background-color: rgba(255, 193, 7, 0.35) !important;
-}
-
-.plain-text-container .annotation-span-focused[data-tag="caution"] {
-  background-color: rgba(220, 53, 69, 0.35) !important;
+.annotation-span-focused[data-tag="info"] {
+  background-color: rgba(0, 180, 255, 0.28) !important;
 }
 
 .tippy-box {

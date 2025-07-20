@@ -16,14 +16,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { ScoreBreakdown } from "@/types/assessment";
+import { ChevronDown, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
+import { ScoreAdjustment, ScoreBreakdown } from "@/types/assessment";
+import { cn } from "@/lib/utils";
 
 interface ScoreAdjustmentDialogProps {
   scaleFactor: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  scoreAdjustment: any[];
+  scoreAdjustment: ScoreAdjustment[];
 }
 
 export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
@@ -33,12 +34,13 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
   scoreAdjustment,
 }) => {
   const [expandedRows, setExpandedRows] = React.useState<Set<number>>(new Set());
+
   const sortedScoreAdjustment = React.useMemo(() => {
     if (!scoreAdjustment || !Array.isArray(scoreAdjustment)) return [];
 
     return [...scoreAdjustment].sort((a, b) => {
-      const dateA = new Date(a.attributes?.createdAt).getTime();
-      const dateB = new Date(b.attributes?.createdAt).getTime();
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
       return dateB - dateA;
     });
   }, [scoreAdjustment]);
@@ -71,15 +73,8 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                   <TableRow>
                     <TableHead className="text-xs font-medium w-8"></TableHead>
                     <TableHead className="text-xs font-medium">Adjustment Date</TableHead>
-                    <TableHead className="text-xs font-medium text-right">
-                      Delta Score
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-right">
-                      Adjust Score
-                    </TableHead>
-                    <TableHead className="text-xs font-medium text-right">
-                      Source
-                    </TableHead>
+                    <TableHead className="text-xs font-medium">Total Score</TableHead>
+                    <TableHead className="text-xs font-medium">Graded By</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -96,27 +91,16 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                           : <ChevronRight className="h-3 w-3" />}
                         </TableCell>
                         <TableCell className="font-medium text-xs">
-                          {new Date(adjustment.attributes.createdAt).toLocaleString()}
+                          {new Date(adjustment.createdAt).toLocaleString()}
                         </TableCell>
-                        <TableCell className="text-xs text-right">
+                        <TableCell className="text-xs">
                           <span className="font-medium">
-                            {(
-                              (adjustment.attributes.deltaScore * scaleFactor) /
-                              100
-                            ).toFixed(2)}{" "}
-                            / {scaleFactor}
+                            {((adjustment.score * scaleFactor) / 100).toFixed(2)} /{" "}
+                            {scaleFactor}
                           </span>
                         </TableCell>
-                        <TableCell className="text-xs text-right">
-                          <span className="font-medium">
-                            {((adjustment.attributes.score * scaleFactor) / 100).toFixed(
-                              2,
-                            )}{" "}
-                            / {scaleFactor}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-xs text-right">
-                          {adjustment.attributes.adjustmentSource || "Manual Adjustment"}
+                        <TableCell className="text-xs">
+                          {adjustment.adjustmentSource || "Manual Adjustment"}
                         </TableCell>
                       </TableRow>
 
@@ -125,50 +109,59 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                         <>
                           {/* Header for breakdown */}
                           <TableRow className="bg-muted/30">
-                            <TableCell className="text-xs font-medium w-8"></TableCell>
-                            <TableCell className="text-xs font-medium">
-                              Criterion Name
-                            </TableCell>
-                            <TableCell className="text-xs font-medium text-right">
-                              Delta Score
-                            </TableCell>
-                            <TableCell className="text-xs font-medium text-right">
-                              Adjust Score
+                            <TableCell className="text-xs font-medium" colSpan={4}>
+                              <div className="grid grid-cols-3 gap-4 pl-4">
+                                <span>Criterion Name</span>
+                                <span>Score</span>
+                                <span>Delta Change</span>
+                              </div>
                             </TableCell>
                           </TableRow>
 
-                          {adjustment.attributes.scoreBreakdowns.map(
+                          {/* Criterion breakdown rows */}
+                          {adjustment.scoreBreakdowns.map(
                             (scoreBreakdown: ScoreBreakdown, scoreIndex: number) => {
-                              const deltaBreakdown =
-                                adjustment.attributes.deltaScoreBreakdowns?.find(
-                                  (delta: ScoreBreakdown) =>
-                                    delta.criterionName === scoreBreakdown.criterionName,
-                                );
-
+                              const deltaScore =
+                                adjustmentIndex === sortedScoreAdjustment.length - 1 ?
+                                  0
+                                : sortedScoreAdjustment[adjustmentIndex].scoreBreakdowns[
+                                    scoreIndex
+                                  ].rawScore -
+                                  sortedScoreAdjustment[adjustmentIndex + 1]
+                                    .scoreBreakdowns[scoreIndex].rawScore;
                               return (
                                 <TableRow
                                   key={`${adjustmentIndex}-breakdown-${scoreIndex}`}
                                   className="bg-muted/10"
                                 >
-                                  <TableCell className="text-xs w-8"></TableCell>
-                                  <TableCell className="text-xs text-muted-foreground break-words leading-tight">
-                                    {scoreBreakdown.criterionName}
+                                  <TableCell className="text-xs" colSpan={4}>
+                                    <div className="grid grid-cols-3 gap-4 pl-4">
+                                      <span className="text-muted-foreground">
+                                        {scoreBreakdown.criterionName}
+                                      </span>
+                                      <span>
+                                        {(
+                                          (scoreBreakdown.rawScore * scaleFactor) /
+                                          100
+                                        ).toFixed(2)}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          deltaScore > 0 ? "text-green-500"
+                                          : deltaScore < 0 ? "text-red-500"
+                                          : "text-muted-foreground",
+                                        )}
+                                      >
+                                        {deltaScore}%
+                                        {deltaScore > 0 ?
+                                          <TrendingUp className="ml-1 inline h-3 w-3" />
+                                        : deltaScore < 0 && (
+                                            <TrendingDown className="ml-1 inline h-3 w-3" />
+                                          )
+                                        }
+                                      </span>
+                                    </div>
                                   </TableCell>
-                                  <TableCell className="text-xs text-right">
-                                    {deltaBreakdown ?
-                                      (
-                                        (deltaBreakdown.rawScore * scaleFactor) /
-                                        100
-                                      ).toFixed(2)
-                                    : "0.00"}
-                                  </TableCell>
-                                  <TableCell className="text-xs text-right">
-                                    {(
-                                      (scoreBreakdown.rawScore * scaleFactor) /
-                                      100
-                                    ).toFixed(2)}
-                                  </TableCell>
-                                  <TableCell className="text-xs text-right"></TableCell>
                                 </TableRow>
                               );
                             },

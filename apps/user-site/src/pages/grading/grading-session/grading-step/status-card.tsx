@@ -3,7 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { AssessmentState } from "@/types/assessment";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
-import { Check, Loader2, FileText, CheckCircle2, XCircle, RotateCw } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import {
+  Check,
+  Loader2,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  RotateCw,
+  FileSearch,
+} from "lucide-react";
 import { memo } from "react";
 
 type AssessmentStyle = {
@@ -28,6 +37,11 @@ const assessmentStateStyles: Partial<Record<AssessmentState, AssessmentStyle>> =
     label: "Grading completed",
     icon: <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />,
   },
+  [AssessmentState.Completed]: {
+    color: "text-green-600 dark:text-green-400",
+    label: "Grading completed",
+    icon: <CheckCircle2 className="size-4 text-green-600 dark:text-green-400" />,
+  },
   [AssessmentState.AutoGradingFailed]: {
     color: "text-red-600 dark:text-red-400",
     label: "Grading failed",
@@ -37,26 +51,27 @@ const assessmentStateStyles: Partial<Record<AssessmentState, AssessmentStyle>> =
 
 interface AssessmentStatusCardProps {
   status: AssessmentGradingStatus;
+  gradingId: string;
   onRegrade?: (id: string) => void;
 }
 
+function getCurrentStatuses(current: AssessmentState): AssessmentState[] {
+  const states: AssessmentState[] = [AssessmentState.Created];
+
+  if (
+    current !== AssessmentState.AutoGradingStarted &&
+    current !== AssessmentState.Created
+  ) {
+    states.push(AssessmentState.AutoGradingStarted);
+  }
+
+  states.push(current);
+
+  return states;
+}
+
 export const AssessmentStatusCard = memo(
-  ({ status, onRegrade }: AssessmentStatusCardProps) => {
-    function getCurrentStatuses(current: AssessmentState): AssessmentState[] {
-      const states: AssessmentState[] = [AssessmentState.Created];
-
-      if (
-        current !== AssessmentState.AutoGradingStarted &&
-        current !== AssessmentState.Created
-      ) {
-        states.push(AssessmentState.AutoGradingStarted);
-      }
-
-      states.push(current);
-
-      return states;
-    }
-
+  ({ status, onRegrade, gradingId }: AssessmentStatusCardProps) => {
     const currentStatuses = getCurrentStatuses(status.status);
     const isUndergoingGrading =
       status.status === AssessmentState.AutoGradingStarted ||
@@ -68,8 +83,9 @@ export const AssessmentStatusCard = memo(
           "gap-0 bg-background",
           status.status === AssessmentState.AutoGradingFailed &&
             "border-red-200 dark:border-red-800",
-          status.status === AssessmentState.AutoGradingFinished &&
-            "border-green-200 dark:border-green-800",
+          status.status === AssessmentState.AutoGradingFinished ||
+            (status.status === AssessmentState.Completed &&
+              "border-green-200 dark:border-green-800"),
           isUndergoingGrading && "border-blue-200 dark:border-blue-800",
         )}
       >
@@ -79,14 +95,25 @@ export const AssessmentStatusCard = memo(
               {status.submissionReference}
             </CardTitle>
             {!isUndergoingGrading && (
-              <Button
-                variant="outline"
-                onClick={() => onRegrade?.(status.assessmentId)}
-                size="sm"
-              >
-                <RotateCw className="size-4" />
-                Rerun
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => onRegrade?.(status.assessmentId)}
+                  size="sm"
+                >
+                  <RotateCw className="size-4" />
+                  Rerun
+                </Button>
+                <Link
+                  to="/gradings/$gradingId/assessments/$assessmentId"
+                  params={{ gradingId: gradingId, assessmentId: status.assessmentId }}
+                >
+                  <Button size="sm" className="flex items-center gap-2 w-full">
+                    <FileSearch className="h-4 w-4" />
+                    Review
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
           {status.errorMessage && (
@@ -115,7 +142,8 @@ export const AssessmentStatusCard = memo(
                 index < currentStatuses.length - 1 ||
                 (isCurrent &&
                   (status.status === AssessmentState.AutoGradingFinished ||
-                    status.status === AssessmentState.AutoGradingFailed));
+                    status.status === AssessmentState.AutoGradingFailed ||
+                    status.status === AssessmentState.Completed));
 
               const isFailed =
                 status.status === AssessmentState.AutoGradingFailed &&

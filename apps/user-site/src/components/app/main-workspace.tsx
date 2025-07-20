@@ -256,7 +256,11 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     const renderSidebarContent = useMemo(() => {
       switch (sidebarView) {
         case "files":
-          return <FileExplorer {...fileExplorerProps} />;
+          return (
+            <div className="p-4">
+              <FileExplorer {...fileExplorerProps} />
+            </div>
+          );
         case "testcases":
           return (
             <div className="p-4">
@@ -268,7 +272,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
           );
         case "feedback":
           return (
-            <div className="p-2 w-full h-full flex flex-col">
+            <div className="pt-2 px-2 w-full h-full flex flex-col">
               <Tabs
                 value={feedbackViewMode}
                 onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
@@ -360,18 +364,16 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
 
       try {
         return (
-          <div className="flex-1 overflow-hidden">
-            <FileViewer
-              file={selectedFile}
-              activeFeedbackId={activeFeedbackId}
-              onSelectionMade={handleSelectionMade}
-              onPageSelect={handlePageSelect}
-              onSelectionChange={handleSelectionChange}
-              assessment={assessment}
-              onUpdate={onUpdate}
-              onUpdateLastSave={onUpdateLastSave}
-            />
-          </div>
+          <FileViewer
+            file={selectedFile}
+            activeFeedbackId={activeFeedbackId}
+            onSelectionMade={handleSelectionMade}
+            onPageSelect={handlePageSelect}
+            onSelectionChange={handleSelectionChange}
+            assessment={assessment}
+            onUpdate={onUpdate}
+            onUpdateLastSave={onUpdateLastSave}
+          />
         );
       } catch (error) {
         console.error("Error rendering FileViewer:", error);
@@ -441,18 +443,15 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
             minSize={20}
             maxSize={30}
           >
-            <div className="h-full flex flex-col min-w-0">{renderSidebarContent}</div>
+            {renderSidebarContent}
           </ResizablePanel>
 
           <ResizableHandle className={cn(isSidebarOpen ? "block" : "hidden")} />
 
           <ResizablePanel defaultSize={isSidebarOpen ? 80 : 100}>
-            <div className="h-full flex flex-col min-w-0">
-              {/* Header */}
+            <div className="h-full flex flex-col">
               <div className="flex items-center justify-between border-b px-2 py-1">
-                <h2 className="font-semibold truncate">
-                  {selectedFile?.name || "No file selected"}
-                </h2>
+                <h2 className="font-semibold truncate">{selectedFile?.name}</h2>
                 <div className="flex items-center gap-2">
                   {(canAddFeedback || selectedPage) && (
                     <Button
@@ -470,13 +469,13 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
                     className="text-xs"
                     disabled={isHighlightMode || (!canAddFeedback && !selectedPage)}
                   >
-                    {isHighlightMode ? "Adding Highlight" : "Add Feedback"}
+                    {isHighlightMode ? "Adding Feedback" : "Add Feedback"}
                   </Button>
                 </div>
               </div>
 
               {/* File Viewer */}
-              <div className="flex-1 overflow-auto">{renderFileViewer}</div>
+              {renderFileViewer}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

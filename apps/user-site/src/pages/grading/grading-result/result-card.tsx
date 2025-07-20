@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { RefreshCw, FileSearch } from "lucide-react";
+import { RefreshCw, FileSearch, TriangleAlert, CircleAlert, Check } from "lucide-react";
 import { Assessment, AssessmentState } from "@/types/assessment";
 import { getCriteriaColorStyle } from "./colors";
 import { Link } from "@tanstack/react-router";
@@ -23,7 +23,10 @@ const getCardClassName = (state: AssessmentState) => {
     return "overflow-hidden py-0 border-red-200 dark:border-red-800";
   }
 
-  if (state === AssessmentState.AutoGradingFinished) {
+  if (
+    state === AssessmentState.AutoGradingFinished ||
+    state === AssessmentState.Completed
+  ) {
     return "overflow-hidden py-0 border-green-200 dark:border-green-800";
   }
 
@@ -78,7 +81,7 @@ export function AssessmentResultCard({
     <Card className={getCardClassName(item.status)}>
       <div className="flex flex-col md:flex-row">
         <div className="flex-1 p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               {item.submissionReference}
             </h3>
@@ -87,6 +90,25 @@ export function AssessmentResultCard({
                 {((item.rawScore * scaleFactor) / 100).toFixed(2)} point(s)
               </span>
             )}
+          </div>
+          <div className="flex items-center gap-1 text-sm mb-4">
+            {item.status === AssessmentState.AutoGradingFailed ?
+              <>
+                <p className="text-red-500">
+                  Auto grading has failed. Require manual grading
+                </p>
+                <TriangleAlert className="size-3 text-red-500" />
+              </>
+            : item.status === AssessmentState.ManualGradingRequired ?
+              <>
+                <p className="text-orange-500">Require manual grading</p>
+                <CircleAlert className="size-3 text-orange-500" />
+              </>
+            : <>
+                <p className="text-green-500">Assessment Completed</p>
+                <Check className="size-3 text-green-500" />
+              </>
+            }
           </div>
 
           <div className="space-y-3">
@@ -99,7 +121,7 @@ export function AssessmentResultCard({
               const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(2);
 
               return (
-                <div key={index} className="space-y-1">
+                <div key={index} className="mt-2">
                   <div className="flex justify-between text-sm">
                     <span className={colorStyle.text}>{score.criterionName}</span>
                     {score.grader === "None" || score.status === "Mannual" ?
@@ -109,14 +131,16 @@ export function AssessmentResultCard({
                       </span>
                     }
                   </div>
-                  {index !== item.scoreBreakdowns.length - 1 && <Separator />}
+                  {index !== item.scoreBreakdowns.length - 1 && (
+                    <Separator className="mt-2" />
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="flex md:flex-col justify-end p-4 bg-muted/40">
+        <div className="border-l flex md:flex-col justify-end p-4 bg-muted/40">
           <Button
             disabled={isRerunning}
             onClick={() => rerunAssessment(item.id)}
@@ -132,7 +156,9 @@ export function AssessmentResultCard({
           >
             <Button className="flex items-center gap-2 w-full">
               <FileSearch className="h-4 w-4" />
-              {isGradingFailed ? "Manual Grade" : "Review"}
+              {isGradingFailed || item.status === AssessmentState.ManualGradingRequired ?
+                "Manual"
+              : "Review"}
             </Button>
           </Link>
         </div>
