@@ -17,6 +17,25 @@ var toProxy = builder.Configuration.GetValue<bool>("ProxyEnabled", true);
 //     )
 //     .WithContainerRuntimeArgs(["--privileged"]);
 
+IResourceBuilder<ContainerResource>? testRunnerPluginTool = null;
+if (
+    builder.Configuration.GetValue<bool>("PluginService:Plugins:TestRunner:Enabled", true)
+)
+{
+    testRunnerPluginTool = builder
+        .AddDockerfile(
+            "test-runner-plugin-tool",
+            Path.Combine(rootPath, "libs", "plugin-tools", "test-runner")
+        )
+        .WithHttpEndpoint(
+            targetPort: 5050,
+            port: builder.Configuration.GetValue<int?>(
+                "PluginService:Plugins:TestRunner:Port"
+            )
+        )
+        .WithContainerRuntimeArgs(["--privileged", "--shm-size=256m"]);
+}
+
 var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
 
 var rubricDb = postgres.AddDatabase("rubricdb");
@@ -177,7 +196,8 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
                 assignmentFlowEndpoint?.Url ?? "";
 
-            ctx.EnvironmentVariables["VITE_BLOB_STORAGE_URL"] = "http://127.0.0.1:27000/devstoreaccount1";
+            ctx.EnvironmentVariables["VITE_BLOB_STORAGE_URL"] =
+                "http://127.0.0.1:27000/devstoreaccount1";
         });
 }
 
