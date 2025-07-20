@@ -2,6 +2,7 @@ import type { Context } from "moleculer";
 import type { Feedback } from "@/plugins/data";
 import type { PluginOperations } from "@/plugins/info";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
+import logger from "@grading-system/utils/logger";
 import { getTransporter } from "@/lib/transporter";
 import {
   criterionGradingFailedEvent,
@@ -35,6 +36,8 @@ export const staticAnalysisService = defineTypedService2({
         const promises = result.value.map((value) =>
           value
             .orTee((error) => {
+              logger.info(`internal: Grading failed for ${error.data.criterionName}: ${error.message}`);
+
               transporter.emit(criterionGradingFailedEvent, {
                 assessmentId: params.assessmentId,
                 criterionName: error.data.criterionName,
@@ -63,6 +66,7 @@ export const staticAnalysisService = defineTypedService2({
                 scoreBreakdown: {
                   tag: "0",
                   rawScore: value.score,
+                  feedbackItems: []
                   // feedbackItems: value.feedback.map((feedbackItem) => ({
                   //   comment: feedbackItem.message || "",
                   //   fileRef: feedbackItem.fileRef,
