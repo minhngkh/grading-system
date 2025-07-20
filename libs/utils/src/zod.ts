@@ -5,10 +5,18 @@ import { CustomError } from "@/error";
 
 class ZodParseError extends CustomError.withTag("ZodParseError")<{ info: z.ZodError }> {}
 
-export function zodParse<T extends ZodSchema>(data: unknown, schema: T): Result<z.infer<T>, ZodParseError> {
+export function zodParse<T extends ZodSchema>(
+  data: unknown,
+  schema: T,
+): Result<z.infer<T>, ZodParseError> {
   const result = schema.safeParse(data);
   if (!result.success) {
-    return err(new ZodParseError({ data: { info: result.error } }));
+    return err(
+      new ZodParseError({
+        data: { info: result.error },
+        message: "Zod schema validation failed",
+      }),
+    );
   }
   return ok(result.data);
 }
