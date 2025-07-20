@@ -293,6 +293,7 @@ export default function UploadStep({ form }: UploadStepProps) {
             queryOptionsFn={getInfiniteRubricsQueryOptions(auth, {
               status: RubricStatus.Draft,
             })}
+            placeholder="Select a rubric"
             selectFn={(rubric) => rubric.rubricName}
           />
           <span>or</span>
