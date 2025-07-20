@@ -1,3 +1,4 @@
+using Aspire.Hosting;
 using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -59,12 +60,11 @@ var dbgate = dbgateContainer
         ctx.EnvironmentVariables["ENGINE_con2"] = "mongo@dbgate-plugin-mongo";
     });
 
-var serviceBus = builder
-    .AddAzureServiceBus("messaging")
-    .RunAsEmulator(emulator =>
-    {
-        emulator.WithHostPort(builder.Configuration.GetValue<int?>("Infra:ServiceBus:Management:Port"));
-    });
+var existingServiceBusName = builder.AddParameter("existingServiceBusName");
+var existingServiceBusResourceGroup = builder.AddParameter("existingServiceBusResourceGroup");
+var serviceBusSharedAccessKey = builder.AddParameter("serviceBusSharedAccessKey", secret: true);
+var serviceBus = builder.AddConnectionString("messaging",
+    ReferenceExpression.Create($"Endpoint=sb://{existingServiceBusName}.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey={serviceBusSharedAccessKey}"));
 
 var storage = builder
     .AddAzureStorage("storage")
@@ -82,6 +82,7 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
     rubricEngine = builder
         .AddProject<Projects.RubricEngine_Application>("rubric-engine")
         .WithHttpsEndpoint(
+            name: "rubric-engine",
             port: builder.Configuration.GetValue<int?>("RubricEngine:Port"),
             isProxied: toProxy
         )
@@ -99,6 +100,7 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
     assignmentFlow = builder
         .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
         .WithHttpsEndpoint(
+            name: "assignmentflow-application",
             port: builder.Configuration.GetValue<int?>("AssignmentFlow:Port"),
             isProxied: toProxy
         )

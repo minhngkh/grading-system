@@ -112,7 +112,6 @@ public static class ServiceCollectionExtensions
                 configurator.UseRawJsonDeserializer(isDefault: true);
             });
         });
-        //services.AddHostedService<Worker>();
 
         return services;
     }

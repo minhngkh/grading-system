@@ -68,7 +68,6 @@ public static class ServiceCollectionExtensions
                 configurator.ConfigureEndpoints(context);
             });
         });
-        //services.AddHostedService<Worker>();
 
         return services;
     }
