@@ -32,7 +32,7 @@ function buildFileTree(files: FileItem[]) {
 
 interface FileExplorerProps {
   files: FileItem[];
-  selectedFile: FileItem;
+  selectedFile: FileItem | null;
   setSelectedFile: (file: FileItem) => void;
   expandedFolders: Record<string, boolean>;
   setExpandedFolders: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
@@ -136,7 +136,7 @@ function renderTree(
   parentPath: string,
   expandedFolders: Record<string, boolean>,
   setExpandedFolders: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
-  selectedFile: FileItem,
+  selectedFile: FileItem | null,
   setSelectedFile: (file: FileItem) => void,
   feedbacks: FeedbackItem[],
   selectedCriteria: string[],

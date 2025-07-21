@@ -25,7 +25,7 @@ interface FeedbackListPanelProps {
   locationData?: LocationData;
   onUpdate: (updatedAssessment: Partial<Assessment>) => void;
   byFile: boolean;
-  currentFile: FileItem;
+  currentFile: FileItem | null;
   currentCriterion: string;
 }
 
@@ -261,7 +261,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
             if (byFile) {
               const fileRefRelativePath =
                 fb.fileRef ? fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) : "";
-              const fileName = currentFile.relativePath;
+              const fileName = currentFile?.relativePath;
               return fileRefRelativePath === fileName;
             } else if (currentCriterion) {
               return fb.criterion === currentCriterion;
