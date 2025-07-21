@@ -326,7 +326,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </Popover>
       </div>
 
-      <div className="h-full overflow-auto space-y-0.5 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 custom-scrollbar">
         {renderTree(
           tree,
           "",

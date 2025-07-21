@@ -614,7 +614,7 @@ const HighlightableViewer = ({
       return (
         <ShikiHighlighter
           language={language}
-          className="overflow-auto custom-scrollbar"
+          className="max-w-full overflow-y-auto custom-scrollbar"
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
@@ -709,8 +709,8 @@ const HighlightableViewer = ({
               pre(node) {
                 node.properties = {
                   ...node.properties,
-                  style: "background: var(--background); margin: 0 0.5rem;",
-                  class: "custom-scrollbar ",
+                  style:
+                    "background: var(--background); margin: 0 0.5rem; max-width: 100%",
                 };
               },
             },

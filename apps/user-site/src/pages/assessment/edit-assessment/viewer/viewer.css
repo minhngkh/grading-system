@@ -1,9 +1,7 @@
-/* CSS */
-.no-inner-scroll pre {
-  overflow: visible !important;
+pre {
+  max-width: 100%; /* Giới hạn không quá container */
 }
 code {
-  font-family: monospace;
   display: grid;
   font-size: 14px;
   padding-left: 1em; /* Add space between line numbers and content */
@@ -23,12 +21,6 @@ code {
   position: absolute;
   right: 100%; /* Position line numbers to the left of the content */
   text-align: right;
-}
-
-.annotation-span {
-  position: relative;
-  cursor: pointer;
-  background-color: rgba(255, 0, 0, 0.15); /* Default background */
 }
 
 .annotation-span[data-tag="info"] {

@@ -257,7 +257,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       switch (sidebarView) {
         case "files":
           return (
-            <div className="p-4">
+            <div className="px-4 pt-4 h-full flex flex-col">
               <FileExplorer {...fileExplorerProps} />
             </div>
           );
