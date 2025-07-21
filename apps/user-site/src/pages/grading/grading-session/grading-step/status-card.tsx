@@ -47,6 +47,11 @@ const assessmentStateStyles: Partial<Record<AssessmentState, AssessmentStyle>> =
     label: "Grading failed",
     icon: <XCircle className="size-4 text-red-600 dark:text-red-400" />,
   },
+  [AssessmentState.ManualGradingRequired]: {
+    color: "text-orange-600 dark:text-orange-400",
+    label: "Manual grading required",
+    icon: <FileSearch className="size-4 text-orange-600 dark:text-orange-400" />,
+  },
 };
 
 interface AssessmentStatusCardProps {

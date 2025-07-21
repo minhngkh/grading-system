@@ -1,30 +1,29 @@
-// PDFViewer.tsx
 import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { FeedbackItem } from "@/types/assessment";
+import { Assessment } from "@/types/assessment";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import useAssessmentForm from "@/hooks/use-assessment-form";
+import { FileItem } from "@/types/file";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PDFViewerProps {
-  fileUrl: string;
-  feedbacks: FeedbackItem[];
-  updateFeedback: (feedbackId: string, fb: FeedbackItem) => void;
-  activeFeedbackId?: string | null;
+  file: FileItem;
+  activeFeedbackId?: number | null;
   onPageSelect?: (page: number | null) => void;
-  updateLastSavedData?: (updates: { feedbacks: FeedbackItem[] }) => void;
-  formData?: { feedbacks: FeedbackItem[] };
+  assessment: Assessment;
+  onUpdate: (updatedAssessment: Partial<Assessment>) => void;
+  onUpdateLastSave: (updatedLastSaved: Partial<Assessment>) => void;
 }
 
 const PDFViewer = ({
-  fileUrl,
-  feedbacks,
-  updateFeedback,
+  file,
   activeFeedbackId,
   onPageSelect,
-  updateLastSavedData,
-  formData,
+  assessment,
+  onUpdate,
+  onUpdateLastSave,
 }: PDFViewerProps) => {
   const [numPages, setNumPages] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
@@ -32,7 +31,6 @@ const PDFViewer = ({
   void currentPage;
   const [scale, setScale] = useState<number>(1.0);
   const containerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -52,22 +50,49 @@ const PDFViewer = ({
     return () => el.removeEventListener("wheel", handleWheel);
   }, []);
 
-  // Reset khi đổi file
   useEffect(() => {
     setNumPages(0);
     setTotalPages(0);
-  }, [fileUrl]);
+  }, [file.content]);
 
-  // Khi document load
   const handleLoadSuccess = ({ numPages }: any) => {
     setNumPages(numPages);
     setTotalPages(numPages);
   };
 
-  // Simplified feedback validation - use ID-based updates
+  const { form, formData } = useAssessmentForm(assessment);
+  const validFeedbacks = formData.feedbacks
+    .map((fb, idx) => ({ fb, idx }))
+    .filter(
+      ({ fb }) =>
+        fb.fileRef &&
+        (fb.fileRef.endsWith(file.name) ||
+          fb.fileRef.includes(`/${file.name}`) ||
+          fb.fileRef.split("/").pop() === file.name),
+    );
+
   useEffect(() => {
-    if (totalPages > 0 && feedbacks.length) {
-      const adjusted = feedbacks.map((fb) => {
+    if (
+      typeof activeFeedbackId === "number" &&
+      activeFeedbackId >= 0 &&
+      formData.feedbacks[activeFeedbackId]
+    ) {
+      const fb = formData.feedbacks[activeFeedbackId];
+      if (fb.locationData?.type === "pdf") {
+        const pageNum = fb.locationData.page;
+        const selector = `[data-page-number="${pageNum}"]`;
+        const el = document.querySelector<HTMLDivElement>(selector);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          setCurrentPage(pageNum);
+        }
+      }
+    }
+  }, [activeFeedbackId]);
+
+  useEffect(() => {
+    if (totalPages > 0 && validFeedbacks.length) {
+      const adjusted = validFeedbacks.map(({ fb }) => {
         if (fb.locationData?.type === "pdf" && typeof fb.locationData.page === "number") {
           const valid = Math.max(1, Math.min(fb.locationData.page, totalPages));
           if (valid !== fb.locationData.page) {
@@ -80,40 +105,35 @@ const PDFViewer = ({
         return fb;
       });
 
-      // Use ID-based updates instead of global index lookups
       let hasChanges = false;
       for (let i = 0; i < adjusted.length; i++) {
-        if (JSON.stringify(adjusted[i]) !== JSON.stringify(feedbacks[i])) {
-          const originalFeedback = feedbacks[i];
-          if (originalFeedback.id) {
-            updateFeedback(originalFeedback.id, adjusted[i]);
-            hasChanges = true;
-          }
+        if (JSON.stringify(adjusted[i]) !== JSON.stringify(validFeedbacks[i].fb)) {
+          hasChanges = true;
         }
       }
 
-      // Update lastSavedData after normalization to prevent revert button from being enabled
-      if (hasChanges && updateLastSavedData && formData) {
-        // Use a longer timeout to ensure form state has been updated
-        setTimeout(() => {
-          // Create the updated feedbacks list with normalized data
-          const updatedFeedbacks = formData.feedbacks.map((fb) => {
-            const adjustedFb = adjusted.find((adj) => adj.id === fb.id);
-            return adjustedFb || fb;
-          });
-          updateLastSavedData({ feedbacks: updatedFeedbacks });
-        }, 150);
+      if (hasChanges) {
+        const updatedFeedbacks = formData.feedbacks.map((fb, idx) => {
+          const match = validFeedbacks.find(({ idx: i }) => i === idx);
+          if (match) {
+            const adj = adjusted[validFeedbacks.findIndex(({ idx: i }) => i === idx)];
+            return adj || fb;
+          }
+          return fb;
+        });
+        form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
+        onUpdate({ feedbacks: updatedFeedbacks });
+        onUpdateLastSave({ feedbacks: updatedFeedbacks });
       }
     }
-  }, [totalPages, feedbacks, updateFeedback, updateLastSavedData, formData]);
+  }, [totalPages, validFeedbacks, onUpdate, formData.feedbacks, form]);
 
-  // Internal page click handler
   const handlePageClick = (pageNumber: number) => {
     setCurrentPage(pageNumber);
     onPageSelect?.(pageNumber);
   };
 
-  if (!fileUrl) {
+  if (!file.content) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         No PDF file selected.
@@ -121,28 +141,12 @@ const PDFViewer = ({
     );
   }
 
-  // Simplified scroll to active feedback
-  useEffect(() => {
-    if (!activeFeedbackId) return;
-
-    const fb = feedbacks.find((f) => f.id === activeFeedbackId);
-    if (fb?.locationData?.type === "pdf") {
-      const pageNum = fb.locationData.page;
-      const selector = `[data-page-number="${pageNum}"]`;
-      const el = document.querySelector<HTMLDivElement>(selector);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        setCurrentPage(pageNum);
-      }
-    }
-  }, [activeFeedbackId, feedbacks]);
-
   return (
     <div className="flex-col h-full overflow-auto relative">
       <div ref={containerRef} className="flex-1 flex justify-center bg-white py-4">
         <Document
-          key={fileUrl}
-          file={fileUrl}
+          key={file.content}
+          file={file.content}
           onLoadSuccess={handleLoadSuccess}
           onLoadError={console.error}
         >
@@ -152,7 +156,7 @@ const PDFViewer = ({
               pageNumber={i + 1}
               scale={scale}
               onRenderError={console.error}
-              className="mb-4 cursor-pointer"
+              className={`mb-4 cursor-pointer${typeof activeFeedbackId === "number" && validFeedbacks[activeFeedbackId]?.fb.locationData?.type === "pdf" && validFeedbacks[activeFeedbackId]?.fb.locationData.page === i + 1 ? " ring-2 ring-primary" : ""}`}
               onClick={() => handlePageClick(i + 1)}
             />
           ))}

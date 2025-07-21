@@ -29,15 +29,17 @@ public sealed class AssessmentStateMachine : StateMachine<AssessmentState, Asses
 
         Configure(AssessmentState.AutoGradingFinished)
             .PermitReentry(AssessmentTrigger.FinishAutoGrading)
-            //.Permit(AssessmentTrigger.StartAutoGrading, AssessmentState.AutoGradingStarted)
+            .Permit(AssessmentTrigger.StartAutoGrading, AssessmentState.AutoGradingStarted)
             .Permit(AssessmentTrigger.WaitForManualGrading, AssessmentState.ManualGradingRequired)
             .Permit(AssessmentTrigger.Complete, AssessmentState.Completed);
 
         Configure(AssessmentState.AutoGradingFailed)
-            //.Permit(AssessmentTrigger.StartAutoGrading, AssessmentState.AutoGradingStarted)
+            .Permit(AssessmentTrigger.StartAutoGrading, AssessmentState.AutoGradingStarted)
             .Permit(AssessmentTrigger.WaitForManualGrading, AssessmentState.ManualGradingRequired);
 
         Configure(AssessmentState.ManualGradingRequired)
+            .Permit(AssessmentTrigger.StartAutoGrading, AssessmentState.AutoGradingStarted)
+            .Permit(AssessmentTrigger.FinishAutoGrading, AssessmentState.AutoGradingFinished)
             .Permit(AssessmentTrigger.Complete, AssessmentState.Completed);
 
         Configure(AssessmentState.Completed)

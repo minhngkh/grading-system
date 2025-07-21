@@ -119,10 +119,10 @@ export function updateFeedbackMutationOptions(
 export function updateScoreMutationOptions(
   id: string,
   auth: Auth,
-  options?: Partial<UseMutationOptions<unknown, unknown, Partial<ScoreBreakdown>[]>>,
-): UseMutationOptions<unknown, unknown, Partial<ScoreBreakdown>[]> {
+  options?: Partial<UseMutationOptions<unknown, unknown, ScoreBreakdown[]>>,
+): UseMutationOptions<unknown, unknown, ScoreBreakdown[]> {
   return {
-    mutationFn: async (scoreBreakdowns: Partial<ScoreBreakdown>[]) => {
+    mutationFn: async (scoreBreakdowns: ScoreBreakdown[]) => {
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required");
       return AssessmentService.updateScore(id, scoreBreakdowns, token);

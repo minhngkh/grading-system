@@ -45,8 +45,8 @@ export const baseStaticAnalysisConfigSchema = z.object({
 export const checkStaticAnalysisConfigSchema = {
   func: (data: z.infer<typeof baseStaticAnalysisConfigSchema>) =>
     data.preset !== undefined ||
-    data.additionalRulesets !== undefined &&
-    data.additionalRulesets.length !== 0,
+    (data.additionalRulesets !== undefined &&
+    data.additionalRulesets.length !== 0),
   message: "Either 'preset' or 'additionalRulesets' must be set",
 };
 

@@ -5,13 +5,19 @@ export enum Grader {
   teacher = "Teacher",
 }
 
+export enum ScoreBreakdownStatus {
+  Manual = "Mannual",
+  Failed = "Failed",
+  Graded = "Graded",
+}
+
 export const ScoreBreakdownSchema = z.object({
   criterionName: z.string(),
   performanceTag: z.string(),
   grader: z.string(),
   rawScore: z.number(),
   metadata: z.array(z.string()).optional(),
-  status: z.string(),
+  status: z.nativeEnum(ScoreBreakdownStatus),
 });
 
 const BaseFeedbackSchema = z.object({

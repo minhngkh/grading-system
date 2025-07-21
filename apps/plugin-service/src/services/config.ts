@@ -46,15 +46,29 @@ export function getTypedConfig<T extends ZodSchema>(id: string, schema: T) {
   return safeTry(async function* () {
     const rawConfig = yield* fromPromise(
       getConfig(id),
-      (error) => new GetConfigError({ cause: error }),
+      (error) =>
+        new GetConfigError({
+          message: `Failed to get plugin config`,
+          cause: error,
+        }),
     );
 
     if (rawConfig === null) {
-      return errAsync(new ConfigNotFoundError({ data: { id } }));
+      return errAsync(
+        new ConfigNotFoundError({
+          message: `Plugin config not found`,
+          data: { id },
+        }),
+      );
     }
 
     if (rawConfig.config === undefined) {
-      return errAsync(new ConfigMalformedError({ data: { id } }));
+      return errAsync(
+        new ConfigMalformedError({
+          message: `Plugin config is malformed`,
+          data: { id },
+        }),
+      );
     }
 
     const config: z.infer<T> = yield* zodParse(rawConfig.config, schema).orTee((error) =>

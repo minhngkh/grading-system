@@ -295,7 +295,7 @@ export function route(_broker?: ServiceBroker) {
       const pluginKey = configurablePluginsMap.get(pluginId)!;
       const check = plugins[pluginKey].checkConfig;
 
-      if (check !== undefined && check.func(data as unknown as any)) {
+      if (check !== undefined && !check.func(data as unknown as any)) {
         return c.json({ error: check.message }, 400);
       }
 

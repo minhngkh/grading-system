@@ -41,7 +41,7 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
     return [...scoreAdjustment].sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
-      return dateB - dateA; // Descending order (newest first)
+      return dateB - dateA;
     });
   }, [scoreAdjustment]);
 

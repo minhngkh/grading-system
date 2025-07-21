@@ -456,7 +456,7 @@ export class AssessmentExporter implements DataExporter {
 
   exportToPDF() {
     const doc = new jsPDF();
-    doc.setFont("NotoSans-Regular");
+    doc.setFont("NotoSans-Regular"); // Đảm bảo font Việt hóa
 
     doc.setFontSize(16);
     doc.text("Assessment Report", 14, 20);
@@ -495,7 +495,7 @@ export class AssessmentExporter implements DataExporter {
         textColor: [0, 0, 0],
         fontStyle: "bold",
       },
-      styles: { fontSize: 10 },
+      styles: { fontSize: 10, font: "NotoSans-Regular" }, // Đảm bảo font cho body
     });
 
     const yAfter = (doc as any).lastAutoTable?.finalY ?? 100;
@@ -537,8 +537,9 @@ export class AssessmentExporter implements DataExporter {
         fillColor: [200, 200, 200],
         textColor: [0, 0, 0],
         fontStyle: "bold",
+        font: "NotoSans-Regular",
       },
-      styles: { fontSize: 8 },
+      styles: { fontSize: 8, font: "NotoSans-Regular" },
       margin: { left: 14, right: 14 },
     });
 

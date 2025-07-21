@@ -31,7 +31,7 @@ const ImageViewer = ({ src, onSelectionMade, onSelectionChange }: ImageViewerPro
       if (e.ctrlKey) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        setScale((prev) => Math.max(0.2, Math.min(3, prev + delta)));
+        setScale((prev) => Math.max(5, Math.min(3, prev + delta))); // min scale = 0.5
       }
     };
 
@@ -42,28 +42,44 @@ const ImageViewer = ({ src, onSelectionMade, onSelectionChange }: ImageViewerPro
   return (
     <div
       ref={containerRef}
-      className="flex justify-center items-center w-full h-full overflow-auto bg-gray-50"
+      className="w-full h-full overflow-auto custom-scrollbar bg-background"
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "relative",
+      }}
     >
       <div
-        className="relative"
         style={{
-          transform: `scale(${scale})`,
-          transformOrigin: "center center",
-          transition: "transform 0.1s ease-out",
+          width: "100%",
+          height: "100%",
+          position: "relative",
         }}
       >
-        <img
-          className="block max-w-none cursor-pointer hover:cursor-pointer"
-          src={src}
-          onClick={handleImageClick}
-          draggable={false}
+        <div
           style={{
-            width: "auto",
-            height: "auto",
-            minWidth: "300px",
-            minHeight: "200px",
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: scale <= 1 ? "center" : "flex-start",
+            justifyContent: scale <= 1 ? "center" : "flex-start",
           }}
-        />
+        >
+          <img
+            className="block cursor-pointer"
+            src={src}
+            onClick={handleImageClick}
+            draggable={false}
+            style={{
+              width: `calc(100% * ${scale})`,
+              height: `calc(100% * ${scale})`,
+              objectFit: "contain",
+              transition: "width 0.1s ease-out, height 0.1s ease-out",
+              display: "block",
+              margin: scale <= 1 ? "auto" : "0",
+            }}
+          />
+        </div>
       </div>
     </div>
   );

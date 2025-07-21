@@ -1,18 +1,11 @@
-import { useEffect, useState, useCallback } from "react";
-import { Assessment } from "@/types/assessment";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Assessment, AssessmentSchema, AssessmentState } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
-import { toast } from "sonner";
 import { ScoringPanel } from "@/components/app/scoring-panel";
 import MainWorkspace from "@/components/app/main-workspace";
 import { AssessmentHeader } from "@/components/app/assessment-header";
-import useAssessmentForm from "@/hooks/use-assessment-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@clerk/clerk-react";
-import {
-  updateFeedbackMutationOptions,
-  updateScoreMutationOptions,
-} from "@/queries/assessment-queries";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -20,6 +13,14 @@ import {
 } from "@/components/ui/resizable";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
 import { getFileItemsQueryOptions } from "@/queries/file-queries";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FileItem } from "@/types/file";
+import { SignalRService } from "@/services/realtime-service";
+import { AssessmentGradingStatus } from "@/types/grading-progress";
+import { toast } from "sonner";
+import { useAuth } from "@clerk/clerk-react";
+import PendingComponent from "@/components/app/route-pending";
 
 export function EditAssessmentUI({
   assessment,
@@ -32,66 +33,22 @@ export function EditAssessmentUI({
 }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
+  const hubRef = useRef<SignalRService | undefined>(undefined);
 
-  const { form, formData, validationState, updateLastSavedData, revertToLastSaved } =
-    useAssessmentForm(assessment);
+  const form = useForm<Assessment>({
+    resolver: zodResolver(AssessmentSchema),
+    defaultValues: assessment,
+    mode: "onChange",
+  });
 
-  const { canRevert, hasUnsavedChanges } = validationState;
+  const formData = form.watch();
 
-  // Simple revert function
-  const handleRevert = useCallback(() => {
-    revertToLastSaved();
-    toast.success("Reverted to saved data.");
-  }, [revertToLastSaved]);
+  const [lastSaved, setLastSaved] = useState<Assessment>(assessment);
 
-  // Only essential state
-  const [files, setFiles] = useState<any[]>([]);
-  const [selectedFile, setSelectedFile] = useState<any | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [showBottomPanel, setShowBottomPanel] = useState(true);
   const [activeScoringTab, setActiveScoringTab] = useState<string>(
     rubric.criteria[0]?.name || "",
-  );
-
-  // Memoize callbacks to prevent unnecessary re-renders
-  const handleFileSelect = useCallback((file: any) => {
-    setSelectedFile(file);
-  }, []);
-
-  // Simple mutations without complex callbacks (like rubric page)
-  const updateFeedbackMutation = useMutation(
-    updateFeedbackMutationOptions(assessment.id, auth, {
-      onSuccess: () => {
-        toast.success("Feedback updated successfully");
-        queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
-      },
-      onError: (error) => {
-        console.error("Failed to update feedback:", error);
-        toast.error("Failed to update feedback");
-      },
-    }),
-  );
-
-  const updateScoreMutation = useMutation(
-    updateScoreMutationOptions(assessment.id, auth, {
-      onSuccess: (_, scoreBreakdowns) => {
-        toast.success("Score updated successfully");
-        updateLastSavedData({
-          scoreBreakdowns: scoreBreakdowns as Assessment["scoreBreakdowns"],
-        });
-
-        queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
-        queryClient.invalidateQueries({
-          queryKey: ["allGradingAssessments", grading.id],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["scoreAdjustments", assessment.id],
-        });
-      },
-      onError: (error) => {
-        console.error("Failed to update score:", error);
-        toast.error("Failed to update score");
-      },
-    }),
   );
 
   const {
@@ -101,67 +58,98 @@ export function EditAssessmentUI({
   } = useQuery(getFileItemsQueryOptions(grading.id, formData.submissionReference, auth));
 
   useEffect(() => {
-    if (isLoadingFiles) return;
-    if (fileLoadError) return;
+    if (isLoadingFiles || fileLoadError) return;
 
     if (fileItems && fileItems.length > 0) {
-      setFiles(fileItems);
       setSelectedFile(fileItems[0]);
     }
   }, [isLoadingFiles, fileItems, fileLoadError]);
 
-  const handleUpdateScore = useCallback(
-    (criterionName: string, newScore: number) => {
-      const criterion = rubric.criteria.find((c) => c.name === criterionName);
-      if (!criterion) {
-        console.warn(`Criterion not found: ${criterionName}`);
-        return;
+  const handleStatusChange = useCallback((newStatus: AssessmentGradingStatus) => {
+    if (newStatus.assessmentId !== assessment.id) return;
+
+    form.setValue("status", newStatus.status);
+    if (
+      newStatus.status === AssessmentState.Completed ||
+      newStatus.status === AssessmentState.AutoGradingFinished
+    ) {
+      queryClient.refetchQueries({
+        queryKey: ["assessment", assessment.id],
+      });
+      queryClient.refetchQueries({
+        queryKey: ["scoreAdjustments", assessment.id],
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      const token = await auth.getToken();
+      if (!token || !isMounted || hubRef.current) return;
+
+      try {
+        const hub = new SignalRService(() => token);
+        hub.on("ReceiveAssessmentProgress", handleStatusChange);
+        await hub.start();
+        hubRef.current = hub;
+        hub.invoke("Register", grading.id);
+      } catch (error) {
+        console.error("Error starting SignalR hub:", error);
+        toast.error("Failed to regrade assessments. Please try again later.");
       }
+    })();
 
-      // Validate score range
-      if (newScore < 0 || newScore > 100) {
-        toast.error("Score must be between 0 and 100");
-        return;
+    return () => {
+      isMounted = false;
+      if (hubRef.current) {
+        hubRef.current.off("ReceiveAssessmentProgress");
+        hubRef.current.off("Complete");
+        hubRef.current.stop();
+        hubRef.current = undefined;
       }
+    };
+  }, []);
 
-      // Find the appropriate performance level
-      let matchedLevel = criterion.levels
-        .filter((l) => l.weight <= newScore)
-        .sort((a, b) => b.weight - a.weight)[0];
-
-      if (!matchedLevel && criterion.levels.length > 0) {
-        matchedLevel = criterion.levels.reduce(
-          (min, l) => (l.weight < min.weight ? l : min),
-          criterion.levels[0],
-        );
-      }
-
-      const updated = formData.scoreBreakdowns.map((sb: any) =>
-        sb.criterionName === criterionName ?
-          {
-            ...sb,
-            performanceTag: matchedLevel ? matchedLevel.tag : "",
-            rawScore: (newScore * (criterion.weight ?? 0)) / 100,
-          }
-        : sb,
-      );
-
-      form.setValue("scoreBreakdowns", updated, { shouldValidate: true });
+  const onUpdateAssessment = useCallback(
+    (updatedAssessmentData: Partial<Assessment>) => {
+      form.reset({
+        ...formData,
+        ...updatedAssessmentData,
+      });
     },
-    [rubric.criteria, formData.scoreBreakdowns, form],
+    [form],
   );
+
+  const onUpdateLastSaveAssessment = useCallback(
+    (updatedAssessmentData: Partial<Assessment>) => {
+      setLastSaved((prev) => ({
+        ...prev,
+        ...updatedAssessmentData,
+      }));
+    },
+    [lastSaved],
+  );
+
+  if (assessment.status === AssessmentState.AutoGradingStarted) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <PendingComponent message="Assessment is being graded. Please wait..." />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col gap-2">
       {/* Header */}
       <AssessmentHeader
         assessment={formData}
+        lastSavedData={lastSaved}
         grading={grading}
         rubric={rubric}
-        canRevert={canRevert}
-        hasUnsavedChanges={hasUnsavedChanges}
-        handleRevert={handleRevert}
-        updateLastSavedData={updateLastSavedData}
+        onUpdate={onUpdateAssessment}
+        onUpdateLastSave={onUpdateLastSaveAssessment}
       />
 
       {/* Main Content */}
@@ -187,14 +175,15 @@ export function EditAssessmentUI({
                 </div>
               </div>
             : <MainWorkspace
-                files={files}
+                files={fileItems || []}
                 selectedFile={selectedFile}
-                onFileSelect={handleFileSelect}
+                onFileSelect={setSelectedFile}
                 assessment={formData}
                 grading={grading}
                 rubric={rubric}
                 activeScoringTab={activeScoringTab}
-                form={form}
+                onUpdate={onUpdateAssessment}
+                onUpdateLastSave={onUpdateLastSaveAssessment}
               />
             }
           </ResizablePanel>
@@ -220,12 +209,10 @@ export function EditAssessmentUI({
                 <ScoringPanel
                   rubric={rubric}
                   grading={grading}
-                  formData={formData}
-                  updateScore={handleUpdateScore}
-                  assessmentId={assessment.id}
+                  assessment={formData}
                   activeScoringTab={activeScoringTab}
                   setActiveScoringTab={setActiveScoringTab}
-                  form={form}
+                  onUpdate={onUpdateAssessment}
                 />
               </ResizablePanel>
             </>
