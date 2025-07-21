@@ -128,13 +128,11 @@ export function gradeSubmission(data: {
           .map((result) => {
             clean();
 
-            logger.debug("file[0]:", result.feedbacks[0].filePath);
-
             const scannedFilesSet = new Set(result.scannedFiles);
             const ignoredFiles = [];
             for (const filePath of value.fileList) {
               if (!scannedFilesSet.has(filePath)) {
-                ignoredFiles.push(filePath);
+                ignoredFiles.push(toFileRef(filePath));
               }
             }
 
@@ -143,7 +141,7 @@ export function gradeSubmission(data: {
               score: result.score,
               feedback: result.feedbacks.map((item) => ({
                 ...item,
-                fileRef: item.filePath,
+                fileRef: toFileRef(item.filePath),
               })),
               ignoredFiles,
             };
@@ -175,8 +173,6 @@ export function gradeCriterion(data: {
     if (data.config.crossFileAnalysis) {
       args.push("--pro");
     }
-
-    args.push(...createRuleFlags(data.config));
 
     args.push("--json", "--quiet");
 
@@ -217,9 +213,6 @@ export function gradeCriterion(data: {
       };
       const message = result.extra.message || undefined;
 
-      logger.debug("result:", result.path);
-      logger.debug("filePath:", data.stripFunc(result.path));
-
       return {
         filePath: data.stripFunc(result.path),
         position,
@@ -253,6 +246,8 @@ function createRuleFlags(config: StaticAnalysisConfig) {
       flags.push(`--config="${ruleset}"`);
     }
   }
+
+  logger.debug("Semgrep flags:", flags);
 
   return flags;
 }
