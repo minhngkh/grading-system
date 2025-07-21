@@ -134,23 +134,22 @@ export class AzureServiceBusTransporter extends EventTransporter {
     let receiver = this.receivers.get(event.name);
 
     if (!receiver) {
-      // await this.admin.createQueue(event.name);
-      // logger.info(`Queue created for event: ${event.name}`);
-      // await this.admin.createSubscription(event.name, `${event.name}-node-sub`, {
-      //   forwardTo: event.name,
-      // });
-      // logger.info(`Subscription created for event: ${event.name}`);
+      const subscriptionName = `${event.name}-node-sub`;
+      const subscriptionExists = await this.admin.subscriptionExists(event.name, subscriptionName);
+      if (!subscriptionExists) {
+        await this.admin.createSubscription(event.name, subscriptionName);
+        logger.info(`Subscription created for event: ${event.name}`);
+      }
 
-      receiver = this.client.createReceiver(event.name);
+      receiver = this.client.createReceiver(event.name, `${event.name}-node-sub`);
       this.receivers.set(event.name, receiver);
     }
 
     receiver.subscribe({
       processMessage: async (brokeredMessage) => {
-        logger.debug(`Message received: ${event.name}`);
-
         try {
-          const content = JSON.parse(brokeredMessage.body);
+          logger.info(`Received message: ${JSON.stringify(brokeredMessage.body)}`);
+          const content = brokeredMessage.body.message;
 
           const result = handler(content);
           const handlerResult = await (result instanceof Promise ? result : (
