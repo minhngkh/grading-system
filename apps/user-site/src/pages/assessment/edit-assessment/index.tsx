@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Assessment, AssessmentSchema, AssessmentState } from "@/types/assessment";
 import { Rubric } from "@/types/rubric";
 import { GradingAttempt } from "@/types/grading";
-import { ScoringPanel } from "@/components/app/scoring-panel";
-import MainWorkspace from "@/components/app/main-workspace";
-import { AssessmentHeader } from "@/components/app/assessment-header";
+import { ScoringPanel } from "@/pages/assessment/edit-assessment/scoring-panel";
+import MainWorkspace from "@/pages/assessment/edit-assessment/main-workspace";
+import { AssessmentHeader } from "@/pages/assessment/edit-assessment/assessment-header";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ResizablePanelGroup,
