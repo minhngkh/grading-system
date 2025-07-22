@@ -66,13 +66,7 @@ var serviceBusSharedAccessKey = builder.AddParameter("serviceBusSharedAccessKey"
 var serviceBus = builder.AddConnectionString("messaging",
     ReferenceExpression.Create($"Endpoint=sb://{existingServiceBusName}.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey={serviceBusSharedAccessKey}"));
 
-var storage = builder
-    .AddAzureStorage("storage")
-    .RunAsEmulator(azurite =>
-    {
-        azurite.WithDataVolume().WithBlobPort(27000);
-    });
-
+var storage = builder.AddAzureStorage("storage");
 var submissionStore = storage.AddBlobs("submissions-store");
 var rubricContextStore = storage.AddBlobs("rubric-context-store");
 
