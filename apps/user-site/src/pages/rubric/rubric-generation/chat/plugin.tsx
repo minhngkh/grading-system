@@ -46,8 +46,8 @@ interface PluginTabProps {
 }
 
 const getPluginName = (pluginKey?: string) => {
-  if (!pluginKey || pluginKey === "None") {
-    return PluginName.None;
+  if (!pluginKey) {
+    return PluginName.ai;
   }
   return PluginName[pluginKey as keyof typeof PluginName] || pluginKey;
 };
@@ -185,7 +185,7 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
                   <TableCell className="font-medium">{criterion.name}</TableCell>
                   <TableCell>
                     <Select
-                      value={criterion.plugin || "None"}
+                      value={criterion.plugin || "ai"}
                       onValueChange={(value) => onPluginSelect(index, value)}
                       disabled={isLoading || updateRubricMutation.isPending}
                     >

@@ -5,16 +5,9 @@ import { PluginName } from "@/consts/plugins";
 interface RubricViewProps {
   rubricData: Rubric;
   showPlugins?: boolean;
-  editPlugin?: boolean;
-  onPluginSelect?: (criterionIndex: number) => void;
 }
 
-export function RubricView({
-  rubricData,
-  showPlugins,
-  editPlugin,
-  onPluginSelect,
-}: RubricViewProps) {
+export function RubricView({ rubricData, showPlugins }: RubricViewProps) {
   if (rubricData.criteria.length === 0) {
     return (
       <div className="text-muted-foreground size-full flex justify-center items-center">
@@ -80,22 +73,8 @@ export function RubricView({
                   );
                 })}
                 {showPlugins && (
-                  <td
-                    className={cn(
-                      "p-2 text-sm",
-                      editPlugin && "cursor-pointer hover:bg-muted/50",
-                    )}
-                    onClick={() => {
-                      if (!editPlugin) return;
-                      onPluginSelect?.(index);
-                    }}
-                  >
-                    <div
-                      className={cn(
-                        "text-center font-semibold text-blue-400",
-                        editPlugin && "underline cursor-pointer",
-                      )}
-                    >
+                  <td className={cn("p-2 text-sm")}>
+                    <div className={cn("text-center font-semibold text-blue-400")}>
                       {criterion.plugin ?
                         PluginName[criterion.plugin as keyof typeof PluginName] ||
                         "Unknown"

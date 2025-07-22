@@ -17,18 +17,20 @@ export const VirtualizedAssessmentList = memo(
     const virtualizer = useVirtualizer({
       count: assessments.length,
       getScrollElement: () => parentRef.current,
-      estimateSize: () => 210, // Card height + padding bottom (16px)
-      overscan: 3, // Number of items to render outside visible area
+      estimateSize: () => 180, // Base estimate, will be adjusted by measurement
+      overscan: 5, // Increased overscan for better UX with dynamic heights
       measureElement:
         typeof ResizeObserver !== "undefined" ?
           (element) => element?.getBoundingClientRect().height
         : undefined,
+      // Enable dynamic measurement for better handling of variable heights
+      getItemKey: (index) => assessments[index]?.assessmentId || index,
     });
 
     return (
       <div
         ref={parentRef}
-        className="pl-1 pr-2 h-[30vh] max-h-[800px] custom-scrollbar overflow-auto"
+        className="pl-1 pr-2 min-h-[200px] max-h-[800px] custom-scrollbar overflow-auto"
       >
         <div
           style={{
@@ -40,16 +42,17 @@ export const VirtualizedAssessmentList = memo(
           {virtualizer.getVirtualItems().map((virtualItem) => (
             <div
               key={virtualItem.key}
+              data-index={virtualItem.index}
+              ref={virtualizer.measureElement}
               style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 width: "100%",
-                height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
               }}
             >
-              <div className="space-y-4">
+              <div style={{ paddingBottom: "20px" }}>
                 <AssessmentStatusCard
                   status={assessments[virtualItem.index]}
                   gradingId={gradingId}

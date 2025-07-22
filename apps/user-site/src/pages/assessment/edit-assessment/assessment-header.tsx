@@ -120,19 +120,18 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     }),
   );
 
-  const handleSaveFeedback = async () => {
+  const handleSaveFeedback = () => {
     if (updateFeedbackMutation.isPending) return;
 
     const feedbackChanged =
       JSON.stringify(assessment.feedbacks) !== JSON.stringify(lastSavedData.feedbacks);
+
     if (!feedbackChanged) {
       toast.info("No feedback changes to save");
       return;
     }
 
-    try {
-      await updateFeedbackMutation.mutateAsync(assessment.feedbacks);
-    } catch (error) {}
+    updateFeedbackMutation.mutate(assessment.feedbacks);
   };
 
   const handleSaveScore = async () => {
