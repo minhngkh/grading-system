@@ -96,7 +96,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     }),
   );
 
-  // const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
   const { mutate: rerunAssessment } = useMutation(
     rerunAssessmentMutationOptions(auth, {
       onMutate: () => {

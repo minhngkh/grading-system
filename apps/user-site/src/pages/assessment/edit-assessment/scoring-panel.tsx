@@ -101,7 +101,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           }
         : sb,
       );
-      console.log("Updated scoreBreakdowns:", updated);
+
       onUpdate({ scoreBreakdowns: updated });
     },
     [assessment.scoreBreakdowns, onUpdate, scale],
