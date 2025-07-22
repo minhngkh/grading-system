@@ -30,7 +30,32 @@ export const gradingSystemPrompt = (partOfRubric: string) => dedent`
 
 export const gradingContextHeader = (data: string) => dedent`
   ## RUBRIC ADDITIONAL CONTEXT ###
-  This is additional context for the provided rubric, which was not included in the rubric itself:
+This section provides additional context that adjusts how strictly or leniently you should apply the rubric during grading.
+
+  - It includes a single key: \`difficulty\`, which reflects the expected complexity of the assignment.
+  - Use this value to adapt your grading behavior accordingly.
+
+  ### How to interpret \`difficulty\`:
+
+  - \`"easy"\`: The task is simple or beginner-level.
+    - Be more **lenient** when applying the rubric.
+    - It’s acceptable to assign a level even if some minor criteria are not fully met, as long as the overall intent is clear.
+    - Be more generous in selecting levels and assigning scores.
+
+  - \`"medium"\`: The task is of moderate difficulty.
+    - Apply the rubric **as written**, with no additional leniency or strictness.
+    - Use neutral judgment when deciding level and score.
+
+  - \`"hard"\`: The task is complex or advanced.
+    - Be more **strict** when applying the rubric.
+    - Only assign a level if the input clearly satisfies **all** criteria of that level.
+    - Be conservative in assigning high levels or high scores.
+
+  - If \`difficulty\` is missing or unrecognized, default to \`"medium"\` behavior.
+
+  You must apply this difficulty adjustment consistently when deciding which level (tag) to assign for each criterion and when determining the appropriate score.
+
+
   \`\`\`json
   ${data}
   \`\`\`
