@@ -11,16 +11,27 @@ export class CustomErrorV0<TData> extends Error {
   }
 }
 
-export type ErrorInfo = {
-  message?: string;
-  cause?: unknown;
-};
+export type ErrorInfo<TCause extends Error | unknown> =
+  TCause extends Error ?
+    {
+      message?: string;
+      cause: TCause;
+    }
+  : {
+      message?: string;
+      cause?: TCause;
+    };
 
-export abstract class CustomError<TData extends object | void> extends Error {
+export abstract class CustomError<
+  TData extends object | void,
+  TTag extends string,
+  TCause extends Error | unknown = unknown,
+> extends Error {
   data: TData;
-  _tag: string;
+  _tag: TTag;
+  override cause!: ErrorInfo<TCause>["cause"];
 
-  protected constructor(info: ErrorInfo, data: TData, tag: string) {
+  protected constructor(info: ErrorInfo<TCause>, data: TData, tag: TTag) {
     super(info.message, { cause: info.cause });
     super.name = tag;
     this._tag = tag;
@@ -28,12 +39,15 @@ export abstract class CustomError<TData extends object | void> extends Error {
   }
 
   static withTag<TTag extends string>(tag: TTag) {
-    return class<TData extends object | void> extends CustomError<TData> {
-      override _tag: TTag;
-
-      constructor(info: TData extends void ? ErrorInfo : ErrorInfo & { data: TData }) {
+    return class<
+      TData extends object | void,
+      TCause extends Error | unknown = unknown,
+    > extends CustomError<TData, TTag, TCause> {
+      constructor(
+        info: TData extends void ? ErrorInfo<TCause>
+        : ErrorInfo<TCause> & { data: TData },
+      ) {
         super(info, ("data" in info ? info.data : undefined) as TData, tag);
-        this._tag = tag;
       }
     };
   }
@@ -46,20 +60,36 @@ export abstract class CustomError<TData extends object | void> extends Error {
   }
 }
 
-export function asError(thrown: unknown): Error {
+export class DefaultError extends CustomError.withTag("DefaultError")<void> {}
+
+function toDefaultError(error: Error): DefaultError {
+  const err = error as DefaultError;
+  err._tag = "DefaultError";
+  return err;
+}
+
+// No idea if this is the best way to do this, but it works for now
+export function asError(thrown: unknown): DefaultError {
   if (thrown instanceof Error) {
-    return thrown;
+    return toDefaultError(thrown);
   }
 
   try {
-    return new Error(JSON.stringify(thrown));
+    return new DefaultError({
+      message: JSON.stringify(thrown),
+    });
   } catch {
     // fallback in case there's an error stringify-ing.
     // for example, due to circular references.
-    return new Error(String(thrown));
+    return new DefaultError({
+      message: String(thrown),
+    });
   }
 }
 
-export function wrapError(err: unknown, message: string) {
-  return new Error(message, { cause: asError(err) });
+export function wrapError(err: unknown, message: string): DefaultError {
+  return new DefaultError({
+    message,
+    cause: asError(err),
+  });
 }
