@@ -1,8 +1,7 @@
-export interface PluginDialogConfigProps {
+export interface PluginConfigProps {
   configId?: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onCriterionConfigChange: (config: string) => void;
+  onCancel: () => void;
 }
 
-export type PluginDialogComponent = React.FC<PluginDialogConfigProps>;
+export type PluginComponent = React.FC<PluginConfigProps>;

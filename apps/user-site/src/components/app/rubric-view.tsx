@@ -1,6 +1,6 @@
 import type { Rubric } from "@/types/rubric";
 import { cn } from "@/lib/utils";
-import { plugins } from "@/consts/plugins";
+import { PluginName } from "@/consts/plugins";
 
 interface RubricViewProps {
   rubricData: Rubric;
@@ -97,8 +97,9 @@ export function RubricView({
                       )}
                     >
                       {criterion.plugin ?
-                        plugins[criterion.plugin as keyof typeof plugins] || "Unknown"
-                      : plugins["ai"]}
+                        PluginName[criterion.plugin as keyof typeof PluginName] ||
+                        "Unknown"
+                      : PluginName["ai"]}
                     </div>
                   </td>
                 )}

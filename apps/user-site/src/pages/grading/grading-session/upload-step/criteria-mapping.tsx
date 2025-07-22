@@ -62,26 +62,27 @@ export default function CriteriaMapper({
 
     setCriteriaIndex(index);
 
+    const file = uploadedFiles.find((file) => {
+      return (
+        file.name.replace(/\.[^/.]+$/, "") ===
+        gradingAttempt.submissions[chosenFileIndex].reference
+      );
+    });
+
+    if (!file?.name.endsWith(".zip")) {
+      return toast.error(
+        "Path selection is only available for zip files. Please upload a zip file.",
+      );
+    }
+
+    if (!file) {
+      return toast.error("File not found for the selected submission.");
+    }
+
+    setDialogType(type);
+
     if (type === SelectLocationType.Manual) {
-      const file = uploadedFiles.find((file) => {
-        return (
-          file.name.replace(/\.[^/.]+$/, "") ===
-          gradingAttempt.submissions[chosenFileIndex].reference
-        );
-      });
-
-      if (!file?.name.endsWith(".zip")) {
-        return toast.error(
-          "Manual selection is only available for zip files. Please upload a zip file.",
-        );
-      }
-
-      if (file) {
-        setDialogType(type);
-        setManualFile(file);
-      }
-    } else {
-      setDialogType(type);
+      setManualFile(file);
     }
   };
 

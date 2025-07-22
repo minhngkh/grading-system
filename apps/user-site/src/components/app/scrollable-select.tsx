@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useCallback, useState, memo, JSX } from "react";
+import { useCallback, useState, memo, JSX, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useDebounceUpdate } from "@/hooks/use-debounce";
 import type { SearchParams } from "@/types/search-params";
@@ -56,7 +56,7 @@ function ScrollableSelect<T extends Item>({
       }),
     );
 
-  const items = data?.pages.flatMap((page) => page.data) ?? [];
+  const items = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
@@ -69,10 +69,13 @@ function ScrollableSelect<T extends Item>({
     [hasNextPage, isFetchingNextPage, fetchNextPage],
   );
 
-  const handleSelect = (item: T) => {
-    onValueChange(item);
-    setOpen(false);
-  };
+  const handleSelect = useCallback(
+    (item: T) => {
+      onValueChange(item);
+      setOpen(false);
+    },
+    [onValueChange],
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -93,7 +96,7 @@ function ScrollableSelect<T extends Item>({
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
-          {items.length === 0 ?
+          {items?.length === 0 ?
             <CommandEmpty>{isFetching ? "Loading..." : emptyMessage}</CommandEmpty>
           : <CommandGroup>
               <CommandList

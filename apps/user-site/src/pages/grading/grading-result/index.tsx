@@ -176,47 +176,51 @@ export default function GradingResult({
 
   return (
     <div className="space-y-6">
-      <section className="flex">
-        <div className="flex items-center gap-2 p-2 border rounded-lg shadow-sm">
-          <p className="ms-1 text-sm font-semibold">Actions:</p>
-          <Button variant="outline" size="sm" onClick={() => setViewRubricOpen(true)}>
-            <Eye className="w-4 h-4" />
-            View Rubric
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isGrading}
-            onClick={() => setChangeScaleFactorOpen(true)}
-          >
-            <Scale className="w-4 h-4" />
-            Change Grade
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isGrading}
-            onClick={() => setExportOpen(true)}
-          >
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
-          <Link to="/analytics" search={{ id: gradingAttempt.id }}>
-            <Button variant="outline" size="sm" disabled={isGrading}>
-              <ChartColumn className="w-4 h-4" />
-              Analytics
+      {!isGrading && (
+        <section className="flex">
+          <div className="flex items-center gap-2 p-2 border rounded-lg shadow-sm">
+            <p className="ms-1 text-sm font-semibold">Actions:</p>
+            <Button variant="outline" size="sm" onClick={() => setViewRubricOpen(true)}>
+              <Eye className="w-4 h-4" />
+              View Rubric
             </Button>
-          </Link>
-          <Button size="sm" disabled={isGrading} onClick={handleRegradeAll}>
-            <RefreshCw className="w-4 h-4" />
-            Regrade All
-          </Button>
-        </div>
-      </section>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isGrading}
+              onClick={() => setChangeScaleFactorOpen(true)}
+            >
+              <Scale className="w-4 h-4" />
+              Change Grade
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isGrading}
+              onClick={() => setExportOpen(true)}
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </Button>
+            <Link to="/analytics" search={{ id: gradingAttempt.id }}>
+              <Button variant="outline" size="sm" disabled={isGrading}>
+                <ChartColumn className="w-4 h-4" />
+                Analytics
+              </Button>
+            </Link>
+            <Button size="sm" disabled={isGrading} onClick={handleRegradeAll}>
+              <RefreshCw className="w-4 h-4" />
+              Regrade All
+            </Button>
+          </div>
+        </section>
+      )}
 
-      <Suspense fallback={<SummaryCardSkeleton />}>
-        <SummarySection assessments={sortedAssessments} scaleFactor={scaleFactor} />
-      </Suspense>
+      {!isGrading ?
+        <Suspense fallback={<SummaryCardSkeleton />}>
+          <SummarySection assessments={sortedAssessments} scaleFactor={scaleFactor} />
+        </Suspense>
+      : <SummaryCardSkeleton />}
 
       <Suspense fallback={<ResultCardSkeleton />}>
         <ReviewResults
