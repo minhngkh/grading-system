@@ -22,7 +22,7 @@ interface MainWorkspaceProps {
   grading: GradingAttempt;
   rubric: Rubric;
   activeScoringTab: string;
-  selectedFile: FileItem;
+  selectedFile: FileItem | null;
   onFileSelect: (file: FileItem) => void;
   onUpdate: (updatedAssessment: Partial<Assessment>) => void;
   onUpdateLastSave: (updatedLastSaved: Partial<Assessment>) => void;
@@ -438,6 +438,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
         </div>
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel
+            id="sidebar"
             className={cn(isSidebarOpen ? "block" : "hidden")}
             defaultSize={20}
             minSize={20}
@@ -448,7 +449,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
 
           <ResizableHandle className={cn(isSidebarOpen ? "block" : "hidden")} />
 
-          <ResizablePanel defaultSize={isSidebarOpen ? 80 : 100}>
+          <ResizablePanel id="feedback" defaultSize={isSidebarOpen ? 80 : 100}>
             <div className="h-full flex flex-col">
               <div className="flex items-center justify-between border-b px-2 py-1">
                 <h2 className="font-semibold truncate">{selectedFile?.name}</h2>
@@ -475,7 +476,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
               </div>
 
               {/* File Viewer */}
-              {renderFileViewer}
+              <div className="grid overflow-auto">{renderFileViewer}</div>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

@@ -5,7 +5,6 @@ import { useTheme } from "@/context/theme-provider";
 import "./viewer.css";
 import { FileItem } from "@/types/file";
 import FeedbackTooltip from "@/pages/assessment/edit-assessment/viewer/feedback-tooltip";
-import useAssessmentForm from "@/hooks/use-assessment-form";
 
 interface HighlightableViewerProps {
   file: FileItem;
@@ -34,7 +33,6 @@ const HighlightableViewer = ({
   const [tooltipFb, setTooltipFb] = useState<FeedbackItem | null>(null);
   const [startLineElement, setStartLineElement] = useState<HTMLElement | null>(null);
   const [endLineElement, setEndLineElement] = useState<HTMLElement | null>(null);
-  const { form, formData } = useAssessmentForm(assessment);
 
   let language = "plaintext";
   if (file.relativePath) {
@@ -490,11 +488,11 @@ const HighlightableViewer = ({
   }
 
   useEffect(() => {
-    const adjusted = getAdjustedFeedbacks(file, formData.feedbacks);
+    const adjusted = getAdjustedFeedbacks(file, assessment.feedbacks);
     const merged = mergeIntersectingFeedbacks(adjusted);
 
     const initStr = JSON.stringify(
-      formData.feedbacks.map((fb) => ({
+      assessment.feedbacks.map((fb) => ({
         locationData: fb.locationData,
         comment: fb.comment,
         tag: fb.tag,
@@ -520,24 +518,15 @@ const HighlightableViewer = ({
     );
 
     if (adjustedStr !== initStr) {
-      form.setValue("feedbacks", merged, { shouldValidate: true });
       onUpdate?.({ feedbacks: merged });
       onUpdateLastSave?.({ feedbacks: merged });
     }
 
     if (mergedStr !== adjustedStr) {
-      form.setValue("feedbacks", merged, { shouldValidate: true });
       onUpdate?.({ feedbacks: merged });
       onUpdateLastSave?.({ feedbacks: merged });
     }
-  }, [
-    file.content,
-    file.relativePath,
-    formData.feedbacks,
-    form,
-    onUpdate,
-    onUpdateLastSave,
-  ]);
+  }, [file.content, file.relativePath, assessment.feedbacks, onUpdate, onUpdateLastSave]);
 
   useEffect(() => {
     if (activeFeedbackId === null || activeFeedbackId === undefined) {
@@ -547,7 +536,7 @@ const HighlightableViewer = ({
       return;
     }
 
-    const fb = formData.feedbacks[activeFeedbackId];
+    const fb = assessment.feedbacks[activeFeedbackId];
     if (
       fb &&
       fb.locationData?.type === "text" &&
@@ -595,12 +584,12 @@ const HighlightableViewer = ({
 
       setTimeout(tryScroll, 50);
     }
-  }, [activeFeedbackId, formData.feedbacks, file.type]);
+  }, [activeFeedbackId, assessment.feedbacks, file.type]);
 
   const renderContent = () => {
     const fileName = file.relativePath;
 
-    const validFeedbacks = formData.feedbacks
+    const validFeedbacks = assessment.feedbacks
       .map((fb, idx) => ({ fb, idx }))
       .filter(
         ({ fb }) =>
@@ -614,7 +603,7 @@ const HighlightableViewer = ({
       return (
         <ShikiHighlighter
           language={language}
-          className="max-w-full overflow-y-auto custom-scrollbar"
+          className="overflow-auto custom-scrollbar m-1"
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
@@ -709,8 +698,8 @@ const HighlightableViewer = ({
               pre(node) {
                 node.properties = {
                   ...node.properties,
-                  style:
-                    "background: var(--background); margin: 0 0.5rem; max-width: 100%",
+                  style: "background: var(--background); margin: 0; padding: 0.5rem;",
+                  class: "custom-scrollbar ",
                 };
               },
             },

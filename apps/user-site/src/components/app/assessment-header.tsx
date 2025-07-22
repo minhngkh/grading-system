@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Save, History, ArrowLeft, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { AssessmentExporter } from "@/lib/exporters";
-import { Assessment } from "@/types/assessment";
+import { Assessment, AssessmentState } from "@/types/assessment";
 import { GradingAttempt } from "@/types/grading";
 import { Rubric } from "@/types/rubric";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -29,7 +29,7 @@ interface AssessmentHeaderProps {
   lastSavedData: Assessment;
   grading: GradingAttempt;
   rubric: Rubric;
-  onUpdate: (updatedAssessment: Assessment) => void;
+  onUpdate: (updatedAssessment: Partial<Assessment>) => void;
   onUpdateLastSave: (updatedLastSaved: Partial<Assessment>) => void;
 }
 
@@ -38,31 +38,20 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   lastSavedData,
   grading,
   rubric,
-  // rerunAssessment,
   onUpdate,
   onUpdateLastSave,
 }) => {
   const [open, setOpen] = useState(false);
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
-  const [showRevertButton, setShowRevertButton] = useState(false);
 
   const feedbackChanged =
     JSON.stringify(assessment.feedbacks) !== JSON.stringify(lastSavedData.feedbacks);
+
   const scoreChanged =
     JSON.stringify(assessment.scoreBreakdowns) !==
     JSON.stringify(lastSavedData.scoreBreakdowns);
-  const hasUnsavedChanges = feedbackChanged || scoreChanged;
 
-  useEffect(() => {
-    if (hasUnsavedChanges) {
-      const timer = setTimeout(() => {
-        setShowRevertButton(true);
-      }, 100);
-      return () => clearTimeout(timer);
-    } else {
-      setShowRevertButton(false);
-    }
-  }, [hasUnsavedChanges]);
+  const hasUnsavedChanges = feedbackChanged || scoreChanged;
 
   const queryClient = useQueryClient();
   const auth = useAuth();
@@ -73,6 +62,9 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         toast.success("Feedback updated successfully");
         onUpdateLastSave({ feedbacks: assessment.feedbacks });
         queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
+        queryClient.invalidateQueries({
+          queryKey: ["allGradingAssessments", grading.id],
+        });
       },
       onError: (error) => {
         console.error("Failed to update feedback:", error);
@@ -85,9 +77,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     updateScoreMutationOptions(assessment.id, auth, {
       onSuccess: (_, scoreBreakdowns) => {
         toast.success("Score updated successfully");
-        onUpdateLastSave({
-          scoreBreakdowns: scoreBreakdowns as Assessment["scoreBreakdowns"],
-        });
+        onUpdateLastSave({ scoreBreakdowns });
 
         queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
         queryClient.invalidateQueries({
@@ -98,6 +88,8 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         });
       },
       onError: (error) => {
+        onUpdate({ status: AssessmentState.AutoGradingFailed });
+        onUpdateLastSave({ status: AssessmentState.AutoGradingFailed });
         console.error("Failed to update score:", error);
         toast.error("Failed to update score");
       },
@@ -107,15 +99,18 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   // const rerunAssessmentMutation = useMutation(rerunAssessmentMutationOptions(auth));
   const { mutate: rerunAssessment } = useMutation(
     rerunAssessmentMutationOptions(auth, {
+      onMutate: () => {
+        onUpdate({ status: AssessmentState.AutoGradingStarted });
+        onUpdateLastSave({ status: AssessmentState.AutoGradingStarted });
+      },
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: ["assessment", assessment.id],
-        });
+        queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
         queryClient.invalidateQueries({
           queryKey: ["scoreAdjustments", assessment.id],
         });
-        onUpdateLastSave(assessment);
-        toast.success("Assessment regrade started successfully");
+        queryClient.invalidateQueries({
+          queryKey: ["allGradingAssessments", grading.id],
+        });
       },
       onError: (error) => {
         console.error("Failed to rerun assessment:", error);
@@ -194,7 +189,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
       </div>
       <div className="flex gap-2">
         <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
-          {showRevertButton && (
+          {hasUnsavedChanges && (
             <DialogTrigger asChild>
               <Button disabled={isLoading} size="sm" variant="destructive">
                 <History className="h-4 w-4 mr-2" />
