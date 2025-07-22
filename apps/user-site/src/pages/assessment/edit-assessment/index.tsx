@@ -34,7 +34,6 @@ export function EditAssessmentUI({
   const auth = useAuth();
   const queryClient = useQueryClient();
   const hubRef = useRef<SignalRService | undefined>(undefined);
-
   const form = useForm<Assessment>({
     resolver: zodResolver(AssessmentSchema),
     defaultValues: assessment,

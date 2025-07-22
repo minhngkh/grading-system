@@ -136,7 +136,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
       const updatedFeedbacks = [...assessment.feedbacks];
       updatedFeedbacks[index] = {
         ...updatedFeedbacks[index],
-        tag: "discard",
+        tag: "discarded",
       };
       // form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
       onUpdate({ feedbacks: updatedFeedbacks });
@@ -265,7 +265,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
             }
             return true;
           })
-          .filter((fb) => fb?.tag !== "summary" && fb?.tag !== "discard").length > 0
+          .filter((fb) => fb?.tag !== "summary" && fb?.tag !== "discarded").length > 0
       ) ?
         assessment.feedbacks
           .map((fb, idx) => ({ fb, idx }))
@@ -279,7 +279,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
             }
             return true;
           })
-          .filter(({ fb }) => fb?.tag !== "summary" && fb?.tag !== "discard")
+          .filter(({ fb }) => fb?.tag !== "summary" && fb?.tag !== "discarded")
           .map(({ fb, idx }) => {
             const isActive = selectedFeedbackIndex === idx;
             const isEditing = editingFeedbackIndex === idx;
