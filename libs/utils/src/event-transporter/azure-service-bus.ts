@@ -148,9 +148,7 @@ export class AzureServiceBusTransporter extends EventTransporter {
     receiver.subscribe({
       processMessage: async (brokeredMessage) => {
         try {
-          logger.info(`Received message: ${JSON.stringify(brokeredMessage.body)}`);
           const content = brokeredMessage.body.message;
-
           const result = handler(content);
           const handlerResult = await (result instanceof Promise ? result : (
             Promise.resolve(result)
