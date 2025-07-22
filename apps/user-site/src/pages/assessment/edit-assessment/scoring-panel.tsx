@@ -336,7 +336,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                                   handleUpdateScore(criterion, level.weight, false)
                                 }
                                 className={cn(
-                                  `w-full h-20 p-3 rounded text-center flex items-center justify-center`,
+                                  `w-full h-auto p-3 rounded text-center flex items-center justify-center`,
                                   isSelected ?
                                     "border-2 border-blue-400"
                                   : "border border-gray-300",
