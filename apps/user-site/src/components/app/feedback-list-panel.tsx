@@ -91,7 +91,6 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
         : "",
     };
     const updatedFeedbacks = [...assessment.feedbacks, newFeedback];
-    console.log(updatedFeedbacks, "Updated Feedbacks");
     onUpdate({ feedbacks: updatedFeedbacks });
     setAddComment("");
     setAddTag("info");
@@ -125,9 +124,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
         fileRef: updatedFeedbacks[index].fileRef,
       };
       // form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
-      // console.log("Updated Feedbacks1:", updatedFeedbacks);
       onUpdate({ feedbacks: updatedFeedbacks });
-      // console.log("Updated Feedbacks2:", updatedFeedbacks);
       setEditingFeedbackIndex(null);
     },
     [editComment, editTag, editCriterion, assessment.feedbacks, onUpdate],
