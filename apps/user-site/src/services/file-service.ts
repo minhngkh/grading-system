@@ -2,7 +2,6 @@ import { BlobServiceClient } from "@azure/storage-blob";
 import { FileItem } from "@/types/file";
 import axios, { AxiosRequestConfig } from "axios";
 
-// Use environment variables instead of hardcoded values
 const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
 const BLOB_ENDPOINT = import.meta.env.VITE_BLOB_STORAGE_URL;
 
@@ -20,14 +19,12 @@ export class FileService {
     try {
       const config = await this.buildHeaders();
 
-      // Match the endpoint format from Scalar
       const url = `${ASSIGNMENT_FLOW_API_URL}/gradings/sasToken`;
 
-      // Use params for attachment instead of adding to URL
       const response = await axios.get(url, {
         ...config,
       });
-      // Remove leading question mark if present
+
       const sasToken = response.data ? response.data.replace(/^\?/, "") : "";
       return sasToken;
     } catch (error) {
@@ -60,7 +57,7 @@ export class FileService {
             const type = this.inferFileType(name);
             let content = "";
 
-            if (type === "code" || type === "document" || type === "essay") {
+            if (type === "code") {
               const blobClient = containerClient.getBlobClient(blob.name);
               const res = await blobClient.download();
               const browserBlob = await res.blobBody;

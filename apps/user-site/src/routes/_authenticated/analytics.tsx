@@ -13,6 +13,7 @@ import {
 } from "@/queries/grading-queries";
 import { useAuth } from "@clerk/clerk-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import PendingComponent from "@/components/app/route-pending";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   component: RouteComponent,
@@ -27,7 +28,11 @@ function RouteComponent() {
   const auth = useAuth();
   const { id } = Route.useSearch();
 
-  const { data: gradingAnalytics, isError: gradingAnalyticsError } = useQuery(
+  const {
+    data: gradingAnalytics,
+    isError: gradingAnalyticsError,
+    isLoading,
+  } = useQuery(
     getGradingSummaryQueryOptions(id ?? "", auth, {
       placeholderData: keepPreviousData,
     }),
@@ -79,14 +84,16 @@ function RouteComponent() {
           />
         </div>
       </div>
-      {!gradingAnalytics ?
+      {isLoading ?
+        <PendingComponent message="Loading grading analytics..." />
+      : !gradingAnalytics ?
         <div className="flex items-center justify-center flex-1">
           <p className="text-muted-foreground font-semibold text-lg">
             No grading analytics to view. Please select a grading to view analytics.
           </p>
         </div>
       : !gradingAttempt ?
-        <ErrorComponent message="Failed to load grading attempt" />
+        <ErrorComponent message="Failed to get grading session data" />
       : <GradingAnalyticsPage
           gradingAnalytics={gradingAnalytics}
           grading={gradingAttempt}

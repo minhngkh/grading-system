@@ -1,58 +1,33 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import { createGradingAttemptMutationOptions } from "@/queries/grading-queries";
-import { useAuth } from "@clerk/clerk-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { GradingService } from "@/services/grading-service";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/gradings/create")({
-  component: RouteComponent,
+  preload: false,
+  component: () => null,
   validateSearch: z.object({
     rubricId: z.string().optional(),
   }),
+  loaderDeps: ({ search }) => search,
+  loader: async ({ context: { auth, queryClient }, deps: { rubricId } }) => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("Authentication token is required");
+    }
+
+    const grading = await GradingService.createGradingAttempt(rubricId, token);
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempts"],
+    });
+
+    throw redirect({
+      to: "/gradings/$gradingId",
+      params: { gradingId: grading.id },
+      replace: true,
+    });
+  },
+  pendingComponent: () => <PendingComponent message="Creating grading session..." />,
+  errorComponent: () => <ErrorComponent message="Failed to create grading session" />,
 });
-
-function RouteComponent() {
-  const { rubricId } = Route.useSearch();
-  const navigate = Route.useNavigate();
-  const auth = useAuth();
-  const didRun = useRef(false);
-  const queryClient = useQueryClient();
-
-  const { mutate, isPending, isError } = useMutation(
-    createGradingAttemptMutationOptions(auth, {
-      onSuccess: (grading) => {
-        queryClient.invalidateQueries({
-          queryKey: ["gradingAttempts"],
-        });
-        sessionStorage.removeItem("gradingStep");
-        navigate({
-          to: "/gradings/$gradingId",
-          params: { gradingId: grading.id },
-          replace: true,
-        });
-      },
-      onError: (error) => {
-        console.error("Error creating grading attempt:", error);
-      },
-    }),
-  );
-
-  useEffect(() => {
-    if (didRun.current) return;
-    didRun.current = true;
-    mutate(rubricId);
-  }, []);
-
-  if (isPending) {
-    return <PendingComponent message="Creating grading session..." />;
-  }
-
-  if (isError) {
-    return <ErrorComponent message="Failed to create grading session" />;
-  }
-
-  return null;
-}

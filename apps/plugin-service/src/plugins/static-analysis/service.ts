@@ -2,6 +2,7 @@ import type { Context } from "moleculer";
 import type { Feedback } from "@/plugins/data";
 import type { PluginOperations } from "@/plugins/info";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
+import logger from "@grading-system/utils/logger";
 import { getTransporter } from "@/lib/transporter";
 import {
   criterionGradingFailedEvent,
@@ -35,6 +36,8 @@ export const staticAnalysisService = defineTypedService2({
         const promises = result.value.map((value) =>
           value
             .orTee((error) => {
+              logger.info(`internal: Grading failed for ${error.data.criterionName}`, error);
+
               transporter.emit(criterionGradingFailedEvent, {
                 assessmentId: params.assessmentId,
                 criterionName: error.data.criterionName,
@@ -47,11 +50,23 @@ export const staticAnalysisService = defineTypedService2({
                 criterionName: value.criterion,
                 metadata: {
                   ignoredFiles: value.ignoredFiles,
+                  // feedbackItems: value.feedback.map((feedbackItem) => ({
+                  //   comment: feedbackItem.message || "",
+                  //   fileRef: feedbackItem.fileRef,
+                  //   tag: feedbackItem.severity,
+                  //   locationData: {
+                  //     type: "text",
+                  //     fromLine: feedbackItem.position.fromLine,
+                  //     fromColumn: feedbackItem.position.fromCol,
+                  //     toLine: feedbackItem.position.toLine,
+                  //     toColumn: feedbackItem.position.toCol,
+                  //   },
+                  // })) satisfies Feedback[],
                 },
                 scoreBreakdown: {
                   tag: "",
                   rawScore: value.score,
-
+                  // feedbackItems: []
                   feedbackItems: value.feedback.map((feedbackItem) => ({
                     comment: feedbackItem.message || "",
                     fileRef: feedbackItem.fileRef,

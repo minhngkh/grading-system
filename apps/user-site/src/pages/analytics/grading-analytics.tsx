@@ -89,7 +89,7 @@ export function GradingAnalyticsPage({
       </Card>
 
       <div className="space-y-2">
-        <h2 className="text-lg font-semibold mb-4">Assessment Score Distribution</h2>
+        <h2 className="text-lg font-semibold">Assessment Score Distribution</h2>
         <Card className="py-0">
           <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
             <div className="flex flex-1 flex-col justify-center gap-1 px-6">
@@ -139,7 +139,7 @@ export function GradingAnalyticsPage({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-lg font-semibold mb-4">Assessment Criteria</h2>
+        <h2 className="text-lg font-semibold">Criteria Distribution</h2>
         <AssessmentCriterionChart
           assessmentCount={assessmentCount}
           criterionData={criterionData}

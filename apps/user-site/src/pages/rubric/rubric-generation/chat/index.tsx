@@ -1,6 +1,6 @@
 import type { Rubric } from "@/types/rubric";
 import { useCallback, useState } from "react";
-import ChatRubricTable from "./chat-rubric-table";
+import RubricTabs from "./tabs";
 import { ChatInterface } from "@/components/app/chat-interface";
 import { ChatMessage } from "@/types/chat";
 import {
@@ -71,7 +71,7 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
               <DialogTitle className="text-lg">Rubric Details</DialogTitle>
             </DialogHeader>
             <div className="flex-1 grid">
-              <ChatRubricTable
+              <RubricTabs
                 isApplyingEdit={isApplyingEdit}
                 rubricData={rubric}
                 onUpdate={onUpdate}
@@ -86,8 +86,8 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
         <ChatInterface sendMessageCallback={handleSendMessage} />
       </div>
 
-      <div className="h-[40vh] hidden lg:block lg:h-full lg:col-span-4">
-        <ChatRubricTable
+      <div className="hidden lg:block lg:h-full lg:col-span-4">
+        <RubricTabs
           isApplyingEdit={isApplyingEdit}
           rubricData={rubric}
           onUpdate={onUpdate}

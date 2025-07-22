@@ -26,27 +26,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Search,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from "lucide-react";
 import { useDebounceUpdate } from "@/hooks/use-debounce";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { RubricExporter } from "@/lib/exporters";
 import { useRouter } from "@tanstack/react-router";
-
-type SortConfig = {
-  key: "rubricName" | "updatedOn" | null;
-  direction: "asc" | "desc";
-};
 
 interface ManageRubricsPageProps {
   searchParams: SearchParams;
@@ -59,10 +45,6 @@ export default function ManageRubricsPage({
   setSearchParam,
   results,
 }: ManageRubricsPageProps) {
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: "rubricName",
-    direction: "desc",
-  });
   const { page, perPage } = searchParams;
   const {
     data: rubrics,
@@ -73,50 +55,13 @@ export default function ManageRubricsPage({
   const [selectedRubricIndex, setSelectedRubricIndex] = useState<number | null>(null);
   const [exportRubricOpen, setExportRubricOpen] = useState<boolean>(false);
   const router = useRouter();
+
   useDebounceUpdate(searchTerm, 500, (value) => {
     if (value === searchParams.search) return;
     setSearchParam({ search: value, page: 1 });
   });
 
-  // Remove client filtering - use rubrics directly
-  const sortedRubrics = [...rubrics].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    const aKey = a[sortConfig.key];
-    const bKey = b[sortConfig.key];
-    // Handle undefined or null values
-    if (aKey == null && bKey == null) return 0;
-    if (aKey == null) return sortConfig.direction === "asc" ? 1 : -1;
-    if (bKey == null) return sortConfig.direction === "asc" ? -1 : 1;
-    if (aKey < bKey) {
-      return sortConfig.direction === "asc" ? -1 : 1;
-    }
-    if (aKey > bKey) {
-      return sortConfig.direction === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
-
   const totalPages = Math.ceil(totalCount / perPage);
-
-  const requestSort = (key: SortConfig["key"]) => {
-    let direction: "asc" | "desc" = "asc";
-
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-
-    setSortConfig({ key, direction });
-  };
-
-  const getSortIcon = (key: keyof Rubric) => {
-    if (sortConfig.key !== key) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    }
-
-    return sortConfig.direction === "asc" ?
-        <ArrowUp className="ml-2 h-4 w-4" />
-      : <ArrowDown className="ml-2 h-4 w-4" />;
-  };
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -164,27 +109,19 @@ export default function ManageRubricsPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => requestSort("rubricName")} className="w-[50%]">
-                <div className="flex items-center cursor-pointer">
-                  Rubric Name {getSortIcon("rubricName")}
-                </div>
-              </TableHead>
-              <TableHead onClick={() => requestSort("updatedOn")} className="w-[30%]">
-                <div className="flex items-center cursor-pointer">
-                  Updated On {getSortIcon("updatedOn")}
-                </div>
-              </TableHead>
+              <TableHead className="w-[50%]">Rubric Name</TableHead>
+              <TableHead className="w-[30%]">Updated On</TableHead>
               <TableHead className="w-[20%] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedRubrics.length === 0 ?
+            {rubrics.length === 0 ?
               <TableRow>
                 <TableCell colSpan={3} className="h-24 text-center">
                   No rubrics found.
                 </TableCell>
               </TableRow>
-            : sortedRubrics.map((rubric, index) => (
+            : rubrics.map((rubric, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-semibold">{rubric.rubricName}</TableCell>
                   <TableCell>
@@ -241,7 +178,7 @@ export default function ManageRubricsPage({
           <ViewRubricDialog
             open={viewRubricOpen}
             onOpenChange={setViewRubricOpen}
-            initialRubric={sortedRubrics[selectedRubricIndex]}
+            initialRubric={rubrics[selectedRubricIndex]}
           />
         )}
       </div>
@@ -339,7 +276,7 @@ export default function ManageRubricsPage({
           open={exportRubricOpen}
           onOpenChange={setExportRubricOpen}
           exporterClass={RubricExporter}
-          args={[sortedRubrics[selectedRubricIndex]]}
+          args={[rubrics[selectedRubricIndex]]}
         />
       )}
     </div>

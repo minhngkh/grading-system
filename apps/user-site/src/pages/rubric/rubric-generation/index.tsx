@@ -10,8 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@clerk/clerk-react";
 import { useCallback } from "react";
 import ChatWindow from "./chat";
-import FinalRubricTable from "./review-step";
-import PluginRubricTable from "./plugins";
+import FinalRubricTable from "./final-rubric-table";
 import { useQueryClient } from "@tanstack/react-query";
 
 type StepData = {
@@ -22,10 +21,6 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
   {
     id: "input",
     title: "Create Rubric",
-  },
-  {
-    id: "edit",
-    title: "Configure Plugin",
   },
   {
     id: "complete",
@@ -92,6 +87,10 @@ export default function RubricGenerationPage({
         queryKey: ["rubric", updatedRubric.id],
       });
 
+      queryClient.invalidateQueries({
+        queryKey: ["rubrics"],
+      });
+
       form.reset(updatedRubric);
     },
     [formValues, auth],
@@ -102,9 +101,6 @@ export default function RubricGenerationPage({
       <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
         {stepper.switch({
           input: () => <ChatWindow rubric={formValues} onUpdate={onUpdateRubric} />,
-          edit: () => (
-            <PluginRubricTable rubricData={formValues} onUpdate={onUpdateRubric} />
-          ),
           complete: () => <FinalRubricTable rubricData={formValues} />,
         })}
 

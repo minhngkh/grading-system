@@ -75,16 +75,8 @@ const SummarySection = memo(function SummarySection({
               </div>
             </div>
           </div>
-          <div className="mt-4 text-sm text-muted-foreground">
+          <div className="mt-4 text-sm font-semibold text-muted-foreground">
             Total items graded: {assessments.length}
-          </div>
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <h3 className="font-medium mb-2">Summary Report</h3>
-            <p className="text-sm text-muted-foreground">
-              The summary report provides an overview of the grading results for the
-              selected assessments. It includes the average, highest, and lowest scores
-              achieved by students.
-            </p>
           </div>
         </CardContent>
       </Card>

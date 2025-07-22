@@ -26,16 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Search,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from "lucide-react";
 import { useDebounceUpdate } from "@/hooks/use-debounce";
 import { GetAllResult, SearchParams } from "@/types/search-params";
 import { GradingAttempt, GradingStatus } from "@/types/grading";
@@ -45,11 +36,6 @@ import { GradingExporter } from "@/lib/exporters";
 import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { getAllGradingAssessmentsQueryOptions } from "@/queries/assessment-queries";
-
-type SortConfig = {
-  key: "name" | "lastModified" | "status" | null;
-  direction: "asc" | "desc";
-};
 
 type ManageGradingsPageProps = {
   searchParams: SearchParams;
@@ -62,10 +48,6 @@ export default function ManageGradingsPage({
   setSearchParam,
   results,
 }: ManageGradingsPageProps) {
-  const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: "name",
-    direction: "desc",
-  });
   const { page, perPage, status } = searchParams;
   const {
     data: gradings,
@@ -80,24 +62,7 @@ export default function ManageGradingsPage({
     setSearchParam({ search: value, page: 1 });
   });
 
-  const sortedGradings = [...gradings].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    const aKey = a[sortConfig.key];
-    const bKey = b[sortConfig.key];
-    if (aKey == null && bKey == null) return 0;
-    if (aKey == null) return sortConfig.direction === "asc" ? 1 : -1;
-    if (bKey == null) return sortConfig.direction === "asc" ? -1 : 1;
-    if (aKey < bKey) {
-      return sortConfig.direction === "asc" ? -1 : 1;
-    }
-    if (aKey > bKey) {
-      return sortConfig.direction === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
-
-  const gradingId =
-    selectGradingIndex != null ? sortedGradings[selectGradingIndex].id : "";
+  const gradingId = selectGradingIndex != null ? gradings[selectGradingIndex].id : "";
 
   const { data: gradingAssessments = [], isLoading: isGettingAssessments } = useQuery(
     getAllGradingAssessmentsQueryOptions(gradingId, auth, {
@@ -107,26 +72,6 @@ export default function ManageGradingsPage({
   );
 
   const totalPages = Math.ceil(totalCount / perPage);
-
-  const requestSort = (key: SortConfig["key"]) => {
-    let direction: "asc" | "desc" = "asc";
-
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-
-    setSortConfig({ key, direction });
-  };
-
-  const getSortIcon = (key: keyof GradingAttempt) => {
-    if (sortConfig.key !== key) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    }
-
-    return sortConfig.direction === "asc" ?
-        <ArrowUp className="ml-2 h-4 w-4" />
-      : <ArrowDown className="ml-2 h-4 w-4" />;
-  };
 
   const getStatusBadge = (status?: GradingStatus) => {
     if (!status) {
@@ -212,37 +157,25 @@ export default function ManageGradingsPage({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead onClick={() => requestSort("name")} className="w-[40%]">
-                <div className="flex items-center cursor-pointer">
-                  Name {getSortIcon("name")}
-                </div>
-              </TableHead>
-              <TableHead onClick={() => requestSort("lastModified")} className="w-[20%]">
-                <div className="flex items-center cursor-pointer">
-                  Updated On {getSortIcon("lastModified")}
-                </div>
-              </TableHead>
-              <TableHead onClick={() => requestSort("status")} className="w-[20%]">
-                <div className="flex items-center cursor-pointer">
-                  Status {getSortIcon("status")}
-                </div>
-              </TableHead>
+              <TableHead className="w-[40%]">Name</TableHead>
+              <TableHead className="w-[20%]">Created At</TableHead>
+              <TableHead className="w-[20%]">Status</TableHead>
               <TableHead className="w-[20%] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedGradings.length === 0 ?
+            {gradings.length === 0 ?
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No gradings found.
                 </TableCell>
               </TableRow>
-            : sortedGradings.map((grading, index) => (
+            : gradings.map((grading, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-semibold">{grading.name}</TableCell>
                   <TableCell>
-                    {grading.lastModified ?
-                      format(grading.lastModified, "MMM d, yyyy")
+                    {grading.createdAt ?
+                      format(grading.createdAt, "MMM d, yyyy")
                     : "Not set"}
                   </TableCell>
                   <TableCell>{getStatusBadge(grading.status)}</TableCell>
@@ -257,13 +190,25 @@ export default function ManageGradingsPage({
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {grading.status !== GradingStatus.Created ?
+                        {(
+                          grading.status === GradingStatus.Graded ||
+                          grading.status === GradingStatus.Failed
+                        ) ?
                           <DropdownMenuItem asChild>
                             <Link
                               to="/gradings/$gradingId/result"
                               params={{ gradingId: grading.id }}
                             >
                               View Result
+                            </Link>
+                          </DropdownMenuItem>
+                        : grading.status === GradingStatus.Started ?
+                          <DropdownMenuItem asChild>
+                            <Link
+                              to="/gradings/$gradingId"
+                              params={{ gradingId: grading.id }}
+                            >
+                              View Progress
                             </Link>
                           </DropdownMenuItem>
                         : <DropdownMenuItem asChild>
@@ -305,7 +250,7 @@ export default function ManageGradingsPage({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
         <div className="flex items-center gap-2">
           <p className="text-sm text-muted-foreground">
-            Showing {sortedGradings.length} of {totalCount} gradings
+            Showing {gradings.length} of {totalCount} gradings
           </p>
           <Select
             value={perPage.toString()}
@@ -389,7 +334,7 @@ export default function ManageGradingsPage({
           open={exportGradingOpen}
           onOpenChange={setExportGradingOpen}
           exporterClass={GradingExporter}
-          args={[sortedGradings[selectGradingIndex], gradingAssessments]}
+          args={[gradings[selectGradingIndex], gradingAssessments]}
           isLoading={isGettingAssessments}
         />
       )}

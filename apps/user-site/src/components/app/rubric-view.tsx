@@ -1,29 +1,23 @@
 import type { Rubric } from "@/types/rubric";
 import { cn } from "@/lib/utils";
+import { PluginName } from "@/consts/plugins";
 
 interface RubricViewProps {
   rubricData: Rubric;
   showPlugins?: boolean;
-  editPlugin?: boolean;
-  onPluginSelect?: (criterionIndex: number) => void;
 }
 
-export function RubricView({
-  rubricData,
-  showPlugins,
-  editPlugin,
-  onPluginSelect,
-}: RubricViewProps) {
+export function RubricView({ rubricData, showPlugins }: RubricViewProps) {
   if (rubricData.criteria.length === 0) {
     return (
-      <div className="p-4 size-full flex justify-center items-center">
+      <div className="text-muted-foreground size-full flex justify-center items-center">
         <div>This rubric is empty.</div>
       </div>
     );
   }
 
   return (
-    <div className="border rounded-md overflow-auto h-full">
+    <div className="border rounded-md h-full">
       <table className="w-full h-full table-fixed text-sm">
         <thead>
           <tr className="bg-muted/50">
@@ -72,30 +66,19 @@ export function RubricView({
                           <div className="font-semibold text-blue-400 mb-1">
                             {criterionLevel.weight} %
                           </div>
-                          <div>{criterionLevel.description}</div>
+                          <div className="flex-1">{criterionLevel.description}</div>
                         </div>
                       )}
                     </td>
                   );
                 })}
                 {showPlugins && (
-                  <td
-                    className={cn(
-                      "p-2 text-sm",
-                      editPlugin && "cursor-pointer hover:bg-muted/50",
-                    )}
-                    onClick={() => {
-                      if (!editPlugin) return;
-                      onPluginSelect?.(index);
-                    }}
-                  >
-                    <div
-                      className={cn(
-                        "text-center font-semibold text-blue-400",
-                        editPlugin && "underline cursor-pointer",
-                      )}
-                    >
-                      {criterion.plugin || "AI (Default)"}
+                  <td className={cn("p-2 text-sm")}>
+                    <div className={cn("text-center font-semibold text-blue-400")}>
+                      {criterion.plugin ?
+                        PluginName[criterion.plugin as keyof typeof PluginName] ||
+                        "Unknown"
+                      : PluginName["ai"]}
                     </div>
                   </td>
                 )}

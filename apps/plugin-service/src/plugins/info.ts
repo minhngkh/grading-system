@@ -54,6 +54,11 @@ export const configurablePluginsMap = Object.entries(plugins).reduce(
   new Map<string, keyof typeof plugins>(),
 );
 
+export const pluginsMap = Object.entries(plugins).reduce((acc, [key, value]) => {
+  acc.set(value.id, key as keyof typeof plugins);
+  return acc;
+}, new Map<string, keyof typeof plugins>());
+
 export const pluginConfigSchema = z.discriminatedUnion("type", [
   testRunnerConfigSchema,
   baseStaticAnalysisConfigSchema,

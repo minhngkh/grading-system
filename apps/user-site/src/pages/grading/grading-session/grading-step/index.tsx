@@ -5,7 +5,6 @@ import { Spinner } from "@/components/app/spinner";
 import { useAuth } from "@clerk/clerk-react";
 import { AssessmentGradingStatus } from "@/types/grading-progress";
 import { UseFormReturn } from "react-hook-form";
-import { AssessmentStatusCard } from "@/pages/grading/grading-session/grading-step/status-card";
 import { AssessmentState } from "@/types/assessment";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "@tanstack/react-router";
 import { CheckCircle, Clock, XCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VirtualizedAssessmentList } from "./virtualized-assessment-list";
 
 // Memoized loading component to prevent unnecessary re-renders
 const LoadingState = memo(() => (
@@ -28,7 +28,6 @@ const LoadingState = memo(() => (
     </div>
   </div>
 ));
-LoadingState.displayName = "LoadingState";
 
 // Memoized empty state component
 const EmptyState = memo(() => (
@@ -40,10 +39,9 @@ const EmptyState = memo(() => (
     </div>
   </div>
 ));
-EmptyState.displayName = "EmptyState";
 
 // Utility functions moved outside component for better performance
-const getStatus = (status: GradingStatus) => {
+function getStatus(status: GradingStatus) {
   switch (status) {
     case GradingStatus.Started:
       return {
@@ -70,9 +68,9 @@ const getStatus = (status: GradingStatus) => {
         icon: <AlertCircle className="size-4" />,
       };
   }
-};
+}
 
-const getHeaderStyling = (status: GradingStatus) => {
+function getHeaderStyling(status: GradingStatus) {
   switch (status) {
     case GradingStatus.Started:
       return {
@@ -103,7 +101,7 @@ const getHeaderStyling = (status: GradingStatus) => {
         progressClass: "",
       };
   }
-};
+}
 
 interface GradingProgressStepProps {
   gradingAttempt: UseFormReturn<GradingAttempt>;
@@ -375,15 +373,12 @@ export default function GradingProgressStep({
       {/* Assessment Status Cards */}
       <div className="space-y-2">
         <h3 className="text-lg font-semibold text-foreground">Grading Details</h3>
-        <div className="p-4 border rounded-2xl max-h-[60vh] overflow-y-auto space-y-4">
-          {sortedAssessmentStatus.map((assessmentStatus) => (
-            <AssessmentStatusCard
-              key={assessmentStatus.assessmentId}
-              status={assessmentStatus}
-              onRegrade={handleRegradeAssessment}
-            />
-          ))}
-        </div>
+
+        <VirtualizedAssessmentList
+          assessments={sortedAssessmentStatus}
+          gradingId={gradingAttemptValues.id}
+          onRegrade={handleRegradeAssessment}
+        />
       </div>
 
       {/* Action Section */}

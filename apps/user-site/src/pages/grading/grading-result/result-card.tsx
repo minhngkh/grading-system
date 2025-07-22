@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { RefreshCw, FileSearch } from "lucide-react";
-import { Assessment, AssessmentState } from "@/types/assessment";
+import { RefreshCw, FileSearch, TriangleAlert, CircleAlert, Check } from "lucide-react";
+import { Assessment, AssessmentState, ScoreBreakdownStatus } from "@/types/assessment";
 import { getCriteriaColorStyle } from "./colors";
 import { Link } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +18,28 @@ interface AssessmentResultCardProps {
   criteriaColorMap: Record<string, { text: string; bg: string }>;
 }
 
+const getCardClassName = (state: AssessmentState) => {
+  if (state === AssessmentState.AutoGradingFailed) {
+    return "overflow-hidden py-0 border-red-200 dark:border-red-800";
+  }
+
+  if (state === AssessmentState.Completed) {
+    return "overflow-hidden py-0 border-green-200 dark:border-green-800";
+  }
+
+  if (state === AssessmentState.AutoGradingStarted || state === AssessmentState.Created) {
+    return "overflow-hidden py-0 border-blue-200 dark:border-blue-800";
+  }
+
+  if (
+    state === AssessmentState.AutoGradingFinished ||
+    state === AssessmentState.ManualGradingRequired
+  ) {
+    return "overflow-hidden py-0 border-orange-200 dark:border-orange-800";
+  }
+
+  return "overflow-hidden py-0";
+};
 export function AssessmentResultCard({
   item,
   scaleFactor,
@@ -25,47 +47,27 @@ export function AssessmentResultCard({
 }: AssessmentResultCardProps) {
   const auth = useAuth();
   const queryClient = useQueryClient();
-  const {
-    isPending: isRerunning,
-    isError,
-    mutateAsync: rerunAssessment,
-  } = useMutation(rerunAssessmentMutationOptions(auth));
+  const { isPending: isRerunning, mutate: rerunAssessment } = useMutation(
+    rerunAssessmentMutationOptions(auth, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ["gradingAttempts"],
+        });
 
-  const handleRerun = async () => {
-    try {
-      await rerunAssessment(item.id);
-      queryClient.invalidateQueries({
-        queryKey: ["gradingAttempts"],
-      });
+        queryClient.invalidateQueries({
+          queryKey: ["assessment", item.id],
+        });
+      },
+      onError: (error) => {
+        console.error("Failed to rerun assessment:", error);
+        toast.error(
+          `Failed to rerun assessment: ${item.submissionReference}. Please try again.`,
+        );
+      },
+    }),
+  );
 
-      queryClient.invalidateQueries({
-        queryKey: ["assessment", item.id],
-      });
-    } catch (error) {
-      console.error("Failed to rerun assessment:", error);
-      toast.error(
-        `Failed to rerun assessment: ${item.submissionReference}. Please try again.`,
-      );
-    }
-  };
-
-  const isGradingFailed = item.status === AssessmentState.AutoGradingFailed || isError;
-  const isUndergoingGrading =
-    item.status === AssessmentState.AutoGradingStarted ||
-    item.status === AssessmentState.Created;
-
-  const getCardClassName = () => {
-    if (isGradingFailed) {
-      return "overflow-hidden py-0 border-red-200 dark:border-red-800";
-    }
-    if (item.status === AssessmentState.AutoGradingFinished) {
-      return "overflow-hidden py-0 border-green-200 dark:border-green-800";
-    }
-    if (isUndergoingGrading) {
-      return "overflow-hidden py-0 border-blue-200 dark:border-blue-800";
-    }
-    return "overflow-hidden py-0";
-  };
+  const isGradingFailed = item.status === AssessmentState.AutoGradingFailed;
 
   const sortedScoreBreakdowns = useMemo(() => {
     return item.scoreBreakdowns.sort((a, b) => {
@@ -73,14 +75,13 @@ export function AssessmentResultCard({
     });
   }, [item.scoreBreakdowns]);
 
-  if (item.status === AssessmentState.AutoGradingStarted || isRerunning)
-    return <ResultCardSkeleton />;
+  if (item.status === AssessmentState.AutoGradingStarted) return <ResultCardSkeleton />;
 
   return (
-    <Card className={getCardClassName()}>
+    <Card className={getCardClassName(item.status)}>
       <div className="flex flex-col md:flex-row">
         <div className="flex-1 p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               {item.submissionReference}
             </h3>
@@ -90,44 +91,64 @@ export function AssessmentResultCard({
               </span>
             )}
           </div>
+          <div className="flex items-center gap-1 text-sm mb-4">
+            {item.status === AssessmentState.AutoGradingFailed ?
+              <>
+                <p className="text-red-500">
+                  Auto grading has failed. Require manual grading
+                </p>
+                <TriangleAlert className="size-3 text-red-500" />
+              </>
+            : item.status === AssessmentState.Completed ?
+              <>
+                <p className="text-green-500">Assessment Completed</p>
+                <Check className="size-3 text-green-500" />
+              </>
+            : <>
+                <p className="text-orange-500">Require manual grading</p>
+                <CircleAlert className="size-3 text-orange-500" />
+              </>
+            }
+          </div>
 
           <div className="space-y-3">
-            {isGradingFailed ?
-              <div className="text-destructive text-sm">
-                Grading for this submission has failed. Please regrade or manually grade
-                this submission.
-              </div>
-            : sortedScoreBreakdowns.map((score, index) => {
-                const colorStyle = getCriteriaColorStyle(
-                  score.criterionName,
-                  criteriaColorMap,
-                );
+            {sortedScoreBreakdowns.map((score, index) => {
+              const colorStyle = getCriteriaColorStyle(
+                score.criterionName,
+                criteriaColorMap,
+              );
 
-                const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(2);
+              const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(2);
 
-                return (
-                  <div key={index} className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className={colorStyle.text}>{score.criterionName}</span>
-                      {score.grader === "None" ?
-                        <span className="text-warning">Require manual grading</span>
-                      : <span className={colorStyle.text}>
-                          {finalScore} ({score.rawScore}%)
-                        </span>
-                      }
-                    </div>
-                    {index !== item.scoreBreakdowns.length - 1 && <Separator />}
+              return (
+                <div key={index} className="mt-2">
+                  <div className="flex justify-between text-sm">
+                    <span className={colorStyle.text}>{score.criterionName}</span>
+                    {(
+                      score.grader === "None" ||
+                      score.status === ScoreBreakdownStatus.Manual
+                    ) ?
+                      <span className="text-orange-400">Require manual grading</span>
+                    : score.status === ScoreBreakdownStatus.Failed ?
+                      <span className="text-red-500">Failed to grade</span>
+                    : <span className={colorStyle.text}>
+                        {finalScore} ({score.rawScore}%)
+                      </span>
+                    }
                   </div>
-                );
-              })
-            }
+                  {index !== item.scoreBreakdowns.length - 1 && (
+                    <Separator className="mt-2" />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        <div className="flex md:flex-col justify-end p-4 bg-muted/40">
+        <div className="border-l flex md:flex-col justify-end p-4 bg-muted/40">
           <Button
             disabled={isRerunning}
-            onClick={handleRerun}
+            onClick={() => rerunAssessment(item.id)}
             variant="outline"
             className="flex items-center gap-2 mb-2 w-full"
           >
@@ -140,7 +161,9 @@ export function AssessmentResultCard({
           >
             <Button className="flex items-center gap-2 w-full">
               <FileSearch className="h-4 w-4" />
-              {isGradingFailed ? "Manual Grade" : "Review"}
+              {isGradingFailed || item.status === AssessmentState.ManualGradingRequired ?
+                "Manual"
+              : "Review"}
             </Button>
           </Link>
         </div>

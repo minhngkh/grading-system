@@ -11,26 +11,20 @@ export function useDebounceUpdate<T>(
 ): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   const isFirst = useRef(true);
-  const onChangeRef = useRef(onChange);
-
-  // Update the ref whenever onChange changes
-  useEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedValue(value);
 
       if (!isFirst.current) {
-        onChangeRef.current?.(value);
+        onChange?.(value);
       }
     }, delay);
 
     isFirst.current = false;
 
     return () => clearTimeout(timer);
-  }, [value, delay]); // Removed onChange from dependencies
+  }, [value, delay]);
 
   return debouncedValue;
 }

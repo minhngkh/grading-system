@@ -36,9 +36,10 @@ public class RubricAggregate : AggregateRoot<RubricAggregate, RubricId>
         Update.RubricCanBeUpdatedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
         // All validations passed, emit the update event
-        Emit(new Update.RubricInfoUpdatedEvent
+        ConditionalEmit(command.Name is not null,
+            () => new Update.RubricInfoUpdatedEvent
             {
-                Name = command.Name ?? RubricName.Empty
+                Name = command.Name!
             });
 
         ConditionalEmit(command.PerformanceTags is not null,

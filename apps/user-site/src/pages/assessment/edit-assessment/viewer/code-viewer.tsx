@@ -1,69 +1,39 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import ShikiHighlighter from "react-shiki";
-import { FeedbackItem } from "@/types/assessment";
+import { Assessment, FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import "./viewer.css";
 import { FileItem } from "@/types/file";
-import { Button } from "@/components/ui/button";
+import FeedbackTooltip from "@/components/app/feedback-tooltip";
 
 interface HighlightableViewerProps {
   file: FileItem;
-  feedbacks: FeedbackItem[];
-  feedbacksAll?: FeedbackItem[];
-  updateFeedback: (index: number, adjustedFeedback: FeedbackItem) => void;
-  addFeedback: (newFeedback: FeedbackItem) => void;
-  isHighlightMode: boolean;
-  onHighlightComplete: () => void;
-  activeFeedbackId?: string | null;
-  rubricCriteria?: string[];
-  gradingId: string;
-  submissionReference: string;
-  onFeedbackValidated?: (validatedFeedbacks: FeedbackItem[]) => void;
+  activeFeedbackId?: number | null;
   onSelectionMade?: () => void;
+  onSelectionChange?: (selection: any) => void;
+  assessment: Assessment;
+  onUpdate?: (updatedAssessment: Partial<Assessment>) => void;
+  onUpdateLastSave?: (updatedLastSaved: Partial<Assessment>) => void;
 }
 
 const HighlightableViewer = ({
   file,
-  feedbacks,
-  feedbacksAll = [],
-  addFeedback,
-  updateFeedback,
-  isHighlightMode,
-  onHighlightComplete,
   activeFeedbackId,
-  rubricCriteria = [],
-  gradingId,
-  submissionReference,
-  onFeedbackValidated,
   onSelectionMade,
+  onSelectionChange,
+  assessment,
+  onUpdate,
+  onUpdateLastSave,
 }: HighlightableViewerProps) => {
-  const { theme = "light" } = useTheme?.() || {};
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newComment, setNewComment] = useState("");
-  const [newFeedbackTag, setNewFeedbackTag] = useState<string>("info");
+  const { theme } = useTheme();
   const [selectionRange, setSelectionRange] = useState<{
     from: { line: number; col: number };
     to: { line: number; col: number };
   } | null>(null);
-  const [newCriterion, setNewCriterion] = useState<string>("");
+  const [tooltipFb, setTooltipFb] = useState<FeedbackItem | null>(null);
+  const [startLineElement, setStartLineElement] = useState<HTMLElement | null>(null);
+  const [endLineElement, setEndLineElement] = useState<HTMLElement | null>(null);
 
-  // Determine language from fileUrl
   let language = "plaintext";
   if (file.relativePath) {
     language =
@@ -90,16 +60,11 @@ const HighlightableViewer = ({
         md: "markdown",
         txt: "plaintext",
         h: "c",
-      }[file.extension] ||
-      file.extension ||
-      "plaintext";
+      }[file.extension] || "plaintext";
   }
 
-  // --- Highlight selection logic ---
   useEffect(() => {
-    // Remove the isHighlightMode check - allow selection anytime
     let isMouseDown = false,
-      mouseMoved = false,
       startPosition: { line: number; col: number } | null = null;
 
     const calculateColumn = (e: MouseEvent, lineEl: HTMLElement): number => {
@@ -113,7 +78,7 @@ const HighlightableViewer = ({
         range.setEnd(pos.offsetNode, pos.offset);
       }
       if (!range) return 0;
-      // Nếu click vào ngoài text node (khoảng trắng đầu dòng), trả về 0
+
       if (!lineEl.contains(range.startContainer)) return 0;
       const walker = document.createTreeWalker(lineEl, NodeFilter.SHOW_TEXT, null);
       let charCount = 0,
@@ -136,20 +101,16 @@ const HighlightableViewer = ({
       ) as HTMLElement;
       if (!lineEl) return;
       isMouseDown = true;
-      mouseMoved = false;
-      // Tách logic lấy số dòng cho code và essay
       const line =
         file.type === "code" ?
-          parseInt(lineEl.dataset.line || "0", 10) // code: zero-based
-        : parseInt(lineEl.dataset.line || "0", 10) + 1; // essay: one-based
-      const col = calculateColumn(e, lineEl); // col luôn từ 0
+          parseInt(lineEl.dataset.line || "0", 10)
+        : parseInt(lineEl.dataset.line || "0", 10) + 1;
+      const col = calculateColumn(e, lineEl);
       startPosition = { line, col };
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp, { once: true });
     };
-    const onMouseMove = () => {
-      if (isMouseDown) mouseMoved = true;
-    };
+    const onMouseMove = () => {};
     const onMouseUp = (e: MouseEvent) => {
       if (!isMouseDown) return;
       const lineEl = (e.target as HTMLElement).closest(
@@ -166,8 +127,10 @@ const HighlightableViewer = ({
         if (from.line > to.line || (from.line === to.line && from.col > to.col))
           [from, to] = [to, from];
         if (from.line !== to.line || Math.abs(from.col - to.col) > 0) {
-          setSelectionRange({ from, to });
-          // Always notify parent that selection was made - this enables the button
+          const selection = { from, to };
+          setSelectionRange(selection);
+          void selectionRange;
+          onSelectionChange?.(selection);
           onSelectionMade?.();
         }
       }
@@ -181,33 +144,29 @@ const HighlightableViewer = ({
     return () => {
       window.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
-      // mouseup is once:true
     };
-  }, [file.type, onSelectionMade]); // Remove isHighlightMode dependency
+  }, [file.type, onSelectionMade]);
 
-  // Only open dialog when isHighlightMode is true AND we have a selection
-  useEffect(() => {
-    if (isHighlightMode && selectionRange) {
-      setIsDialogOpen(true);
-    } else {
-      setIsDialogOpen(false);
-    }
-  }, [isHighlightMode, selectionRange]);
-
-  // Validate and adjust feedbacks of type "text"
   function getAdjustedFeedbacks(
-    content: string,
+    file: FileItem,
     feedbacks: FeedbackItem[],
   ): FeedbackItem[] {
-    const rawLines = content.split(/\r?\n/);
+    const rawLines = file.content.split(/\r?\n/);
     const lines = rawLines.map((l) => l.trimEnd());
     const totalLines = lines.length;
+
     return feedbacks.map((fb) => {
-      if (fb.locationData?.type !== "text") return fb;
+      if (
+        fb.locationData?.type !== "text" ||
+        fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) !== file.relativePath ||
+        fb.tag === "discarded"
+      )
+        return fb;
+
       let { fromLine, toLine, fromCol, toCol } = fb.locationData;
       fromCol = typeof fromCol === "number" ? fromCol : 0;
       toCol = typeof toCol === "number" ? toCol : 0;
-      // Nếu chỉ có fromLine/toLine, thì fromCol = 0, toCol = chiều dài dòng toLine
+
       if (
         (fb.locationData.fromCol === undefined || fb.locationData.fromCol === 0) &&
         (fb.locationData.toCol === undefined || fb.locationData.toCol === 0)
@@ -215,14 +174,17 @@ const HighlightableViewer = ({
         fromCol = 0;
         toCol = lines[toLine - 1]?.length ?? 0;
       }
+
       if (typeof toLine === "number" && toLine > totalLines) {
         toLine = totalLines;
         toCol = lines[totalLines - 1]?.length ?? 0;
       }
+
       const fromLineLen = lines[fromLine! - 1]?.length ?? 0;
       const toLineLen = lines[toLine! - 1]?.length ?? 0;
       const adjustedFromCol = Math.max(0, Math.min(fromCol, fromLineLen));
       const adjustedToCol = Math.max(0, Math.min(toCol, toLineLen));
+
       return {
         ...fb,
         locationData: {
@@ -236,167 +198,429 @@ const HighlightableViewer = ({
     });
   }
 
-  // Validate and adjust feedbacks of type "text"
-  useEffect(() => {
-    const adjusted = getAdjustedFeedbacks(file.content, feedbacks);
-    let hasChanges = false;
+  function mergeIntersectingFeedbacks(feedbacks: FeedbackItem[]): FeedbackItem[] {
+    const fileName = file.relativePath;
 
-    for (let i = 0; i < adjusted.length; i++) {
-      if (JSON.stringify(adjusted[i]) !== JSON.stringify(feedbacks[i])) {
-        hasChanges = true;
-        const globalIdx = feedbacksAll.findIndex(
-          (f) =>
-            f.fileRef === feedbacks[i].fileRef &&
-            f.criterion === feedbacks[i].criterion &&
-            f.comment === feedbacks[i].comment &&
-            JSON.stringify(f.locationData) === JSON.stringify(feedbacks[i].locationData),
-        );
+    const textFeedbacksWithIndices: Array<{ fb: FeedbackItem; originalIndex: number }> =
+      [];
+    feedbacks.forEach((fb, index) => {
+      if (
+        fb.locationData?.type === "text" &&
+        fb.fileRef &&
+        fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) === fileName
+      ) {
+        textFeedbacksWithIndices.push({ fb, originalIndex: index });
+      }
+    });
 
-        if (globalIdx !== -1) {
-          updateFeedback(globalIdx, adjusted[i]);
+    if (textFeedbacksWithIndices.length <= 1) return feedbacks;
+
+    const hasIntersection = (fb1: FeedbackItem, fb2: FeedbackItem): boolean => {
+      if (fb1.locationData?.type !== "text" || fb2.locationData?.type !== "text")
+        return false;
+
+      const {
+        fromLine: f1Line,
+        toLine: t1Line,
+        fromCol: f1Col = 0,
+        toCol: t1Col = 0,
+      } = fb1.locationData;
+      const {
+        fromLine: f2Line,
+        toLine: t2Line,
+        fromCol: f2Col = 0,
+        toCol: t2Col = 0,
+      } = fb2.locationData;
+
+      if (f1Line === f2Line && t1Line === t2Line) {
+        const similarity = calculateSimilarity(fb1.comment, fb2.comment);
+        if (similarity > 0.8) {
+          return false;
         }
       }
-    }
 
-    // Notify parent that validation occurred
-    if (hasChanges && onFeedbackValidated) {
-      onFeedbackValidated(adjusted);
-    }
-  }, [file.content, feedbacks, onFeedbackValidated]);
+      const checkIntersection = (
+        fromLine1: number,
+        toLine1: number,
+        fromCol1: number,
+        toCol1: number,
+        fromLine2: number,
+        toLine2: number,
+        fromCol2: number,
+        toCol2: number,
+      ): boolean => {
+        const fb1ContainsFb2 =
+          fromLine1 <= fromLine2 &&
+          toLine1 >= toLine2 &&
+          (fromLine1 < fromLine2 ||
+            toLine1 > toLine2 ||
+            (fromLine1 === fromLine2 && fromCol1 <= fromCol2) ||
+            (toLine1 === toLine2 && toCol1 >= toCol2));
 
-  const handleAddFeedback = () => {
-    if (!selectionRange || !newComment.trim() || !newCriterion) return;
-    const { from, to } = selectionRange;
-    let fileRef = `${submissionReference}/${file.relativePath || ""}`;
-    const newFeedback: FeedbackItem = {
-      criterion: newCriterion,
-      fileRef,
-      comment: newComment.trim(),
-      tag: newFeedbackTag,
-      locationData: {
-        type: "text",
-        fromLine: Math.min(from.line, to.line),
-        toLine: Math.max(from.line, to.line),
-        fromCol: Math.min(from.col, to.col),
-        toCol: Math.max(from.col, to.col),
-      },
+        const fb2ContainsFb1 =
+          fromLine2 <= fromLine1 &&
+          toLine2 >= toLine1 &&
+          (fromLine2 < fromLine1 ||
+            toLine2 > toLine1 ||
+            (fromLine2 === fromLine1 && fromCol2 <= fromCol1) ||
+            (toLine2 === toLine1 && toCol2 >= toCol1));
+
+        if (fb1ContainsFb2 || fb2ContainsFb1) {
+          return false;
+        }
+
+        if (fromLine1 <= fromLine2) {
+          if (toLine1 > fromLine2) {
+            return true;
+          } else if (toLine1 === fromLine2) {
+            return toCol1 > fromCol2;
+          }
+        }
+        return false;
+      };
+
+      const fb1IntersectsFb2 = checkIntersection(
+        f1Line,
+        t1Line,
+        f1Col,
+        t1Col,
+        f2Line,
+        t2Line,
+        f2Col,
+        t2Col,
+      );
+      const fb2IntersectsFb1 = checkIntersection(
+        f2Line,
+        t2Line,
+        f2Col,
+        t2Col,
+        f1Line,
+        t1Line,
+        f1Col,
+        t1Col,
+      );
+
+      const result = fb1IntersectsFb2 || fb2IntersectsFb1;
+
+      return result;
     };
-    addFeedback(newFeedback);
 
-    setNewComment("");
-    setNewFeedbackTag("info");
-    setNewCriterion("");
-    setSelectionRange(null);
-    setIsDialogOpen(false);
-    onHighlightComplete();
-  };
+    const calculateSimilarity = (text1: string, text2: string): number => {
+      const longer = text1.length > text2.length ? text1 : text2;
+      const shorter = text1.length > text2.length ? text2 : text1;
 
-  // Update useEffect for activeFeedbackId
+      if (longer.length === 0) return 1.0;
+
+      const editDistance = levenshteinDistance(longer, shorter);
+      return (longer.length - editDistance) / longer.length;
+    };
+
+    const levenshteinDistance = (str1: string, str2: string): number => {
+      const matrix = [];
+
+      for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+      }
+
+      for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+      }
+
+      for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+          if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1,
+            );
+          }
+        }
+      }
+
+      return matrix[str2.length][str1.length];
+    };
+
+    const mergeFeedbacks = (fb1: FeedbackItem, fb2: FeedbackItem): FeedbackItem => {
+      if (fb1.locationData?.type !== "text" || fb2.locationData?.type !== "text")
+        return fb1;
+
+      const {
+        fromLine: f1Line,
+        toLine: t1Line,
+        fromCol: f1Col = 0,
+        toCol: t1Col = 0,
+      } = fb1.locationData;
+      const {
+        fromLine: f2Line,
+        toLine: t2Line,
+        fromCol: f2Col = 0,
+        toCol: t2Col = 0,
+      } = fb2.locationData;
+
+      const mergedFromLine = Math.min(f1Line, f2Line);
+      const mergedToLine = Math.max(t1Line, t2Line);
+
+      let mergedFromCol = 0;
+      let mergedToCol = 0;
+
+      if (mergedFromLine === f1Line && mergedFromLine === f2Line) {
+        mergedFromCol = Math.min(f1Col, f2Col);
+      } else if (mergedFromLine === f1Line) {
+        mergedFromCol = f1Col;
+      } else {
+        mergedFromCol = f2Col;
+      }
+
+      if (mergedToLine === t1Line && mergedToLine === t2Line) {
+        mergedToCol = Math.max(t1Col, t2Col);
+      } else if (mergedToLine === t1Line) {
+        mergedToCol = t1Col;
+      } else {
+        mergedToCol = t2Col;
+      }
+
+      const fb1Range = f1Line === t1Line ? `L${f1Line}` : `L${f1Line}-${t1Line}`;
+      const fb2Range = f2Line === t2Line ? `L${f2Line}` : `L${f2Line}-${t2Line}`;
+
+      const feedbackLines: string[] = [];
+
+      if (fb1.comment.includes("\n")) {
+        const existingLines = fb1.comment.split("\n");
+        feedbackLines.push(...existingLines);
+      } else {
+        if (fb1.comment.startsWith(`${fb1Range}: `)) {
+          feedbackLines.push(fb1.comment);
+        } else {
+          feedbackLines.push(`${fb1Range}: ${fb1.comment}`);
+        }
+      }
+
+      feedbackLines.push(`${fb2Range}: ${fb2.comment}`);
+
+      const uniqueLines = [...new Set(feedbackLines)];
+      const mergedComment = uniqueLines.join("\n");
+      return {
+        ...fb1,
+        tag: "info",
+        comment: mergedComment,
+        locationData: {
+          type: "text",
+          fromLine: mergedFromLine,
+          toLine: mergedToLine,
+          fromCol: mergedFromCol,
+          toCol: mergedToCol,
+        },
+      };
+    };
+
+    const groups: Array<{ fb: FeedbackItem; originalIndex: number }[]> = [];
+    const processed = new Set<number>();
+
+    textFeedbacksWithIndices.forEach(({ fb, originalIndex }, index) => {
+      if (processed.has(index)) return;
+
+      const group = [{ fb, originalIndex }];
+      processed.add(index);
+
+      let foundIntersection = true;
+      while (foundIntersection) {
+        foundIntersection = false;
+
+        textFeedbacksWithIndices.forEach((candidateItem, candidateIndex) => {
+          if (processed.has(candidateIndex)) return;
+
+          const intersectsWithGroup = group.some((groupItem) =>
+            hasIntersection(groupItem.fb, candidateItem.fb),
+          );
+
+          if (intersectsWithGroup) {
+            group.push(candidateItem);
+            processed.add(candidateIndex);
+            foundIntersection = true;
+          }
+        });
+      }
+
+      groups.push(group);
+    });
+
+    const result = [...feedbacks];
+
+    const indicesToRemove = new Set<number>();
+
+    groups.forEach((group) => {
+      if (group.length === 1) return;
+
+      group.forEach(({ originalIndex }) => {
+        indicesToRemove.add(originalIndex);
+      });
+
+      const mergedFeedback = group.reduce(
+        (merged, { fb }) => mergeFeedbacks(merged, fb),
+        group[0].fb,
+      );
+
+      const firstIndex = Math.min(...group.map(({ originalIndex }) => originalIndex));
+      result[firstIndex] = mergedFeedback;
+    });
+
+    const sortedIndicesToRemove = Array.from(indicesToRemove).sort((a, b) => b - a);
+    sortedIndicesToRemove.forEach((index) => {
+      const isFirstInGroup = groups.some((group) => {
+        const firstIndex = Math.min(...group.map(({ originalIndex }) => originalIndex));
+        return firstIndex === index && group.length > 1;
+      });
+
+      if (!isFirstInGroup) {
+        if (result[index]) {
+          result[index] = {
+            ...result[index],
+            tag: "discarded",
+          };
+        }
+      }
+    });
+
+    return result;
+  }
+
   useEffect(() => {
+    const adjusted = getAdjustedFeedbacks(file, assessment.feedbacks);
+    const merged = mergeIntersectingFeedbacks(adjusted);
+
+    const initStr = JSON.stringify(
+      assessment.feedbacks.map((fb) => ({
+        locationData: fb.locationData,
+        comment: fb.comment,
+        tag: fb.tag,
+        fileRef: fb.fileRef,
+      })),
+    );
+
+    const adjustedStr = JSON.stringify(
+      adjusted.map((fb) => ({
+        locationData: fb.locationData,
+        comment: fb.comment,
+        tag: fb.tag,
+        fileRef: fb.fileRef,
+      })),
+    );
+    const mergedStr = JSON.stringify(
+      merged.map((fb) => ({
+        locationData: fb.locationData,
+        comment: fb.comment,
+        tag: fb.tag,
+        fileRef: fb.fileRef,
+      })),
+    );
+
+    if (adjustedStr !== initStr) {
+      onUpdate?.({ feedbacks: merged });
+      onUpdateLastSave?.({ feedbacks: merged });
+    }
+
+    if (mergedStr !== adjustedStr) {
+      onUpdate?.({ feedbacks: merged });
+      onUpdateLastSave?.({ feedbacks: merged });
+    }
+  }, [file.content, file.relativePath, assessment.feedbacks, onUpdate, onUpdateLastSave]);
+
+  useEffect(() => {
+    if (activeFeedbackId === null || activeFeedbackId === undefined) {
+      setTooltipFb(null);
+      setStartLineElement(null);
+      setEndLineElement(null);
+      return;
+    }
+
+    const fb = assessment.feedbacks[activeFeedbackId];
     if (
-      activeFeedbackId !== undefined &&
-      activeFeedbackId !== null &&
-      feedbacksAll &&
-      feedbacksAll.length > 0
+      fb &&
+      fb.locationData?.type === "text" &&
+      typeof fb.locationData.fromLine === "number"
     ) {
-      // Find feedback by ID instead of using index
-      const fb = feedbacksAll.find((f) => f.id === activeFeedbackId);
-      if (
-        fb &&
-        fb.fileRef === `${submissionReference}/${file.relativePath || ""}` &&
-        fb.locationData?.type === "text" &&
-        typeof fb.locationData.fromLine === "number"
-      ) {
-        // Try to scroll, if not found, retry a few times (wait for DOM render)
-        let tries = 9;
-        const tryScroll = () => {
+      const tryScroll = () => {
+        if (file.type === "code") {
+          const root = document.getElementById(`shiki-container`);
+          if (!root) return;
+
           if (
-            fb.locationData &&
             fb.locationData.type === "text" &&
             typeof fb.locationData.fromLine === "number"
           ) {
-            if (file.type === "code") {
-              const root = document.getElementById(`shiki-container`);
-              let lineEl: Element | null = null;
-              if (!root) return;
-              lineEl = root.querySelector(
-                `.line[data-line="${fb.locationData.fromLine}"]`,
-              );
-              if (lineEl) {
-                root.scrollTo({
-                  top: (lineEl as HTMLElement).offsetTop - root.offsetTop,
-                  behavior: "smooth",
-                });
-                return;
-              }
-            } else if (file.type === "essay") {
-              console.log("essay scroll");
-              const root = document.getElementById(`essay-container`);
-              console.log("essay-container", root);
-              let lineEl: Element | null = null;
-              if (!root) return;
-              lineEl = root.querySelector(
-                `div[data-line="${fb.locationData.fromLine - 1}"]`,
-              );
-              console.log(lineEl, fb.locationData.fromLine);
-              if (lineEl) {
-                root.scrollTo({
-                  top: (lineEl as HTMLElement).offsetTop - root.offsetTop,
-                  behavior: "smooth",
-                });
-                return;
-              }
+            const startEl = root.querySelector(
+              `.line[data-line="${fb.locationData.fromLine}"]`,
+            );
+            const endEl = root.querySelector(
+              `.line[data-line="${fb.locationData.toLine}"]`,
+            );
+
+            if (startEl) {
+              const lineRect = (startEl as HTMLElement).getBoundingClientRect();
+              const rootRect = root.getBoundingClientRect();
+              const scrollTop = root.scrollTop + (lineRect.top - rootRect.top) - 120;
+
+              root.scrollTo({
+                top: scrollTop,
+                behavior: "smooth",
+              });
+
+              setStartLineElement(null);
+              setEndLineElement(null);
+              setTooltipFb(null);
+
+              setTimeout(() => {
+                setStartLineElement(startEl as HTMLElement);
+                setEndLineElement(endEl as HTMLElement);
+                setTooltipFb(fb);
+              }, 100);
             }
           }
-          if (tries < 10) {
-            tries++;
-            setTimeout(tryScroll, 100);
-          }
-        };
+        }
+      };
 
-        setTimeout(tryScroll, 0);
-      }
+      setTimeout(tryScroll, 50);
     }
-  }, [activeFeedbackId, feedbacksAll, file.relativePath, gradingId, submissionReference]);
+  }, [activeFeedbackId, assessment.feedbacks, file.type]);
 
-  // --- Render content ---
   const renderContent = () => {
-    const validFeedbacks = getAdjustedFeedbacks(file.content, feedbacks);
+    const fileName = file.relativePath;
+
+    const validFeedbacks = assessment.feedbacks
+      .map((fb, idx) => ({ fb, idx }))
+      .filter(
+        ({ fb }) =>
+          fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) === fileName &&
+          fb.tag !== "discarded",
+      );
 
     if (file.type === "code") {
       const getShikiTheme = () => (theme === "dark" ? "github-dark" : "github-light");
+
       return (
         <ShikiHighlighter
           language={language}
+          className="overflow-auto custom-scrollbar m-1"
           theme={getShikiTheme()}
           addDefaultStyles
           showLanguage={false}
-          className="h-full overflow-auto"
           transformers={[
             {
-              preprocess(code, options) {
+              preprocess(_, options) {
                 let decorations = validFeedbacks
                   .filter(
-                    (
-                      fb,
-                    ): fb is FeedbackItem & {
-                      locationData: {
-                        type: "text";
-                        fromLine: number;
-                        toLine: number;
-                        fromCol?: number;
-                        toCol?: number;
-                      };
-                    } =>
-                      fb.locationData?.type === "text" &&
+                    ({ fb }) =>
+                      fb.locationData.type === "text" &&
                       typeof fb.locationData.fromLine === "number" &&
                       typeof fb.locationData.toLine === "number",
                   )
-                  .map((fb) => {
-                    // Use ID directly instead of finding index
-                    const feedbackId = fb.id;
-
-                    // fallback về 0 nếu fromCol/toCol undefined
+                  .map(({ fb, idx }) => {
+                    if (fb.locationData.type !== "text") {
+                      return null;
+                    }
                     let fromLine = fb.locationData.fromLine;
                     let toLine = fb.locationData.toLine;
                     let fromCol =
@@ -407,9 +631,11 @@ const HighlightableViewer = ({
                       typeof fb.locationData.toCol === "number" ?
                         fb.locationData.toCol
                       : 0;
+
                     if (fromLine === toLine && fromCol === toCol) {
                       toLine = fromLine + 1;
                     }
+
                     return {
                       fb: {
                         ...fb,
@@ -421,42 +647,46 @@ const HighlightableViewer = ({
                           toCol,
                         },
                       },
-                      feedbackId,
+                      feedbackIndex: idx,
                     };
-                  });
+                  })
+                  .filter(Boolean);
 
-                if (activeFeedbackId !== undefined && activeFeedbackId !== null) {
+                if (typeof activeFeedbackId === "number") {
                   decorations = decorations.filter(
-                    ({ feedbackId }) => feedbackId === activeFeedbackId,
+                    (decoration) =>
+                      decoration && decoration.feedbackIndex === activeFeedbackId,
                   );
                 }
 
-                options.decorations = decorations.map(({ fb, feedbackId }) => ({
+                options.decorations = decorations.filter(Boolean).map((decoration) => ({
                   start: {
-                    line: fb.locationData.fromLine - 1,
+                    line: decoration!.fb.locationData.fromLine - 1,
                     character:
-                      typeof fb.locationData.fromCol === "number" ?
-                        fb.locationData.fromCol
+                      typeof decoration!.fb.locationData.fromCol === "number" ?
+                        decoration!.fb.locationData.fromCol
                       : 0,
                   },
                   end: {
-                    line: fb.locationData.toLine - 1,
+                    line: decoration!.fb.locationData.toLine - 1,
                     character:
-                      typeof fb.locationData.toCol === "number" ?
-                        fb.locationData.toCol
+                      typeof decoration!.fb.locationData.toCol === "number" ?
+                        decoration!.fb.locationData.toCol
                       : 0,
                   },
                   properties: {
                     class:
                       "annotation-span" +
-                      (activeFeedbackId && feedbackId === activeFeedbackId ?
+                      ((
+                        typeof activeFeedbackId === "number" &&
+                        decoration!.feedbackIndex === activeFeedbackId
+                      ) ?
                         " annotation-span-focused"
                       : ""),
-                    "data-id": feedbackId,
-                    "data-comment": fb.comment,
-                    "data-tag": fb.tag,
-                    "data-criterion": fb.criterion,
+                    "data-id": decoration!.feedbackIndex,
+                    "data-tag": decoration!.fb.tag,
                   },
+                  alwaysWrap: true,
                 }));
               },
               line(node, lineIndex) {
@@ -468,7 +698,8 @@ const HighlightableViewer = ({
               pre(node) {
                 node.properties = {
                   ...node.properties,
-                  style: "background: var(--background)",
+                  style: "background: var(--background); margin: 0; padding: 0.5rem;",
+                  class: "custom-scrollbar ",
                 };
               },
             },
@@ -478,270 +709,18 @@ const HighlightableViewer = ({
         </ShikiHighlighter>
       );
     }
-    // Essay
-    function getFeedbackGroupsForLine(lineIdx: number, lineLength: number) {
-      const boundaries: {
-        pos: number;
-        type: "start" | "end";
-        fb: FeedbackItem;
-        feedbackId: string;
-      }[] = [];
-
-      validFeedbacks
-        .filter(
-          (
-            fb,
-          ): fb is FeedbackItem & {
-            locationData: {
-              type: "text";
-              fromLine: number;
-              toLine: number;
-              fromCol?: number;
-              toCol?: number;
-            };
-          } =>
-            fb.locationData?.type === "text" &&
-            typeof fb.locationData.fromLine === "number" &&
-            typeof fb.locationData.toLine === "number",
-        )
-        .forEach((fb) => {
-          if (fb.locationData?.type !== "text") return;
-          const feedbackId = fb.id ?? "";
-
-          const fromCol =
-            typeof fb.locationData.fromCol === "number" ? fb.locationData.fromCol : 0;
-          const toCol =
-            typeof fb.locationData.toCol === "number" ? fb.locationData.toCol : 0;
-          const fromLine = fb.locationData.fromLine;
-          if (lineIdx + 1 !== fromLine) return;
-          const start = fromCol;
-          const end = toCol;
-          if (start < end) {
-            boundaries.push({ pos: start, type: "start", fb, feedbackId });
-            boundaries.push({ pos: end, type: "end", fb, feedbackId });
-          }
-        });
-
-      boundaries.sort((a, b) => a.pos - b.pos || (a.type === "end" ? -1 : 1));
-      const segments: {
-        start: number;
-        end: number;
-        feedbacks: { fb: FeedbackItem; feedbackId: string }[];
-      }[] = [];
-      let active: { fb: FeedbackItem; feedbackId: string }[] = [];
-      let lastPos = 0;
-      for (const b of boundaries) {
-        if (b.pos > lastPos) {
-          segments.push({ start: lastPos, end: b.pos, feedbacks: [...active] });
-        }
-        if (b.type === "start") active.push({ fb: b.fb, feedbackId: b.feedbackId });
-        else active = active.filter((f) => f.fb !== b.fb);
-        lastPos = b.pos;
-      }
-      if (lastPos < lineLength) {
-        segments.push({ start: lastPos, end: lineLength, feedbacks: [...active] });
-      }
-      return segments;
-    }
-
-    return (
-      <div
-        className="font-serif text-md leading-relaxed whitespace-pre-wrap p-3 overflow-auto"
-        id="essay-container"
-      >
-        {file.content.split("\n").map((line, i) => {
-          if (line === "") {
-            return (
-              <div key={i} data-line={i}>
-                <br />
-              </div>
-            );
-          }
-          const segments = getFeedbackGroupsForLine(i, line.length);
-          return (
-            <div key={i} data-line={i}>
-              {segments.map((seg, idx) => {
-                let inner: React.ReactNode = line.slice(seg.start, seg.end);
-                // Nếu có activeFeedbackId, chỉ highlight feedback đó, các feedback khác không có class actived
-                if (activeFeedbackId !== undefined && activeFeedbackId !== null) {
-                  // Tìm feedback đang active trong seg.feedbacks
-                  const activeFb = seg.feedbacks.find(
-                    (f) => String(f.feedbackId) === String(activeFeedbackId),
-                  );
-                  if (activeFb) {
-                    // Chỉ wrap đoạn text này bằng span actived cho feedback active
-                    const fb = activeFb.fb;
-                    let fromLine =
-                      fb.locationData?.type === "text" ?
-                        fb.locationData.fromLine
-                      : undefined;
-                    let toLine =
-                      fb.locationData?.type === "text" ?
-                        fb.locationData.toLine
-                      : undefined;
-                    inner = (
-                      <span
-                        key={
-                          (fb.fileRef || "") +
-                          "-" +
-                          (fromLine ?? "") +
-                          "-" +
-                          (toLine ?? "") +
-                          "-" +
-                          (fb.criterion ?? "") +
-                          "-" +
-                          (fb.comment ?? "") +
-                          "-" +
-                          idx +
-                          "-active"
-                        }
-                        className={
-                          "annotation-span actived annotation-span-focused " +
-                          (seg.feedbacks.length === 1 ? "highlight-top" : "")
-                        }
-                        data-id={String(activeFb.feedbackId)}
-                        data-comment={fb.comment}
-                        data-tag={fb.tag}
-                      >
-                        {inner}
-                      </span>
-                    );
-                  }
-                  // Nếu không phải feedback active thì không wrap gì cả (bỏ highlight các feedback khác)
-                } else {
-                  // Không có feedback nào active, highlight tất cả như cũ
-                  seg.feedbacks.forEach((f, fbIdx) => {
-                    const fb = f.fb;
-                    let fromLine =
-                      fb.locationData?.type === "text" ?
-                        fb.locationData.fromLine
-                      : undefined;
-                    let toLine =
-                      fb.locationData?.type === "text" ?
-                        fb.locationData.toLine
-                      : undefined;
-                    inner = (
-                      <span
-                        key={
-                          (fb.fileRef || "") +
-                          "-" +
-                          (fromLine ?? "") +
-                          "-" +
-                          (toLine ?? "") +
-                          "-" +
-                          (fb.criterion ?? "") +
-                          "-" +
-                          (fb.comment ?? "") +
-                          "-" +
-                          idx +
-                          "-" +
-                          fbIdx
-                        }
-                        className={
-                          "annotation-span " +
-                          (fbIdx === seg.feedbacks.length - 1 ?
-                            "highlight-top"
-                          : "highlight-under")
-                        }
-                        data-id={String(f.feedbackId)}
-                        data-comment={fb.comment}
-                        data-tag={fb.tag}
-                      >
-                        {inner}
-                      </span>
-                    );
-                  });
-                }
-                return inner;
-              })}
-            </div>
-          );
-        })}
-      </div>
-    );
   };
 
-  // --- Render dialog ---
   return (
     <>
       {renderContent()}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Add Feedback</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="tag" className="text-sm font-medium">
-                Select Tag
-              </Label>
-              <Select value={newFeedbackTag} onValueChange={setNewFeedbackTag}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="info">Info</SelectItem>
-                  <SelectItem value="notice">Notice</SelectItem>
-                  <SelectItem value="tip">Tip</SelectItem>
-                  <SelectItem value="caution">Caution</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="criterion" className="text-sm font-medium">
-                Select Criterion
-              </Label>
-              <Select value={newCriterion} onValueChange={setNewCriterion}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select criterion" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rubricCriteria.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="grid gap-2">
-                <Label htmlFor="comment" className="text-sm font-medium">
-                  Feedback Comment
-                </Label>
-                <Textarea
-                  id="comment"
-                  rows={4}
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Enter your feedback..."
-                  className="text-sm"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsDialogOpen(false);
-                setNewComment("");
-                setNewFeedbackTag("info");
-                setNewCriterion("");
-                setSelectionRange(null);
-                // Clear parent states when canceling dialog
-                onHighlightComplete();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddFeedback}
-              disabled={!newComment.trim() || !newCriterion}
-            >
-              Add Feedback
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {tooltipFb && (
+        <FeedbackTooltip
+          fb={tooltipFb}
+          startEl={startLineElement}
+          endEl={endLineElement}
+        />
+      )}
     </>
   );
 };

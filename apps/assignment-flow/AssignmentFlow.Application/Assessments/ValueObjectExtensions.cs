@@ -1,4 +1,5 @@
-﻿using AssignmentFlow.IntegrationEvents;
+﻿using AssignmentFlow.Application.Shared;
+using AssignmentFlow.IntegrationEvents;
 using System.Text.Json;
 
 namespace AssignmentFlow.Application.Assessments;
@@ -20,13 +21,17 @@ public static class ValueObjectExtensions
             PerformanceTag = PerformanceTag.New(apiContract.PerformanceTag),
             MetadataJson = apiContract.MetadataJson,
             Grader = grader ?? Grader.New(apiContract.Grader),
-            Status = apiContract.Status
+            Status = "Graded"
         };
     }
 
-    public static Feedback ToValueObject(this FeedbackItemApiContract apiContract)
+    public static Feedback ToValueObject(
+        this FeedbackItemApiContract apiContract,
+        ISequenceRepository<Feedback> sequenceRepository)
         => Feedback.New(
-            FeedbackIdentity.New(apiContract.Id),
+            string.IsNullOrWhiteSpace(apiContract.Id) 
+                ? FeedbackIdentity.New(apiContract.Id)
+                : FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result),
             CriterionName.New(apiContract.Criterion),
             Comment.New(apiContract.Comment),
             Highlight.New(
@@ -52,15 +57,17 @@ public static class ValueObjectExtensions
             Grader = grader
         };
 
-        var summary = Feedback.Summary(
+        List<Feedback> feedbackItems = [];
+        if (!string.IsNullOrEmpty(apiContract.Summary))
+        {
+            var summary = Feedback.Summary(
                 FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result),
                 criterionName,
                 Comment.New(apiContract.Summary));
-
-        List<Feedback> feedbackItems = [
-            summary,
-            ..apiContract.FeedbackItems.Select(fb => fb.ToValueObject(criterionName, sequenceRepository))
-        ];
+            feedbackItems.Add(summary);
+        }
+        feedbackItems.AddRange(apiContract.FeedbackItems
+            .Select(fb => fb.ToValueObject(criterionName, sequenceRepository)));
 
         return (breakdownItem, feedbackItems);
     }

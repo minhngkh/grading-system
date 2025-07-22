@@ -1,8 +1,10 @@
-import { buildFilterExpr, contains, eq } from "@/lib/json-api-query";
+import { Grader } from "./../types/assessment";
+import { buildFilterExpr, eq } from "@/lib/json-api-query";
 import {
   Assessment,
   AssessmentState,
   FeedbackItem,
+  ScoreAdjustment,
   ScoreBreakdown,
 } from "@/types/assessment";
 import { GetAllResult, SearchParams } from "@/types/search-params";
@@ -54,7 +56,7 @@ export class AssessmentService {
       submissionReference: record.submissionReference,
       rawScore: record.rawScore,
       adjustedCount: record.adjustedCount,
-      scoreBreakdowns: record.scoreBreakdowns ?? [],
+      scoreBreakdowns: (record.scoreBreakdowns as any) ?? [],
       feedbacks,
       status: record.status,
       lastModified: record.lastModified ? new Date(record.lastModified) : undefined,
@@ -108,34 +110,24 @@ export class AssessmentService {
     return allData;
   }
 
-  static async updateFeedback(
-    id: string,
-    feedbacks: FeedbackItem[],
-    token: string,
-  ): Promise<number> {
+  static async updateFeedback(id: string, feedbacks: FeedbackItem[], token: string) {
     const configHeaders = await this.buildHeaders(token);
     const payload = { feedbacks };
-    const response = await axios.put(
+    return await axios.put(
       `${ASSESSMENT_API_URL}/${id}/feedbacks`,
       payload,
       configHeaders,
     );
-    return response.status;
   }
 
   static async updateScore(
     id: string,
     scoreBreakdowns: Partial<ScoreBreakdown>[],
     token: string,
-  ): Promise<Assessment> {
+  ) {
     const configHeaders = await this.buildHeaders(token);
     const payload = { scoreBreakdowns };
-    const response = await axios.post(
-      `${ASSESSMENT_API_URL}/${id}/scores`,
-      payload,
-      configHeaders,
-    );
-    return this.ConvertToAssessment(response.data);
+    return await axios.post(`${ASSESSMENT_API_URL}/${id}/scores`, payload, configHeaders);
   }
 
   static async rerunAssessment(id: string, token: string) {
@@ -157,7 +149,10 @@ export class AssessmentService {
     const assessment = await this.assessmentDeserializer.deserialize(response.data);
     return assessment.status;
   }
-  static async getScoreAdjustments(assessmentId: string, token: string): Promise<any[]> {
+  static async getScoreAdjustments(
+    assessmentId: string,
+    token: string,
+  ): Promise<ScoreAdjustment[]> {
     const params = new URLSearchParams();
     const filterExpr = buildFilterExpr([eq("assessment.id", assessmentId)]);
     params.append("filter", filterExpr ?? "");
@@ -168,6 +163,17 @@ export class AssessmentService {
       configHeaders,
     );
 
-    return response.data.data;
+    const data = (await this.assessmentDeserializer.deserialize(response.data)) as any[];
+
+    return data.map((item: any) => {
+      return {
+        adjustmentSource:
+          Grader[item.adjustmentSource as keyof typeof Grader] || Grader.teacher,
+        score: item.score,
+        createdAt: new Date(item.createdAt),
+        scoreBreakdowns: item.scoreBreakdowns,
+        deltaScore: item.deltaScore,
+      };
+    });
   }
 }

@@ -49,10 +49,6 @@ public sealed class Feedback : ValueObject
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return Identity;
-        yield return Criterion;
-        yield return Comment;
-        yield return Highlight;
-        yield return Tag;
     }
 }
 
@@ -84,7 +80,7 @@ public sealed class FeedbackIdentity : StringValueObject
 
     // FIXME: Why hard limit
     // protected override int? MaxLength => ModelConstants.VeryLongText;
-    protected override int? MaxLength => ModelConstants.TinyText;
+    protected override int? MaxLength => ModelConstants.ShortText;
     public static FeedbackIdentity New(string value) => new(value);
 }
 
@@ -110,10 +106,14 @@ public sealed class Tag : StringValueObject
     public static Tag Notice => new("notice");
     public static Tag Tip => new("tip");
     public static Tag Caution => new("caution");
+    public static Tag Discarded => new("discarded");
+    public static Tag Critical => new("critical");
+    public static Tag Error => new("error");
+    public static Tag Warning => new("warning");
 
     private static readonly HashSet<string> ValidTags = new(StringComparer.OrdinalIgnoreCase)
     {
-        "info", "success", "notice", "tip", "caution", "summary"
+        "summary", "info", "success", "notice", "tip", "caution", "discarded", "critical", "error", "warning"
     };
 
     private Tag() { }
@@ -139,6 +139,6 @@ public sealed class Tag : StringValueObject
         throw new ArgumentException($"Invalid tag value: '{value}'. Valid values are: 'info', 'success', 'notice', 'tip', 'caution'", nameof(value));
     }
 
-    protected override int? MaxLength => ModelConstants.TinyText;
+    protected override int? MaxLength => ModelConstants.ShortText;
     public static Tag New(string value) => new(value);
 }

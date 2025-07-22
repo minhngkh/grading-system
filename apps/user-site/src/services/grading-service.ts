@@ -100,6 +100,7 @@ export class GradingService {
 
     if (page != undefined) params.append("page[number]", page.toString());
     if (perPage != undefined) params.append("page[size]", perPage.toString());
+    params.append("sort", "-createdAt");
 
     const filterExpr = buildFilterExpr([
       search ? contains("name", search) : undefined,

@@ -14,7 +14,6 @@ export const CodeRunnerTestCaseSchema = z.object({
 });
 
 export const CodeRunnerConfigSchema = z.object({
-  language: z.string().min(1, "Language is required"),
   initCommand: z.string().min(1, "Install command is required"),
   runCommand: z.string().min(1, "Run command is required"),
   environmentVariables: z.record(z.string(), z.string()).optional(),
@@ -27,6 +26,42 @@ export const CodeRunnerConfigSchema = z.object({
     ),
 });
 
+export enum StaticAnalysisPreset {
+  "C/C++" = "c-cpp",
+  "Python" = "python",
+  "CSharp" = "c-sharp",
+  "Go" = "go",
+  "Java" = "java",
+  "JavaScript" = "javascript",
+  "TypeScript" = "typescript",
+  "Auto Detect" = "auto",
+}
+
+export enum StaticAnalysisDeductionType {
+  "critical" = "critical",
+  "error" = "error",
+  "warning" = "warning",
+  "info" = "info",
+}
+
+export const StaticAnalysisConfigSchema = z.object({
+  crossFileAnalysis: z.boolean().default(false),
+  preset: z.nativeEnum(StaticAnalysisPreset).default(StaticAnalysisPreset["Auto Detect"]),
+  additionalRulesets: z.array(z.string()).optional(),
+  deductionMap: z
+    .record(
+      z.nativeEnum(StaticAnalysisDeductionType),
+      z.number().min(0, "Deduction must be a non-negative number"),
+    )
+    .default({
+      [StaticAnalysisDeductionType.critical]: 20,
+      [StaticAnalysisDeductionType.error]: 15,
+      [StaticAnalysisDeductionType.warning]: 2,
+      [StaticAnalysisDeductionType.info]: 0,
+    }),
+});
+
 export type Plugin = z.infer<typeof PluginSchema>;
 export type CodeRunnerTestCase = z.infer<typeof CodeRunnerTestCaseSchema>;
 export type CodeRunnerConfig = z.infer<typeof CodeRunnerConfigSchema>;
+export type StaticAnalysisConfig = z.infer<typeof StaticAnalysisConfigSchema>;

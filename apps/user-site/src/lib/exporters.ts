@@ -5,6 +5,7 @@ import { utils as XLSXUtils, writeFile as XLSXWriteFile, WorkSheet } from "xlsx-
 import { GradingAttempt } from "@/types/grading";
 import { Assessment } from "@/types/assessment";
 import GradingResultHelper from "@/lib/grading-result";
+import "../fonts/NotoSans-Regular-normal";
 
 export interface DataExporter {
   exportToPDF(): void;
@@ -16,21 +17,19 @@ export class RubricExporter implements DataExporter {
     // Initialize any properties if needed
   }
 
-  exportToPDF() {
+  async exportToPDF() {
     const doc = new jsPDF({
       orientation: this.rubric.tags.length > 3 ? "landscape" : "portrait",
     });
 
-    // Header
+    doc.setFont("NotoSans-Regular");
     doc.setFontSize(16);
     doc.text(`Rubric: ${this.rubric.rubricName}`, 14, 20);
     doc.setFontSize(10);
 
-    // Build table head
     const allTags = this.rubric.tags;
     const head = [["Criterion (Weight)", ...allTags]];
 
-    // Build table body
     const body = this.rubric.criteria.map((criterion) => {
       const criterionLabel = `${criterion.name} (${criterion.weight ?? 0}%)`;
       const row: string[] = [criterionLabel];
@@ -41,18 +40,17 @@ export class RubricExporter implements DataExporter {
       return row;
     });
 
-    // Calculate the available width for the table (accounting for margins)
     const pageWidth = doc.internal.pageSize.width;
-    const tableWidth = pageWidth - 28; // 14pt margin on each side
-    const columnCount = allTags.length + 1; // Criteria column + tag columns
+    const tableWidth = pageWidth - 28;
+    const columnCount = allTags.length + 1;
     const columnWidth = tableWidth / columnCount;
 
-    // Generate table with evenly distributed columns
     autoTable(doc, {
       startY: 50,
       head,
       body,
       styles: {
+        font: "NotoSans-Regular",
         fontSize: 9,
         cellWidth: "auto",
         cellPadding: 3,
@@ -62,7 +60,7 @@ export class RubricExporter implements DataExporter {
       headStyles: {
         fillColor: [200, 200, 200], // Light gray background for header
         textColor: [0, 0, 0], // Black text for better contrast
-        fontStyle: "bold",
+        fontStyle: "normal",
       },
       bodyStyles: {
         fillColor: [255, 255, 255], // White background for body rows
@@ -173,6 +171,8 @@ export class GradingExporter implements DataExporter {
 
   exportToPDF() {
     const doc = new jsPDF();
+    doc.setFont("NotoSans-Regular");
+
     const scaleFactor = this.grading.scaleFactor ?? 10;
 
     // Header
@@ -444,7 +444,7 @@ export class GradingExporter implements DataExporter {
       : new Date().toISOString().slice(0, 16).replace(/[T:]/g, "_");
 
     const fileName = `Grading_${this.grading.name.replace(/\s+/g, "_")}_${createdTime}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    XLSXWriteFile(workbook, fileName);
   }
 }
 
@@ -456,6 +456,7 @@ export class AssessmentExporter implements DataExporter {
 
   exportToPDF() {
     const doc = new jsPDF();
+    doc.setFont("NotoSans-Regular"); // Đảm bảo font Việt hóa
 
     doc.setFontSize(16);
     doc.text("Assessment Report", 14, 20);
@@ -464,7 +465,7 @@ export class AssessmentExporter implements DataExporter {
     doc.text(`Submission: ${this.assessment.submissionReference}`, 14, 30);
     doc.text(`Total Score (%): ${this.assessment.rawScore}`, 14, 40);
     doc.text(
-      `Total Score (Scale Factor): ${(this.assessment.rawScore * this.grading.scaleFactor) / 100}`,
+      `Total Score (Scale Factor): ${((this.assessment.rawScore ?? 0) * (this.grading.scaleFactor ?? 1)) / 100}`,
       14,
       50,
     );
@@ -484,7 +485,7 @@ export class AssessmentExporter implements DataExporter {
         sb.criterionName,
         sb.performanceTag,
         sb.rawScore.toString(),
-        ((sb.rawScore * this.grading.scaleFactor) / 100).toString(),
+        (((sb.rawScore ?? 0) * (this.grading.scaleFactor ?? 1)) / 100).toString(),
         this.assessment.feedbacks.find(
           (fb) => fb.criterion === sb.criterionName && fb.tag === "summary",
         )?.comment ?? "",
@@ -494,14 +495,14 @@ export class AssessmentExporter implements DataExporter {
         textColor: [0, 0, 0],
         fontStyle: "bold",
       },
-      styles: { fontSize: 10 },
+      styles: { fontSize: 10, font: "NotoSans-Regular" }, // Đảm bảo font cho body
     });
 
     const yAfter = (doc as any).lastAutoTable?.finalY ?? 100;
 
     autoTable(doc, {
       startY: yAfter + 10,
-      head: [["Criterion", "Comment", "Tag", "File", "Position", "Location Data"]],
+      head: [["Criterion", "Comment", "Tag", "File", "Position"]],
       body: this.assessment.feedbacks
         .map((fb) => {
           // Format position based on locationData type
@@ -527,7 +528,6 @@ export class AssessmentExporter implements DataExporter {
               fb.tag,
               fb.fileRef.split("/").pop() ?? "",
               position,
-              JSON.stringify(fb.locationData),
             ];
           }
           return undefined;
@@ -537,8 +537,9 @@ export class AssessmentExporter implements DataExporter {
         fillColor: [200, 200, 200],
         textColor: [0, 0, 0],
         fontStyle: "bold",
+        font: "NotoSans-Regular",
       },
-      styles: { fontSize: 8 },
+      styles: { fontSize: 8, font: "NotoSans-Regular" },
       margin: { left: 14, right: 14 },
     });
 
@@ -553,7 +554,7 @@ export class AssessmentExporter implements DataExporter {
     wsData.push(["Total Score (%)", this.assessment.rawScore]);
     wsData.push([
       "Total Score (ScaleFactor)",
-      (this.assessment.rawScore * this.grading.scaleFactor) / 100,
+      ((this.assessment.rawScore ?? 0) * (this.grading.scaleFactor ?? 1)) / 100,
     ]);
     wsData.push(["Adjusted Count", this.assessment.adjustedCount ?? 0]);
     wsData.push(["Created at", this.assessment.createdAt?.toLocaleString() ?? ""]);
@@ -568,7 +569,7 @@ export class AssessmentExporter implements DataExporter {
         sb.criterionName,
         sb.performanceTag,
         sb.rawScore,
-        (sb.rawScore * this.grading.scaleFactor) / 100,
+        ((sb.rawScore ?? 0) * (this.grading.scaleFactor ?? 1)) / 100,
         this.assessment.feedbacks.find(
           (fb) => fb.criterion === sb.criterionName && fb.tag === "summary",
         )?.comment ?? "",
@@ -577,7 +578,7 @@ export class AssessmentExporter implements DataExporter {
     wsData.push([]);
 
     const feedbackHeaderRow = wsData.length;
-    wsData.push(["Criterion", "Comment", "Tag", "File", "Position", "Location Data"]);
+    wsData.push(["Criterion", "Comment", "Tag", "File", "Position"]);
 
     this.assessment.feedbacks.forEach((fb) => {
       // Format position based on locationData type
@@ -603,7 +604,6 @@ export class AssessmentExporter implements DataExporter {
           fb.tag,
           fb.fileRef.split("/").pop() ?? "",
           position,
-          JSON.stringify(fb.locationData),
         ]);
       }
     });

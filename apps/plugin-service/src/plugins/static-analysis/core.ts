@@ -8,6 +8,7 @@ import {
   getBlobNameRest,
 } from "@grading-system/utils/azure-storage-blob";
 import { LocalCommandExecutor } from "@grading-system/utils/local-command";
+import logger from "@grading-system/utils/logger";
 import { errAsync, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
 import { downloadBlobBatch, submissionStore } from "@/lib/blob-storage";
 import { cleanTempDirectory, symlinkFiles } from "@/lib/file";
@@ -22,7 +23,7 @@ const pluginToolProjectPath = path.join(
   "plugin-tools",
   "static-analysis",
 );
-const pluginToolPath = path.join(pluginToolProjectPath, ".venv", "bin", "semgrep");
+const pluginToolPath = "uv";
 
 const tool = new LocalCommandExecutor({
   path: pluginToolPath,
@@ -83,11 +84,18 @@ export function gradeSubmission(data: {
           };
         })
         .mapErr((error) => {
+          logger.info(`internal: Failed to grade ${criterionData.criterionName}:`, error);
+
           return new ErrorWithCriterionInfo({
             data: { criterionName: criterionData.criterionName },
             cause: error,
           });
         });
+    });
+
+    logger.debug("info:", {
+      submissionRef,
+      blobNameRoot,
     });
 
     function toFileRef(filePath: string) {
@@ -107,6 +115,7 @@ export function gradeSubmission(data: {
           fileList: value.fileList,
           directory: value.directory,
           config: value.config,
+          stripFunc: (fullPath) => fullPath.replace(`${value.directory}/`, ""),
         })
           .mapErr((error) => {
             clean();
@@ -152,9 +161,10 @@ export function gradeCriterion(data: {
   fileList: string[];
   directory: string;
   config: StaticAnalysisConfig;
+  stripFunc: (filePath: string) => string;
 }) {
   return safeTry(async function* () {
-    const args = ["scan"];
+    const args = ["run", "semgrep", "scan", data.directory];
 
     if (EXPERIMENTAL_MODE) {
       args.push("--experimental");
@@ -164,12 +174,11 @@ export function gradeCriterion(data: {
       args.push("--pro");
     }
 
-    args.push(...createRuleFlags(data.config));
-
     args.push("--json", "--quiet");
 
     const execResult = yield* tool.execute(args, {
-      cwd: data.directory,
+      cwd: pluginToolProjectPath,
+      // cwd: data.directory,
     });
 
     const { results, paths } = JSON.parse(execResult.stdout) as CliOutput;
@@ -205,7 +214,7 @@ export function gradeCriterion(data: {
       const message = result.extra.message || undefined;
 
       return {
-        filePath: result.path,
+        filePath: data.stripFunc(result.path),
         position,
         severity: result.extra.severity,
         message,
@@ -215,7 +224,7 @@ export function gradeCriterion(data: {
     return okAsync({
       score,
       feedbacks,
-      scannedFiles: paths.scanned,
+      scannedFiles: paths.scanned.map(data.stripFunc),
     });
   });
 }
@@ -237,6 +246,8 @@ function createRuleFlags(config: StaticAnalysisConfig) {
       flags.push(`--config="${ruleset}"`);
     }
   }
+
+  logger.debug("Semgrep flags:", flags);
 
   return flags;
 }

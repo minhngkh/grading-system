@@ -1,9 +1,7 @@
-/* CSS */
-.no-inner-scroll pre {
-  overflow: visible !important;
+pre {
+  max-width: 100%; /* Giới hạn không quá container */
 }
 code {
-  font-family: monospace;
   display: grid;
   font-size: 14px;
   padding-left: 1em; /* Add space between line numbers and content */
@@ -25,26 +23,30 @@ code {
   text-align: right;
 }
 
-.annotation-span {
-  position: relative;
-  cursor: pointer;
-  background-color: rgba(255, 0, 0, 0.15); /* Default background */
-}
-
 .annotation-span[data-tag="info"] {
-  background-color: rgba(0, 123, 255, 0.15); /* Blue for info */
+  background-color: var(--tag-info); /* Blue for info */
 }
 
 .annotation-span[data-tag="notice"] {
-  background-color: rgba(40, 167, 70, 0.233); /* Green for notice */
+  background-color: var(--tag-notice);
 }
 
 .annotation-span[data-tag="tip"] {
-  background-color: rgba(255, 193, 7, 0.212); /* Yellow for tip */
+  background-color: var(--tag-tip);
 }
 
 .annotation-span[data-tag="caution"] {
-  background-color: rgba(220, 53, 69, 0.15); /* Red for caution */
+  background-color: var(--tag-caution);
+}
+
+.annotation-span[data-tag="critical"] {
+  background-color: var(--tag-critical);
+}
+.annotation-span[data-tag="error"] {
+  background-color: var(--tag-error);
+}
+.annotation-span[data-tag="warning"] {
+  background-color: var(--tag-warning);
 }
 
 .annotation-span.actived {
@@ -52,43 +54,48 @@ code {
   cursor: pointer;
 }
 
-.annotation-span.actived[data-tag="info"] {
-  background-color: rgba(0, 123, 255, 0.479); /* Darker blue for info */
-}
-
-.annotation-span.actived[data-tag="notice"] {
-  background-color: rgba(40, 167, 70, 0.644); /* Darker green for notice */
-}
-
-.annotation-span.actived[data-tag="tip"] {
-  background-color: rgba(255, 193, 7, 0.788); /* Darker yellow for tip */
-}
-
-.annotation-span.actived[data-tag="caution"] {
-  background-color: rgba(220, 53, 70, 0.425); /* Darker red for caution */
-}
-
 .annotation-span-focused[data-tag="info"] {
-  background-color: rgba(0, 123, 255, 0.35) !important;
+  background-color: var(--tag-info-active);
 }
+
 .annotation-span-focused[data-tag="notice"] {
-  background-color: rgba(40, 167, 69, 0.35) !important;
+  background-color: var(--tag-notice-active);
 }
+
 .annotation-span-focused[data-tag="tip"] {
-  background-color: rgba(255, 193, 7, 0.35) !important;
+  background-color: var(--tag-tip-active);
 }
+
 .annotation-span-focused[data-tag="caution"] {
-  background-color: rgba(220, 53, 69, 0.35) !important;
+  background-color: var(--tag-caution-active);
+}
+.annotation-span-focused[data-tag="critical"] {
+  background-color: var(--tag-critical-active);
+}
+.annotation-span-focused[data-tag="error"] {
+  background-color: var(--tag-error-active);
+}
+.annotation-span-focused[data-tag="warning"] {
+  background-color: var(--tag-warning-active);
 }
 
-/* Force shiki/code background to use theme background */
-.react-shiki,
-.react-shiki pre,
-.react-shiki code {
-  background: var(--background) !important;
-  box-shadow: none !important;
+.tippy-box {
+  max-width: 900px;
 }
 
-/* .annotation-span.actived::after {
-  opacity: 1;
-} */
+.tippy-content {
+  padding: 0px;
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 3px solid var(--border);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+
+.custom-tooltip {
+  max-width: 100%; /* hoặc giá trị bạn muốn */
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}

@@ -6,11 +6,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-
-// Build a recursive tree from files
-function buildFileTree(files: any[]) {
+import { FileItem } from "@/types/file";
+import { FeedbackItem } from "@/types/assessment";
+function buildFileTree(files: FileItem[]) {
   const root: any = {};
-  if (!Array.isArray(files)) return root; // phòng thủ nếu files undefined/null
+  if (!Array.isArray(files)) return root;
   files.forEach((file) => {
     if (!file || typeof file.relativePath !== "string") return;
     const parts = file.relativePath.split("/");
@@ -30,99 +30,91 @@ function buildFileTree(files: any[]) {
   return root;
 }
 
-// Helper for feedback badge (backward compatible)
-function countFeedbackForFile(feedbacks: any[], file: any) {
-  return feedbacks.filter(
-    (f) =>
-      f.fileRef === file.relativePath ||
-      f.fileRef === file.blobPath ||
-      f.fileRef === file.name ||
-      f.fileRef === file.path,
-  ).length;
-}
-function hasFeedbackForFile(feedbacks: any[], file: any) {
-  return countFeedbackForFile(feedbacks, file) > 0;
-}
-
 interface FileExplorerProps {
-  files: any[]; // <-- truyền mảng file có relativePath
-  selectedFile: any;
-  setSelectedFile: (file: any) => void;
+  files: FileItem[];
+  selectedFile: FileItem | null;
+  setSelectedFile: (file: FileItem) => void;
   expandedFolders: Record<string, boolean>;
   setExpandedFolders: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
-  feedbacks: any[];
+  feedbacks: FeedbackItem[];
   grading: GradingAttempt;
 }
 
-// Function to check if a file matches any selected criterion
-function fileMatchesCriteria(file: any, selectedCriteria: string[], selectors: any[]) {
-  // If no criteria selected, show all files
+function fileMatchesCriteria(
+  file: FileItem,
+  selectedCriteria: string[],
+  selectors: any[],
+) {
   if (selectedCriteria.length === 0) return true;
 
   return selectedCriteria.some((criterionName) => {
     const selector = selectors.find((sel) => sel.criterion === criterionName);
-    if (!selector) return false;
+    if (!selector || !selector.pattern) return false;
 
-    // Handle wildcard pattern that matches all files
-    if (selector.pattern === "*" || selector.pattern === "**/*") return true;
+    const pattern = selector.pattern.trim();
+    if (!pattern) return false;
 
-    // Split pattern by spaces to handle multiple file patterns
-    const patterns = selector.pattern.split(" ").filter((p: string) => p.trim());
+    if (pattern === "*" || pattern === "**/*") return true;
 
-    // Check if the file name matches any of the patterns
-    return patterns.some((pattern: string) => {
-      pattern = pattern.trim();
-      if (!pattern) return false;
+    const patterns = pattern.split(/\s+/).filter((p: string) => p.trim());
+
+    return patterns.some((singlePattern: string) => {
+      singlePattern = singlePattern.trim();
+      if (!singlePattern) return false;
 
       try {
-        // Check if pattern contains glob-like characters or regex special chars
-        const hasGlobChars = /[*?[\]{}]/.test(pattern);
-        const hasRegexChars = /[.*+?^${}()|[\]\\]/.test(pattern);
+        if (singlePattern.startsWith("/") && singlePattern.endsWith("/")) {
+          const regexPattern = singlePattern.slice(1, -1);
+          const regex = new RegExp(regexPattern, "i");
+          return (
+            regex.test(file.name) ||
+            regex.test(file.relativePath || "") ||
+            regex.test(file.path || "")
+          );
+        }
 
-        if (hasGlobChars || hasRegexChars) {
-          // Convert glob pattern to regex or treat as regex
-          let regexPattern = pattern;
+        const hasGlobChars = /[*?[\]]/.test(singlePattern);
 
-          // If it looks like a glob pattern, convert to regex
-          if (hasGlobChars && !pattern.startsWith("/") && !pattern.endsWith("/")) {
-            // Convert glob to regex
-            regexPattern = pattern
-              .replace(/\*\*/g, ".*") // ** matches anything including /
-              .replace(/\*/g, "[^/]*") // * matches anything except /
-              .replace(/\?/g, "[^/]") // ? matches single character except /
-              .replace(/\./g, "\\."); // escape dots
-            regexPattern = `^${regexPattern}$`;
-          }
+        if (hasGlobChars) {
+          let regexPattern = singlePattern
+            .replace(/\./g, "\\.")
+            .replace(/\*\*/g, "DOUBLE_STAR")
+            .replace(/\*/g, "[^/]*")
+            .replace(/DOUBLE_STAR/g, ".*")
+            .replace(/\?/g, "[^/]")
+            .replace(/\[/g, "\\[")
+            .replace(/\]/g, "\\]");
 
-          const regex = new RegExp(regexPattern, "i"); // case insensitive
+          regexPattern = `^${regexPattern}$`;
+          const regex = new RegExp(regexPattern, "i");
           return (
             regex.test(file.name) ||
             regex.test(file.relativePath || "") ||
             regex.test(file.path || "")
           );
         } else {
-          // Simple file name matching - exact match
-          return file.name === pattern;
+          return (
+            file.name.toLowerCase() === singlePattern.toLowerCase() ||
+            (file.relativePath &&
+              file.relativePath.toLowerCase().endsWith(singlePattern.toLowerCase())) ||
+            (file.path && file.path.toLowerCase().endsWith(singlePattern.toLowerCase()))
+          );
         }
       } catch (error) {
-        // If regex is invalid, fall back to simple string matching
-        console.warn(`Invalid pattern: ${pattern}`, error);
-        return file.name === pattern;
+        console.warn(`Invalid pattern: ${singlePattern}`, error);
+        return file.name.toLowerCase() === singlePattern.toLowerCase();
       }
     });
   });
 }
 
-// Function to check if a folder contains any matching files
 function folderContainsMatchingFiles(
   node: any,
   selectedCriteria: string[],
   selectors: any[],
 ): boolean {
-  // If no criteria selected, show all folders
   if (selectedCriteria.length === 0) return true;
 
-  // Check files in this folder
   if (
     node.files &&
     node.files.some((file: any) => fileMatchesCriteria(file, selectedCriteria, selectors))
@@ -130,7 +122,6 @@ function folderContainsMatchingFiles(
     return true;
   }
 
-  // Check subfolders
   if (node.folders) {
     return Object.values(node.folders).some((subfolder: any) =>
       folderContainsMatchingFiles(subfolder, selectedCriteria, selectors),
@@ -145,13 +136,13 @@ function renderTree(
   parentPath: string,
   expandedFolders: Record<string, boolean>,
   setExpandedFolders: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
-  selectedFile: any,
-  setSelectedFile: (file: any) => void,
-  feedbacks: any[],
+  selectedFile: FileItem | null,
+  setSelectedFile: (file: FileItem) => void,
+  feedbacks: FeedbackItem[],
   selectedCriteria: string[],
   selectors: any[],
 ) {
-  if (!node) return null; // phòng thủ nếu node undefined
+  if (!node) return null;
   const folders = node.folders ? Object.keys(node.folders) : [];
   const files = node.files || [];
 
@@ -161,8 +152,10 @@ function renderTree(
       {parentPath === "" && files.length > 0 && (
         <>
           {files
-            .filter((file: any) => fileMatchesCriteria(file, selectedCriteria, selectors))
-            .map((file: any) => (
+            .filter((file: FileItem) =>
+              fileMatchesCriteria(file, selectedCriteria, selectors),
+            )
+            .map((file: FileItem) => (
               <div
                 key={file.id}
                 className={`flex items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer transition-all duration-150 min-w-0 ${
@@ -183,7 +176,6 @@ function renderTree(
         const fullPath = parentPath ? `${parentPath}/${folder}` : folder;
         const expanded = expandedFolders[fullPath] ?? true;
 
-        // Skip folders that don't contain any matching files when filtering
         if (
           selectedCriteria.length > 0 &&
           !folderContainsMatchingFiles(node.folders[folder], selectedCriteria, selectors)
@@ -235,8 +227,10 @@ function renderTree(
       {parentPath !== "" && files.length > 0 && (
         <>
           {files
-            .filter((file: any) => fileMatchesCriteria(file, selectedCriteria, selectors))
-            .map((file: any) => (
+            .filter((file: FileItem) =>
+              fileMatchesCriteria(file, selectedCriteria, selectors),
+            )
+            .map((file: FileItem) => (
               <div
                 key={file.id}
                 className={`flex items-center gap-1.5 py-1 px-2 rounded-sm cursor-pointer transition-all duration-150 min-w-0 ${
@@ -264,16 +258,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   feedbacks,
   grading,
 }) => {
-  const safeFiles = Array.isArray(files) ? files : []; // đảm bảo luôn là mảng
+  const safeFiles = Array.isArray(files) ? files : [];
   const tree = React.useMemo(() => buildFileTree(safeFiles), [safeFiles]);
 
-  // Access selectors directly from grading
   const selectors = grading?.selectors || [];
 
-  // State for multiple criterion selection
   const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
 
-  // Toggle criterion selection
   const toggleCriterion = (criterion: string) => {
     setSelectedCriteria((prev) =>
       prev.includes(criterion) ?
@@ -282,21 +273,10 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     );
   };
 
-  const toggleAllCriteria = () => {
-    if (selectedCriteria.length === selectors.length) {
-      // If all criteria are selected, deselect all
-      setSelectedCriteria([]);
-    } else {
-      // Otherwise select all criteria
-      setSelectedCriteria(selectors.map((selector) => selector.criterion));
-    }
-  };
-  const allSelected =
-    selectors.length > 0 && selectedCriteria.length === selectors.length;
   return (
-    <div className="pt-2 px-2 h-full w-full flex flex-col min-w-0">
-      <div className="justify-between flex items-center mb-2">
-        <h3 className="text-xs font-medium truncate min-w-0 flex-1">Explorer</h3>
+    <div className="h-full w-full flex flex-col min-w-0">
+      <div className="justify-between flex items-center">
+        <h3 className="text-sm font-medium mb-2">Explorer</h3>
         <Popover>
           <div className="flex items-center gap-1 flex-shrink-0">
             {selectedCriteria.length > 0 && (
@@ -313,9 +293,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             {selectors.length > 0 ?
               <div className="space-y-2 max-h-60 overflow-auto">
                 {selectors.map((selector) => {
-                  // Check if pattern looks like regex
-                  const regexChars = /[.*+?^${}()|[\]\\]/;
-
                   return (
                     <div key={selector.criterion} className="flex items-start space-x-2">
                       <Checkbox
@@ -343,26 +320,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     </div>
                   );
                 })}
-                <div className="flex items-start space-x-2 pt-2 mt-2 border-t">
-                  <Checkbox
-                    id="criterion-all"
-                    checked={allSelected}
-                    onCheckedChange={toggleAllCriteria}
-                  />
-                  <Label
-                    htmlFor="criterion-all"
-                    className="text-xs font-medium cursor-pointer"
-                  >
-                    All Criteria
-                  </Label>
-                </div>
               </div>
             : <p className="text-xs text-muted-foreground">No criteria available</p>}
           </PopoverContent>
         </Popover>
       </div>
 
-      <div className="flex-1 overflow-auto space-y-0.5 min-w-0">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 custom-scrollbar">
         {renderTree(
           tree,
           "",

@@ -1,12 +1,23 @@
 import { z } from "zod";
 
+export enum Grader {
+  aiGrader = "AI",
+  teacher = "Teacher",
+}
+
+export enum ScoreBreakdownStatus {
+  Manual = "Mannual",
+  Failed = "Failed",
+  Graded = "Graded",
+}
+
 export const ScoreBreakdownSchema = z.object({
   criterionName: z.string(),
   performanceTag: z.string(),
   grader: z.string(),
   rawScore: z.number(),
   metadata: z.array(z.string()).optional(),
-  status: z.string(),
+  status: z.nativeEnum(ScoreBreakdownStatus),
 });
 
 const BaseFeedbackSchema = z.object({
@@ -51,6 +62,7 @@ export enum AssessmentState {
   AutoGradingStarted = "AutoGradingStarted",
   AutoGradingFinished = "AutoGradingFinished",
   AutoGradingFailed = "AutoGradingFailed",
+  ManualGradingRequired = "ManualGradingRequired",
   Completed = "Completed",
 }
 
@@ -66,6 +78,14 @@ export const AssessmentSchema = z.object({
   lastModified: z.date().optional(),
   createdAt: z.date(),
 });
+
+export type ScoreAdjustment = {
+  adjustmentSource: Grader;
+  score: number;
+  createdAt: Date;
+  scoreBreakdowns: ScoreBreakdown[];
+  deltaScore: number;
+};
 
 export type Assessment = z.infer<typeof AssessmentSchema>;
 export type FeedbackItem = z.infer<typeof FeedbackSchema>;

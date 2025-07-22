@@ -31,8 +31,6 @@ function RouteComponent() {
     }),
   );
 
-  console.log("Gradings data:", gradingsData);
-
   const setSearchParam = useCallback(
     (partial: Partial<SearchParams>) => {
       navigate({
