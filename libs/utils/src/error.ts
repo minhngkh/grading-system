@@ -32,7 +32,8 @@ export abstract class CustomError<
   override cause!: ErrorInfo<TCause>["cause"];
 
   protected constructor(info: ErrorInfo<TCause>, data: TData, tag: TTag) {
-    super(info.message, { cause: info.cause });
+    super(info.message);
+    this.cause = info.cause;
     super.name = tag;
     this._tag = tag;
     this.data = data;
@@ -65,6 +66,7 @@ export class DefaultError extends CustomError.withTag("DefaultError")<void> {}
 function toDefaultError(error: Error): DefaultError {
   const err = error as DefaultError;
   err._tag = "DefaultError";
+  // err.name = "DefaultError";
   return err;
 }
 

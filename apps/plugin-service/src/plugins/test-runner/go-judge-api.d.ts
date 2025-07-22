@@ -42,7 +42,7 @@ export namespace GoJudge {
     // similar to copyOut but stores file in go judge and returns fileId, later download through /file/:fileId
     copyOutCached?: string[];
     // specifies the directory to dump container /w content
-    copyOutDir: string;
+    copyOutDir?: string;
     // specifies the max file size to copy out
     copyOutMax?: number; // byte
   }

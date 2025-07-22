@@ -182,6 +182,8 @@ export function gradeCriterion(data: {
       args.push("--pro");
     }
 
+    args.push(...createRuleFlags(data.config));
+
     args.push("--json", "--quiet");
 
     const execResult = yield* tool.execute(args, {

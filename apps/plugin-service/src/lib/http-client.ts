@@ -91,7 +91,10 @@ export class TypesafeHttpClient {
     responseSchema: z.ZodSchema<TResponse> | undefined,
   ): typeof responseSchema extends undefined ?
     ResultAsync<HttpResponse<TResponse>, HttpClientError | DefaultError>
-  : ResultAsync<HttpResponse<TResponse>, HttpClientError | ValidationError | DefaultError> {
+  : ResultAsync<
+      HttpResponse<TResponse>,
+      HttpClientError | ValidationError | DefaultError
+    > {
     return ResultAsync.fromPromise(
       this.executeRequest(url, options, responseSchema),
       (error) => {
@@ -127,7 +130,7 @@ export class TypesafeHttpClient {
     if (!responseSchema) {
       return {
         ...responseMetadata,
-        data: response as unknown as TResponse,
+        data: await response.json() as unknown as TResponse,
       };
     }
 
@@ -172,11 +175,13 @@ export class TypesafeHttpClient {
     config: Omit<RequestConfig<TBody>, "body" | "json"> = {},
     responseSchema?: z.ZodSchema<TResponse>,
   ) {
+    const data = body instanceof FormData ? { body: body as FormData } : { json: body };
+
     return this.request(
       url,
       {
+        ...data,
         method: "post",
-        json: body,
         headers: config.headers,
         timeout: config.timeout,
         searchParams: config.searchParams,
