@@ -1,17 +1,8 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PluginDialogConfigProps } from "../type";
+import { PluginConfigProps } from "../type";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import { CodeRunnerConfig, CodeRunnerConfigSchema } from "@/types/plugin";
@@ -32,13 +23,20 @@ import {
   updateCodeRunnerConfigMutationOptions,
 } from "@/queries/plugin-queries";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-export default function CodeRunnerConfigDialog({
+export default function CodeRunnerConfigView({
   configId,
-  open,
-  onOpenChange,
   onCriterionConfigChange,
-}: PluginDialogConfigProps) {
+  onCancel,
+}: PluginConfigProps) {
   const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultConfig, setDefaultConfig] = useState<CodeRunnerConfig>({
@@ -56,7 +54,7 @@ export default function CodeRunnerConfigDialog({
 
   const { data: initialConfig, isLoading: isLoadingConfig } = useQuery(
     getTestRunnerConfigQueryOptions(configId!, auth, {
-      staleTime: Infinity,
+      retry: false,
       enabled: !!configId,
     }),
   );
@@ -181,99 +179,87 @@ export default function CodeRunnerConfigDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(open) => {
-        onOpenChange?.(open);
-        reset(defaultConfig);
-      }}
-    >
-      <DialogContent className="min-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Test Runner Configuration</DialogTitle>
-          <DialogDescription>
-            Configure the Test Runner plugin for this criterion. Specify the programming
-            language, commands to install dependencies, and run the code. You can also
-            define test cases and environment variables.
-          </DialogDescription>
-        </DialogHeader>
+    <Card className="size-full">
+      <CardHeader>
+        <CardTitle>Test Runner Configuration</CardTitle>
+        <CardDescription>
+          Configure the Test Runner plugin for this criterion.
+        </CardDescription>
+      </CardHeader>
 
-        <div className="p-1 max-h-[80vh] overflow-y-auto">
-          <Form {...form}>
-            <form>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <FormField
-                    control={control}
-                    name="initCommand"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Install Dependencies Command</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="e.g., npm install, pip install -r requirements.txt"
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={control}
-                    name="runCommand"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Run Command</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="e.g., node main.js, python main.py"
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <TestCasesTable
-                  testCases={config.testCases}
-                  onUpdateCell={updateCell}
-                  onDeleteRow={deleteRow}
+      <CardContent className="flex-1 overflow-y-auto">
+        <Form {...form}>
+          <form>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <FormField
+                  control={control}
+                  name="initCommand"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Install Dependencies Command</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="e.g., npm install, pip install -r requirements.txt"
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                {errors.testCases && (
-                  <p className="text-sm text-red-600">
-                    {errors.testCases.message || errors.testCases.root?.message}
-                  </p>
-                )}
-                {errors.testCases?.root && (
-                  <p className="text-sm text-red-600">{errors.testCases.root.message}</p>
-                )}
 
-                <EnvironmentVariablesTable
-                  environmentVariables={config.environmentVariables ?? {}}
-                  onUpdateEnvVar={updateEnvVar}
-                  onDeleteEnvVar={deleteEnvVar}
+                <FormField
+                  control={control}
+                  name="runCommand"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Run Command</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="e.g., node main.js, python main.py"
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-            </form>
-          </Form>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline" disabled={isSubmitting}>
-              Cancel
-            </Button>
-          </DialogClose>
-          <Button onClick={onSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Confirm"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+
+              <TestCasesTable
+                testCases={config.testCases}
+                onUpdateCell={updateCell}
+                onDeleteRow={deleteRow}
+              />
+              {errors.testCases && (
+                <p className="text-sm text-red-600">
+                  {errors.testCases.message || errors.testCases.root?.message}
+                </p>
+              )}
+              {errors.testCases?.root && (
+                <p className="text-sm text-red-600">{errors.testCases.root.message}</p>
+              )}
+
+              <EnvironmentVariablesTable
+                environmentVariables={config.environmentVariables ?? {}}
+                onUpdateEnvVar={updateEnvVar}
+                onDeleteEnvVar={deleteEnvVar}
+              />
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+      <CardFooter className="justify-end gap-2">
+        <Button variant="outline" disabled={isSubmitting} onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button onClick={onSubmit} disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : "Confirm"}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

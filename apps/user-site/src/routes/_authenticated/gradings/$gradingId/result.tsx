@@ -44,15 +44,10 @@ function RouteComponent() {
     return <ErrorComponent message="Failed to load grading result" />;
   }
 
-  if (
-    gradingAttempt.status === GradingStatus.Created ||
-    gradingAttempt.status === GradingStatus.Started
-  )
+  if (gradingAttempt.status === GradingStatus.Created)
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <p className="text-lg font-semibold">
-          The grading session is under grading or have not started yet.
-        </p>
+        <p className="text-lg font-semibold">The grading session has not started yet.</p>
         <Button variant="destructive" onClick={() => router.history.back()}>
           Return
         </Button>

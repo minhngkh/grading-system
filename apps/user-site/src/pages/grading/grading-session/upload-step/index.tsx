@@ -10,7 +10,6 @@ import { InfoToolTip } from "@/components/app/info-tooltip";
 import { ScrollableSelectMemo } from "@/components/app/scrollable-select";
 import { Spinner } from "@/components/app/spinner";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +48,6 @@ export default function UploadStep({ form }: UploadStepProps) {
   const [fileDialogAction, setFileDialogAction] = useState("");
   const [viewRubricDialogOpen, setViewRubricDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [moodleMode, setMoodleMode] = useState(false);
   const queryClient = useQueryClient();
 
   const {
@@ -347,24 +345,13 @@ export default function UploadStep({ form }: UploadStepProps) {
       <div className="space-y-1">
         <div className="flex items-center space-x-1">
           <div className="flex justify-between items-center w-full">
-            <div className="flex items-center space-x-2">
-              <Label className="text-lg font-semibold">Upload Files</Label>
-              <InfoToolTip description="Choose files to upload for grading. Only .zip files are accepted." />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="moodleMode"
-                checked={moodleMode}
-                onCheckedChange={() => setMoodleMode((prev) => !prev)}
-              />
-              <Label htmlFor="moodleMode">Using Moodle Format</Label>
-              <InfoToolTip description="Allow to upload files in Moodle format" />
-            </div>
+            <Label className="text-lg font-semibold">Upload Files</Label>
+            <InfoToolTip description="Choose files to upload for grading. Only .zip files are accepted." />
           </div>
         </div>
         <FileUploader
           onFileUpload={handleFileUpload}
-          multiple={!moodleMode}
+          multiple
           maxSize={20} // 20 MB
         />
       </div>

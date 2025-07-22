@@ -80,6 +80,7 @@ export function getStaticAnalysisConfigQueryOptions(
   return {
     queryKey: ["static-analysis-configs", configId],
     queryFn: async () => {
+      console.log("Fetching Static Analysis Config for ID:", configId);
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required");
       return PluginService.getStaticAnalysisConfig(configId, token);

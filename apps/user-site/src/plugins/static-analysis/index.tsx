@@ -1,17 +1,8 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { PluginDialogConfigProps } from "../type";
+import { PluginConfigProps } from "../type";
 import { useAuth } from "@clerk/clerk-react";
 import { toast } from "sonner";
 import {
@@ -44,26 +35,22 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import DeductionMapTable from "./deduction-map-table";
 import AdditionalRulesetsTable from "./additional-rulesets-table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-export default function StaticAnalysisConfigDialog({
+export default function StaticAnalysisConfigView({
   configId,
-  open,
-  onOpenChange,
   onCriterionConfigChange,
-}: PluginDialogConfigProps) {
+  onCancel,
+}: PluginConfigProps) {
   const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultConfig, setDefaultConfig] = useState<StaticAnalysisConfig>({
-    crossFileAnalysis: false,
-    preset: StaticAnalysisPreset["Auto Detect"],
-    additionalRulesets: [],
-    deductionMap: {
-      [StaticAnalysisDeductionType.critical]: 20,
-      [StaticAnalysisDeductionType.error]: 15,
-      [StaticAnalysisDeductionType.warning]: 2,
-      [StaticAnalysisDeductionType.info]: 0,
-    },
-  });
 
   const createConfigMutation = useMutation(
     createStaticAnalysisConfigMutationOptions(auth),
@@ -75,14 +62,24 @@ export default function StaticAnalysisConfigDialog({
 
   const { data: initialConfig, isLoading: isLoadingConfig } = useQuery(
     getStaticAnalysisConfigQueryOptions(configId!, auth, {
-      staleTime: Infinity,
+      retry: false,
       enabled: !!configId,
     }),
   );
 
   const form = useForm<StaticAnalysisConfig>({
     resolver: zodResolver(StaticAnalysisConfigSchema) as any,
-    defaultValues: defaultConfig,
+    defaultValues: {
+      crossFileAnalysis: false,
+      preset: StaticAnalysisPreset["Auto Detect"],
+      additionalRulesets: [],
+      deductionMap: {
+        [StaticAnalysisDeductionType.critical]: 20,
+        [StaticAnalysisDeductionType.error]: 15,
+        [StaticAnalysisDeductionType.warning]: 2,
+        [StaticAnalysisDeductionType.info]: 0,
+      },
+    },
     mode: "onChange",
   });
 
@@ -99,7 +96,6 @@ export default function StaticAnalysisConfigDialog({
     if (isLoadingConfig) return;
 
     if (initialConfig) {
-      setDefaultConfig(initialConfig);
       reset(initialConfig);
     }
   }, [isLoadingConfig, initialConfig, reset]);
@@ -146,8 +142,6 @@ export default function StaticAnalysisConfigDialog({
       }
 
       onCriterionConfigChange?.(resultConfigId);
-      setDefaultConfig(config);
-      onOpenChange?.(false);
     } catch (error) {
       toast.error("Failed to save Static Analysis configuration. Please try again.");
       console.error("Error saving Static Analysis configuration:", error);
@@ -157,24 +151,17 @@ export default function StaticAnalysisConfigDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(open) => {
-        onOpenChange?.(open);
-        reset(defaultConfig);
-      }}
-    >
-      <DialogContent className="min-w-2xl max-h-[80vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>Static Analysis Configuration</DialogTitle>
-          <DialogDescription>
-            Configure the Static Analysis plugin for this criterion. Select the language
-            preset, enable cross-file analysis, and define deduction rules for different
-            issue types.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="p-1 max-h-[80vh] overflow-y-auto">
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle>Static Analysis Configuration</CardTitle>
+        <CardDescription>
+          Configure the Static Analysis plugin for this criterion. Select the language
+          preset, enable cross-file analysis, and define deduction rules for different
+          issue types.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 relative overflow-y-auto custom-scrollbar pr-0 mr-1">
+        <div className="ml-6 mr-2 absolute top-0 left-0 right-0">
           <Form {...form}>
             <form>
               <div className="space-y-4">
@@ -243,18 +230,16 @@ export default function StaticAnalysisConfigDialog({
             </form>
           </Form>
         </div>
+      </CardContent>
 
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline" disabled={isSubmitting}>
-              Cancel
-            </Button>
-          </DialogClose>
-          <Button onClick={onSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Confirm"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <CardFooter className="flex justify-end gap-2">
+        <Button onClick={onCancel} variant="outline" disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button onClick={onSubmit} disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : "Confirm"}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
