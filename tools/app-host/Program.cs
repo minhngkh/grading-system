@@ -60,15 +60,16 @@ var dbgate = dbgateContainer
         ctx.EnvironmentVariables["ENGINE_con2"] = "mongo@dbgate-plugin-mongo";
     });
 
-var existingServiceBusName = builder.AddParameter("existingServiceBusName");
-var existingServiceBusResourceGroup = builder.AddParameter("existingServiceBusResourceGroup");
+var serviceBusName = builder.AddParameter("serviceBusName");
 var serviceBusSharedAccessKey = builder.AddParameter("serviceBusSharedAccessKey", secret: true);
 var serviceBus = builder.AddConnectionString("messaging",
-    ReferenceExpression.Create($"Endpoint=sb://{existingServiceBusName}.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey={serviceBusSharedAccessKey}"));
+    ReferenceExpression.Create($"Endpoint=sb://{serviceBusName}.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey={serviceBusSharedAccessKey}"));
 
-var storage = builder.AddAzureStorage("storage");
-var submissionStore = storage.AddBlobs("submissions-store");
-var rubricContextStore = storage.AddBlobs("rubric-context-store");
+var storageAccountName = builder.AddParameter("storageAccountName");
+var storageAccountKey = builder.AddParameter("storageAccountKey", secret: true);
+var storageReference = ReferenceExpression.Create($"DefaultEndpointsProtocol=https;AccountName={storageAccountName};AccountKey={storageAccountKey};EndpointSuffix=core.windows.net");
+var submissionStore = builder.AddConnectionString("submissions-store", storageReference);
+var rubricContextStore = builder.AddConnectionString("rubric-context-store", storageReference);
 
 IResourceBuilder<ProjectResource>? rubricEngine = null;
 if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
@@ -146,6 +147,7 @@ if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
         .WaitFor(rubricContextStore);
 }
 
+var storageUrl = ReferenceExpression.Create($"https://{storageAccountName}.blob.core.windows.net");
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
 if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
 {
@@ -171,9 +173,8 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
                 assignmentFlowEndpoint?.Url ?? "";
-
-            ctx.EnvironmentVariables["VITE_BLOB_STORAGE_URL"] = "http://127.0.0.1:27000/devstoreaccount1";
-        });
+        })
+        .WithEnvironment("VITE_BLOB_STORAGE_URL", storageUrl);
 }
 
 builder.Build().Run();
