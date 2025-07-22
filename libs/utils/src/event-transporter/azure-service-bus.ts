@@ -90,7 +90,7 @@ export class AzureServiceBusTransporter extends EventTransporter {
     while (attempt < maxRetries) {
       try {
         await sender.sendMessages({
-          body: JSON.stringify(data),
+          body: data,
           contentType: "application/json",
         });
 
