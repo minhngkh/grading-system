@@ -4,7 +4,7 @@ import { Assessment, FeedbackItem } from "@/types/assessment";
 import { useTheme } from "@/context/theme-provider";
 import "./viewer.css";
 import { FileItem } from "@/types/file";
-import FeedbackTooltip from "@/pages/assessment/edit-assessment/viewer/feedback-tooltip";
+import FeedbackTooltip from "@/components/app/feedback-tooltip";
 
 interface HighlightableViewerProps {
   file: FileItem;

@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import useAssessmentForm from "@/hooks/use-assessment-form";
 import { FileItem } from "@/types/file";
 
 interface FeedbackListPanelProps {
@@ -57,7 +56,6 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
   currentFile,
   currentCriterion,
 }) => {
-  const { form, formData } = useAssessmentForm(assessment);
   const [editingFeedbackIndex, setEditingFeedbackIndex] = useState<number | null>(null);
   const [editComment, setEditComment] = useState("");
   const [editTag, setEditTag] = useState("info");
@@ -92,8 +90,8 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
           `${assessment?.submissionReference || ""}/${currentFile.relativePath || currentFile.name || ""}`
         : "",
     };
-    const updatedFeedbacks = [...formData.feedbacks, newFeedback];
-    form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
+    const updatedFeedbacks = [...assessment.feedbacks, newFeedback];
+    console.log(updatedFeedbacks, "Updated Feedbacks");
     onUpdate({ feedbacks: updatedFeedbacks });
     setAddComment("");
     setAddTag("info");
@@ -107,8 +105,8 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
     byFile,
     currentFile,
     assessment?.submissionReference,
-    formData.feedbacks,
-    form,
+    assessment.feedbacks,
+    // form,
     onUpdate,
     onCancelAdd,
   ]);
@@ -116,8 +114,8 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
   const handleEditSave = useCallback(
     (index: number) => {
       if (!editComment.trim()) return;
-      if (index < 0 || index >= formData.feedbacks.length) return;
-      const updatedFeedbacks = [...formData.feedbacks];
+      if (index < 0 || index >= assessment.feedbacks.length) return;
+      const updatedFeedbacks = [...assessment.feedbacks];
       updatedFeedbacks[index] = {
         ...updatedFeedbacks[index],
         comment: editComment.trim(),
@@ -126,25 +124,27 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
         locationData: updatedFeedbacks[index].locationData,
         fileRef: updatedFeedbacks[index].fileRef,
       };
-      form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
+      // form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
+      // console.log("Updated Feedbacks1:", updatedFeedbacks);
       onUpdate({ feedbacks: updatedFeedbacks });
+      // console.log("Updated Feedbacks2:", updatedFeedbacks);
       setEditingFeedbackIndex(null);
     },
-    [editComment, editTag, editCriterion, formData.feedbacks, form, onUpdate],
+    [editComment, editTag, editCriterion, assessment.feedbacks, onUpdate],
   );
 
   const handleDelete = useCallback(
     (index: number) => {
-      if (index < 0 || index >= formData.feedbacks.length) return;
-      const updatedFeedbacks = [...formData.feedbacks];
+      if (index < 0 || index >= assessment.feedbacks.length) return;
+      const updatedFeedbacks = [...assessment.feedbacks];
       updatedFeedbacks[index] = {
         ...updatedFeedbacks[index],
         tag: "discard",
       };
-      form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
+      // form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
       onUpdate({ feedbacks: updatedFeedbacks });
     },
-    [formData.feedbacks, form, onUpdate],
+    [assessment.feedbacks, onUpdate],
   );
 
   const handleEditClick = useCallback((index: number, feedback: FeedbackItem) => {
@@ -256,7 +256,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
 
       {/* Existing Feedbacks */}
       {(
-        formData.feedbacks
+        assessment.feedbacks
           .filter((fb) => {
             if (byFile) {
               const fileRefRelativePath =
@@ -270,7 +270,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
           })
           .filter((fb) => fb?.tag !== "summary" && fb?.tag !== "discard").length > 0
       ) ?
-        formData.feedbacks
+        assessment.feedbacks
           .map((fb, idx) => ({ fb, idx }))
           .filter(({ fb }) => {
             if (byFile && currentFile) {

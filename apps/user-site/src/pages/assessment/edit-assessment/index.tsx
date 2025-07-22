@@ -42,7 +42,6 @@ export function EditAssessmentUI({
   });
 
   const formData = form.watch();
-
   const [lastSaved, setLastSaved] = useState<Assessment>(assessment);
 
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
@@ -114,9 +113,8 @@ export function EditAssessmentUI({
 
   const onUpdateAssessment = useCallback(
     (updatedAssessmentData: Partial<Assessment>) => {
-      form.reset({
-        ...formData,
-        ...updatedAssessmentData,
+      Object.entries(updatedAssessmentData).forEach(([key, value]) => {
+        form.setValue(key as keyof Assessment, value);
       });
     },
     [form],

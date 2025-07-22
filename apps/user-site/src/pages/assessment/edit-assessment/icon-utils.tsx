@@ -65,7 +65,14 @@ export function getTagColor(tag: string) {
     case "tip":
       return "bg-yellow-200";
     case "caution":
+    case "critical":
       return "bg-red-200";
+    case "critical":
+      return "bg-red-300";
+    case "warning":
+      return "bg-orange-200";
+    case "error":
+      return "bg-red-100";
     default:
       return "bg-gray-200";
   }

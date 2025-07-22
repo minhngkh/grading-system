@@ -401,39 +401,42 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
       <div className="h-full flex">
         <div className="h-full flex bg-background border-r">
           <div className="w-10 flex flex-col">
-            <button
+            <Button
               onClick={() => handleSidebarToggle("files")}
-              className={`flex items-center justify-center h-10 w-full transition-colors ${
+              variant={"outline"}
+              className={`flex items-center border-none rounded-none justify-center h-10 w-full transition-colors ${
                 sidebarView === "files" ?
-                  "bg-primary/5 text-primary border-r-2 border-primary"
+                  "bg-primary/5 text-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
               title="Files"
             >
               <Files className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => handleSidebarToggle("testcases")}
-              className={`flex items-center justify-center h-10 w-full transition-colors ${
+              variant={"outline"}
+              className={`flex items-center border-none rounded-none justify-center h-10 w-full transition-colors ${
                 sidebarView === "testcases" ?
-                  "bg-primary/5 text-primary border-r-2 border-primary"
+                  "bg-primary/5 text-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
               title="Test Cases"
             >
               <Code className="h-4 w-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => handleSidebarToggle("feedback")}
-              className={`flex items-center justify-center h-10 w-full transition-colors ${
+              variant={"outline"}
+              className={`flex items-center border-none rounded-none justify-center h-10 w-full transition-colors ${
                 sidebarView === "feedback" ?
-                  "bg-primary/5 text-primary border-r-2 border-primary"
+                  "bg-primary/5 text-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
               title="Feedback"
             >
               <MessageSquare className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </div>
         <ResizablePanelGroup direction="horizontal">

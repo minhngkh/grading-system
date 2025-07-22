@@ -11,7 +11,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getScoreAdjustmentsQueryOptions } from "@/queries/assessment-queries";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import useAssessmentForm from "@/hooks/use-assessment-form";
 
 interface ScoringPanelProps {
   rubric: Rubric;
@@ -31,26 +30,24 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   onUpdate,
 }) => {
   const auth = useAuth();
-  const { form, formData } = useAssessmentForm(assessment);
-
   const addFeedback = useCallback(
     (feedback: FeedbackItem) => {
-      const currentFeedbacks = formData.feedbacks || [];
+      const currentFeedbacks = assessment.feedbacks || [];
       onUpdate({ feedbacks: [...currentFeedbacks, feedback] });
     },
-    [formData.feedbacks, onUpdate],
+    [assessment.feedbacks, onUpdate],
   );
 
   const updateFeedback = useCallback(
     (index: number, feedback: Partial<FeedbackItem>) => {
-      const currentFeedbacks = formData.feedbacks || [];
+      const currentFeedbacks = assessment.feedbacks || [];
       if (index !== -1) {
         const updated = [...currentFeedbacks];
         updated[index] = { ...updated[index], ...feedback };
         onUpdate({ feedbacks: updated });
       }
     },
-    [formData.feedbacks, onUpdate],
+    [assessment.feedbacks, onUpdate],
   );
 
   const [editingSummaryIndex, setEditingSummaryIndex] = useState<number | null>(null);
@@ -59,7 +56,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   const [showScoreAdjustmentDialog, setShowScoreAdjustmentDialog] = useState(false);
 
   const { data: scoreAdjustments, isFetching } = useQuery(
-    getScoreAdjustmentsQueryOptions(formData.id, auth, {
+    getScoreAdjustmentsQueryOptions(assessment.id, auth, {
       enabled: showScoreAdjustmentDialog,
       staleTime: Infinity,
     }),
@@ -95,7 +92,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           criterion.levels[0],
         );
       }
-      const updated = (formData.scoreBreakdowns || []).map((sb: any) =>
+      const updated = (assessment.scoreBreakdowns || []).map((sb: any) =>
         sb.criterionName === criterion.name ?
           {
             ...sb,
@@ -104,14 +101,15 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           }
         : sb,
       );
-      form.setValue("scoreBreakdowns", updated, { shouldValidate: true });
+      console.log("Updated scoreBreakdowns:", updated);
       onUpdate({ scoreBreakdowns: updated });
     },
-    [form, formData.scoreBreakdowns, onUpdate, scale],
+    [assessment.scoreBreakdowns, onUpdate, scale],
   );
 
   const totalScore = (
-    ((formData.scoreBreakdowns || []).reduce((acc, sb) => acc + sb.rawScore, 0) * scale) /
+    ((assessment.scoreBreakdowns || []).reduce((acc, sb) => acc + sb.rawScore, 0) *
+      scale) /
     100
   ).toFixed(2);
 
@@ -123,10 +121,10 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           onValueChange={setActiveScoringTab}
           className="flex-1 flex flex-col"
         >
-          <div className="sticky top-0 bg-background flex items-center justify-between py-2">
+          <div className="sticky top-0 bg-background flex flex-wrap md:flex-row items-center justify-between py-2">
             <TabsList>
               {rubric.criteria.map((criterion, index) => (
-                <TabsTrigger key={index} value={criterion.name}>
+                <TabsTrigger key={index} className="text-xs" value={criterion.name}>
                   {criterion.name}
                 </TabsTrigger>
               ))}
@@ -155,19 +153,19 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
             {rubric.criteria.map((criterion, index) => {
               if (activeScoringTab !== criterion.name) return null;
 
-              const currentRawScore = (formData.scoreBreakdowns || []).find(
+              const currentRawScore = (assessment.scoreBreakdowns || []).find(
                 (sb) => sb.criterionName === criterion.name,
               );
               const rawScore = currentRawScore?.rawScore || 0;
               const criterionMaxPoints = (scale * (criterion.weight ?? 0)) / 100;
               const actualScore = Number(((rawScore * scale) / 100).toFixed(2));
 
-              const summaryFbIndex = formData.feedbacks?.findIndex(
+              const summaryFbIndex = assessment.feedbacks?.findIndex(
                 (f) => f.tag === "summary" && f.criterion === criterion.name,
               );
               const summaryFb =
                 summaryFbIndex !== undefined && summaryFbIndex !== -1 ?
-                  formData.feedbacks[summaryFbIndex]
+                  assessment.feedbacks[summaryFbIndex]
                 : undefined;
 
               const handleEditSummary = () => {
@@ -204,11 +202,11 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                 <TabsContent
                   key={index}
                   value={criterion.name}
-                  className="flex-1 min-h-0 overflow-auto"
+                  className="flex-1 min-h-0 overflow-y-auto"
                 >
                   <div className="rounded-md border p-4 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <span className="flex gap-3 items-center font-semibold">
+                      <span className="flex gap-3 items-center font-semibold text-sm">
                         {criterion.name} ({criterion.weight})%
                       </span>
 
@@ -231,7 +229,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                               const clamped = Math.max(0, Math.min(val, maxPoints));
                               handleUpdateScore(criterion, clamped, true);
                             }}
-                            className="w-17 h-8"
+                            className="!text-xs w-17 h-8"
                           />
                           <span className="text-xs">/ {criterionMaxPoints} points</span>
                         </div>
@@ -242,34 +240,35 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         {editingSummaryIndex === summaryFbIndex ?
                           <>
                             <Input
+                              className="!text-xs h-8"
                               value={editingSummaryComment}
                               onChange={(e) => setEditingSummaryComment(e.target.value)}
                             />
-                            <button
-                              className="text-blue-500 underline text-xs"
-                              type="button"
+                            <Button
+                              className="border-none text-blue-500 hover:text-blue-500 underline text-xs"
+                              variant={"outline"}
                               onClick={handleSaveSummary}
                               disabled={!editingSummaryComment.trim()}
                             >
                               Save
-                            </button>
-                            <button
-                              className="text-gray-500 underline text-xs"
-                              type="button"
+                            </Button>
+                            <Button
+                              className=" border-none text-gray-500 underline text-xs"
+                              variant={"outline"}
                               onClick={() => setEditingSummaryIndex(null)}
                             >
                               Cancel
-                            </button>
+                            </Button>
                           </>
                         : <>
                             <span className="text-xs">Summary: {summaryFb.comment}</span>
-                            <button
-                              className="text-blue-500 underline text-xs"
-                              type="button"
+                            <Button
+                              className="border-none text-blue-500 hover:text-blue-500 underline text-xs"
+                              variant={"outline"}
                               onClick={handleEditSummary}
                             >
                               Edit
-                            </button>
+                            </Button>
                           </>
                         }
                       </div>
@@ -311,12 +310,12 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         }
                       </div>
                     }
-                    <div className="grid auto-cols-auto grid-flow-col gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {criterion.levels
                         .slice()
                         .sort((a, b) => a.weight - b.weight)
                         .map((level, idx) => {
-                          const breakdown = (formData.scoreBreakdowns || []).find(
+                          const breakdown = (assessment.scoreBreakdowns || []).find(
                             (sb) => sb.criterionName === criterion.name,
                           );
                           const isSelected =

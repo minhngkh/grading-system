@@ -3,7 +3,6 @@ import { Document, Page, pdfjs } from "react-pdf";
 import { Assessment } from "@/types/assessment";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import useAssessmentForm from "@/hooks/use-assessment-form";
 import { FileItem } from "@/types/file";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -60,8 +59,7 @@ const PDFViewer = ({
     setTotalPages(numPages);
   };
 
-  const { form, formData } = useAssessmentForm(assessment);
-  const validFeedbacks = formData.feedbacks
+  const validFeedbacks = assessment.feedbacks
     .map((fb, idx) => ({ fb, idx }))
     .filter(
       ({ fb }) =>
@@ -75,9 +73,9 @@ const PDFViewer = ({
     if (
       typeof activeFeedbackId === "number" &&
       activeFeedbackId >= 0 &&
-      formData.feedbacks[activeFeedbackId]
+      assessment.feedbacks[activeFeedbackId]
     ) {
-      const fb = formData.feedbacks[activeFeedbackId];
+      const fb = assessment.feedbacks[activeFeedbackId];
       if (fb.locationData?.type === "pdf") {
         const pageNum = fb.locationData.page;
         const selector = `[data-page-number="${pageNum}"]`;
@@ -113,7 +111,7 @@ const PDFViewer = ({
       }
 
       if (hasChanges) {
-        const updatedFeedbacks = formData.feedbacks.map((fb, idx) => {
+        const updatedFeedbacks = assessment.feedbacks.map((fb, idx) => {
           const match = validFeedbacks.find(({ idx: i }) => i === idx);
           if (match) {
             const adj = adjusted[validFeedbacks.findIndex(({ idx: i }) => i === idx)];
@@ -121,12 +119,11 @@ const PDFViewer = ({
           }
           return fb;
         });
-        form.setValue("feedbacks", updatedFeedbacks, { shouldValidate: true });
         onUpdate({ feedbacks: updatedFeedbacks });
         onUpdateLastSave({ feedbacks: updatedFeedbacks });
       }
     }
-  }, [totalPages, validFeedbacks, onUpdate, formData.feedbacks, form]);
+  }, [totalPages, validFeedbacks, onUpdate, assessment.feedbacks]);
 
   const handlePageClick = (pageNumber: number) => {
     setCurrentPage(pageNumber);
