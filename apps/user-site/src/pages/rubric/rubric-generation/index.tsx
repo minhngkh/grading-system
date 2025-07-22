@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { useAuth } from "@clerk/clerk-react";
 import { useCallback } from "react";
 import ChatWindow from "./chat";
-import FinalRubricTable from "./review-step";
+import FinalRubricTable from "./final-rubric-table";
 import { useQueryClient } from "@tanstack/react-query";
 
 type StepData = {

@@ -29,10 +29,10 @@ import { Plugin } from "@/types/plugin";
 import { Button } from "@/components/ui/button";
 import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 import { toast } from "sonner";
-import { PluginComponent } from "../plugins/type";
-import CodeRunnerConfigView from "@/pages/rubric/rubric-generation/plugins/code-runner";
+import { PluginComponent } from "../../../../plugins/type";
+import CodeRunnerConfigView from "@/plugins/code-runner";
 import { useState } from "react";
-import StaticAnalysisConfigView from "@/pages/rubric/rubric-generation/plugins/static-analysis";
+import StaticAnalysisConfigView from "@/plugins/static-analysis";
 
 const PluginConfigDialogs: Record<string, PluginComponent> = {
   [PluginName["test-runner"]]: CodeRunnerConfigView,
