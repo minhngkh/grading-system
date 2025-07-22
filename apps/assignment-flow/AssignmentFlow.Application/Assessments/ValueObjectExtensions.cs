@@ -1,4 +1,5 @@
-﻿using AssignmentFlow.IntegrationEvents;
+﻿using AssignmentFlow.Application.Shared;
+using AssignmentFlow.IntegrationEvents;
 using System.Text.Json;
 
 namespace AssignmentFlow.Application.Assessments;
@@ -24,9 +25,13 @@ public static class ValueObjectExtensions
         };
     }
 
-    public static Feedback ToValueObject(this FeedbackItemApiContract apiContract)
+    public static Feedback ToValueObject(
+        this FeedbackItemApiContract apiContract,
+        ISequenceRepository<Feedback> sequenceRepository)
         => Feedback.New(
-            FeedbackIdentity.New(apiContract.Id),
+            string.IsNullOrWhiteSpace(apiContract.Id) 
+                ? FeedbackIdentity.New(apiContract.Id)
+                : FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result),
             CriterionName.New(apiContract.Criterion),
             Comment.New(apiContract.Comment),
             Highlight.New(
