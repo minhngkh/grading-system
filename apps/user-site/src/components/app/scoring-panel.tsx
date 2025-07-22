@@ -310,7 +310,9 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         }
                       </div>
                     }
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div
+                      className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${criterion.levels.length} gap-4`}
+                    >
                       {criterion.levels
                         .slice()
                         .sort((a, b) => a.weight - b.weight)
