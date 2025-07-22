@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { Files, MessageSquare, Code } from "lucide-react";
+import { Files, Code } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { FileExplorer } from "@/components/app/file-explorer";
@@ -47,9 +47,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     }, []);
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [sidebarView, setSidebarView] = useState<"files" | "testcases" | "feedback">(
-      "files",
-    );
+    const [sidebarView, setSidebarView] = useState<"files" | "testcases">("files");
 
     const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">(
       "file",
@@ -152,8 +150,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
         setSelectedPage(null);
       } else if (canAddFeedback || selectedPage) {
         setIsHighlightMode(true);
-
-        setSidebarView("feedback");
         setFeedbackViewMode("file");
       }
     }, [isHighlightMode, canAddFeedback, selectedPage]);
@@ -172,8 +168,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
 
     const handleSelectionMade = useCallback((locationData?: any) => {
       setCanAddFeedback(true);
-
-      setSidebarView("feedback");
       setFeedbackViewMode("file");
     }, []);
 
@@ -192,7 +186,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     }, []);
 
     const handleSidebarToggle = useCallback(
-      (view: "files" | "testcases" | "feedback") => {
+      (view: "files" | "testcases") => {
         if (sidebarView === view) {
           setIsSidebarOpen((prev) => !prev);
           return;
@@ -268,67 +262,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
               <div className="text-xs text-muted-foreground">
                 Test cases will be displayed here
               </div>
-            </div>
-          );
-        case "feedback":
-          return (
-            <div className="pt-2 px-2 w-full h-full flex flex-col">
-              <Tabs
-                value={feedbackViewMode}
-                onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
-                className="flex flex-col h-full"
-              >
-                <TabsList className="text-xs font-medium rounded-md w-full shrink-0">
-                  <TabsTrigger value="file" className="text-xs">
-                    By File
-                  </TabsTrigger>
-                  <TabsTrigger value="criterion" className="text-xs">
-                    By Criterion
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent
-                  value="file"
-                  className="flex flex-col flex-1 overflow-hidden"
-                >
-                  <h3 className="text-xs font-medium mb-3 shrink-0">
-                    Feedback for {selectedFile?.name || "No file"}
-                  </h3>
-                  <FeedbackListPanel
-                    assessment={assessment}
-                    selectedFeedbackIndex={activeFeedbackId}
-                    onSelect={handleFeedbackClick}
-                    isAddingFeedback={isHighlightMode}
-                    onCancelAdd={handleCancelSelection}
-                    rubricCriteria={rubricCriteria}
-                    locationData={locationData}
-                    onUpdate={onUpdate}
-                    byFile={true}
-                    currentFile={selectedFile}
-                    currentCriterion={""}
-                  />
-                </TabsContent>
-                <TabsContent
-                  value="criterion"
-                  className="flex flex-col flex-1 overflow-hidden"
-                >
-                  <h3 className="text-xs font-medium mb-3">
-                    Feedback for {activeScoringTab || "No criterion"}
-                  </h3>
-                  <FeedbackListPanel
-                    selectedFeedbackIndex={activeFeedbackId}
-                    onSelect={handleFeedbackClick}
-                    assessment={assessment}
-                    isAddingFeedback={isHighlightMode && feedbackViewMode === "criterion"}
-                    onCancelAdd={handleCancelSelection}
-                    rubricCriteria={rubricCriteria}
-                    locationData={locationData}
-                    onUpdate={onUpdate}
-                    byFile={false}
-                    currentFile={selectedFile}
-                    currentCriterion={activeScoringTab}
-                  />
-                </TabsContent>
-              </Tabs>
             </div>
           );
         default:
@@ -425,18 +358,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
             >
               <Code className="h-4 w-4" />
             </Button>
-            <Button
-              onClick={() => handleSidebarToggle("feedback")}
-              variant={"outline"}
-              className={`flex items-center border-none rounded-none justify-center h-10 w-full transition-colors ${
-                sidebarView === "feedback" ?
-                  "bg-primary/5 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-              title="Feedback"
-            >
-              <MessageSquare className="h-4 w-4" />
-            </Button>
           </div>
         </div>
         <ResizablePanelGroup direction="horizontal">
@@ -444,15 +365,15 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
             id="sidebar"
             className={cn(isSidebarOpen ? "block" : "hidden")}
             defaultSize={20}
-            minSize={20}
-            maxSize={30}
+            minSize={15}
+            maxSize={25}
           >
             {renderSidebarContent}
           </ResizablePanel>
 
           <ResizableHandle className={cn(isSidebarOpen ? "block" : "hidden")} />
 
-          <ResizablePanel id="feedback" defaultSize={isSidebarOpen ? 80 : 100}>
+          <ResizablePanel id="file" defaultSize={isSidebarOpen ? 60 : 70}>
             <div className="h-full flex flex-col">
               <div className="flex items-center justify-between border-b px-2 py-1">
                 <h2 className="font-semibold truncate">{selectedFile?.name}</h2>
@@ -481,6 +402,67 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
               {/* File Viewer */}
               <div className="grid overflow-auto">{renderFileViewer}</div>
             </div>
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel
+            id="feedback"
+            defaultSize={isSidebarOpen ? 20 : 30}
+            minSize={15}
+            maxSize={30}
+          >
+            <Tabs
+              value={feedbackViewMode}
+              onValueChange={(v) => setFeedbackViewMode(v as "file" | "criterion")}
+              className="flex flex-col h-full pt-2 px-2"
+            >
+              <TabsList className="text-xs font-medium rounded-md w-full shrink-0">
+                <TabsTrigger value="file" className="text-xs">
+                  By File
+                </TabsTrigger>
+                <TabsTrigger value="criterion" className="text-xs">
+                  By Criterion
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="file" className="flex flex-col flex-1 overflow-hidden">
+                <h3 className="text-xs font-medium mb-3 shrink-0">
+                  Feedback for {selectedFile?.name || "No file"}
+                </h3>
+                <FeedbackListPanel
+                  assessment={assessment}
+                  selectedFeedbackIndex={activeFeedbackId}
+                  onSelect={handleFeedbackClick}
+                  isAddingFeedback={isHighlightMode}
+                  onCancelAdd={handleCancelSelection}
+                  rubricCriteria={rubricCriteria}
+                  locationData={locationData}
+                  onUpdate={onUpdate}
+                  byFile={true}
+                  currentFile={selectedFile}
+                  currentCriterion={""}
+                />
+              </TabsContent>
+              <TabsContent
+                value="criterion"
+                className="flex flex-col flex-1 overflow-hidden"
+              >
+                <h3 className="text-xs font-medium mb-3">
+                  Feedback for {activeScoringTab || "No criterion"}
+                </h3>
+                <FeedbackListPanel
+                  selectedFeedbackIndex={activeFeedbackId}
+                  onSelect={handleFeedbackClick}
+                  assessment={assessment}
+                  isAddingFeedback={isHighlightMode && feedbackViewMode === "criterion"}
+                  onCancelAdd={handleCancelSelection}
+                  rubricCriteria={rubricCriteria}
+                  locationData={locationData}
+                  onUpdate={onUpdate}
+                  byFile={false}
+                  currentFile={selectedFile}
+                  currentCriterion={activeScoringTab}
+                />
+              </TabsContent>
+            </Tabs>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

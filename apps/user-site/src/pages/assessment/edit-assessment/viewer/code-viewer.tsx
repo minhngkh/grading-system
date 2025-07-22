@@ -159,7 +159,7 @@ const HighlightableViewer = ({
       if (
         fb.locationData?.type !== "text" ||
         fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) !== file.relativePath ||
-        fb.tag === "discard"
+        fb.tag === "discarded"
       )
         return fb;
 
@@ -478,7 +478,7 @@ const HighlightableViewer = ({
         if (result[index]) {
           result[index] = {
             ...result[index],
-            tag: "discard",
+            tag: "discarded",
           };
         }
       }
@@ -594,7 +594,7 @@ const HighlightableViewer = ({
       .filter(
         ({ fb }) =>
           fb.fileRef.substring(fb.fileRef.indexOf("/") + 1) === fileName &&
-          fb.tag !== "discard",
+          fb.tag !== "discarded",
       );
 
     if (file.type === "code") {
