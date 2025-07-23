@@ -24,13 +24,12 @@ public static class EndpointHandler
         ICommandBus commandBus,
         IQueryProcessor queryProcessor,
         IHttpContextAccessor contextAccessor,
-        ISequenceRepository<Feedback> sequenceRepository,
         CancellationToken cancellationToken)
     {
         var assessmentId = AssessmentId.With(id);
         await commandBus.PublishAsync(new Command(assessmentId)
         {
-            Feedbacks = [.. request.Feedbacks.Select(f => f.ToValueObject(sequenceRepository))],
+            Feedbacks = [.. request.Feedbacks.Select(f => f.ToValueObject())],
         }, cancellationToken);
 
         return TypedResults.Ok();
