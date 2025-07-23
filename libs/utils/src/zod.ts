@@ -3,7 +3,10 @@ import type { z, ZodSchema } from "zod";
 import { err, ok } from "neverthrow";
 import { CustomError } from "@/error";
 
-class ZodParseError extends CustomError.withTag("ZodParseError")<{ info: z.ZodError }> {}
+export class ZodParseError extends CustomError.withTag("ZodParseError")<
+  void,
+  z.ZodError
+> {}
 
 export function zodParse<T extends ZodSchema>(
   data: unknown,
@@ -13,8 +16,8 @@ export function zodParse<T extends ZodSchema>(
   if (!result.success) {
     return err(
       new ZodParseError({
-        data: { info: result.error },
         message: "Zod schema validation failed",
+        cause: result.error,
       }),
     );
   }

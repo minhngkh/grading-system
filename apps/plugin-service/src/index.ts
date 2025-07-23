@@ -6,6 +6,7 @@ import { createZodValidatedServiceBroker } from "@grading-system/typed-moleculer
 import logger from "@grading-system/utils/logger";
 import { serve } from "@hono/node-server";
 import { initMessaging } from "@/messaging";
+import { testRunnerService } from "@/plugins/test-runner/service";
 import { createApiGateway } from "./api";
 import { syncDB } from "./db/init";
 import { connectMongoDB } from "./db/mongoose";
@@ -15,6 +16,7 @@ import { staticAnalysisService } from "./plugins/static-analysis/service";
 const broker = createZodValidatedServiceBroker();
 broker.createService(aiService);
 broker.createService(staticAnalysisService);
+broker.createService(testRunnerService);
 
 const api = createApiGateway(broker);
 

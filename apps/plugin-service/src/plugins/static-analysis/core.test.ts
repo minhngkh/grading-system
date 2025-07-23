@@ -49,6 +49,7 @@ describe("running static analysis", () => {
   it("test", async () => {
     const config: StaticAnalysisConfig = {
       type: "static-analysis",
+      version: 1,
       crossFileAnalysis: false,
       preset: { type: "auto" },
       additionalRulesets: [],

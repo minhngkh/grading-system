@@ -2,6 +2,7 @@ import type { ServiceActionPath } from "@grading-system/typed-moleculer/action";
 import type { TypedServiceSchema } from "@grading-system/typed-moleculer/service";
 import type { AIService } from "@/plugins/ai/service";
 import type { StaticAnalysisService } from "@/plugins/static-analysis/service";
+import type { TestRunnerService } from "@/plugins/test-runner/service";
 import { z } from "zod";
 import { aiPluginOperations } from "@/plugins/ai/service";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/plugins/static-analysis/config";
 import { staticAnalysisPluginOperations } from "@/plugins/static-analysis/service";
 import { testRunnerConfigSchema } from "@/plugins/test-runner/config";
+import { testRunnerPluginOperations } from "@/plugins/test-runner/service";
 
 type PluginOperation<T extends TypedServiceSchema> = {
   action: ServiceActionPath<T>;
@@ -31,9 +33,9 @@ export const plugins = {
     checkConfig: undefined,
   },
   testRunner: {
-    "~type": undefined as unknown as StaticAnalysisService,
+    "~type": undefined as unknown as TestRunnerService,
     id: "test-runner",
-    operations: staticAnalysisPluginOperations,
+    operations: testRunnerPluginOperations,
     configSchema: testRunnerConfigSchema,
     checkConfig: undefined,
   },
