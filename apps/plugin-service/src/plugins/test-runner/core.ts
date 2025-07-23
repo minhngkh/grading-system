@@ -206,7 +206,7 @@ export function uploadSubmission(data: {
           state: CALLBACK_STEP.UPLOAD,
           processed: 0,
           total: data.config.testCases.length,
-        })
+        } as CachedData)
         // make sure the list exists (optional—LPUSH then LTRIM could also work)
         .del(`${key}:results`)
         .exec(),

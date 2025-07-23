@@ -27,7 +27,7 @@ export const advancedSettingsSchema = z.object({
 
 export const testCaseSchema = z.object({
   input: z.string().describe("stdin"),
-  output: z.string().describe("Expected stdout"),
+  expectedOutput: z.string().describe("Expected stdout"),
   description: z.string().optional().describe("Description of the test case"),
 });
 

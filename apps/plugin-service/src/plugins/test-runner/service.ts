@@ -19,6 +19,11 @@ import {
   runSubmission,
 } from "@/plugins/test-runner/core";
 
+type CallbackData = {
+  query: { id: string };
+  body: GoJudge.RunResult;
+};
+
 export const testRunnerService = defineTypedService2({
   name: "test-runner",
   version: 1,
@@ -69,23 +74,23 @@ export const testRunnerService = defineTypedService2({
     },
 
     initializeSubmission: {
-      async handler(ctx: Context<{ id: string }>) {
-        const params = ctx.params;
+      async handler(ctx: Context<CallbackData>) {
+        const { query, body } = ctx.params;
 
         const info = await cache.hmget<Pick<CachedData, "config" | "criterionData">>(
-          `test-runner:${params.id}`,
+          `test-runner:${query.id}`,
           "config",
           "criterionData",
         );
 
-        logger.debug(`Initializing submission for ${params.id}`, info);
+        logger.debug(`Initializing submission for ${query.id}`, info);
 
         if (info === null) {
-          throw new Error(`No submission found for id: ${params.id}`);
+          throw new Error(`No submission found for id: ${query.id}`);
         }
 
         const data: CallData = {
-          attemptId: params.id,
+          attemptId: query.id,
           config: info.config,
           criterionData: info.criterionData,
         };
@@ -112,21 +117,22 @@ export const testRunnerService = defineTypedService2({
     },
 
     runSubmission: {
-      async handler(ctx: Context<{ id: string }>) {
-        const params = ctx.params;
+      async handler(ctx: Context<CallbackData>) {
+        const { query, body } = ctx.params;
+
 
         const info = await cache.hmget<Pick<CallData, "config" | "criterionData">>(
-          `test-runner:${params.id}`,
+          `test-runner:${query.id}`,
           "config",
           "criterionData",
         );
 
         if (info === null) {
-          throw new Error(`No submission found for id: ${params.id}`);
+          throw new Error(`No submission found for id: ${query.id}`);
         }
 
         const data: CallData = {
-          attemptId: params.id,
+          attemptId: query.id,
           config: info.config,
           criterionData: info.criterionData,
         };
@@ -156,7 +162,7 @@ export const testRunnerService = defineTypedService2({
           //       tag: "",
           //       rawScore: ,
           //       maxScore: data.criterionData.maxScore,
-                
+
           //     },
           //   });
           // }

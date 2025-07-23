@@ -26,40 +26,32 @@ export function route(broker: ServiceBroker) {
     validator("query", testRunnerCallbackUrlSchema),
     async (c) => {
       const query = c.req.valid("query");
+      const body = await c.req.json<GoJudge.RunResult>();
+      logger.info("Received callback", query, body);
 
       switch (query.type) {
         case "upload":
-          logger.info("Received upload callback", query);
-
           await actionCaller<TestRunnerService>()(
             broker,
             "v1.test-runner.initializeSubmission",
-            { id: query.id },
+            { query, body },
           );
           break;
 
         case "init":
-          logger.info("Received init callback", query);
           await actionCaller<TestRunnerService>()(
             broker,
             "v1.test-runner.runSubmission",
-            { id: query.id },
+            { query, body },
           );
           break;
 
         case "run":
-          {
-            logger.info("Received run callback", query);
-
-            // TODO: validate the body
-            const body = await c.req.json<GoJudge.RunResult>();
-
-            await actionCaller<TestRunnerService>()(
-              broker,
-              "v1.test-runner.aggregateResults",
-              { query, body },
-            );
-          }
+          await actionCaller<TestRunnerService>()(
+            broker,
+            "v1.test-runner.aggregateResults",
+            { query, body },
+          );
           break;
 
         default:

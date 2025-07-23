@@ -1,5 +1,30 @@
 import z from "zod";
 
+export const runningSettingsSchema = z.object({
+  cpuLimit: z
+    .number()
+    .default(10 * 1000000000)
+    .describe("CPU time limit for the program in nanoseconds"),
+  clockLimit: z
+    .number()
+    .optional()
+    .describe("Clock time limit for the program in seconds"),
+  memoryLimit: z
+    .number()
+    .default(256 * 1024 * 1024)
+    .describe("Memory limit for the program in megabytes"),
+  procLimit: z.number().default(50).describe("Number of processes limit for the program"),
+});
+
+export const advancedSettingsSchema = z.object({
+  initStep: runningSettingsSchema.default({}),
+  runStep: runningSettingsSchema.default({}),
+  // combineStdoutStderr: z
+  //   .boolean()
+  //   .default(false)
+  //   .describe("Whether to combine stdout and stderr into a single output"),
+});
+
 export const PluginSchema = z.object({
   id: z.string().min(1, "Plugin alias is required"),
   name: z.string().min(1, "Plugin name is required"),
@@ -24,6 +49,9 @@ export const CodeRunnerConfigSchema = z.object({
       (testCases) => testCases.every((tc) => tc.input.trim() && tc.expectedOutput.trim()),
       { message: "All test cases must have both input and expected output" },
     ),
+  advancedSettings: advancedSettingsSchema
+    .default({})
+    .describe("Advanced settings for the test runner"),
 });
 
 export enum StaticAnalysisPreset {
