@@ -1,5 +1,4 @@
-﻿using AssignmentFlow.Application.Shared;
-using AssignmentFlow.IntegrationEvents;
+﻿using AssignmentFlow.IntegrationEvents;
 using System.Text.Json;
 
 namespace AssignmentFlow.Application.Assessments;
@@ -25,13 +24,8 @@ public static class ValueObjectExtensions
         };
     }
 
-    public static Feedback ToValueObject(
-        this FeedbackItemApiContract apiContract,
-        ISequenceRepository<Feedback> sequenceRepository)
+    public static Feedback ToValueObject(this FeedbackItemApiContract apiContract)
         => Feedback.New(
-            string.IsNullOrWhiteSpace(apiContract.Id) 
-                ? FeedbackIdentity.New(apiContract.Id)
-                : FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result),
             CriterionName.New(apiContract.Criterion),
             Comment.New(apiContract.Comment),
             Highlight.New(
@@ -61,7 +55,6 @@ public static class ValueObjectExtensions
         if (!string.IsNullOrEmpty(apiContract.Summary))
         {
             var summary = Feedback.Summary(
-                FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result),
                 criterionName,
                 Comment.New(apiContract.Summary));
             feedbackItems.Add(summary);
@@ -77,8 +70,6 @@ public static class ValueObjectExtensions
         CriterionName criterion,
         ISequenceRepository<Feedback> sequenceRepository)
     {
-        var identity = FeedbackIdentity.New(sequenceRepository.GenerateSequence().Result);
-
         var comment = Comment.New(apiContract.Comment);
 
         var locationDataJson = JsonSerializer.Serialize(apiContract.LocationData);
@@ -87,7 +78,7 @@ public static class ValueObjectExtensions
 
         var feedbackTag = Tag.New(apiContract.Tag);
 
-        return Feedback.New(identity, criterion, comment, feedbackAttachment, feedbackTag);
+        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag);
     }
 
     [Obsolete("Obsoleted because the target model have been obsolete")]
@@ -135,6 +126,6 @@ public static class ValueObjectExtensions
 
         var feedbackTag = Tag.New(apiContract.Tag);
 
-        return Feedback.New(FeedbackIdentity.Empty, criterion, comment, feedbackAttachment, feedbackTag);
+        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag);
     }
 }

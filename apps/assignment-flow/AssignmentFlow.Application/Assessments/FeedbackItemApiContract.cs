@@ -8,9 +8,8 @@ namespace AssignmentFlow.Application.Assessments;
 /// Represents a specific feedback item that may include file references and text positioning.
 /// </summary>
 [NoResource]
-public class FeedbackItemApiContract : IEquatable<FeedbackItemApiContract>
+public class FeedbackItemApiContract
 {
-    public required string Id { get; set; }
     public required string Criterion { get; set; }
     public required string FileRef { get; set; }
 
@@ -26,14 +25,4 @@ public class FeedbackItemApiContract : IEquatable<FeedbackItemApiContract>
 
     public required string Comment { get; set; }
     public required string Tag { get; set; }
-
-    public bool Equals(FeedbackItemApiContract? other)
-    {
-        return Id.Equals(other?.Id);
-    }
-
-    public override int GetHashCode()
-    {
-        return Id.GetHashCode();
-    }
 }
