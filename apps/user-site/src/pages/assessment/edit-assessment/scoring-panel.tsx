@@ -1,16 +1,17 @@
-import React, { useState, useCallback } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Assessment, FeedbackItem } from "@/types/assessment";
-import { Rubric } from "@/types/rubric";
-import { GradingAttempt } from "@/types/grading";
-import { Button } from "@/components/ui/button";
-import { History } from "lucide-react";
-import { ScoreAdjustmentDialog } from "@/components/app/score-adjustment-dialog";
+import type { Assessment, FeedbackItem } from "@/types/assessment";
+import type { GradingAttempt } from "@/types/grading";
+import type { Rubric } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
-import { getScoreAdjustmentsQueryOptions } from "@/queries/assessment-queries";
-import { cn } from "@/lib/utils";
+import { History, Info } from "lucide-react";
+import React, { useCallback, useState } from "react";
+import { PluginMetadataDialog } from "@/components/app/plugin-metadata";
+import { ScoreAdjustmentDialog } from "@/components/app/score-adjustment-dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { getScoreAdjustmentsQueryOptions } from "@/queries/assessment-queries";
 
 interface ScoringPanelProps {
   rubric: Rubric;
@@ -54,6 +55,92 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   const [editingSummaryComment, setEditingSummaryComment] = useState("");
   const [addingSummary, setAddingSummary] = useState<string | null>(null);
   const [showScoreAdjustmentDialog, setShowScoreAdjustmentDialog] = useState(false);
+  const [pluginMetadataOpen, setPluginMetadataOpen] = useState(false);
+  const [selectedCriterion, setSelectedCriterion] = useState<{
+    name: string;
+    pluginType: string;
+    metadata: unknown;
+  } | null>(null);
+
+  // Helper function to determine plugin type from metadata
+  const getPluginType = (metadata?: string[] | Record<string, unknown>): string | null => {
+    if (!metadata) return null;
+    
+    // Handle if metadata is already an object
+    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+      return (metadata as any).plugin || null;
+    }
+    
+    // Handle if metadata is an array of strings, try parsing the first item
+    if (Array.isArray(metadata) && metadata.length > 0) {
+      try {
+        const parsed = JSON.parse(metadata[0]);
+        return parsed.plugin || null;
+      } catch {
+        return null;
+      }
+    }
+    
+    return null;
+  };
+
+  // Helper function to check if metadata exists and is valid
+  const hasValidMetadata = (metadata?: string[] | Record<string, unknown>): boolean => {
+    if (!metadata) return false;
+    
+    // Handle if metadata is already an object
+    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+      return Object.keys(metadata).length > 0 && (metadata as any).plugin;
+    }
+    
+    // Handle if metadata is an array of strings
+    if (Array.isArray(metadata) && metadata.length > 0) {
+      try {
+        const parsed = JSON.parse(metadata[0]);
+        return parsed.plugin && Object.keys(parsed).length > 0;
+      } catch {
+        return false;
+      }
+    }
+    
+    return false;
+  };
+
+  // Helper function to parse metadata
+  const parseMetadata = (metadata?: string[] | Record<string, unknown>): unknown => {
+    if (!metadata) return null;
+    
+    // If metadata is already an object, return it directly
+    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+      return metadata;
+    }
+    
+    // If metadata is an array, try to parse the first item as JSON
+    if (Array.isArray(metadata) && metadata.length > 0) {
+      try {
+        return JSON.parse(metadata[0]);
+      } catch {
+        return metadata;
+      }
+    }
+    
+    return metadata;
+  };
+
+  const handleShowMetadata = (criterionName: string, metadata?: string[] | Record<string, unknown>) => {
+    const pluginType = getPluginType(metadata);
+    if (!pluginType) return;
+
+    const parsedMetadata = parseMetadata(metadata);
+    if (!parsedMetadata) return;
+
+    setSelectedCriterion({
+      name: criterionName,
+      pluginType,
+      metadata: parsedMetadata,
+    });
+    setPluginMetadataOpen(true);
+  };
 
   const { data: scoreAdjustments, isFetching } = useQuery(
     getScoreAdjustmentsQueryOptions(assessment.id, auth, {
@@ -208,6 +295,25 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="flex gap-3 items-center font-semibold text-sm">
                         {criterion.name} ({criterion.weight})%
+                        {(() => {
+                          const scoreBreakdown = (assessment.scoreBreakdowns || []).find(
+                            (sb) => sb.criterionName === criterion.name,
+                          );
+                          const pluginType = scoreBreakdown ? getPluginType(scoreBreakdown.metadata) : null;
+                          const hasMetadata = scoreBreakdown && pluginType && hasValidMetadata(scoreBreakdown.metadata);
+                          
+                          return hasMetadata ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => scoreBreakdown && handleShowMetadata(criterion.name, scoreBreakdown.metadata)}
+                              title={`View ${pluginType} results`}
+                            >
+                              <Info className="h-3 w-3" />
+                            </Button>
+                          ) : null;
+                        })()}
                       </span>
 
                       <span className="text-xs">
@@ -220,7 +326,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                             step={0.5}
                             value={actualScore}
                             onChange={(e) => {
-                              const val = parseFloat(e.target.value);
+                              const val = Number.parseFloat(e.target.value);
                               const maxPoints = criterionMaxPoints;
                               if (isNaN(val) || e.target.value === "") {
                                 handleUpdateScore(criterion, 0, true);
@@ -368,6 +474,15 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
         onOpenChange={setShowScoreAdjustmentDialog}
         scoreAdjustment={scoreAdjustments || []}
       />
+      {selectedCriterion && (
+        <PluginMetadataDialog
+          open={pluginMetadataOpen}
+          onOpenChange={setPluginMetadataOpen}
+          pluginType={selectedCriterion.pluginType}
+          metadata={selectedCriterion.metadata}
+          criterionName={selectedCriterion.name}
+        />
+      )}
     </div>
   );
 };

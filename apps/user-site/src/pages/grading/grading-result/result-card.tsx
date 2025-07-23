@@ -1,16 +1,19 @@
+import { useMemo, useState } from "react";
+
+import { useAuth } from "@clerk/clerk-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { Check, CircleAlert, FileSearch, Info, RefreshCw, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
+
+import { PluginMetadataDialog } from "@/components/app/plugin-metadata";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { RefreshCw, FileSearch, TriangleAlert, CircleAlert, Check } from "lucide-react";
-import { Assessment, AssessmentState, ScoreBreakdownStatus } from "@/types/assessment";
-import { getCriteriaColorStyle } from "./colors";
-import { Link } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@clerk/clerk-react";
-import { toast } from "sonner";
 import { ResultCardSkeleton } from "@/pages/grading/grading-result/skeletons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
-import { useMemo } from "react";
+import { type Assessment, AssessmentState, ScoreBreakdownStatus } from "@/types/assessment";
+import { getCriteriaColorStyle } from "./colors";
 
 interface AssessmentResultCardProps {
   item: Assessment;
@@ -47,6 +50,13 @@ export function AssessmentResultCard({
 }: AssessmentResultCardProps) {
   const auth = useAuth();
   const queryClient = useQueryClient();
+  const [pluginMetadataOpen, setPluginMetadataOpen] = useState(false);
+  const [selectedCriterion, setSelectedCriterion] = useState<{
+    name: string;
+    pluginType: string;
+    metadata: unknown;
+  } | null>(null);
+
   const { isPending: isRerunning, mutate: rerunAssessment } = useMutation(
     rerunAssessmentMutationOptions(auth, {
       onSuccess: () => {
@@ -74,6 +84,86 @@ export function AssessmentResultCard({
       return a.criterionName.localeCompare(b.criterionName);
     });
   }, [item.scoreBreakdowns]);
+
+  // Helper function to determine plugin type from metadata
+  const getPluginType = (metadata?: string[] | Record<string, unknown>): string | null => {
+    if (!metadata) return null;
+    
+    // Handle if metadata is already an object
+    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+      return (metadata as any).plugin || null;
+    }
+    
+    // Handle if metadata is an array of strings, try parsing the first item
+    if (Array.isArray(metadata) && metadata.length > 0) {
+      try {
+        const parsed = JSON.parse(metadata[0]);
+        return parsed.plugin || null;
+      } catch {
+        return null;
+      }
+    }
+    
+    return null;
+  };
+
+  // Helper function to check if metadata exists and is valid
+  const hasValidMetadata = (metadata?: string[] | Record<string, unknown>): boolean => {
+    if (!metadata) return false;
+    
+    // Handle if metadata is already an object
+    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+      return Object.keys(metadata).length > 0 && (metadata as any).plugin;
+    }
+    
+    // Handle if metadata is an array of strings
+    if (Array.isArray(metadata) && metadata.length > 0) {
+      try {
+        const parsed = JSON.parse(metadata[0]);
+        return parsed.plugin && Object.keys(parsed).length > 0;
+      } catch {
+        return false;
+      }
+    }
+    
+    return false;
+  };
+
+  // Helper function to parse metadata
+  const parseMetadata = (metadata?: string[] | Record<string, unknown>): unknown => {
+    if (!metadata) return null;
+    
+    // If metadata is already an object, return it directly
+    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+      return metadata;
+    }
+    
+    // If metadata is an array, try to parse the first item as JSON
+    if (Array.isArray(metadata) && metadata.length > 0) {
+      try {
+        return JSON.parse(metadata[0]);
+      } catch {
+        return metadata;
+      }
+    }
+    
+    return metadata;
+  };
+
+  const handleShowMetadata = (criterionName: string, metadata?: string[] | Record<string, unknown>) => {
+    const pluginType = getPluginType(metadata);
+    if (!pluginType) return;
+
+    const parsedMetadata = parseMetadata(metadata);
+    if (!parsedMetadata) return;
+
+    setSelectedCriterion({
+      name: criterionName,
+      pluginType,
+      metadata: parsedMetadata,
+    });
+    setPluginMetadataOpen(true);
+  };
 
   if (item.status === AssessmentState.AutoGradingStarted) return <ResultCardSkeleton />;
 
@@ -119,11 +209,35 @@ export function AssessmentResultCard({
               );
 
               const finalScore = ((score.rawScore * scaleFactor) / 100).toFixed(2);
+              const pluginType = getPluginType(score.metadata);
+              const hasMetadata = pluginType && hasValidMetadata(score.metadata);
+
+              // Debug logging to help understand the data
+              console.log("Score breakdown:", {
+                criterionName: score.criterionName,
+                grader: score.grader,
+                pluginType,
+                metadata: score.metadata,
+                hasMetadata
+              });
 
               return (
-                <div key={index} className="mt-2">
-                  <div className="flex justify-between text-sm">
-                    <span className={colorStyle.text}>{score.criterionName}</span>
+                <div key={score.criterionName} className="mt-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className={colorStyle.text}>{score.criterionName}</span>
+                      {hasMetadata && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => handleShowMetadata(score.criterionName, score.metadata)}
+                          title={`View ${pluginType} results`}
+                        >
+                          <Info className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                     {(
                       score.grader === "None" ||
                       score.status === ScoreBreakdownStatus.Manual
@@ -168,6 +282,16 @@ export function AssessmentResultCard({
           </Link>
         </div>
       </div>
+
+      {selectedCriterion && (
+        <PluginMetadataDialog
+          open={pluginMetadataOpen}
+          onOpenChange={setPluginMetadataOpen}
+          pluginType={selectedCriterion.pluginType}
+          metadata={selectedCriterion.metadata}
+          criterionName={selectedCriterion.name}
+        />
+      )}
     </Card>
   );
 }
