@@ -199,8 +199,8 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               };
 
               return (
-                <TabsContent key={index} value={criterion.name} className="flex-1 h-full">
-                  <div className="h-full rounded-md border p-4 flex flex-col gap-2 overflow-auto custom-scrollbar">
+                <TabsContent key={index} value={criterion.name} className="flex-1">
+                  <div className="rounded-md border p-4 flex flex-col gap-2 overflow-auto custom-scrollbar">
                     <div className="flex items-center justify-between">
                       <span className="flex gap-3 items-center font-semibold text-sm">
                         {criterion.name} ({criterion.weight})%

@@ -83,7 +83,6 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
         queryClient.invalidateQueries({
           queryKey: ["rubric", rubricData.id],
         });
-        toast.success("Rubric updated successfully");
       },
     }),
   );
@@ -113,7 +112,7 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
 
   const handleConfig = (index: number, plugin: string | undefined) => {
     if (!plugin) {
-      toast.error("Plugin configuration not available.");
+      toast.warning("Plugin configuration not available.");
       return;
     }
 

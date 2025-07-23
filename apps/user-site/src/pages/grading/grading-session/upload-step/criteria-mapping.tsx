@@ -194,7 +194,9 @@ export default function CriteriaMapper({
                     }}
                   >
                     <div className="truncate">
-                      {criterion.pattern === "*" ? "All files" : criterion.pattern}
+                      {criterion.pattern === "*" || criterion.pattern === "**/*" ?
+                        "All files"
+                      : criterion.pattern}
                     </div>
                   </Button>
                 </div>
