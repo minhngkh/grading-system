@@ -1,14 +1,14 @@
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Table,
-  TableHeader,
-  TableRow,
-  TableHead,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { Trash2 } from "lucide-react";
 
 interface EnvironmentVariablesTableProps {
   environmentVariables: Record<string, string>;
@@ -26,7 +26,7 @@ export default function EnvironmentVariablesTable({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-md font-semibold">Environment Variables (Optional)</h3>
+      {/* <h3 className="text-md font-semibold">Environment Variables (Optional)</h3> */}
       <div className="border rounded-lg">
         <Table>
           <TableHeader>

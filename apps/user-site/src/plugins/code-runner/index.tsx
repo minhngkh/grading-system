@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 
 import { useAuth } from "@clerk/clerk-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Form,
   FormControl,
@@ -33,6 +39,8 @@ import {
 
 import type { PluginConfigProps } from "../type";
 import EnvironmentVariablesTable from "./environment-variables-table";
+import OutputComparisonSettings from "./output-comparison-settings";
+import RunningSettings from "./running-settings";
 import TestCasesTable from "./test-cases-table";
 
 export default function CodeRunnerConfigView({
@@ -42,6 +50,9 @@ export default function CodeRunnerConfigView({
 }: PluginConfigProps) {
   const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [envVarsOpen, setEnvVarsOpen] = useState(false);
+  const [outputComparisonOpen, setOutputComparisonOpen] = useState(false);
+  const [runningSettingsOpen, setRunningSettingsOpen] = useState(false);
   const createConfigMutation = useMutation(createCodeRunnerConfigMutationOptions(auth));
 
   const updateConfigMutation = useMutation(
@@ -61,6 +72,24 @@ export default function CodeRunnerConfigView({
       runCommand: "",
       testCases: [],
       environmentVariables: {},
+      advancedSettings: {
+        initStep: {
+          cpuLimit: 10 * 1000000000,
+          memoryLimit: 256 * 1024 * 1024,
+          procLimit: 50,
+        },
+        runStep: {
+          cpuLimit: 10 * 1000000000,
+          memoryLimit: 256 * 1024 * 1024,
+          procLimit: 50,
+        },
+      },
+      outputComparison: {
+        ignoreWhitespace: false,
+        ignoreLineEndings: false,
+        trim: false,
+        ignoreCase: false,
+      },
     },
   });
 
@@ -148,10 +177,6 @@ export default function CodeRunnerConfigView({
     setIsSubmitting(true);
     try {
       // Basic validation
-      if (!config.initCommand?.trim()) {
-        toast.error("Install Dependencies Command is required");
-        return;
-      }
       if (!config.runCommand?.trim()) {
         toast.error("Run Command is required");
         return;
@@ -187,7 +212,7 @@ export default function CodeRunnerConfigView({
   };
 
   return (
-    <Card className="size-full">
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>Test Runner Configuration</CardTitle>
         <CardDescription>
@@ -195,64 +220,114 @@ export default function CodeRunnerConfigView({
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto">
-        <Form {...form}>
-          <form>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <FormField
-                  control={control}
-                  name="initCommand"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Install Dependencies Command</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="e.g., npm install, pip install -r requirements.txt"
-                          className="w-full"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+      <CardContent className="flex-1 relative overflow-y-auto custom-scrollbar pr-0 mr-1">
+        <div className="ml-6 mr-2 absolute top-0 left-0 right-0">
+          <Form {...form}>
+            <form>
+              <div className="space-y-6">
+                {/* Basic Settings - Always visible */}
+                <div className="grid grid-cols-1 gap-4">
+                  <FormField
+                    control={control}
+                    name="initCommand"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Install Dependencies Command (Optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="e.g., npm install, pip install -r requirements.txt"
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={control}
+                    name="runCommand"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Run Command</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="e.g., node main.js, python main.py"
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <TestCasesTable
+                  testCases={config.testCases}
+                  onUpdateCell={updateCell}
+                  onDeleteRow={deleteRow}
                 />
 
-                <FormField
-                  control={control}
-                  name="runCommand"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Run Command</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="e.g., node main.js, python main.py"
-                          className="w-full"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <Collapsible open={envVarsOpen} onOpenChange={setEnvVarsOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between p-0 h-auto">
+                      <span className="text-base font-medium">Environment Variables (Optional)</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${envVarsOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-2 pt-2">
+                    <EnvironmentVariablesTable
+                      environmentVariables={config.environmentVariables ?? {}}
+                      onUpdateEnvVar={updateEnvVar}
+                      onDeleteEnvVar={deleteEnvVar}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible open={outputComparisonOpen} onOpenChange={setOutputComparisonOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between p-0 h-auto">
+                      <span className="text-base font-medium">Output Comparison Settings</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${outputComparisonOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-2 pt-2">
+                    <OutputComparisonSettings control={control} />
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible open={runningSettingsOpen} onOpenChange={setRunningSettingsOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between p-0 h-auto">
+                      <span className="text-base font-medium">Advanced Resource Limits</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${runningSettingsOpen ? 'rotate-180' : ''}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-2 pt-2">
+                    <RunningSettings
+                      control={control}
+                      title="Initialization Step Limits"
+                      description="Resource limits for the initialization/setup phase"
+                      namePrefix="advancedSettings.initStep"
+                    />
+
+                    <RunningSettings
+                      control={control}
+                      title="Execution Step Limits"
+                      description="Resource limits for the test execution phase"
+                      namePrefix="advancedSettings.runStep"
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
-
-              <TestCasesTable
-                testCases={config.testCases}
-                onUpdateCell={updateCell}
-                onDeleteRow={deleteRow}
-              />
-
-              <EnvironmentVariablesTable
-                environmentVariables={config.environmentVariables ?? {}}
-                onUpdateEnvVar={updateEnvVar}
-                onDeleteEnvVar={deleteEnvVar}
-              />
-            </div>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
       </CardContent>
-      <CardFooter className="justify-end gap-2">
+
+      <CardFooter className="flex justify-end gap-2">
         <Button variant="outline" disabled={isSubmitting} onClick={onCancel}>
           Cancel
         </Button>

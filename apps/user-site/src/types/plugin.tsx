@@ -39,7 +39,7 @@ export const CodeRunnerTestCaseSchema = z.object({
 });
 
 export const CodeRunnerConfigSchema = z.object({
-  initCommand: z.string().min(1, "Install command is required"),
+  initCommand: z.string().optional().describe("Install dependencies command"),
   runCommand: z.string().min(1, "Run command is required"),
   environmentVariables: z.record(z.string(), z.string()).optional(),
   testCases: z
@@ -52,6 +52,18 @@ export const CodeRunnerConfigSchema = z.object({
   advancedSettings: advancedSettingsSchema
     .default({})
     .describe("Advanced settings for the test runner"),
+  outputComparison: z.object({
+    ignoreWhitespace: z
+      .boolean()
+      .default(false)
+      .describe("Ignore whitespace differences in output"),
+    ignoreLineEndings: z
+      .boolean()
+      .default(false)
+      .describe("Ignore line ending differences in output"),
+    trim: z.boolean().default(false).describe("Trim output before comparison"),
+    ignoreCase: z.boolean().default(false).describe("Ignore case differences in output"),
+  }).default({}),
 });
 
 export enum StaticAnalysisPreset {
