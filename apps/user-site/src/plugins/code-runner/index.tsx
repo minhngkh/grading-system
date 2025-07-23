@@ -1,28 +1,11 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { PluginConfigProps } from "../type";
+import { useForm } from "react-hook-form";
+
 import { useAuth } from "@clerk/clerk-react";
-import { toast } from "sonner";
-import { CodeRunnerConfig, CodeRunnerConfigSchema } from "@/types/plugin";
-import { Input } from "@/components/ui/input";
-import EnvironmentVariablesTable from "./environment-variables-table";
-import TestCasesTable from "./test-cases-table";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  createCodeRunnerConfigMutationOptions,
-  getTestRunnerConfigQueryOptions,
-  updateCodeRunnerConfigMutationOptions,
-} from "@/queries/plugin-queries";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -31,6 +14,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+
+import type { CodeRunnerConfig } from "@/types/plugin";
+import {
+  createCodeRunnerConfigMutationOptions,
+  getTestRunnerConfigQueryOptions,
+  updateCodeRunnerConfigMutationOptions,
+} from "@/queries/plugin-queries";
+
+import type { PluginConfigProps } from "../type";
+import EnvironmentVariablesTable from "./environment-variables-table";
+import TestCasesTable from "./test-cases-table";
 
 export default function CodeRunnerConfigView({
   configId,
@@ -39,13 +42,6 @@ export default function CodeRunnerConfigView({
 }: PluginConfigProps) {
   const auth = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [defaultConfig, setDefaultConfig] = useState<CodeRunnerConfig>({
-    initCommand: "",
-    runCommand: "",
-    testCases: [],
-    environmentVariables: {},
-  });
-
   const createConfigMutation = useMutation(createCodeRunnerConfigMutationOptions(auth));
 
   const updateConfigMutation = useMutation(
@@ -59,27 +55,25 @@ export default function CodeRunnerConfigView({
     }),
   );
 
-  useEffect(() => {
-    if (!isLoadingConfig) return;
-
-    if (initialConfig) {
-      setDefaultConfig(initialConfig);
-      reset(initialConfig);
-    }
-  }, [isLoadingConfig]);
-
   const form = useForm<CodeRunnerConfig>({
-    resolver: zodResolver(CodeRunnerConfigSchema),
-    defaultValues: defaultConfig,
+    defaultValues: {
+      initCommand: "",
+      runCommand: "",
+      testCases: [],
+      environmentVariables: {},
+    },
   });
+
+  useEffect(() => {
+    if (!isLoadingConfig && initialConfig) {
+      form.reset(initialConfig);
+    }
+  }, [isLoadingConfig, initialConfig, form]);
 
   const {
     control,
     setValue,
     watch,
-    trigger,
-    reset,
-    formState: { errors },
   } = form;
 
   const config = watch();
@@ -101,8 +95,6 @@ export default function CodeRunnerConfigView({
       );
       setValue("testCases", updatedTestCases);
     }
-
-    trigger("testCases");
   };
 
   const deleteRow = (index: number) => {
@@ -155,8 +147,25 @@ export default function CodeRunnerConfigView({
   const onSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const isValid = await trigger();
-      if (!isValid) return;
+      // Basic validation
+      if (!config.initCommand?.trim()) {
+        toast.error("Install Dependencies Command is required");
+        return;
+      }
+      if (!config.runCommand?.trim()) {
+        toast.error("Run Command is required");
+        return;
+      }
+      if (!config.testCases || config.testCases.length === 0) {
+        toast.error("At least one test case is required");
+        return;
+      }
+      for (const testCase of config.testCases) {
+        if (!testCase.input?.trim() || !testCase.expectedOutput?.trim()) {
+          toast.error("All test cases must have both input and expected output");
+          return;
+        }
+      }
 
       let resultConfigId: string;
 
@@ -169,7 +178,6 @@ export default function CodeRunnerConfigView({
       }
 
       onCriterionConfigChange?.(resultConfigId);
-      setDefaultConfig(config);
     } catch (error) {
       toast.error("Failed to save Code Runner configuration. Please try again.");
       console.error("Error saving Code Runner configuration:", error);
@@ -234,14 +242,6 @@ export default function CodeRunnerConfigView({
                 onUpdateCell={updateCell}
                 onDeleteRow={deleteRow}
               />
-              {errors.testCases && (
-                <p className="text-sm text-red-600">
-                  {errors.testCases.message || errors.testCases.root?.message}
-                </p>
-              )}
-              {errors.testCases?.root && (
-                <p className="text-sm text-red-600">{errors.testCases.root.message}</p>
-              )}
 
               <EnvironmentVariablesTable
                 environmentVariables={config.environmentVariables ?? {}}
