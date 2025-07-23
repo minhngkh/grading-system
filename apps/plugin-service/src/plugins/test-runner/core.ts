@@ -174,27 +174,6 @@ export function uploadSubmission(data: {
 
     logger.debug("prepared file", fileId);
 
-    yield* runProgram(
-      {
-        cmd: [
-          {
-            args: createArgs("unzip file.zip > /dev/null && rm file.zip && ls"),
-            env: createEnv({}),
-            files: createIOFiles({ stdout: true, stderr: true }),
-            copyIn: {
-              "file.zip": { fileId },
-            },
-            copyOutDir: createDirStorePath(data.attemptId),
-            ...DEFAULT_LIMITATIONS,
-          },
-        ],
-      },
-      {
-        id: data.attemptId,
-        type: CALLBACK_STEP.UPLOAD,
-      },
-    );
-
     const key = `test-runner:${data.attemptId}`;
     yield* fromPromise(
       cache
@@ -215,6 +194,27 @@ export function uploadSubmission(data: {
           message: "Failed to initialize test runner state",
           cause: error,
         }),
+    );
+
+    yield* runProgram(
+      {
+        cmd: [
+          {
+            args: createArgs("unzip file.zip > /dev/null && rm file.zip && ls"),
+            env: createEnv({}),
+            files: createIOFiles({ stdout: true, stderr: true }),
+            copyIn: {
+              "file.zip": { fileId },
+            },
+            copyOutDir: createDirStorePath(data.attemptId),
+            ...DEFAULT_LIMITATIONS,
+          },
+        ],
+      },
+      {
+        id: data.attemptId,
+        type: CALLBACK_STEP.UPLOAD,
+      },
     );
 
     return okAsync();
@@ -274,41 +274,34 @@ export function runSubmission(data: CallData) {
     });
     logger.debug("run args", createArgs(config.runCommand));
 
-    const promises = [];
-    for (const testCase of config.testCases) {
-      promises.push(
-        runProgram(
-          {
-            cmd: [
-              {
-                args: createArgs(config.runCommand),
-                env,
-                files: createIOFiles({
-                  stdin: testCase.input,
-                  stdout: true,
-                  stderr: true,
-                }),
-                copyIn: {
-                  ".": {
-                    src: path.join(FILE_STORE_PATH, createDirStorePath(data.attemptId)),
-                  },
-                },
-                cpuLimit: config.advancedSettings.runStep.cpuLimit,
-                clockLimit: config.advancedSettings.runStep.clockLimit,
-                memoryLimit: config.advancedSettings.runStep.memoryLimit,
-                procLimit: config.advancedSettings.runStep.procLimit,
+    yield* runProgram(
+      {
+        cmd: data.config.testCases.map((testCase) => {
+          return {
+            args: createArgs(config.runCommand),
+            env,
+            files: createIOFiles({
+              stdin: testCase.input,
+              stdout: true,
+              stderr: true,
+            }),
+            copyIn: {
+              ".": {
+                src: path.join(FILE_STORE_PATH, createDirStorePath(data.attemptId)),
               },
-            ],
-          },
-          {
-            id: data.attemptId,
-            type: CALLBACK_STEP.RUN,
-          },
-        ),
-      );
-    }
-
-    yield* ResultAsync.combineWithAllErrors(promises);
+            },
+            cpuLimit: config.advancedSettings.runStep.cpuLimit,
+            clockLimit: config.advancedSettings.runStep.clockLimit,
+            memoryLimit: config.advancedSettings.runStep.memoryLimit,
+            procLimit: config.advancedSettings.runStep.procLimit,
+          };
+        }),
+      },
+      {
+        id: data.attemptId,
+        type: CALLBACK_STEP.RUN,
+      },
+    );
 
     return okAsync();
   });
@@ -350,4 +343,59 @@ function createIOFiles(options: { stdin?: string; stdout?: boolean; stderr?: boo
 
 function createDirStorePath(attemptId: string) {
   return attemptId;
+}
+
+export function getCachedData(id: string) {
+  return fromPromise(
+    cache.hmget<Pick<CallData, "config" | "criterionData">>(
+      `test-runner:${id}`,
+      "config",
+      "criterionData",
+    ),
+    (error) =>
+      new CacheError({
+        message: "Failed to get cached data",
+        cause: error,
+      }),
+  ).andThen((data) => {
+    if (data === null) {
+      return errAsync(
+        new CacheError({
+          message: `No cached found for id: ${id}`,
+        }),
+      );
+    }
+    return okAsync({
+      config: data.config,
+      criterionData: data.criterionData,
+    });
+  });
+}
+
+export function compareOutput(
+  expected: string,
+  actual: string,
+  config: TestRunnerConfig["outputComparison"],
+): boolean {
+  if (config.ignoreWhitespace) {
+    expected = expected.replace(/\s+/g, " ").trim();
+    actual = actual.replace(/\s+/g, " ").trim();
+  }
+
+  if (config.ignoreLineEndings) {
+    expected = expected.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    actual = actual.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  }
+
+  if (config.trim) {
+    expected = expected.trim();
+    actual = actual.trim();
+  }
+
+  if (config.ignoreCase) {
+    expected = expected.toLowerCase();
+    actual = actual.toLowerCase();
+  }
+
+  return expected === actual;
 }

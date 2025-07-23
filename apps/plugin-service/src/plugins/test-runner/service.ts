@@ -5,6 +5,7 @@ import type { GoJudge } from "@/plugins/test-runner/go-judge-api";
 import { actionCaller } from "@grading-system/typed-moleculer/action";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
+import { expect } from "vitest";
 import { cache } from "@/lib/cache";
 import { getTransporter } from "@/lib/transporter";
 import {
@@ -14,6 +15,8 @@ import {
 import { gradeSubmissionActionParams } from "@/plugins/data";
 import {
   CALLBACK_STEP,
+  compareOutput,
+  getCachedData,
   gradeSubmission,
   initializeSubmission,
   runSubmission,
@@ -46,9 +49,9 @@ export const testRunnerService = defineTypedService2({
 
         const transporter = await getTransporter();
 
-        const promises = result.value.map((value) =>
-          value
-            .orTee((error) => {
+        const promises = result.value.map(
+          (value) =>
+            value.orTee((error) => {
               logger.info(
                 `internal: Grading failed for ${error.data.criterionName}`,
                 error,
@@ -59,14 +62,14 @@ export const testRunnerService = defineTypedService2({
                 criterionName: error.data.criterionName,
                 error: error.message,
               });
-            })
-            .andTee(() => {
-              transporter.emit(criterionGradingFailedEvent, {
-                assessmentId: params.assessmentId,
-                criterionName: params.criterionDataList[0].criterionName,
-                error: "waiting implementation",
-              });
             }),
+          // .andTee(() => {
+          //   transporter.emit(criterionGradingFailedEvent, {
+          //     assessmentId: params.assessmentId,
+          //     criterionName: params.criterionDataList[0].criterionName,
+          //     error: "waiting implementation",
+          //   });
+          // }),
         );
 
         await Promise.all(promises);
@@ -120,7 +123,6 @@ export const testRunnerService = defineTypedService2({
       async handler(ctx: Context<CallbackData>) {
         const { query, body } = ctx.params;
 
-
         const info = await cache.hmget<Pick<CallData, "config" | "criterionData">>(
           `test-runner:${query.id}`,
           "config",
@@ -137,35 +139,27 @@ export const testRunnerService = defineTypedService2({
           criterionData: info.criterionData,
         };
 
+        const transporter = await getTransporter();
+
+        const initResult = body[0];
+        if (initResult.exitStatus !== 0) {
+          transporter.emit(criterionGradingFailedEvent, {
+            assessmentId: data.attemptId,
+            criterionName: data.criterionData.criterionName,
+            error: `Build failed:\n ${initResult.files?.stderr}`,
+          });
+          
+          return;
+        }
+
         const result = await runSubmission(data);
 
         if (result.isErr()) {
-          const value = await cache.hincrby(
-            `test-runner:${data.attemptId}`,
-            "processed",
-            -result.error.length,
-          );
-
-          // if (value <= 0) {
-          //   const results = await cache.lrange(
-          //     `test-runner:${data.attemptId}:results`,
-          //     0,
-          //     -1,
-          //   );
-          //   const transporter = await getTransporter();
-
-          //   transporter.emit(criterionGradingSuccessEvent, {
-          //     assessmentId: data.attemptId,
-          //     criterionName: data.criterionData.criterionName,
-          //     metadata: {},
-          //     scoreBreakdown: {
-          //       tag: "",
-          //       rawScore: ,
-          //       maxScore: data.criterionData.maxScore,
-
-          //     },
-          //   });
-          // }
+          transporter.emit(criterionGradingFailedEvent, {
+            assessmentId: data.attemptId,
+            criterionName: data.criterionData.criterionName,
+            error: result.error.message,
+          });
         }
       },
     },
@@ -177,41 +171,71 @@ export const testRunnerService = defineTypedService2({
           body: GoJudge.RunResult;
         }>,
       ) {
-        const params = ctx.params;
+        const { query, body } = ctx.params;
 
-        const info = await cache
-          .multi()
-          .hincrby(`test-runner:${params.query.id}`, "processed", -1)
-          .rpush(`test-runner:${params.query.id}:results`, params.body)
-          .hset(`test-runner:${params.query.id}`, { state: CALLBACK_STEP.RUN })
-          .hgetall<CallData>(`test-runner:${params.query.id}`)
-          .exec();
+        // const info = await cache
+        //   .multi()
+        //   .hincrby(`test-runner:${params.query.id}`, "processed", -1)
+        //   .rpush(`test-runner:${params.query.id}:results`, params.body)
+        //   .hset(`test-runner:${params.query.id}`, { state: CALLBACK_STEP.RUN })
+        //   .hgetall<CallData>(`test-runner:${params.query.id}`)
+        //   .exec();
 
-        const processed = info[0];
-        const actualInfo = info[3];
+        const data = await getCachedData(query.id);
 
-        if (actualInfo === null) {
-          throw new Error(`No submission found for id: ${params.query.id}`);
+        if (data.isErr()) {
+          throw new Error(`No submission found for id: ${query.id}`);
         }
 
-        const data: CallData = {
-          attemptId: params.query.id,
-          config: actualInfo.config,
-          criterionData: actualInfo.criterionData,
-        };
+        const transporter = await getTransporter();
 
-        if (info === null) {
-          throw new Error(`No submission found for id: ${data.attemptId}`);
+        const feedback = [];
+
+        let count = 0;
+
+        for (const [idx, result] of body.entries()) {
+          const actualOutput = result.files!.stdout!;
+          const expectedOutput = data.value.config.testCases[idx].expectedOutput;
+
+          const comparisonResult = compareOutput(
+            actualOutput,
+            expectedOutput,
+            data.value.config.outputComparison,
+          );
+
+          if (comparisonResult) {
+            count++;
+          }
+
+          feedback.push({
+            testCase: idx + 1,
+            passed: comparisonResult,
+            input: data.value.config.testCases[idx].input,
+            output: actualOutput,
+            expectedOutput,
+          });
         }
 
-        logger.debug(`Aggregating results for ${data.attemptId}`, params.body);
+        feedback.sort((a, b) =>
+          a.passed === b.passed ? 0
+          : a.passed ? -1
+          : 1,
+        );
 
-        // const transporter = await getTransporter();
-        // transporter.emit(criterionGradingFailedEvent, {
-        //   assessmentId: data.attemptId,
-        //   criterionName: data.criterionData.criterionName,
-        //   error: "waiting implementation",
-        // });
+        transporter.emit(criterionGradingSuccessEvent, {
+          assessmentId: query.id,
+          criterionName: data.value.criterionData.criterionName,
+          metadata: {
+            // Dirty hack for ui
+            plugin: "test-runner",
+            feedback,
+          },
+          scoreBreakdown: {
+            tag: "",
+            rawScore: count / feedback.length,
+            feedbackItems: [],
+          },
+        });
       },
     },
   },

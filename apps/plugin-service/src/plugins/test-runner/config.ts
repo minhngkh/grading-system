@@ -47,6 +47,18 @@ export const testRunnerConfigSchema = z.object({
   advancedSettings: advancedSettingsSchema
     .default({})
     .describe("Advanced settings for the test runner"),
+  outputComparison: z.object({
+    ignoreWhitespace: z
+      .boolean()
+      .default(false)
+      .describe("Ignore whitespace differences in output"),
+    ignoreLineEndings: z
+      .boolean()
+      .default(false)
+      .describe("Ignore line ending differences in output"),
+    trim: z.boolean().default(false).describe("Trim output before comparison"),
+    ignoreCase: z.boolean().default(false).describe("Ignore case differences in output"),
+  }).default({}),
 });
 
 export type TestRunnerConfig = z.infer<typeof testRunnerConfigSchema>;
