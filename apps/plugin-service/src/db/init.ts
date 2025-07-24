@@ -44,13 +44,13 @@ const PLUGINS = [
     categories: ["code"],
     enabled: true,
   },
-  {
-    _id: "test",
-    name: "Test Plugin",
-    description: "A test plugin for demonstration purposes",
-    categories: [],
-    enabled: false,
-  },
+  // {
+  //   _id: "test",
+  //   name: "Test Plugin",
+  //   description: "A test plugin for demonstration purposes",
+  //   categories: [],
+  //   enabled: false,
+  // },
   // ] satisfies (Omit<Plugin, "categories"> & {
   //   categoryAliases: (typeof CATEGORIES)[number]["alias"][];
   // })[];
