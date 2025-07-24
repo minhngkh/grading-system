@@ -75,12 +75,33 @@ function getCurrentStatuses(current: AssessmentState): AssessmentState[] {
   return states;
 }
 
+function parseFailures(
+  input?: string,
+): { criterion: string; reason: string }[] | undefined {
+  if (!input || input.length === 0) return undefined;
+
+  const regex = /Criterion: (.*?) •Failure Reason: (.*?)(?=Criterion: |$)/gs;
+  const result: { criterion: string; reason: string }[] = [];
+
+  let match;
+  while ((match = regex.exec(input)) !== null) {
+    result.push({
+      criterion: match[1].trim(),
+      reason: match[2].trim(),
+    });
+  }
+
+  return result;
+}
+
 export const AssessmentStatusCard = memo(
   ({ status, onRegrade, gradingId }: AssessmentStatusCardProps) => {
     const currentStatuses = getCurrentStatuses(status.status);
     const isUndergoingGrading =
       status.status === AssessmentState.AutoGradingStarted ||
       status.status === AssessmentState.Created;
+
+    const failures = parseFailures(status.errorMessage);
 
     return (
       <Card
@@ -121,14 +142,19 @@ export const AssessmentStatusCard = memo(
               </div>
             )}
           </div>
-          {status.errorMessage && (
+          {failures && (
             <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md dark:bg-red-950/30 dark:border-red-800">
-              <p className="text-sm text-red-700 font-medium dark:text-red-300">
-                Error: {status.errorMessage}
+              <p className="text-sm text-red-700 font-medium dark:text-red-300 mb-2">
+                The following criteria failed:
               </p>
-              <p className="text-xs text-red-600 mt-1 dark:text-red-400">
-                Please try regrading this assessment.
-              </p>
+              {failures.map((f, index) => (
+                <p
+                  key={index}
+                  className="text-sm text-red-700 font-medium dark:text-red-300"
+                >
+                  {f.criterion}: {f.reason}
+                </p>
+              ))}
             </div>
           )}
         </CardHeader>

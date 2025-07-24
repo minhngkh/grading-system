@@ -3,7 +3,14 @@ import { useMemo, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Check, CircleAlert, FileSearch, Info, RefreshCw, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  CircleAlert,
+  FileSearch,
+  Info,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { PluginMetadataDialog } from "@/components/app/plugin-metadata";
@@ -12,7 +19,11 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ResultCardSkeleton } from "@/pages/grading/grading-result/skeletons";
 import { rerunAssessmentMutationOptions } from "@/queries/assessment-queries";
-import { type Assessment, AssessmentState, ScoreBreakdownStatus } from "@/types/assessment";
+import {
+  type Assessment,
+  AssessmentState,
+  ScoreBreakdownStatus,
+} from "@/types/assessment";
 import { getCriteriaColorStyle } from "./colors";
 
 interface AssessmentResultCardProps {
@@ -86,15 +97,15 @@ export function AssessmentResultCard({
   }, [item.scoreBreakdowns]);
 
   // Helper function to determine plugin type from metadata
-  const getPluginType = (metadata?: string[] | Record<string, unknown>): string | null => {
+  const getPluginType = (
+    metadata?: string[] | Record<string, unknown>,
+  ): string | null => {
     if (!metadata) return null;
-    
-    // Handle if metadata is already an object
-    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+
+    if (typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)) {
       return (metadata as any).plugin || null;
     }
-    
-    // Handle if metadata is an array of strings, try parsing the first item
+
     if (Array.isArray(metadata) && metadata.length > 0) {
       try {
         const parsed = JSON.parse(metadata[0]);
@@ -103,20 +114,17 @@ export function AssessmentResultCard({
         return null;
       }
     }
-    
+
     return null;
   };
 
-  // Helper function to check if metadata exists and is valid
   const hasValidMetadata = (metadata?: string[] | Record<string, unknown>): boolean => {
     if (!metadata) return false;
-    
-    // Handle if metadata is already an object
-    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+
+    if (typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)) {
       return Object.keys(metadata).length > 0 && (metadata as any).plugin;
     }
-    
-    // Handle if metadata is an array of strings
+
     if (Array.isArray(metadata) && metadata.length > 0) {
       try {
         const parsed = JSON.parse(metadata[0]);
@@ -125,20 +133,17 @@ export function AssessmentResultCard({
         return false;
       }
     }
-    
+
     return false;
   };
 
-  // Helper function to parse metadata
   const parseMetadata = (metadata?: string[] | Record<string, unknown>): unknown => {
     if (!metadata) return null;
-    
-    // If metadata is already an object, return it directly
-    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+
+    if (typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)) {
       return metadata;
     }
-    
-    // If metadata is an array, try to parse the first item as JSON
+
     if (Array.isArray(metadata) && metadata.length > 0) {
       try {
         return JSON.parse(metadata[0]);
@@ -146,11 +151,14 @@ export function AssessmentResultCard({
         return metadata;
       }
     }
-    
+
     return metadata;
   };
 
-  const handleShowMetadata = (criterionName: string, metadata?: string[] | Record<string, unknown>) => {
+  const handleShowMetadata = (
+    criterionName: string,
+    metadata?: string[] | Record<string, unknown>,
+  ) => {
     const pluginType = getPluginType(metadata);
     if (!pluginType) return;
 
@@ -212,15 +220,6 @@ export function AssessmentResultCard({
               const pluginType = getPluginType(score.metadata);
               const hasMetadata = pluginType && hasValidMetadata(score.metadata);
 
-              // Debug logging to help understand the data
-              console.log("Score breakdown:", {
-                criterionName: score.criterionName,
-                grader: score.grader,
-                pluginType,
-                metadata: score.metadata,
-                hasMetadata
-              });
-
               return (
                 <div key={score.criterionName} className="mt-2">
                   <div className="flex justify-between items-center text-sm">
@@ -231,7 +230,9 @@ export function AssessmentResultCard({
                           variant="ghost"
                           size="sm"
                           className="h-6 w-6 p-0"
-                          onClick={() => handleShowMetadata(score.criterionName, score.metadata)}
+                          onClick={() =>
+                            handleShowMetadata(score.criterionName, score.metadata)
+                          }
                           title={`View ${pluginType} results`}
                         >
                           <Info className="h-3 w-3" />

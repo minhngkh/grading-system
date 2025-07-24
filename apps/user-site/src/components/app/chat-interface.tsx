@@ -466,7 +466,7 @@ const ChatInterface = memo(function ChatInterface({
             onPaste={handlePaste}
             onKeyDown={handleKeyDown}
             rows={TEXTAREA_CONFIG.ROWS}
-            className="max-h-48 overflow-y-auto dark:bg-transparent resize-none transition-all shadow-none focus-visible:ring-0 border-0 focus-visible:ring-offset-0 p-4"
+            className="max-h-48 overflow-y-auto custom-scrollbar dark:bg-transparent resize-none transition-all shadow-none focus-visible:ring-0 border-0 focus-visible:ring-offset-0 p-4"
             aria-label="Chat input"
           />
 

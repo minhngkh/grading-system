@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getSubmissionName } from "@/lib/submission";
@@ -58,7 +57,6 @@ function FileComponent({ submission, onDelete, index }: FileComponentProps) {
         <span className="font-medium">{getSubmissionName(submission)}</span>
       </div>
       <div className="flex items-center space-x-3">
-        <Badge>Archive</Badge>
         {onDelete && (
           <Button
             variant="ghost"

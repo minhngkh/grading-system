@@ -22,6 +22,34 @@ interface ScoringPanelProps {
   onUpdate: (updatedAssessment: Partial<Assessment>) => void;
 }
 
+function getInsertIndex(arr: number[], target: number): number {
+  if (arr.length === 0) return 0;
+
+  const isAscending = arr[0] < arr[arr.length - 1];
+  let left = 0;
+  let right = arr.length;
+
+  while (left < right) {
+    const mid = Math.floor((left + right) / 2);
+
+    if (isAscending) {
+      if (arr[mid] < target) {
+        left = mid + 1;
+      } else {
+        right = mid;
+      }
+    } else {
+      if (arr[mid] > target) {
+        left = mid + 1;
+      } else {
+        right = mid;
+      }
+    }
+  }
+
+  return left;
+}
+
 export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   rubric,
   grading,
@@ -63,14 +91,16 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   } | null>(null);
 
   // Helper function to determine plugin type from metadata
-  const getPluginType = (metadata?: string[] | Record<string, unknown>): string | null => {
+  const getPluginType = (
+    metadata?: string[] | Record<string, unknown>,
+  ): string | null => {
     if (!metadata) return null;
-    
+
     // Handle if metadata is already an object
-    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+    if (typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)) {
       return (metadata as any).plugin || null;
     }
-    
+
     // Handle if metadata is an array of strings, try parsing the first item
     if (Array.isArray(metadata) && metadata.length > 0) {
       try {
@@ -80,19 +110,19 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
         return null;
       }
     }
-    
+
     return null;
   };
 
   // Helper function to check if metadata exists and is valid
   const hasValidMetadata = (metadata?: string[] | Record<string, unknown>): boolean => {
     if (!metadata) return false;
-    
+
     // Handle if metadata is already an object
-    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+    if (typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)) {
       return Object.keys(metadata).length > 0 && (metadata as any).plugin;
     }
-    
+
     // Handle if metadata is an array of strings
     if (Array.isArray(metadata) && metadata.length > 0) {
       try {
@@ -102,19 +132,19 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
         return false;
       }
     }
-    
+
     return false;
   };
 
   // Helper function to parse metadata
   const parseMetadata = (metadata?: string[] | Record<string, unknown>): unknown => {
     if (!metadata) return null;
-    
+
     // If metadata is already an object, return it directly
-    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+    if (typeof metadata === "object" && metadata !== null && !Array.isArray(metadata)) {
       return metadata;
     }
-    
+
     // If metadata is an array, try to parse the first item as JSON
     if (Array.isArray(metadata) && metadata.length > 0) {
       try {
@@ -123,11 +153,14 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
         return metadata;
       }
     }
-    
+
     return metadata;
   };
 
-  const handleShowMetadata = (criterionName: string, metadata?: string[] | Record<string, unknown>) => {
+  const handleShowMetadata = (
+    criterionName: string,
+    metadata?: string[] | Record<string, unknown>,
+  ) => {
     const pluginType = getPluginType(metadata);
     if (!pluginType) return;
 
@@ -295,20 +328,32 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                           const scoreBreakdown = (assessment.scoreBreakdowns || []).find(
                             (sb) => sb.criterionName === criterion.name,
                           );
-                          const pluginType = scoreBreakdown ? getPluginType(scoreBreakdown.metadata) : null;
-                          const hasMetadata = scoreBreakdown && pluginType && hasValidMetadata(scoreBreakdown.metadata);
-                          
-                          return hasMetadata ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => scoreBreakdown && handleShowMetadata(criterion.name, scoreBreakdown.metadata)}
-                              title={`View ${pluginType} results`}
-                            >
-                              <Info className="h-3 w-3" />
-                            </Button>
-                          ) : null;
+                          const pluginType =
+                            scoreBreakdown ?
+                              getPluginType(scoreBreakdown.metadata)
+                            : null;
+                          const hasMetadata =
+                            scoreBreakdown &&
+                            pluginType &&
+                            hasValidMetadata(scoreBreakdown.metadata);
+
+                          return hasMetadata ?
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() =>
+                                  scoreBreakdown &&
+                                  handleShowMetadata(
+                                    criterion.name,
+                                    scoreBreakdown.metadata,
+                                  )
+                                }
+                                title={`View ${pluginType} results`}
+                              >
+                                <Info className="h-3 w-3" />
+                              </Button>
+                            : null;
                         })()}
                       </span>
 
@@ -420,10 +465,14 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                           const breakdown = (assessment.scoreBreakdowns || []).find(
                             (sb) => sb.criterionName === criterion.name,
                           );
+
                           const isSelected =
-                            breakdown &&
-                            breakdown.performanceTag === level.tag &&
-                            breakdown.criterionName === criterion.name;
+                            (breakdown?.performanceTag === level.tag ||
+                              getInsertIndex(
+                                criterion.levels.map((l) => l.weight),
+                                breakdown?.rawScore || 0,
+                              ) === idx) &&
+                            breakdown?.criterionName === criterion.name;
                           return (
                             <div key={idx} className="grid grid-rows-[auto_1fr] h-full">
                               <div className="text-center">

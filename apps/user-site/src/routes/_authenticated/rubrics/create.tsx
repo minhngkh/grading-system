@@ -4,6 +4,7 @@ import { RubricService } from "@/services/rubric-service";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/rubrics/create")({
+  preload: false,
   component: () => null,
   loader: async ({ context: { auth, queryClient } }) => {
     const token = await auth.getToken();

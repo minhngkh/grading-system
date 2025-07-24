@@ -51,7 +51,7 @@ function RouteComponent() {
   }
 
   if (error) {
-    return <ErrorComponent message="Failed to load rubrics. Please try again later." />;
+    return <ErrorComponent message="Failed to load rubrics" />;
   }
 
   if (!rubricsData) {
