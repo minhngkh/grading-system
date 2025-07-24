@@ -1,11 +1,12 @@
-import { UseQueryOptions, UseMutationOptions } from "@tanstack/react-query";
-import { PluginService } from "@/services/plugin-service";
-import {
+import type { useAuth } from "@clerk/clerk-react";
+import type { UseMutationOptions, UseQueryOptions } from "@tanstack/react-query";
+import type {
   Plugin,
-  CodeRunnerConfig as TestRunnerConfig,
   StaticAnalysisConfig,
+  CodeRunnerConfig as TestRunnerConfig,
+  TypeCoverageConfig,
 } from "@/types/plugin";
-import { useAuth } from "@clerk/clerk-react";
+import { PluginService } from "@/services/plugin-service";
 
 type Auth = ReturnType<typeof useAuth>;
 
@@ -114,6 +115,52 @@ export function updateStaticAnalysisConfigMutationOptions(
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required");
       return PluginService.updateStaticAnalysisConfig(configId, config, token);
+    },
+    ...options,
+  };
+}
+
+// Type Coverage Config Query Options
+export function getTypeCoverageConfigQueryOptions(
+  configId: string,
+  auth: Auth,
+  options?: Partial<UseQueryOptions<TypeCoverageConfig, unknown>>,
+): UseQueryOptions<TypeCoverageConfig, unknown> {
+  return {
+    queryKey: ["plugin", "type-coverage", "config", configId],
+    queryFn: async () => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication token is required");
+      return PluginService.getTypeCoverageConfig(configId, token);
+    },
+    ...options,
+  };
+}
+
+export function createTypeCoverageConfigMutationOptions(
+  auth: Auth,
+  options?: Partial<UseMutationOptions<any, unknown, TypeCoverageConfig>>,
+): UseMutationOptions<any, unknown, TypeCoverageConfig> {
+  return {
+    mutationFn: async (config: TypeCoverageConfig) => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication token is required");
+      return PluginService.configTypeCoverage(config, token);
+    },
+    ...options,
+  };
+}
+
+export function updateTypeCoverageConfigMutationOptions(
+  configId: string,
+  auth: Auth,
+  options?: Partial<UseMutationOptions<any, unknown, TypeCoverageConfig>>,
+): UseMutationOptions<any, unknown, TypeCoverageConfig> {
+  return {
+    mutationFn: async (config: TypeCoverageConfig) => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication token is required");
+      return PluginService.updateTypeCoverageConfig(configId, config, token);
     },
     ...options,
   };

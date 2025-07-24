@@ -1,11 +1,13 @@
+import type { PluginComponent } from "@/plugins/type";
 import CodeRunnerConfigView from "@/plugins/code-runner";
 import StaticAnalysisConfigView from "@/plugins/static-analysis";
-import { PluginComponent } from "@/plugins/type";
+import TypeCoverageConfigView from "@/plugins/type-coverage";
 
 export const PluginName = {
   ai: "AI Grading",
   "test-runner": "Test Runner",
   "static-analysis": "Static Analysis",
+  "type-coverage": "Type Coverage",
   None: "Manual Grading",
 } as const;
 
@@ -21,6 +23,10 @@ export const PluginConfigDialogs: Record<string, PluginInfo> = {
   },
   "static-analysis": {
     view: StaticAnalysisConfigView,
+    enableConfig: true,
+  },
+  "type-coverage": {
+    view: TypeCoverageConfigView,
     enableConfig: true,
   },
   ai: {

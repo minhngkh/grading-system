@@ -26,7 +26,8 @@
     "ai": "^4.3.16",
     "fast-glob": "^3.3.3",
     "mime": "^4.0.7",
-    "repomix": "^0.3.8"
+    "repomix": "^0.3.8",
+    "type-coverage-core": "^2.29.7"
   },
   "devDependencies": {
     "@grading-system/typed-moleculer": "workspace:*",

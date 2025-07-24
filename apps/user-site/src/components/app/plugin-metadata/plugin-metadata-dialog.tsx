@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { PluginName } from "@/consts/plugins";
 import { StaticAnalysisMetadata } from "./static-analysis-metadata";
 import { TestRunnerMetadata } from "./test-runner-metadata";
+import { TypeCoverageMetadata } from "./type-coverage-metadata";
 
 interface PluginMetadataDialogProps {
   open: boolean;
@@ -32,6 +33,8 @@ export function PluginMetadataDialog({
         return <TestRunnerMetadata metadata={metadata as any} />;
       case "static-analysis":
         return <StaticAnalysisMetadata metadata={metadata as any} />;
+      case "type-coverage":
+        return <TypeCoverageMetadata metadata={metadata as any} />;
       default:
         return (
           <div className="text-center py-8 text-muted-foreground">

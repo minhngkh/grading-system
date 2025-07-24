@@ -101,7 +101,18 @@ export const StaticAnalysisConfigSchema = z.object({
     }),
 });
 
+export const TypeCoverageConfigSchema = z.object({
+  type: z.literal("type-coverage").default("type-coverage"),
+  version: z.literal(1).default(1),
+  deductionMultiplier: z
+    .number()
+    .min(1)
+    .default(10)
+    .describe("Deduct by the amount of % type coverage missing"),
+});
+
 export type Plugin = z.infer<typeof PluginSchema>;
 export type CodeRunnerTestCase = z.infer<typeof CodeRunnerTestCaseSchema>;
 export type CodeRunnerConfig = z.infer<typeof CodeRunnerConfigSchema>;
 export type StaticAnalysisConfig = z.infer<typeof StaticAnalysisConfigSchema>;
+export type TypeCoverageConfig = z.infer<typeof TypeCoverageConfigSchema>;

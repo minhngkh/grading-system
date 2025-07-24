@@ -7,6 +7,7 @@ import logger from "@grading-system/utils/logger";
 import { serve } from "@hono/node-server";
 import { initMessaging } from "@/messaging";
 import { testRunnerService } from "@/plugins/test-runner/service";
+import { typeCoverageService } from "@/plugins/type-coverage/service";
 import { createApiGateway } from "./api";
 import { syncDB } from "./db/init";
 import { connectMongoDB } from "./db/mongoose";
@@ -17,6 +18,7 @@ const broker = createZodValidatedServiceBroker();
 broker.createService(aiService);
 broker.createService(staticAnalysisService);
 broker.createService(testRunnerService);
+broker.createService(typeCoverageService);
 
 const api = createApiGateway(broker);
 

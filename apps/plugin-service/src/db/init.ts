@@ -1,72 +1,61 @@
 import type { Plugin, PluginCategory } from "./models";
 import { asError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
-import { plugins } from "@/plugins/info";
+import { CATEGORIES, plugins as pluginsInfo } from "@/plugins/info";
 import { PluginCategoryModel, PluginModel } from "./models";
 
-const CATEGORIES = [
-  {
-    _id: "general",
-    name: "General",
-    description: "General purpose plugins",
-  },
-  {
-    _id: "ai",
-    name: "AI",
-    description: "Plugins utilizing AI models",
-  },
-  {
-    _id: "code",
-    name: "Code",
-    description: "Code replated plugins",
-  },
-] as const satisfies PluginCategory[];
+// const categories = [
+//   {
+//     _id: "general",
+//     name: "General",
+//     description: "General purpose plugins",
+//   },
+//   {
+//     _id: "ai",
+//     name: "AI",
+//     description: "Plugins utilizing AI models",
+//   },
+//   {
+//     _id: "code",
+//     name: "Code",
+//     description: "Code replated plugins",
+//   },
+// ] as const satisfies PluginCategory[];
 
-const PLUGINS = [
-  {
-    _id: plugins.ai.id,
-    name: "AI grader",
-    description: "Grade rubric using AI language models",
-    categories: ["ai", "general"],
-    enabled: true,
-  },
-  {
-    _id: plugins.testRunner.id,
-    name: "Test Runner",
-    description: "Run tests on submissions",
-    categories: ["code"],
-    enabled: false,
-  },
-  {
-    _id: plugins.staticAnalysis.id,
-    name: "Static Analysis",
-    description: "Using Semgrep to run static analysis on submissions",
-    categories: ["code"],
-    enabled: true,
-  },
-  // {
-  //   _id: "test",
-  //   name: "Test Plugin",
-  //   description: "A test plugin for demonstration purposes",
-  //   categories: [],
-  //   enabled: false,
-  // },
-  // ] satisfies (Omit<Plugin, "categories"> & {
-  //   categoryAliases: (typeof CATEGORIES)[number]["alias"][];
-  // })[];
-] satisfies Plugin[];
+const categories = CATEGORIES.map(
+  (cat) =>
+    ({
+      _id: cat.id,
+      name: cat.name,
+      description: cat.description,
+    }) as PluginCategory,
+);
+
+const plugins = Object.entries(pluginsInfo).map(
+  ([_, plugin]) =>
+    ({
+      _id: plugin.id,
+      name: plugin.name,
+      description: plugin.description,
+      categories: plugin.categories,
+      enabled: plugin.enabled,
+      operations: plugin.operations,
+      configSchema: plugin.configSchema,
+      checkConfig: plugin.checkConfig,
+    }) as Plugin,
+);
 
 export async function syncDB() {
   try {
     const existingCategories = await PluginCategoryModel.find({
-      _id: { $in: CATEGORIES.map((cat) => cat._id) },
+      _id: { $in: categories.map((cat) => cat._id) },
     })
       .lean()
       .exec();
 
     logger.debug("Existing categories:", existingCategories);
 
-    const missingCategories = CATEGORIES.filter((cat) =>
+    const missingCategories = categories.filter((cat) =>
       existingCategories.every((existing) => existing._id !== cat._id),
     );
 
@@ -80,11 +69,32 @@ export async function syncDB() {
       }),
     );
 
-    await PluginModel.insertMany(PLUGINS, { ordered: false }).catch((err) => {
-      if (!(err instanceof Error && err.name === "MongoBulkWriteError")) {
-        throw err;
-      }
-    });
+    // await PluginModel.insertMany(plugins, { ordered: false }).catch((err) => {
+    //   if (!(err instanceof Error && err.name === "MongoBulkWriteError")) {
+    //     throw err;
+    //   }
+    // });
+
+    // Remove all existing plugins and replace with current ones
+    // await PluginModel.deleteMany({});
+    // await PluginModel.insertMany(plugins, { ordered: false });
+
+    // Get current plugin IDs from configuration
+    const currentPluginIds = plugins.map((p) => p._id);
+
+    // Remove plugins that are no longer in configuration
+    await PluginModel.deleteMany({ _id: { $nin: currentPluginIds } });
+
+    // Upsert current plugins
+    const pluginOperations = plugins.map((plugin) => ({
+      replaceOne: {
+        filter: { _id: plugin._id },
+        replacement: plugin,
+        upsert: true,
+      },
+    }));
+
+    await PluginModel.bulkWrite(pluginOperations, { ordered: false });
 
     logger.info("DB Sync completed: Categories and plugins initialized");
   } catch (error) {

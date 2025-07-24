@@ -2,7 +2,8 @@ import type { AxiosRequestConfig } from "axios";
 import type {
   CodeRunnerConfig,
   Plugin,
-  StaticAnalysisConfig} from "@/types/plugin";
+  StaticAnalysisConfig,
+  TypeCoverageConfig} from "@/types/plugin";
 import axios from "axios";
 import {
   StaticAnalysisPreset,
@@ -130,6 +131,57 @@ export class PluginService {
         preset: {
           type: preset,
         },
+        ...restConfig,
+      },
+      configHeaders,
+    );
+    return response.data.id;
+  }
+
+  static async configTypeCoverage(
+    config: TypeCoverageConfig,
+    token: string,
+  ): Promise<string> {
+    const configHeaders = await this.buildHeaders(token);
+    
+    const { type, ...restConfig } = config;
+    
+    const response = await axios.post(
+      `${API_URL}/type-coverage/configs`,
+      {
+        type: "type-coverage",
+        ...restConfig,
+      },
+      configHeaders,
+    );
+    return response.data.id;
+  }
+
+  static async getTypeCoverageConfig(
+    configId: string,
+    token: string,
+  ): Promise<TypeCoverageConfig> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(
+      `${API_URL}/type-coverage/configs/${configId}`,
+      configHeaders,
+    );
+    return response.data;
+  }
+
+  static async updateTypeCoverageConfig(
+    configId: string,
+    config: TypeCoverageConfig,
+    token: string,
+  ): Promise<string> {
+    const configHeaders = await this.buildHeaders(token);
+    
+    const { type, ...restConfig } = config;
+    
+    const response = await axios.put(
+      `${API_URL}/type-coverage/configs/${configId}`,
+      {
+        type: "type-coverage",
         ...restConfig,
       },
       configHeaders,
