@@ -22,6 +22,6 @@ export const Route = createFileRoute("/_authenticated/rubrics/create")({
       replace: true,
     });
   },
-  errorComponent: () => <ErrorComponent message="Failed to load rubric creation page" />,
-  pendingComponent: () => <PendingComponent message="Loading rubric creation page..." />,
+  errorComponent: () => <ErrorComponent message="Failed to create rubric" />,
+  pendingComponent: () => <PendingComponent message="Initializing rubric..." />,
 });
