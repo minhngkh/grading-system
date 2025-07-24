@@ -1,10 +1,12 @@
-import {
+import type { AxiosRequestConfig } from "axios";
+import type {
   CodeRunnerConfig,
   Plugin,
-  StaticAnalysisConfig,
+  StaticAnalysisConfig} from "@/types/plugin";
+import axios from "axios";
+import {
   StaticAnalysisPreset,
 } from "@/types/plugin";
-import axios, { AxiosRequestConfig } from "axios";
 
 const API_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/plugins`;
 
@@ -32,7 +34,10 @@ export class PluginService {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.post(
       `${API_URL}/test-runner/configs`,
-      config,
+      {
+        type: "test-runner",
+        ...config,
+      },
       configHeaders,
     );
     return response.data.id;
@@ -58,7 +63,10 @@ export class PluginService {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.put(
       `${API_URL}/test-runner/configs/${configId}`,
-      config,
+      {
+        type: "test-runner",
+        ...config,
+      },
       configHeaders,
     );
     return response.data.id;

@@ -16,7 +16,7 @@ export const ScoreBreakdownSchema = z.object({
   performanceTag: z.string(),
   grader: z.string(),
   rawScore: z.number(),
-  metadata: z.array(z.string()).optional(),
+  metadata: z.union([z.array(z.string()), z.record(z.unknown())]).optional(),
   status: z.nativeEnum(ScoreBreakdownStatus),
 });
 

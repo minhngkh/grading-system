@@ -1,19 +1,22 @@
-import type { Result } from "neverthrow";
+import type { DefaultError } from "@grading-system/utils/error";
 import type { z } from "zod";
-import { asError } from "@grading-system/utils/error";
+import { asError, CustomError } from "@grading-system/utils/error";
 import ky, { HTTPError } from "ky";
 import { ResultAsync } from "neverthrow";
 
 // Custom error types that extend ky's HTTPError
-export class ValidationError extends Error {
-  constructor(
-    message: string,
-    public errors: z.ZodError,
-  ) {
-    super(message);
-    this.name = "ValidationError";
-  }
-}
+// export class ValidationError extends Error {
+//   constructor(
+//     message: string,
+//     public errors: z.ZodError,
+//   ) {
+//     super(message);
+//     this.name = "ValidationError";
+//   }
+// }
+
+class ValidationError extends CustomError.withTag("ValidationError")<void, z.ZodError> {}
+class HttpClientError extends CustomError.withTag("HttpClientError")<void, HTTPError> {}
 
 // Type-safe HTTP client options
 export interface HttpClientOptions {
@@ -34,6 +37,19 @@ export interface RequestConfig<TBody = unknown> {
   timeout?: number;
   searchParams?: Record<string, string | number | boolean>;
   json?: TBody;
+}
+
+export interface HttpResponseMetadata {
+  readonly ok: boolean;
+  readonly status: number;
+  readonly statusText: string;
+  readonly type: "basic" | "cors" | "default" | "error" | "opaque" | "opaqueredirect";
+  readonly url: string;
+  readonly redirected: boolean;
+}
+
+export interface HttpResponse<T> extends HttpResponseMetadata {
+  data: T;
 }
 
 // Create a typesafe HTTP client using ky
@@ -69,11 +85,16 @@ export class TypesafeHttpClient {
   }
 
   // Main request method with full type safety
-  private async request<TResponse>(
+  private request<TResponse>(
     url: string,
     options: Parameters<typeof ky>[1] = {},
-    responseSchema: z.ZodSchema<TResponse>,
-  ): Promise<Result<TResponse, HTTPError | ValidationError | Error>> {
+    responseSchema: z.ZodSchema<TResponse> | undefined,
+  ): typeof responseSchema extends undefined ?
+    ResultAsync<HttpResponse<TResponse>, HttpClientError | DefaultError>
+  : ResultAsync<
+      HttpResponse<TResponse>,
+      HttpClientError | ValidationError | DefaultError
+    > {
     return ResultAsync.fromPromise(
       this.executeRequest(url, options, responseSchema),
       (error) => {
@@ -82,7 +103,7 @@ export class TypesafeHttpClient {
         }
 
         if (error instanceof HTTPError) {
-          return error;
+          return new HttpClientError({ cause: error });
         }
 
         return asError(error);
@@ -93,25 +114,48 @@ export class TypesafeHttpClient {
   private async executeRequest<TResponse>(
     url: string,
     options: Parameters<typeof ky>[1],
-    responseSchema: z.ZodSchema<TResponse>,
-  ): Promise<TResponse> {
+    responseSchema: z.ZodSchema<TResponse> | undefined,
+  ): Promise<HttpResponse<TResponse>> {
     const response = await this.client(url, options);
-    const rawData = await response.json();
 
-    // Validate response with Zod schema
-    const parseResult = responseSchema.safeParse(rawData);
-    if (!parseResult.success) {
-      throw new ValidationError("Response validation failed", parseResult.error);
+    const responseMetadata: HttpResponseMetadata = {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      type: response.type,
+      url: response.url,
+      redirected: response.redirected,
+    };
+
+    if (!responseSchema) {
+      return {
+        ...responseMetadata,
+        data: await response.json() as unknown as TResponse,
+      };
     }
 
-    return parseResult.data;
+    const responseJson = await response.json();
+
+    // Validate response with Zod schema
+    const parseResult = responseSchema.safeParse(responseJson);
+    if (!parseResult.success) {
+      throw new ValidationError({
+        message: "Response validation failed",
+        cause: parseResult.error,
+      });
+    }
+
+    return {
+      ...responseMetadata,
+      data: parseResult.data,
+    };
   }
 
   // Convenience methods with type safety
-  async get<TResponse>(
+  get<TResponse>(
     url: string,
-    responseSchema: z.ZodSchema<TResponse>,
     config: Omit<RequestConfig, "body" | "json"> = {},
+    responseSchema?: z.ZodSchema<TResponse>,
   ) {
     return this.request(
       url,
@@ -125,17 +169,19 @@ export class TypesafeHttpClient {
     );
   }
 
-  async post<TBody, TResponse>(
+  post<TBody, TResponse>(
     url: string,
     body: TBody,
-    responseSchema: z.ZodSchema<TResponse>,
     config: Omit<RequestConfig<TBody>, "body" | "json"> = {},
+    responseSchema?: z.ZodSchema<TResponse>,
   ) {
+    const data = body instanceof FormData ? { body: body as FormData } : { json: body };
+
     return this.request(
       url,
       {
+        ...data,
         method: "post",
-        json: body,
         headers: config.headers,
         timeout: config.timeout,
         searchParams: config.searchParams,
@@ -144,11 +190,11 @@ export class TypesafeHttpClient {
     );
   }
 
-  async put<TBody, TResponse>(
+  put<TBody, TResponse>(
     url: string,
     body: TBody,
-    responseSchema: z.ZodSchema<TResponse>,
     config: Omit<RequestConfig<TBody>, "body" | "json"> = {},
+    responseSchema?: z.ZodSchema<TResponse>,
   ) {
     return this.request(
       url,
@@ -163,11 +209,11 @@ export class TypesafeHttpClient {
     );
   }
 
-  async patch<TBody, TResponse>(
+  patch<TBody, TResponse>(
     url: string,
     body: TBody,
-    responseSchema: z.ZodSchema<TResponse>,
     config: Omit<RequestConfig<TBody>, "body" | "json"> = {},
+    responseSchema?: z.ZodSchema<TResponse>,
   ) {
     return this.request(
       url,
@@ -182,10 +228,10 @@ export class TypesafeHttpClient {
     );
   }
 
-  async delete<TResponse>(
+  delete<TResponse>(
     url: string,
-    responseSchema: z.ZodSchema<TResponse>,
     config: Omit<RequestConfig, "body" | "json"> = {},
+    responseSchema?: z.ZodSchema<TResponse>,
   ) {
     return this.request(
       url,

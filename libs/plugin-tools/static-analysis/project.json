@@ -9,7 +9,7 @@
       "options": {
         "commands": [
           "uv sync",
-          "uv run semgrep install-semgrep-pro",
+          "uv run semgrep install-semgrep-pro --experimental",
           "uv run semgrep login || true"
         ],
         "parallel": false,

@@ -1,10 +1,6 @@
 import type { BlobContainer } from "@grading-system/utils/azure-storage-blob";
 import process from "node:process";
-import {
-  BlobService,
-  getBlobNameParts,
-  getBlobNameRest,
-} from "@grading-system/utils/azure-storage-blob";
+import { BlobService, getBlobNameRest } from "@grading-system/utils/azure-storage-blob";
 import { err, ok, okAsync, Result, safeTry } from "neverthrow";
 import { EmptyListError } from "@/lib/error";
 import { getFiles } from "@/lib/file";
@@ -16,6 +12,12 @@ const RUBRIC_CONTEXT_STORE = "rubric-context-store";
 const service = new BlobService(CONNECTION_STRING);
 export const submissionStore = service.getBlobContainer(SUBMISSIONS_STORE);
 export const rubricContextStore = service.getBlobContainer(RUBRIC_CONTEXT_STORE);
+
+/**
+ * The number of path levels that is pure identifier. For example, if the blob name is
+ * "ref-1/submission-1/file.txt", the identifier path levels would be 2.
+ */
+export const IDENTIFIER_PATH_LEVELS = 2;
 
 export function getBlobBatchInfo(blobNameList: string[], pathLevel: number) {
   return safeTry(function* () {
