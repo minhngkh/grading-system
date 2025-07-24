@@ -24,8 +24,8 @@ import { feedbackSchema } from "@/plugins/data";
 import { ErrorWithCriteriaInfo } from "@/plugins/error";
 
 const llmOptions: LanguageModelWithOptions = {
-  model: registry.languageModel("google:gemini-2.5-flash-preview"),
-  providerOptions: googleProviderOptions["gemini-2.5-flash-preview"]({
+  model: registry.languageModel("google:gemini-2.5-flash"),
+  providerOptions: googleProviderOptions["gemini-2.5-flash"]({
     thinking: {
       mode: "disabled",
     },

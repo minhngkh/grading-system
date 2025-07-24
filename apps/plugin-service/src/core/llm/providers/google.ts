@@ -10,13 +10,11 @@ const originalGoogle = createGoogleGenerativeAI({
 
 export const google = customProvider({
   languageModels: {
-    "gemini-2.0-flash-lite": originalGoogle("gemini-2.0-flash-lite"),
-    "gemini-2.0-flash": originalGoogle("gemini-2.0-flash"),
-    "gemini-2.5-flash-preview": originalGoogle("gemini-2.5-flash-preview-05-20"),
-    "gemini-2.5-flash-preview:search": originalGoogle("gemini-2.5-flash-preview-05-20", {
+    "gemini-2.5-flash": originalGoogle("gemini-2.5-flash-05-20"),
+    "gemini-2.5-flash:search": originalGoogle("gemini-2.5-flash:search-05-20", {
       useSearchGrounding: true,
     }),
-    "gemini-2.5-pro-preview": originalGoogle("gemini-2.5-pro-preview-05-06"),
+    "gemini-2.5-pro": originalGoogle("gemini-2.5-pro-05-06"),
   },
 });
 
@@ -79,5 +77,5 @@ const geminiThinkingOptionsGenerator: OptionsGenerator = (
 };
 
 export const googleProviderOptions = {
-  "gemini-2.5-flash-preview": geminiThinkingOptionsGenerator,
+  "gemini-2.5-flash": geminiThinkingOptionsGenerator,
 } satisfies Partial<Record<ModelID, OptionsGenerator>>;

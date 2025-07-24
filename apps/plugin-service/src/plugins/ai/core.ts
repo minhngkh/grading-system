@@ -27,8 +27,8 @@ import { chatSystemPrompt } from "./prompts/chat";
  * models, just leave it as it is :)
  */
 const chatOptions: LanguageModelWithOptions = {
-  model: registry.languageModel("google:gemini-2.5-flash-preview"),
-  providerOptions: googleProviderOptions["gemini-2.5-flash-preview"]({
+  model: registry.languageModel("google:gemini-2.5-flash"),
+  providerOptions: googleProviderOptions["gemini-2.5-flash"]({
     thinking: {
       mode: "disabled",
     },
@@ -36,8 +36,8 @@ const chatOptions: LanguageModelWithOptions = {
 };
 
 const gradingOptions: LanguageModelWithOptions = {
-  model: registry.languageModel("google:gemini-2.5-flash-preview"),
-  providerOptions: googleProviderOptions["gemini-2.5-flash-preview"]({
+  model: registry.languageModel("google:gemini-2.5-flash"),
+  providerOptions: googleProviderOptions["gemini-2.5-flash"]({
     thinking: {
       mode: "disabled",
     },
