@@ -1,13 +1,14 @@
 import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
 import { defineStepper } from "@stepperize/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import GradingProgressStep from "./grading-step";
 import UploadStep from "./upload-step";
 import { GradingAttempt, GradingSchema, GradingStatus } from "@/types/grading";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 
 type StepData = {
   title: string;
@@ -38,6 +39,7 @@ export default function UploadAssignmentPage({
   const navigate = useNavigate();
   const stepper = useStepper({ initialStep: initialStep });
   const currentIndex = utils.getIndex(stepper.current.id);
+  const [isRubricValid, setIsRubricValid] = useState(true);
   const gradingAttempt = useForm<GradingAttempt>({
     resolver: zodResolver(GradingSchema),
     defaultValues: initialGradingAttempt,
@@ -60,6 +62,11 @@ export default function UploadAssignmentPage({
   const handleNext = async () => {
     switch (currentIndex) {
       case 0:
+        if (!isRubricValid) {
+          toast.error("Current rubric is not valid. Please check your rubric.");
+          return;
+        }
+
         const isValid = await gradingAttempt.trigger();
         if (!isValid) return;
 
@@ -103,7 +110,9 @@ export default function UploadAssignmentPage({
     <div className="flex flex-col h-full">
       <div className="mt-8 space-y-4 flex-1">
         {stepper.switch({
-          upload: () => <UploadStep form={gradingAttempt} />,
+          upload: () => (
+            <UploadStep form={gradingAttempt} setIsRubricValid={setIsRubricValid} />
+          ),
           grading: () => <GradingProgressStep gradingAttempt={gradingAttempt} />,
         })}
       </div>

@@ -13,7 +13,7 @@ export function RubricView({
   rubricData,
   showPlugins = false,
   editPlugin: _editPlugin,
-  onEditPlugin: _onEditPlugin
+  onEditPlugin: _onEditPlugin,
 }: RubricViewProps) {
   if (rubricData.criteria.length === 0) {
     return (
@@ -49,8 +49,9 @@ export function RubricView({
         <tbody className="divide-y">
           {rubricData.criteria.map((criterion, criterionIndex) => {
             // Check if this criterion uses an automated plugin
-            const isAutomated = criterion.plugin && 
-              criterion.plugin !== "ai" && 
+            const isAutomated =
+              criterion.plugin &&
+              criterion.plugin !== "ai" &&
               criterion.plugin !== "None";
 
             return (
@@ -60,62 +61,64 @@ export function RubricView({
                     {criterion.name} ({criterion.weight} %)
                   </div>
                 </td>
-                
-                {isAutomated ? (
-                  // For automated plugins: span across all level columns and show plugin name
-                  <td 
-                    colSpan={rubricData.tags.length + (showPlugins ? 1 : 0)}
-                    className="p-2 text-center"
-                  >
-                    <div className="flex flex-col justify-center items-center h-full">
-                      <div className="font-semibold text-blue-400 text-lg">
-                        {PluginName[criterion.plugin as keyof typeof PluginName] || "Unknown"}
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        Automated grading for this criterion
-                      </div>
-                    </div>
-                  </td>
-                ) : (
-                  // For AI/manual plugins: show normal detailed levels
-                  <>
-                    {rubricData.tags.map((tag, tagIndex) => {
-                      const criterionLevel = criterion.levels.find(
-                        (level) => level.tag === tag,
-                      );
 
-                      return (
-                        <td
-                          key={`${criterion.name}-${tag}`}
-                          className={cn(
-                            "p-2 text-sm",
-                            (showPlugins || tagIndex !== rubricData.tags.length - 1) &&
-                              "border-r",
-                          )}
-                        >
-                          {criterionLevel && (
-                            <div className="whitespace-pre-line flex flex-col justify-center items-center h-full">
-                              <div className="font-semibold text-blue-400 mb-1">
-                                {criterionLevel.weight} %
-                              </div>
-                              <div className="flex-1">{criterionLevel.description}</div>
-                            </div>
-                          )}
-                        </td>
-                      );
-                    })}
-                    {showPlugins && (
-                      <td className={cn("p-2 text-sm")}>
-                        <div className={cn("text-center font-semibold text-blue-400")}>
-                          {criterion.plugin ?
-                            PluginName[criterion.plugin as keyof typeof PluginName] ||
-                            "Unknown"
-                          : PluginName.ai}
+                {
+                  isAutomated ?
+                    // For automated plugins: span across all level columns and show plugin name
+                    <td
+                      colSpan={rubricData.tags.length + (showPlugins ? 1 : 0)}
+                      className="p-2 text-center"
+                    >
+                      <div className="flex flex-col justify-center items-center h-full">
+                        <div className="font-semibold text-blue-400 text-lg">
+                          {PluginName[criterion.plugin as keyof typeof PluginName] ||
+                            "Unknown"}
                         </div>
-                      </td>
-                    )}
-                  </>
-                )}
+                        <div className="text-sm text-muted-foreground mt-1">
+                          Automated grading for this criterion
+                        </div>
+                      </div>
+                    </td>
+                    // For AI/manual plugins: show normal detailed levels
+                  : <>
+                      {rubricData.tags.map((tag, tagIndex) => {
+                        const criterionLevel = criterion.levels.find(
+                          (level) => level.tag === tag,
+                        );
+
+                        return (
+                          <td
+                            key={`${criterion.name}-${tag}`}
+                            className={cn(
+                              "p-2 text-sm",
+                              (showPlugins || tagIndex !== rubricData.tags.length - 1) &&
+                                "border-r",
+                            )}
+                          >
+                            {criterionLevel && (
+                              <div className="whitespace-pre-line flex flex-col justify-center items-center h-full">
+                                <div className="font-semibold text-blue-400 mb-1">
+                                  {criterionLevel.weight} %
+                                </div>
+                                <div className="flex-1">{criterionLevel.description}</div>
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                      {showPlugins && (
+                        <td className={cn("p-2 text-sm")}>
+                          <div className={cn("text-center font-semibold text-blue-400")}>
+                            {criterion.plugin ?
+                              PluginName[criterion.plugin as keyof typeof PluginName] ||
+                              "Unknown"
+                            : PluginName.ai}
+                          </div>
+                        </td>
+                      )}
+                    </>
+
+                }
               </tr>
             );
           })}

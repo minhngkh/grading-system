@@ -9,14 +9,19 @@
       "options": {
         "commands": [
           "uv sync",
-          "uv run semgrep install-semgrep-pro --experimental",
+          "uv run semgrep install-semgrep-pro",
           "uv run semgrep login || true"
         ],
         "parallel": false,
         "cwd": "{projectRoot}"
       },
-      "inputs": ["{projectRoot}/pyproject.toml", "{projectRoot}/uv.lock"],
-      "outputs": ["{projectRoot}/.venv"]
+      "inputs": [
+        "{projectRoot}/pyproject.toml",
+        "{projectRoot}/uv.lock"
+      ],
+      "outputs": [
+        "{projectRoot}/.venv"
+      ]
     }
   }
 }

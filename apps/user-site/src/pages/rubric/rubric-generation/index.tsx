@@ -12,6 +12,7 @@ import { useCallback } from "react";
 import ChatWindow from "./chat";
 import FinalRubricTable from "./final-rubric-table";
 import { useQueryClient } from "@tanstack/react-query";
+import { RubricValidationState, validateRubric } from "@/lib/rubric-validate";
 
 type StepData = {
   title: string;
@@ -46,14 +47,10 @@ export default function RubricGenerationPage({
     resolver: zodResolver(RubricSchema),
     defaultValues: initialRubric,
   });
+
   const queryClient = useQueryClient();
 
   const formValues = form.watch();
-
-  const isNextDisabled = () => {
-    const formState = RubricSchema.safeParse(form.getValues());
-    return stepper.isFirst && !formState.success;
-  };
 
   const handlePrev = () => {
     stepper.prev();
@@ -61,6 +58,17 @@ export default function RubricGenerationPage({
   };
 
   const handleNext = async () => {
+    const validationResult = validateRubric(formValues);
+    if (validationResult.state === RubricValidationState.VALUE_ERROR) {
+      toast.error(validationResult.message);
+      return;
+    }
+
+    if (validationResult.state === RubricValidationState.PLUGIN_ERROR) {
+      toast.error(validationResult.message);
+      return;
+    }
+
     if (stepper.isLast) {
       try {
         navigate({ to: location.search?.redirect ?? "/rubrics/view", replace: true });
@@ -108,7 +116,7 @@ export default function RubricGenerationPage({
           <Button variant="secondary" onClick={handlePrev} disabled={stepper.isFirst}>
             Back
           </Button>
-          <Button disabled={isNextDisabled()} onClick={handleNext}>
+          <Button onClick={handleNext}>
             {stepper.isLast ?
               location.search?.redirect ?
                 "Back to grading"

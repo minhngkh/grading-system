@@ -36,12 +36,14 @@ import {
 } from "@/queries/grading-queries";
 import { ViewRubricDialog } from "@/components/app/view-rubric-dialog";
 import { Eye, Pencil, Plus } from "lucide-react";
+import { RubricValidationState, validateRubric } from "@/lib/rubric-validate";
 
 interface UploadStepProps {
   form: UseFormReturn<GradingAttempt>;
+  setIsRubricValid: (isValid: boolean) => void;
 }
 
-export default function UploadStep({ form }: UploadStepProps) {
+export default function UploadStep({ form, setIsRubricValid }: UploadStepProps) {
   const auth = useAuth();
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isFileDialogOpen, setFileDialogOpen] = useState(false);
@@ -67,6 +69,8 @@ export default function UploadStep({ form }: UploadStepProps) {
 
   useEffect(() => {
     if (!rubricData) return;
+
+    setIsRubricValid(validateRubric(rubricData).state === RubricValidationState.VALID);
 
     if (gradingAttempt.selectors.length !== rubricData?.criteria.length) {
       const selectors = rubricData.criteria.map((criterion) => ({
@@ -344,9 +348,9 @@ export default function UploadStep({ form }: UploadStepProps) {
 
       <div className="space-y-1">
         <div className="flex items-center space-x-1">
-          <div className="flex justify-between items-center w-full">
+          <div className="flex items-center gap-1 w-full">
             <Label className="text-lg font-semibold">Upload Files</Label>
-            <InfoToolTip description="Choose files to upload for grading. Only .zip files are accepted." />
+            <InfoToolTip description="Choose files to upload for grading." />
           </div>
         </div>
         <FileUploader

@@ -99,11 +99,7 @@ export default function CodeRunnerConfigView({
     }
   }, [isLoadingConfig, initialConfig, form]);
 
-  const {
-    control,
-    setValue,
-    watch,
-  } = form;
+  const { control, setValue, watch } = form;
 
   const config = watch();
 
@@ -272,10 +268,14 @@ export default function CodeRunnerConfigView({
 
                 <Collapsible open={envVarsOpen} onOpenChange={setEnvVarsOpen}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between p-0 h-auto">
-                      <span className="text-base font-medium">Environment Variables (Optional)</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${envVarsOpen ? 'rotate-180' : ''}`} />
-                    </Button>
+                    <div className="flex w-full justify-between p-0 h-auto">
+                      <span className="text-base font-medium">
+                        Environment Variables (Optional)
+                      </span>
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${envVarsOpen ? "rotate-180" : ""}`}
+                      />
+                    </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-2 pt-2">
                     <EnvironmentVariablesTable
@@ -286,24 +286,38 @@ export default function CodeRunnerConfigView({
                   </CollapsibleContent>
                 </Collapsible>
 
-                <Collapsible open={outputComparisonOpen} onOpenChange={setOutputComparisonOpen}>
+                <Collapsible
+                  open={outputComparisonOpen}
+                  onOpenChange={setOutputComparisonOpen}
+                >
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between p-0 h-auto">
-                      <span className="text-base font-medium">Output Comparison Settings</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${outputComparisonOpen ? 'rotate-180' : ''}`} />
-                    </Button>
+                    <div className="flex w-full justify-between p-0 h-auto">
+                      <span className="text-base font-medium">
+                        Output Comparison Settings
+                      </span>
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${outputComparisonOpen ? "rotate-180" : ""}`}
+                      />
+                    </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-2 pt-2">
                     <OutputComparisonSettings control={control} />
                   </CollapsibleContent>
                 </Collapsible>
 
-                <Collapsible open={runningSettingsOpen} onOpenChange={setRunningSettingsOpen}>
+                <Collapsible
+                  open={runningSettingsOpen}
+                  onOpenChange={setRunningSettingsOpen}
+                >
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between p-0 h-auto">
-                      <span className="text-base font-medium">Advanced Resource Limits</span>
-                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${runningSettingsOpen ? 'rotate-180' : ''}`} />
-                    </Button>
+                    <div className="flex w-full justify-between p-0 h-auto">
+                      <span className="text-base font-medium">
+                        Advanced Resource Limits
+                      </span>
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${runningSettingsOpen ? "rotate-180" : ""}`}
+                      />
+                    </div>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-2 pt-2">
                     <RunningSettings

@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Rubric } from "@/types/rubric";
-import { PluginName } from "@/consts/plugins";
+import { PluginConfigDialogs, PluginName } from "@/consts/plugins";
 import { getAllPluginsQueryOptions } from "@/queries/plugin-queries";
 import { useAuth } from "@clerk/clerk-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,16 +29,8 @@ import { Plugin } from "@/types/plugin";
 import { Button } from "@/components/ui/button";
 import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 import { toast } from "sonner";
-import { PluginComponent } from "../../../../plugins/type";
-import CodeRunnerConfigView from "@/plugins/code-runner";
+import { PluginComponent } from "@/plugins/type";
 import { useState } from "react";
-import StaticAnalysisConfigView from "@/plugins/static-analysis";
-
-const PluginConfigDialogs: Record<string, PluginComponent> = {
-  [PluginName["test-runner"]]: CodeRunnerConfigView,
-  [PluginName["static-analysis"]]: StaticAnalysisConfigView,
-  // add other plugins here
-};
 
 interface PluginTabProps {
   rubricData: Rubric;
@@ -117,7 +109,7 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
     }
 
     setSelectedCriterionIndex(index);
-    setActivePluginConfigView(() => PluginConfigDialogs[getPluginName(plugin)]);
+    setActivePluginConfigView(() => PluginConfigDialogs[plugin].view);
   };
 
   const handleConfigChange = async (config: string) => {
@@ -179,44 +171,57 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rubricData.criteria.map((criterion, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{criterion.name}</TableCell>
-                  <TableCell>
-                    <Select
-                      value={criterion.plugin || "ai"}
-                      onValueChange={(value) => onPluginSelect(index, value)}
-                      disabled={isLoading || updateRubricMutation.isPending}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue>{getPluginName(criterion.plugin)}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {plugins.map((plugin) => (
-                          <SelectItem key={plugin.id} value={plugin.id}>
-                            <div className="flex flex-col items-start">
-                              <span className="font-medium">{plugin.name}</span>
-                              {plugin.description && (
-                                <span className="text-xs text-muted-foreground">
-                                  {plugin.description}
-                                </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      onClick={() => handleConfig(index, criterion.plugin)}
-                      className="w-full"
-                    >
-                      Configure
-                    </Button>
+              {rubricData.criteria.length === 0 ?
+                <TableRow>
+                  <TableCell
+                    colSpan={3}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    No criteria in rubric
                   </TableCell>
                 </TableRow>
-              ))}
+              : rubricData.criteria.map((criterion, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{criterion.name}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={criterion.plugin || "ai"}
+                        onValueChange={(value) => onPluginSelect(index, value)}
+                        disabled={isLoading || updateRubricMutation.isPending}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue>{getPluginName(criterion.plugin)}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {plugins.map((plugin) => (
+                            <SelectItem key={plugin.id} value={plugin.id}>
+                              <div className="flex flex-col items-start">
+                                <span className="font-medium">{plugin.name}</span>
+                                {plugin.description && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {plugin.description}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    {criterion.plugin &&
+                      PluginConfigDialogs[criterion.plugin].enableConfig && (
+                        <TableCell>
+                          <Button
+                            onClick={() => handleConfig(index, criterion.plugin)}
+                            className="w-full"
+                          >
+                            Configure
+                          </Button>
+                        </TableCell>
+                      )}
+                  </TableRow>
+                ))
+              }
             </TableBody>
           </Table>
         </div>

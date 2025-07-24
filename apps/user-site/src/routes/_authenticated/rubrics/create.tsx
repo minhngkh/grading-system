@@ -1,54 +1,27 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import { createRubricMutationOptions } from "@/queries/rubric-queries";
-import { useAuth } from "@clerk/clerk-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { RubricService } from "@/services/rubric-service";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/rubrics/create")({
-  component: RouteComponent,
+  component: () => null,
+  loader: async ({ context: { auth, queryClient } }) => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("Authentication token is required");
+    }
+
+    const rubric = await RubricService.createRubric(token);
+    queryClient.invalidateQueries({
+      queryKey: ["rubrics"],
+    });
+
+    throw redirect({
+      to: "/rubrics/$id",
+      params: { id: rubric.id },
+      replace: true,
+    });
+  },
+  errorComponent: () => <ErrorComponent message="Failed to load rubric creation page" />,
+  pendingComponent: () => <PendingComponent message="Loading rubric creation page..." />,
 });
-
-function RouteComponent() {
-  const navigate = Route.useNavigate();
-  const auth = useAuth();
-  const didRun = useRef(false);
-  const queryClient = useQueryClient();
-
-  const { mutate, isPending, isError } = useMutation(
-    createRubricMutationOptions(auth, {
-      onSuccess: (rubric) => {
-        queryClient.invalidateQueries({
-          queryKey: ["rubrics"],
-        });
-
-        sessionStorage.removeItem("rubricStep");
-        navigate({
-          to: "/rubrics/$id",
-          params: { id: rubric.id },
-          replace: true,
-        });
-      },
-      onError: (error) => {
-        console.error("Error creating rubric:", error);
-      },
-    }),
-  );
-
-  useEffect(() => {
-    if (didRun.current) return;
-    didRun.current = true;
-    mutate();
-  }, []);
-
-  if (isPending) {
-    return <PendingComponent message="Creating rubric..." />;
-  }
-
-  if (isError) {
-    return <ErrorComponent message="Failed to create rubric" />;
-  }
-
-  return null;
-}
