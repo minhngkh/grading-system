@@ -1,4 +1,5 @@
 import process from "node:process";
+import {ServiceBusClient} from "@azure/service-bus"
 import { BlobServiceClient } from "@azure/storage-blob";
 import { BlobService, getBlobName } from "@grading-system/utils/azure-storage-blob";
 import logger from "@grading-system/utils/logger";
@@ -23,27 +24,30 @@ const container = service.getBlobContainer(DEFAULT_CONTAINER);
 //   return parts[1];
 // }
 
+// const serviceBus = new ServiceBusClient(process.env.ConnectionStrings__messaging as string);
+
 async function main() {
-  const client = BlobServiceClient.fromConnectionString(CONNECTION_STRING);
+  // const client = BlobServiceClient.fromConnectionString(CONNECTION_STRING);
 
-  for await (const container of client.listContainers()) {
-    console.log(`Container: ${container.name}`);
-  }
+  // for await (const container of client.listContainers()) {
+  //   console.log(`Container: ${container.name}`);
+  // }
 
-  const containerClient = client.getContainerClient(DEFAULT_CONTAINER);
-  const blobs = containerClient.listBlobsFlat();
+  // const containerClient = client.getContainerClient(DEFAULT_CONTAINER);
+  // const blobs = containerClient.listBlobsFlat();
 
   
-  for await (const blob of blobs) {
-    logger.info(blob.name);
-  }
+  // for await (const blob of blobs) {
+  //   logger.info(blob.name);
+  // }
 
-  // const a = await container.downloadToBuffer(
-  //   "grading-9cc3b3c8-a2bc-08dd-247b-fc212d4447c2/References/references.bib",
-  // );
+  // // const a = await container.downloadToBuffer(
+  // //   "grading-9cc3b3c8-a2bc-08dd-247b-fc212d4447c2/References/references.bib",
+  // // );
 
-  // // const text = a.toString("utf-8");
-  // console.log(text);
+  // // // const text = a.toString("utf-8");
+  // // console.log(text);
+
 }
 
 main();

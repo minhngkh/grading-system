@@ -1,7 +1,7 @@
 import type { EventTransporter } from "@grading-system/utils/event-transporter/core";
 import process from "node:process";
-import { RabbitMQTransporter } from "@grading-system/utils/event-transporter/rabbitmq";
-import { masstransitTransformer } from "@grading-system/utils/event-transporter/transformers/masstransit";
+import { AzureServiceBusTransporter } from "@grading-system/utils/event-transporter/azure-service-bus";
+import { defaultTransformer } from "@grading-system/utils/event-transporter/transformers/default";
 
 const CONNECTION_STRING = process.env.ConnectionStrings__messaging as string;
 
@@ -9,13 +9,13 @@ let transporter: EventTransporter;
 
 export async function getTransporter() {
   if (!transporter) {
-    const result = await RabbitMQTransporter.create({
+    const result = await AzureServiceBusTransporter.create({
       connectionString: CONNECTION_STRING,
-      transformer: masstransitTransformer(),
+      transformer: defaultTransformer(),
     });
 
     if (result.isErr()) {
-      throw new Error(`Failed to create RabbitMQ transporter`);
+      throw new Error(`Failed to create Azure Service Bus transporter`);
     }
 
     transporter = result.value;

@@ -201,7 +201,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   ).toFixed(2);
 
   return (
-    <div className="px-4 flex flex-col bg-background w-full h-full overflow-hidden">
+    <div className="px-4 flex flex-col bg-background w-full h-full">
       <div className="flex flex-col flex-1">
         <Tabs
           value={activeScoringTab}
@@ -286,12 +286,8 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
               };
 
               return (
-                <TabsContent
-                  key={index}
-                  value={criterion.name}
-                  className="flex-1 min-h-0 overflow-y-auto"
-                >
-                  <div className="rounded-md border p-4 flex flex-col gap-2">
+                <TabsContent key={index} value={criterion.name} className="flex-1">
+                  <div className="rounded-md border p-4 flex flex-col gap-2 overflow-auto custom-scrollbar">
                     <div className="flex items-center justify-between">
                       <span className="flex gap-3 items-center font-semibold text-sm">
                         {criterion.name} ({criterion.weight})%
@@ -416,9 +412,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                         }
                       </div>
                     }
-                    <div
-                      className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${criterion.levels.length} gap-4`}
-                    >
+                    <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
                       {criterion.levels
                         .slice()
                         .sort((a, b) => a.weight - b.weight)

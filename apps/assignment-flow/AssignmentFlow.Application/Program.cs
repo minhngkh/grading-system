@@ -7,7 +7,7 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddNpgsqlDbContext<AssignmentFlowDbContext>(connectionName: "assignmentflowdb");
-builder.AddRabbitMQClient(connectionName: "messaging");
+builder.AddAzureServiceBusClient(connectionName: "messaging");
 builder.AddAzureBlobClient("submissions-store");
 
 builder.Services

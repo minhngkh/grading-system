@@ -9,6 +9,7 @@
   },
   "nx": {},
   "dependencies": {
+    "@azure/service-bus": "^7.9.5",
     "@azure/storage-blob": "^12.27.0",
     "@hono/node-server": "^1.14.2",
     "@hono/zod-validator": "^0.4.1",

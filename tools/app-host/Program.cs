@@ -1,3 +1,4 @@
+using Aspire.Hosting;
 using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -78,21 +79,16 @@ var dbgate = dbgateContainer
         ctx.EnvironmentVariables["ENGINE_con2"] = "mongo@dbgate-plugin-mongo";
     });
 
-var rabbitmq = builder
-    .AddRabbitMQ("messaging", username, password)
-    .WithManagementPlugin(
-        port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
-    );
+var serviceBusName = builder.AddParameter("serviceBusName");
+var serviceBusSharedAccessKey = builder.AddParameter("serviceBusSharedAccessKey", secret: true);
+var serviceBus = builder.AddConnectionString("messaging",
+    ReferenceExpression.Create($"Endpoint=sb://{serviceBusName}.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey={serviceBusSharedAccessKey}"));
 
-var storage = builder
-    .AddAzureStorage("storage")
-    .RunAsEmulator(azurite =>
-    {
-        azurite.WithDataVolume().WithBlobPort(27000);
-    });
-
-var submissionStore = storage.AddBlobs("submissions-store");
-var rubricContextStore = storage.AddBlobs("rubric-context-store");
+var storageAccountName = builder.AddParameter("storageAccountName");
+var storageAccountKey = builder.AddParameter("storageAccountKey", secret: true);
+var storageReference = ReferenceExpression.Create($"DefaultEndpointsProtocol=https;AccountName={storageAccountName};AccountKey={storageAccountKey};EndpointSuffix=core.windows.net");
+var submissionStore = builder.AddConnectionString("submissions-store", storageReference);
+var rubricContextStore = builder.AddConnectionString("rubric-context-store", storageReference);
 
 IResourceBuilder<ProjectResource>? rubricEngine = null;
 if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
@@ -107,8 +103,8 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
         .WaitFor(rubricDb)
         .WithReference(rubricContextStore)
         .WaitFor(rubricContextStore)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq);
+        .WithReference(serviceBus)
+        .WaitFor(serviceBus);
 }
 
 IResourceBuilder<ProjectResource>? assignmentFlow = null;
@@ -124,8 +120,8 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
         .WaitFor(assignmentFlowDb)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(serviceBus)
+        .WaitFor(serviceBus)
         .WithReference(rubricEngine)
         .WaitFor(rubricEngine);
 }
@@ -145,8 +141,8 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
         )
         .WithReference(pluginDb)
         .WaitFor(pluginDb)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(serviceBus)
+        .WaitFor(serviceBus)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
@@ -162,14 +158,15 @@ if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(serviceBus)
+        .WaitFor(serviceBus)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
         .WaitFor(rubricContextStore);
 }
 
+var storageUrl = ReferenceExpression.Create($"https://{storageAccountName}.blob.core.windows.net");
 IResourceBuilder<NxMonorepoProjectResource>? userSite = null;
 if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
 {
@@ -195,10 +192,8 @@ if (builder.Configuration.GetValue<bool>("UserSite:Enabled", true))
             var assignmentFlowEndpoint = assignmentFlow?.GetEndpoint("https");
             ctx.EnvironmentVariables["VITE_ASSIGNMENT_FLOW_URL"] =
                 assignmentFlowEndpoint?.Url ?? "";
-
-            ctx.EnvironmentVariables["VITE_BLOB_STORAGE_URL"] =
-                "http://127.0.0.1:27000/devstoreaccount1";
-        });
+        })
+        .WithEnvironment("VITE_BLOB_STORAGE_URL", storageUrl);
 }
 
 builder.Build().Run();
