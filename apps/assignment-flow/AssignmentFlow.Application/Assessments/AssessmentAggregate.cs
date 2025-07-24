@@ -74,6 +74,8 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         {
             GradingId = State.GradingId
         });
+
+        FinishAutoGrading();
     }
 
     public void Assess(AutoGrading.AssessCriterionCommand command)

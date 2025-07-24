@@ -25,11 +25,11 @@ import { ErrorWithCriteriaInfo } from "@/plugins/error";
 
 const llmOptions: LanguageModelWithOptions = {
   model: registry.languageModel("google:gemini-2.5-flash-preview"),
-  // providerOptions: googleProviderOptions["gemini-2.5-flash-preview"]({
-  //   // thinking: {
-  //   //   mode: "disabled",
-  //   // },
-  // }),
+  providerOptions: googleProviderOptions["gemini-2.5-flash-preview"]({
+    thinking: {
+      mode: "disabled",
+    },
+  }),
 };
 
 export const criterionGradingResultSchema = z.object({
