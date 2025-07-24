@@ -209,7 +209,7 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
                       </Select>
                     </TableCell>
                     {criterion.plugin &&
-                      PluginConfigDialogs[criterion.plugin].enableConfig && (
+                      PluginConfigDialogs[criterion.plugin]?.enableConfig && (
                         <TableCell>
                           <Button
                             onClick={() => handleConfig(index, criterion.plugin)}

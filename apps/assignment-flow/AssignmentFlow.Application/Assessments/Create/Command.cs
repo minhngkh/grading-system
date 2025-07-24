@@ -19,7 +19,6 @@ public class CommandHandler : CommandHandler<AssessmentAggregate, AssessmentId, 
             return Task.CompletedTask;
 
         aggregate.CreateAssessment(command);
-        aggregate.FinishAutoGrading();
         return Task.CompletedTask;
     }
 }
