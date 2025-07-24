@@ -1,4 +1,3 @@
-using Aspire.Hosting;
 using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -79,10 +78,11 @@ var dbgate = dbgateContainer
         ctx.EnvironmentVariables["ENGINE_con2"] = "mongo@dbgate-plugin-mongo";
     });
 
-var serviceBusName = builder.AddParameter("serviceBusName");
-var serviceBusSharedAccessKey = builder.AddParameter("serviceBusSharedAccessKey", secret: true);
-var serviceBus = builder.AddConnectionString("messaging",
-    ReferenceExpression.Create($"Endpoint=sb://{serviceBusName}.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey={serviceBusSharedAccessKey}"));
+var rabbitmq = builder
+    .AddRabbitMQ("messaging", username, password)
+    .WithManagementPlugin(
+        port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
+    );
 
 var storageAccountName = builder.AddParameter("storageAccountName");
 var storageAccountKey = builder.AddParameter("storageAccountKey", secret: true);
@@ -95,16 +95,12 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
 {
     rubricEngine = builder
         .AddProject<Projects.RubricEngine_Application>("rubric-engine")
-        .WithHttpsEndpoint(
-            port: builder.Configuration.GetValue<int?>("RubricEngine:Port"),
-            isProxied: toProxy
-        )
         .WithReference(rubricDb)
         .WaitFor(rubricDb)
         .WithReference(rubricContextStore)
         .WaitFor(rubricContextStore)
-        .WithReference(serviceBus)
-        .WaitFor(serviceBus);
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq);
 }
 
 IResourceBuilder<ProjectResource>? assignmentFlow = null;
@@ -112,16 +108,12 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
 {
     assignmentFlow = builder
         .AddProject<Projects.AssignmentFlow_Application>("assignmentflow-application")
-        .WithHttpsEndpoint(
-            port: builder.Configuration.GetValue<int?>("AssignmentFlow:Port"),
-            isProxied: toProxy
-        )
         .WithReference(assignmentFlowDb)
         .WaitFor(assignmentFlowDb)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
-        .WithReference(serviceBus)
-        .WaitFor(serviceBus)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq)
         .WithReference(rubricEngine)
         .WaitFor(rubricEngine);
 }
@@ -141,8 +133,8 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
         )
         .WithReference(pluginDb)
         .WaitFor(pluginDb)
-        .WithReference(serviceBus)
-        .WaitFor(serviceBus)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
@@ -158,8 +150,8 @@ if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
-        .WithReference(serviceBus)
-        .WaitFor(serviceBus)
+        .WithReference(rabbitmq)
+        .WaitFor(rabbitmq)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)

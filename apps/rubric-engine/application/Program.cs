@@ -15,7 +15,7 @@ using RubricEngine.Application.Rubrics.Grpc;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddNpgsqlDbContext<RubricDbContext>(connectionName: "rubricdb");
-builder.AddAzureServiceBusClient(connectionName: "messaging");
+builder.AddRabbitMQClient(connectionName: "messaging");
 builder.AddAzureBlobClient("rubric-context-store");
 
 builder.Services.AddBootstrapping(builder.Configuration, builder.Environment);
@@ -50,11 +50,9 @@ builder.AddServiceDefaults();
 
 var app = builder.Build();
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();  
-    app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
-}
+
+app.MapOpenApi();  
+app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
 
 app.UseCors("AllowAll");
 

@@ -7,7 +7,7 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddNpgsqlDbContext<AssignmentFlowDbContext>(connectionName: "assignmentflowdb");
-builder.AddAzureServiceBusClient(connectionName: "messaging");
+builder.AddRabbitMQClient(connectionName: "messaging");
 builder.AddAzureBlobClient("submissions-store");
 
 builder.Services
@@ -36,11 +36,9 @@ builder.AddServiceDefaults();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
-}
+
+app.MapOpenApi();
+app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
 
 app.UseCors("AllowAll");
 
