@@ -109,9 +109,7 @@ public sealed class ScoreBreakdowns : ValueObject, IEnumerable<ScoreBreakdownIte
     }
 
     public bool IsCompleted => BreakdownItems.All(item => item.IsCompleted);
-    public bool IsManualActionNeeded => BreakdownItems.Any(
-        item => item.Status == "Failed" || item.Status == "Mannual"
-        || !string.IsNullOrWhiteSpace(item.FailureReason));
+    public bool IsManualActionNeeded => BreakdownItems.Any(item => item.Status == "Mannual");
 
     public IEnumerator<ScoreBreakdownItem> GetEnumerator()
     {
