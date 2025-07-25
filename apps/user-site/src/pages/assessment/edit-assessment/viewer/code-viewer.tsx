@@ -382,26 +382,11 @@ const HighlightableViewer = ({
         mergedToCol = t2Col;
       }
 
-      const fb1Range = f1Line === t1Line ? `L${f1Line}` : `L${f1Line}-${t1Line}`;
-      const fb2Range = f2Line === t2Line ? `L${f2Line}` : `L${f2Line}-${t2Line}`;
-
-      const feedbackLines: string[] = [];
-
-      if (fb1.comment.includes("\n")) {
-        const existingLines = fb1.comment.split("\n");
-        feedbackLines.push(...existingLines);
-      } else {
-        if (fb1.comment.startsWith(`${fb1Range}: `)) {
-          feedbackLines.push(fb1.comment);
-        } else {
-          feedbackLines.push(`${fb1Range}: ${fb1.comment}`);
-        }
+      let mergedComment = fb1.comment;
+      if (fb2.comment && !fb1.comment.includes(fb2.comment)) {
+        mergedComment = fb1.comment + "\n" + fb2.comment;
       }
 
-      feedbackLines.push(`${fb2Range}: ${fb2.comment}`);
-
-      const uniqueLines = [...new Set(feedbackLines)];
-      const mergedComment = uniqueLines.join("\n");
       return {
         ...fb1,
         tag: "info",
@@ -525,6 +510,45 @@ const HighlightableViewer = ({
     if (mergedStr !== adjustedStr) {
       onUpdate?.({ feedbacks: merged });
       onUpdateLastSave?.({ feedbacks: merged });
+    }
+  }, []);
+
+  useEffect(() => {
+    const adjusted = getAdjustedFeedbacks(file, assessment.feedbacks);
+    const merged = mergeIntersectingFeedbacks(adjusted);
+
+    const initStr = JSON.stringify(
+      assessment.feedbacks.map((fb) => ({
+        locationData: fb.locationData,
+        comment: fb.comment,
+        tag: fb.tag,
+        fileRef: fb.fileRef,
+      })),
+    );
+
+    const adjustedStr = JSON.stringify(
+      adjusted.map((fb) => ({
+        locationData: fb.locationData,
+        comment: fb.comment,
+        tag: fb.tag,
+        fileRef: fb.fileRef,
+      })),
+    );
+    const mergedStr = JSON.stringify(
+      merged.map((fb) => ({
+        locationData: fb.locationData,
+        comment: fb.comment,
+        tag: fb.tag,
+        fileRef: fb.fileRef,
+      })),
+    );
+
+    if (adjustedStr !== initStr) {
+      onUpdate?.({ feedbacks: merged });
+    }
+
+    if (mergedStr !== adjustedStr) {
+      onUpdate?.({ feedbacks: merged });
     }
   }, [file.content, file.relativePath, assessment.feedbacks, onUpdate, onUpdateLastSave]);
 
