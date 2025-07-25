@@ -1,7 +1,7 @@
 import type { CriterionData } from "@/plugins/data";
 import type { TestRunnerConfig } from "@/plugins/test-runner/config";
 import type { GoJudge } from "@/plugins/test-runner/go-judge-api";
-import path from "node:path";
+import path from "node:path/posix";
 import process from "node:process";
 import {
   getBlobNameParts,
@@ -312,12 +312,13 @@ function createArgs(command: string) {
   return ["sh", "-c", `rm stdout stderr &> /dev/null; ${command}`];
 }
 
-const DEFAULT_PATH = "/usr/bin:/bin";
+const DEFAULT_PATH = "/usr/local/bin/python3.12.11-bin:/usr/bin:/bin";
 
 function createEnv(options: { paths?: string[]; env?: Record<string, string> }) {
   return [
     `PATH=${[...(options.paths || []), DEFAULT_PATH].join(":")}`,
     ...Object.entries(options.env || {}).map(([key, value]) => `${key}=${value}`),
+    "HOME=/w",
   ];
 }
 

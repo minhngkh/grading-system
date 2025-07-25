@@ -13,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/rubrics/create")({
     }
 
     const rubric = await RubricService.createRubric(token);
+    console.log("Created rubric:", rubric.id);
     queryClient.invalidateQueries({
       queryKey: ["rubrics"],
     });

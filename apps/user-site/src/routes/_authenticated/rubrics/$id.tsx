@@ -3,7 +3,7 @@ import PendingComponent from "@/components/app/route-pending";
 import RubricGenerationPage from "@/pages/rubric/rubric-generation";
 import { getRubricQueryOptions } from "@/queries/rubric-queries";
 import { useAuth } from "@clerk/clerk-react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 
@@ -12,8 +12,6 @@ export const Route = createFileRoute("/_authenticated/rubrics/$id")({
   validateSearch: z.object({
     redirect: z.string().optional(),
   }),
-  loader: async ({ params: { id }, context: { auth, queryClient } }) =>
-    queryClient.ensureQueryData(getRubricQueryOptions(id, auth)),
   onLeave: () => {
     sessionStorage.removeItem("rubricStep");
   },
@@ -24,16 +22,7 @@ export const Route = createFileRoute("/_authenticated/rubrics/$id")({
 function RouteComponent() {
   const { id } = Route.useParams();
   const auth = useAuth();
-  const {
-    data: rubric,
-    isPending,
-    error,
-  } = useQuery(
-    getRubricQueryOptions(id, auth, {
-      placeholderData: keepPreviousData,
-      staleTime: 1000 * 60 * 5, // 5 minutes
-    }),
-  );
+  const { data: rubric, isPending, error } = useQuery(getRubricQueryOptions(id, auth));
 
   if (isPending) {
     return <PendingComponent message="Loading rubric..." />;
