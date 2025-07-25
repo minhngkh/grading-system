@@ -22,34 +22,6 @@ interface ScoringPanelProps {
   onUpdate: (updatedAssessment: Partial<Assessment>) => void;
 }
 
-function getInsertIndex(arr: number[], target: number): number {
-  if (arr.length === 0) return 0;
-
-  const isAscending = arr[0] < arr[arr.length - 1];
-  let left = 0;
-  let right = arr.length;
-
-  while (left < right) {
-    const mid = Math.floor((left + right) / 2);
-
-    if (isAscending) {
-      if (arr[mid] < target) {
-        left = mid + 1;
-      } else {
-        right = mid;
-      }
-    } else {
-      if (arr[mid] > target) {
-        left = mid + 1;
-      } else {
-        right = mid;
-      }
-    }
-  }
-
-  return left;
-}
-
 export const ScoringPanel: React.FC<ScoringPanelProps> = ({
   rubric,
   grading,
@@ -467,11 +439,7 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
                           );
 
                           const isSelected =
-                            (breakdown?.performanceTag === level.tag ||
-                              getInsertIndex(
-                                criterion.levels.map((l) => l.weight),
-                                breakdown?.rawScore || 0,
-                              ) === idx) &&
+                            breakdown?.performanceTag === level.tag &&
                             breakdown?.criterionName === criterion.name;
                           return (
                             <div key={idx} className="grid grid-rows-[auto_1fr] h-full">
