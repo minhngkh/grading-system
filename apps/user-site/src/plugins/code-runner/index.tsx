@@ -192,7 +192,8 @@ export default function CodeRunnerConfigView({
 
       if (configId && initialConfig) {
         // Update existing config
-        resultConfigId = await updateConfigMutation.mutateAsync(config);
+        resultConfigId = configId;
+        await updateConfigMutation.mutateAsync(config);
       } else {
         // Create new config
         resultConfigId = await createConfigMutation.mutateAsync(config);

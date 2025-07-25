@@ -3,7 +3,7 @@ import { Tool, ToolType } from "@/types/tool";
 export const SystemTools: Tool[] = [
   {
     name: "Create Rubric",
-    details: "Features include code completion, debugging tools, and Git integration.",
+    details: "Design and generate rubrics for grading assessments with AI assistance.",
     types: [ToolType.Rubric, ToolType.AI],
     isFavorite: true,
     navigation: "/rubrics/create",
@@ -12,15 +12,14 @@ export const SystemTools: Tool[] = [
   },
   {
     name: "Manage Rubrics",
-    details:
-      "Includes components, patterns, and guidelines for creating cohesive user interfaces.",
+    details: "View, edit, and manage existing rubrics for grading and assessment.",
     types: [ToolType.Rubric, ToolType.Review],
     isFavorite: true,
     navigation: "/rubrics/view",
   },
   {
     name: "Grade Assignments",
-    details: "Create task lists, set deadlines, and monitor progress on your projects.",
+    details: "Grade student assignments using predefined rubrics and provide feedback.",
     types: [ToolType.Grading, ToolType.AI],
     isFavorite: false,
     navigation: "/gradings/create",
@@ -29,15 +28,14 @@ export const SystemTools: Tool[] = [
   },
   {
     name: "Manage Gradings",
-    details:
-      "Track and review student submissions, provide feedback, and manage grading criteria.",
+    details: "View and manage graded assignments, including feedback and scores.",
     types: [ToolType.Review, ToolType.Grading],
     isFavorite: false,
     navigation: "/gradings/view",
   },
   {
     name: "Analytics Dashboard",
-    details: "Interactive charts and reports to help you make data-driven decisions.",
+    details: "Analyze grading patterns, student performance, and rubric effectiveness.",
     types: [ToolType.Review],
     isFavorite: false,
     navigation: "/analytics",

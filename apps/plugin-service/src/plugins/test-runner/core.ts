@@ -164,7 +164,7 @@ export function uploadSubmission(data: {
     logger.debug("zipping folder", data.directory);
     const firstDir = data.fileList[0].split(path.sep)[0];
 
-    const zipBuffer = yield* zipFolderToBuffer(path.join(data.directory, firstDir));
+    const zipBuffer = yield* zipFolderToBuffer(data.directory);
 
     cleanTempDirectory(data.directory).orTee((error) => {
       logger.debug(`Failed to clean temporary directory`, error);
