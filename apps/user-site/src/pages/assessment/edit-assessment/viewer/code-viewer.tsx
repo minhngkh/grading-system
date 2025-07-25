@@ -511,45 +511,6 @@ const HighlightableViewer = ({
       onUpdate?.({ feedbacks: merged });
       onUpdateLastSave?.({ feedbacks: merged });
     }
-  }, []);
-
-  useEffect(() => {
-    const adjusted = getAdjustedFeedbacks(file, assessment.feedbacks);
-    const merged = mergeIntersectingFeedbacks(adjusted);
-
-    const initStr = JSON.stringify(
-      assessment.feedbacks.map((fb) => ({
-        locationData: fb.locationData,
-        comment: fb.comment,
-        tag: fb.tag,
-        fileRef: fb.fileRef,
-      })),
-    );
-
-    const adjustedStr = JSON.stringify(
-      adjusted.map((fb) => ({
-        locationData: fb.locationData,
-        comment: fb.comment,
-        tag: fb.tag,
-        fileRef: fb.fileRef,
-      })),
-    );
-    const mergedStr = JSON.stringify(
-      merged.map((fb) => ({
-        locationData: fb.locationData,
-        comment: fb.comment,
-        tag: fb.tag,
-        fileRef: fb.fileRef,
-      })),
-    );
-
-    if (adjustedStr !== initStr) {
-      onUpdate?.({ feedbacks: merged });
-    }
-
-    if (mergedStr !== adjustedStr) {
-      onUpdate?.({ feedbacks: merged });
-    }
   }, [file.content, file.relativePath, assessment.feedbacks, onUpdate, onUpdateLastSave]);
 
   useEffect(() => {
