@@ -1,8 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import process from "node:process";
 import AdmZip from "adm-zip";
-import { fromPromise, fromThrowable } from "neverthrow";
+import { fromThrowable } from "neverthrow";
 import { asError, CustomError } from "@/error";
 import logger from "@/logger";
 
@@ -25,7 +24,7 @@ export function zipFolderToBuffer(directory: string) {
         }
       }
 
-      zip.writeZip(path.join(process.cwd(), "tmp", "file.zip"));
+      // zip.writeZip(path.join(process.cwd(), "tmp", "file.zip"));
 
       return zip.toBuffer();
     },

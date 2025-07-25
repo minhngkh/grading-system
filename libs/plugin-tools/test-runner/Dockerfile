@@ -1,4 +1,4 @@
-FROM criyle/go-judge:v1.9.4
+FROM minhngkh/judge:0.0.0
 
 ENV PATH="/usr/local/bin:${PATH}"
 

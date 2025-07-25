@@ -33,7 +33,13 @@ if (
                 "PluginService:Plugins:TestRunner:Port"
             )
         )
-        .WithContainerRuntimeArgs(["--privileged", "--shm-size=256m"]);
+        .WithContainerRuntimeArgs(
+            [
+                "--privileged",
+                "--shm-size=256m",
+                "--add-host=host.docker.internal:host-gateway",
+            ]
+        );
 }
 
 var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
@@ -150,7 +156,8 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
-        .WaitFor(rubricContextStore);
+        .WaitFor(rubricContextStore)
+        .WaitFor(testRunnerPluginTool);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? gradingService = null;
