@@ -47,7 +47,7 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
     }, []);
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [sidebarView, setSidebarView] = useState<"files" | "testcases">("files");
+    const [sidebarView, setSidebarView] = useState<"files">("files");
 
     const [feedbackViewMode, setFeedbackViewMode] = useState<"file" | "criterion">(
       "file",
@@ -255,16 +255,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
               <FileExplorer {...fileExplorerProps} />
             </div>
           );
-        case "testcases":
-          return (
-            <div className="p-4">
-              <h3 className="text-sm font-medium mb-2">Test Cases</h3>
-              <div className="text-xs text-muted-foreground">
-                Test cases will be displayed here
-              </div>
-            </div>
-          );
-        default:
           return null;
       }
     }, [
@@ -345,18 +335,6 @@ export const MainWorkspace: React.FC<MainWorkspaceProps> = React.memo(
               title="Files"
             >
               <Files className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={() => handleSidebarToggle("testcases")}
-              variant={"outline"}
-              className={`flex items-center border-none rounded-none justify-center h-10 w-full transition-colors ${
-                sidebarView === "testcases" ?
-                  "bg-primary/5 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
-              title="Test Cases"
-            >
-              <Code className="h-4 w-4" />
             </Button>
           </div>
         </div>
