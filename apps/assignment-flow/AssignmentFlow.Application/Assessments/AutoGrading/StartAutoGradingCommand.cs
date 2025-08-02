@@ -27,6 +27,7 @@ public class StartAutoGradingCommandHandler(
             RubricId = command.RubricId ?? aggregate.State.RubricId
         }, cancellationToken: cancellationToken);
         var metadata = !string.IsNullOrWhiteSpace(rubric.MetadataJson) ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(rubric.MetadataJson) : [];
+        metadata?.TryAdd("info", command.Submission?.Selectors);
 
         command.Submission ??= await repository.GetSubmissionAsync(aggregate.State.GradingId, aggregate.State.Reference, cancellationToken);
         var criteria = MapCriteria(aggregate.State.GradingId, command.Submission, rubric);

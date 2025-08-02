@@ -66,7 +66,8 @@ public class Grading
                 Files = [.. s.Attachments.Where(attachment => {
                     return Pattern.New(selector.Pattern).Match(attachment);
                 })]
-            })
+            }),
+            Selectors = Selectors
         });
     
     public List<SubmissionPersistence> SubmissionPersistences { get; set; } = [];

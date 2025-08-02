@@ -27,6 +27,7 @@ public class SubmissionApiContract
     /// Dictionary mapping criterion names to their associated attachment files.
     /// </summary>
     public List<CriterionFilesApiContract> CriteriaFiles { get; init; } = [];
+    public List<SelectorApiContract>? Selectors { get; init; } = null;
 }
 
 [NoResource]
