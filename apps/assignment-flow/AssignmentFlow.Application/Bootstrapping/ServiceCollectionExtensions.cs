@@ -162,7 +162,8 @@ public static class ServiceCollectionExtensions
             .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
             .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
             .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
-            .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
+            .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>(
+                cfg => cfg.Include(a => a.ScoreAdjustmentsHistory))
         );
 
         return services;
