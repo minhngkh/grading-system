@@ -93,9 +93,6 @@ public class Assessment
         GradingId = domainEvent.AggregateEvent.GradingId;
         SubmissionReference = domainEvent.AggregateEvent.SubmissionReference;
 
-        ScoreBreakdowns = domainEvent.AggregateEvent.InitialScoreBreakdowns.ToApiContracts();
-        RawScore = domainEvent.AggregateEvent.InitialScoreBreakdowns.TotalRawScore;
-
         CreatedAt = domainEvent.Timestamp.ToUniversalTime();
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
@@ -103,6 +100,9 @@ public class Assessment
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGrading.AutoGradingStartedEvent> domainEvent, CancellationToken cancellationToken)
     {
+        ScoreBreakdowns = domainEvent.AggregateEvent.InitialScoreBreakdowns.ToApiContracts();
+        RawScore = domainEvent.AggregateEvent.InitialScoreBreakdowns.TotalRawScore;
+
         StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;

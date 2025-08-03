@@ -31,8 +31,8 @@ public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakd
     /// <summary>
     /// Gets or sets the performance tag for this breakdown item.
     /// </summary>
-    public PerformanceTag PerformanceTag { get; init; } = PerformanceTag.Default;
-    public string MetadataJson { get; init; } = string.Empty;
+    public PerformanceTag PerformanceTag { get; set; } = PerformanceTag.Default;
+    public string MetadataJson { get; set; } = string.Empty;
 
     public string Status { get; set; } = "Pending"; // Default status, can be updated based on grading logic
     public string FailureReason { get; set; } = string.Empty; // Optional reason for failure, if applicable

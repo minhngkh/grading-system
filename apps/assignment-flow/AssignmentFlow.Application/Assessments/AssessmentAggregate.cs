@@ -24,22 +24,12 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void CreateAssessment(Create.Command command)
     {
-        var initialScoreBreakdowns = ScoreBreakdowns.New(
-            [.. command.Criteria.Select(c => {
-                if (c.Plugin == "None") 
-                {
-                    return ScoreBreakdownItem.Mannual(c.Name);
-                }
-                return ScoreBreakdownItem.Pending(c.Name);
-            })]);
-
         Emit(new Create.AssessmentCreatedEvent
         {
             SubmissionReference = command.SubmissionReference,
             GradingId = command.GradingId,
             TeacherId = command.TeacherId,
             RubricId = command.RubricId,
-            InitialScoreBreakdowns = initialScoreBreakdowns,
             Criteria = command.Criteria
         });
     }
@@ -70,9 +60,19 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void StartAutoGrading()
     {
+        var initialScoreBreakdowns = ScoreBreakdowns.New(
+        [.. State.Criteria.Select(c => {
+            if (c.Plugin == "None")
+            {
+                return ScoreBreakdownItem.Mannual(c.Name);
+            }
+            return ScoreBreakdownItem.Pending(c.Name);
+        })]);
+
         Emit(new AutoGrading.AutoGradingStartedEvent
         {
-            GradingId = State.GradingId
+            GradingId = State.GradingId,
+            InitialScoreBreakdowns = initialScoreBreakdowns,
         });
 
         FinishAutoGrading();
