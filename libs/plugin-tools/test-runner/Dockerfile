@@ -44,7 +44,7 @@ RUN for version in ${NODEJS_VERSIONS}; do \
       ln -s /usr/local/bin/fnm-install/node-versions/v${version}/installation/bin/node /usr/local/bin/node${version}-bin/; \
     done
 
-
+ENTRYPOINT ["/opt/go-judge", "-dir", "/tmp/go-judge"]
 # RUN gcc --version && \
 #     g++ --version && \
 #     uv --version && \
