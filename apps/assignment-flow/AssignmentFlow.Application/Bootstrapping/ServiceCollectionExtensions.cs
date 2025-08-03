@@ -1,4 +1,5 @@
-﻿using AssignmentFlow.Application.Assessments;
+using System.Reflection;
+using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Gradings;
 using EventFlow.EntityFramework;
 using EventFlow.EntityFramework.Extensions;
@@ -16,12 +17,16 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using RubricEngine.Application.Protos;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
-using System.Reflection;
+
 namespace AssignmentFlow.Application.Bootstrapping;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddBootstrapping(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    public static IServiceCollection AddBootstrapping(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IWebHostEnvironment environment
+    )
     {
         services
             .AddOpenApi()
@@ -44,7 +49,10 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddJwtAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services
             .AddAuthorization()
@@ -60,12 +68,12 @@ public static class ServiceCollectionExtensions
                     ValidateIssuer = true,
                     ValidateAudience = false, // Set to false if you want to allow any audience
                     ValidateIssuerSigningKey = true,
-                    ValidateLifetime = true
+                    ValidateLifetime = true,
                 };
 
                 // We have to hook the OnMessageReceived event in order to
                 // allow the JWT authentication handler to read the access
-                // token from the query string when a WebSocket or 
+                // token from the query string when a WebSocket or
                 // Server-Sent Events request comes in.
 
                 // Sending the access token in the query string is required when using WebSockets or ServerSentEvents
@@ -82,21 +90,27 @@ public static class ServiceCollectionExtensions
 
                         // If the request is for our hub...
                         var path = context.HttpContext.Request.Path;
-                        if (!string.IsNullOrEmpty(accessToken) &&
-                            (path.StartsWithSegments("/hubs/gradings")))
+                        if (
+                            !string.IsNullOrEmpty(accessToken)
+                            && (path.StartsWithSegments("/hubs/gradings"))
+                        )
                         {
                             // Read the token out of the query string
                             context.Token = accessToken;
                         }
                         return Task.CompletedTask;
-                    }
+                    },
                 };
             });
 
         return services;
     }
 
-    private static IServiceCollection AddMessageBus(this IServiceCollection services, IConfiguration configuration, Assembly? assembly)
+    private static IServiceCollection AddMessageBus(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        Assembly? assembly
+    )
     {
         services.AddMassTransit(config =>
         {
@@ -105,18 +119,42 @@ public static class ServiceCollectionExtensions
             if (assembly != null)
                 config.AddConsumers(assembly);
 
-            config.UsingRabbitMq((context, configurator) =>
+            if (Environment.GetEnvironmentVariable("USE_SERVICE_BUS") == "true")
             {
-                configurator.Host(new Uri(configuration.GetConnectionString("messaging")!));
-                configurator.ConfigureEndpoints(context);
-                configurator.UseRawJsonDeserializer(isDefault: true);
-            });
+                config.UsingAzureServiceBus(
+                    (context, configurator) =>
+                    {
+                        configurator.Host(configuration.GetConnectionString("messaging"));
+                        configurator.ConfigureEndpoints(context);
+                        configurator.UseRawJsonDeserializer(isDefault: true);
+                        
+                        // Set global concurrency for Azure Service Bus
+                        configurator.ConcurrentMessageLimit = 10;
+                    }
+                );
+            }
+            else
+            {
+                config.UsingRabbitMq(
+                    (context, configurator) =>
+                    {
+                        configurator.Host(
+                            new Uri(configuration.GetConnectionString("messaging")!)
+                        );
+                        configurator.ConfigureEndpoints(context);
+                        configurator.UseRawJsonDeserializer(isDefault: true);
+                    }
+                );
+            }
         });
 
         return services;
     }
 
-    private static IServiceCollection AddProjectJsonApi(this IServiceCollection services, Assembly? assembly)
+    private static IServiceCollection AddProjectJsonApi(
+        this IServiceCollection services,
+        Assembly? assembly
+    )
     {
         services.AddJsonApi<AssignmentFlowDbContext>(
             options =>
@@ -132,14 +170,18 @@ public static class ServiceCollectionExtensions
                 options.ResourceLinks = LinkTypes.None;
                 options.TopLevelLinks = LinkTypes.Pagination;
                 options.RelationshipLinks = LinkTypes.None;
-            }, discovery: discovery => discovery.AddAssembly(assembly));
+            },
+            discovery: discovery => discovery.AddAssembly(assembly)
+        );
 
         services.AddEndpointsApiExplorer();
 
         return services;
     }
 
-    private static IServiceCollection AddFluentValidation(this IServiceCollection services)
+    private static IServiceCollection AddFluentValidation(
+        this IServiceCollection services
+    )
     {
         services
             .AddValidatorsFromAssemblyContaining<Program>()
@@ -147,7 +189,11 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddProjectEventFlow(this IServiceCollection services, IConfiguration configuration, Assembly? assembly)
+    private static IServiceCollection AddProjectEventFlow(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        Assembly? assembly
+    )
     {
         services.AddEventFlow(ef => ef
             .Configure(o =>
@@ -169,19 +215,23 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddGrpcClients(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddGrpcClients(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         //Grpc Services
-        services.AddGrpcClient<RubricProtoService.RubricProtoServiceClient>(opts =>
-        {
-            opts.Address = new Uri("https://rubric-engine");
-        })
+        services
+            .AddGrpcClient<RubricProtoService.RubricProtoServiceClient>(opts =>
+            {
+                opts.Address = new Uri("https://rubric-engine");
+            })
             .ConfigurePrimaryHttpMessageHandler(() =>
             {
                 var handler = new HttpClientHandler
                 {
                     ServerCertificateCustomValidationCallback =
-                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
                 };
 
                 return handler;
@@ -189,7 +239,10 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddServiceBootstrapping(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddServiceBootstrapping(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services.AddTransient<DbInitializer>();
         return services;

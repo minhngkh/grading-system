@@ -1,12 +1,12 @@
 # Azure Service Bus for message queuing and event-driven communication
 # Replaces RabbitMQ for cloud deployment
-# Using Basic tier for cost optimization
+# Using Standard tier to support Topics and Subscriptions
 
 resource "azurerm_servicebus_namespace" "main" {
   name                = "${var.name}-servicebus"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
-  sku                 = "Basic"
+  sku                 = "Standard"
 
   tags = {
     Environment = var.environment
@@ -14,14 +14,14 @@ resource "azurerm_servicebus_namespace" "main" {
   }
 }
 
-# Authorization rule for applications (Basic tier only supports Manage=true)
+# Authorization rule for applications (Standard tier supports granular permissions)
 resource "azurerm_servicebus_namespace_authorization_rule" "applications" {
   name         = "${var.name}-app-access"
   namespace_id = azurerm_servicebus_namespace.main.id
 
   listen = true
   send   = true
-  manage = true
+  manage = true  # Required to create/manage topics and subscriptions
 }
 
 # Outputs for Service Bus

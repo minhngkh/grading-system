@@ -7,28 +7,40 @@ using Scalar.AspNetCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddNpgsqlDbContext<AssignmentFlowDbContext>(connectionName: "assignmentflowdb");
-builder.AddRabbitMQClient(connectionName: "messaging");
+
+if (Environment.GetEnvironmentVariable("USE_SERVICE_BUS") == "true")
+{
+    builder.AddAzureServiceBusClient(connectionName: "messaging");
+}
+else
+{
+    builder.AddRabbitMQClient(connectionName: "messaging");
+}
+
 builder.AddAzureBlobClient("submissions-store");
 
-builder.Services
-    .AddBootstrapping(builder.Configuration, builder.Environment)
+builder
+    .Services.AddBootstrapping(builder.Configuration, builder.Environment)
     .AddShared(builder.Configuration, builder.Environment)
     .AddGradings();
 
-var allowedOrigins = builder.Configuration
-    .GetSection("AllowedOrigins")
-    .Get<string[]>()
+var allowedOrigins =
+    builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
     ?? ["http://localhost:5173"];
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
-    {
-        builder.WithOrigins(allowedOrigins)
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials();
-    });
+    options.AddPolicy(
+        "AllowAll",
+        builder =>
+        {
+            builder
+                .WithOrigins(allowedOrigins)
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        }
+    );
 });
 
 builder.AddServiceDefaults();
@@ -44,7 +56,7 @@ app.UseCors("AllowAll");
 
 var webSocketOptions = new WebSocketOptions
 {
-    KeepAliveInterval = TimeSpan.FromMinutes(2)
+    KeepAliveInterval = TimeSpan.FromMinutes(2),
 };
 
 app.UseWebSockets(webSocketOptions);
@@ -52,7 +64,9 @@ app.UseWebSockets(webSocketOptions);
 // Initialize the database
 using (var scope = app.Services.CreateScope())
 {
-    var dbInitializer = ActivatorUtilities.CreateInstance<DbInitializer>(scope.ServiceProvider);
+    var dbInitializer = ActivatorUtilities.CreateInstance<DbInitializer>(
+        scope.ServiceProvider
+    );
     await dbInitializer.InitializeAsync();
 }
 

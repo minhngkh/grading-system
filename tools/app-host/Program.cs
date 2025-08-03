@@ -84,11 +84,31 @@ var dbgate = dbgateContainer
         ctx.EnvironmentVariables["ENGINE_con2"] = "mongo@dbgate-plugin-mongo";
     });
 
-var rabbitmq = builder
-    .AddRabbitMQ("messaging", username, password)
-    .WithManagementPlugin(
-        port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
+IResourceBuilder<IResourceWithConnectionString>? messaging = null;
+if (Environment.GetEnvironmentVariable("USE_SERVICE_BUS") == "true")
+{
+    var serviceBusConnectionString = builder.AddParameter(
+        "serviceBusConnectionString",
+        secret: true,
+        value: Environment.GetEnvironmentVariable("SERVICE_BUS_CONNECTION_STRING")
+            ?? throw new InvalidOperationException(
+                "SERVICE_BUS_CONNECTION_STRING environment variable is not set."
+            )
     );
+
+    messaging = builder.AddConnectionString(
+        "messaging",
+        ReferenceExpression.Create($"{serviceBusConnectionString}")
+    );
+}
+else
+{
+    messaging = builder
+        .AddRabbitMQ("messaging", username, password)
+        .WithManagementPlugin(
+            port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
+        );
+}
 
 var storage = builder
     .AddAzureStorage("storage")
@@ -113,8 +133,8 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
         .WaitFor(rubricDb)
         .WithReference(rubricContextStore)
         .WaitFor(rubricContextStore)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq);
+        .WithReference(messaging)
+        .WaitFor(messaging);
 }
 
 IResourceBuilder<ProjectResource>? assignmentFlow = null;
@@ -130,8 +150,8 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
         .WaitFor(assignmentFlowDb)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(messaging)
+        .WaitFor(messaging)
         .WithReference(rubricEngine)
         .WaitFor(rubricEngine);
 }
@@ -151,8 +171,8 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
         )
         .WithReference(pluginDb)
         .WaitFor(pluginDb)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(messaging)
+        .WaitFor(messaging)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
@@ -169,8 +189,8 @@ if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(messaging)
+        .WaitFor(messaging)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)

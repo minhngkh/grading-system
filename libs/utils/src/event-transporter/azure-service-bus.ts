@@ -75,6 +75,13 @@ export class AzureServiceBusTransporter extends EventTransporter {
 
     if (!sender) {
       try {
+        // Ensure the topic exists before creating sender
+        const topicExists = await this.admin.topicExists(event.name);
+        if (!topicExists) {
+          await this.admin.createTopic(event.name);
+          logger.info(`Topic created for event: ${event.name}`);
+        }
+        
         sender = this.client.createSender(event.name);
         this.senders.set(event.name, sender);
       } catch (error) {
@@ -135,48 +142,64 @@ export class AzureServiceBusTransporter extends EventTransporter {
 
     if (!receiver) {
       const subscriptionName = `${event.name}-node-sub`;
+      
+      // First, ensure the topic exists
+      const topicExists = await this.admin.topicExists(event.name);
+      if (!topicExists) {
+        await this.admin.createTopic(event.name);
+        logger.info(`Topic created for event: ${event.name}`);
+      }
+      
+      // Then, ensure the subscription exists
       const subscriptionExists = await this.admin.subscriptionExists(event.name, subscriptionName);
       if (!subscriptionExists) {
         await this.admin.createSubscription(event.name, subscriptionName);
         logger.info(`Subscription created for event: ${event.name}`);
       }
 
-      receiver = this.client.createReceiver(event.name, `${event.name}-node-sub`);
+      receiver = this.client.createReceiver(event.name, subscriptionName);
       this.receivers.set(event.name, receiver);
     }
 
-    receiver.subscribe({
-      processMessage: async (brokeredMessage) => {
-        try {
-          const content = brokeredMessage.body.message;
-          const result = handler(content);
-          const handlerResult = await (result instanceof Promise ? result : (
-            Promise.resolve(result)
-          ));
+    receiver.subscribe(
+      {
+        processMessage: async (brokeredMessage) => {
+          try {
+            const content = brokeredMessage.body.message;
+            const result = handler(content);
+            const handlerResult = await (result instanceof Promise ? result : (
+              Promise.resolve(result)
+            ));
 
-          handlerResult.match(
-            () => {
-              logger.debug(`Message processed successfully: ${event.name}`);
-              // Message is automatically completed in peekLock mode when processMessage returns successfully
-            },
-            (error: unknown) => {
-              logger.error(`Error processing message for event ${event.name}:`, error);
-              // In peekLock mode, if processMessage throws, the message is automatically abandoned
-              throw error;
-            },
-          );
-        } catch (error) {
-          logger.error(
-            `Error parsing or processing message for event ${event.name}:`,
-            error,
-          );
-          throw error; // This will cause the message to be abandoned
-        }
+            handlerResult.match(
+              () => {
+                logger.debug(`Message processed successfully: ${event.name}`);
+                // Message is automatically completed in peekLock mode when processMessage returns successfully
+              },
+              (error: unknown) => {
+                logger.error(`Error processing message for event ${event.name}:`, error);
+                // In peekLock mode, if processMessage throws, the message is automatically abandoned
+                throw error;
+              },
+            );
+          } catch (error) {
+            logger.error(
+              `Error parsing or processing message for event ${event.name}:`,
+              error,
+            );
+            throw error; // This will cause the message to be abandoned
+          }
+        },
+        processError: async (args) => {
+          logger.error(`Error in message processing for ${event.name}:`, args.error);
+        },
       },
-      processError: async (args) => {
-        logger.error(`Error in message processing for ${event.name}:`, args.error);
-      },
-    });
+      {
+        // Enable concurrent message processing
+        maxConcurrentCalls: 10, // Process up to 10 messages concurrently
+        autoCompleteMessages: true, // Automatically complete messages on success
+      }
+    );
   }
 
   /**
