@@ -7,4 +7,5 @@ namespace AssignmentFlow.Application.Assessments.AutoGrading;
 public class CriterionAssessedEvent : AggregateEvent<AssessmentAggregate, AssessmentId>
 {
     public required ScoreBreakdownItem ScoreBreakdownItem { get; init; }
+    public List<Feedback> Feedbacks { get; init; } = [];
 }

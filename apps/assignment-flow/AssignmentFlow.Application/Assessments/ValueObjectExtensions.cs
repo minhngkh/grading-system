@@ -20,7 +20,7 @@ public static class ValueObjectExtensions
             PerformanceTag = PerformanceTag.New(apiContract.PerformanceTag),
             MetadataJson = apiContract.MetadataJson,
             Grader = grader ?? Grader.New(apiContract.Grader),
-            Status = "Graded"
+            Status = string.IsNullOrEmpty(apiContract.Status) ? "Graded" : apiContract.Status
         };
     }
 

@@ -28,12 +28,13 @@ public class AssessmentWriteModel
         GradingId = @event.GradingId;
         Reference = @event.SubmissionReference;
         RubricId = @event.RubricId;
-        ScoreBreakdowns = @event.InitialScoreBreakdowns;
         Criteria = @event.Criteria;
     }
 
-    internal void Apply(AutoGrading.AutoGradingStartedEvent _)
+    internal void Apply(AutoGrading.AutoGradingStartedEvent @event)
     {
+        // Reset score breakdowns for a new auto-grading session
+        ScoreBreakdowns = @event.InitialScoreBreakdowns;
         StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
     }
 
@@ -56,6 +57,7 @@ public class AssessmentWriteModel
     internal void Apply(AutoGrading.CriterionAssessedEvent @event)
     {
         ScoreBreakdowns = ScoreBreakdowns.AddOrUpdate(@event.ScoreBreakdownItem);
+        Feedbacks.AddRange(@event.Feedbacks);
     }
 
     internal void Apply(AutoGrading.AutoGradingFinishedEvent _)

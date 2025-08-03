@@ -7,4 +7,5 @@ namespace AssignmentFlow.Application.Assessments.AutoGrading;
 public class AutoGradingStartedEvent : AggregateEvent<AssessmentAggregate, AssessmentId>
 {
     public required GradingId GradingId { get; init; }
+    public required ScoreBreakdowns InitialScoreBreakdowns { get; init; }
 }
