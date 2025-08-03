@@ -42,15 +42,10 @@ if (
         );
 }
 
-var mongo = builder
-    .AddMongoDB("mongo", userName: username, password: password)
-    .WithDataVolume();
-
-var pluginDb = mongo.AddDatabase("plugindb");
-
 IResourceBuilder<IResourceWithConnectionString> rubricDb;
 IResourceBuilder<IResourceWithConnectionString> assignmentFlowDb;
-if (builder.Configuration.GetValue<bool>("Infra:UseDeploymentParts:Postgres", false))
+IResourceBuilder<IResourceWithConnectionString> pluginDb;
+if (builder.Configuration.GetValue<bool>("Infra:UseDeploymentParts:Database", false))
 {
     var rubricDbConnectionString = builder.AddParameter(
         "rubricDbConnectionString",
@@ -59,6 +54,11 @@ if (builder.Configuration.GetValue<bool>("Infra:UseDeploymentParts:Postgres", fa
             ?? throw new InvalidOperationException(
                 "RUBRIC_DB_CONNECTION_STRING environment variable is not set."
             )
+    );
+
+    rubricDb = builder.AddConnectionString(
+        "rubricdb",
+        ReferenceExpression.Create($"{rubricDbConnectionString}")
     );
 
     var assignmentFlowDbConnectionString = builder.AddParameter(
@@ -70,14 +70,22 @@ if (builder.Configuration.GetValue<bool>("Infra:UseDeploymentParts:Postgres", fa
             )
     );
 
-    rubricDb = builder.AddConnectionString(
-        "rubricdb",
-        ReferenceExpression.Create($"{rubricDbConnectionString}")
-    );
-
     assignmentFlowDb = builder.AddConnectionString(
         "assignmentflowdb",
         ReferenceExpression.Create($"{assignmentFlowDbConnectionString}")
+    );
+
+    var pluginDbConnectionString = builder.AddParameter(
+        "pluginDbConnectionString",
+        secret: true,
+        value: Environment.GetEnvironmentVariable("PLUGIN_DB_CONNECTION_STRING")
+            ?? throw new InvalidOperationException(
+                "PLUGIN_DB_CONNECTION_STRING environment variable is not set."
+            )
+    );
+    pluginDb = builder.AddConnectionString(
+        "plugindb",
+        ReferenceExpression.Create($"{pluginDbConnectionString}")
     );
 }
 else
@@ -85,6 +93,11 @@ else
     var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
     rubricDb = postgres.AddDatabase("rubricdb");
     assignmentFlowDb = postgres.AddDatabase("assignmentflowdb");
+
+    var mongo = builder
+        .AddMongoDB("mongo", userName: username, password: password)
+        .WithDataVolume();
+    pluginDb = mongo.AddDatabase("plugindb");
 
     var dbgateContainer = builder.AddContainer("dbgate", "dbgate/dbgate", "alpine");
     var dbgate = dbgateContainer
