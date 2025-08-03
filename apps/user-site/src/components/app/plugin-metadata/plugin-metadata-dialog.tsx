@@ -50,15 +50,13 @@ export function PluginMetadataDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>
             {getPluginName()} Results - {criterionName}
           </DialogTitle>
         </DialogHeader>
-        <div className="mt-4">
-          {renderMetadataComponent()}
-        </div>
+        <div className="mt-4">{renderMetadataComponent()}</div>
       </DialogContent>
     </Dialog>
   );

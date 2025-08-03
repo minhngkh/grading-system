@@ -21,9 +21,7 @@ export function StaticAnalysisMetadata({ metadata }: StaticAnalysisMetadataProps
           <Shield className="h-5 w-5" />
           Static Analysis Results
         </h3>
-        <Badge variant="outline">
-          {ignoredFiles.length} Files Processed
-        </Badge>
+        <Badge variant="outline">{ignoredFiles.length} Files Processed</Badge>
       </div>
 
       {ignoredFiles.length > 0 && (
@@ -32,7 +30,7 @@ export function StaticAnalysisMetadata({ metadata }: StaticAnalysisMetadataProps
             <FileX className="h-4 w-4 text-muted-foreground" />
             <h4 className="font-medium">Analyzed Files</h4>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 max-h-[60vh] overflow-y-auto custom-scrollbar">
             {ignoredFiles.map((file) => (
               <div key={file} className="text-sm font-mono bg-muted px-2 py-1 rounded">
                 {file}

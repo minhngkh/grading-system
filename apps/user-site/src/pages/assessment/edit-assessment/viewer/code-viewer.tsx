@@ -249,34 +249,26 @@ const HighlightableViewer = ({
         fromCol2: number,
         toCol2: number,
       ): boolean => {
-        const fb1ContainsFb2 =
-          fromLine1 <= fromLine2 &&
-          toLine1 >= toLine2 &&
-          (fromLine1 < fromLine2 ||
-            toLine1 > toLine2 ||
-            (fromLine1 === fromLine2 && fromCol1 <= fromCol2) ||
-            (toLine1 === toLine2 && toCol1 >= toCol2));
+        const start1IsBeforeEnd2 =
+          fromLine1 < toLine2 || (fromLine1 === toLine2 && fromCol1 < toCol2);
+        const start2IsBeforeEnd1 =
+          fromLine2 < toLine1 || (fromLine2 === toLine1 && fromCol2 < toCol1);
 
-        const fb2ContainsFb1 =
-          fromLine2 <= fromLine1 &&
-          toLine2 >= toLine1 &&
-          (fromLine2 < fromLine1 ||
-            toLine2 > toLine1 ||
-            (fromLine2 === fromLine1 && fromCol2 <= fromCol1) ||
-            (toLine2 === toLine1 && toCol2 >= toCol1));
-
-        if (fb1ContainsFb2 || fb2ContainsFb1) {
+        if (!(start1IsBeforeEnd2 && start2IsBeforeEnd1)) {
           return false;
         }
 
-        if (fromLine1 <= fromLine2) {
-          if (toLine1 > fromLine2) {
-            return true;
-          } else if (toLine1 === fromLine2) {
-            return toCol1 > fromCol2;
-          }
-        }
-        return false;
+        const start1LEstart2 =
+          fromLine1 < fromLine2 || (fromLine1 === fromLine2 && fromCol1 <= fromCol2);
+        const end2LEend1 = toLine2 < toLine1 || (toLine2 === toLine1 && toCol2 <= toCol1);
+        const range1ContainsRange2 = start1LEstart2 && end2LEend1;
+
+        const start2LEstart1 =
+          fromLine2 < fromLine1 || (fromLine2 === fromLine1 && fromCol2 <= fromCol1);
+        const end1LEend2 = toLine1 < toLine2 || (toLine1 === toLine2 && toCol1 <= toCol2);
+        const range2ContainsRange1 = start2LEstart1 && end1LEend2;
+
+        return !(range1ContainsRange2 || range2ContainsRange1);
       };
 
       const fb1IntersectsFb2 = checkIntersection(
@@ -432,86 +424,93 @@ const HighlightableViewer = ({
       groups.push(group);
     });
 
-    const result = [...feedbacks];
+    let result = [...feedbacks];
 
     const indicesToRemove = new Set<number>();
 
     groups.forEach((group) => {
       if (group.length === 1) return;
 
-      group.forEach(({ originalIndex }) => {
-        indicesToRemove.add(originalIndex);
-      });
-
       const mergedFeedback = group.reduce(
         (merged, { fb }) => mergeFeedbacks(merged, fb),
         group[0].fb,
       );
 
-      const firstIndex = Math.min(...group.map(({ originalIndex }) => originalIndex));
+      const indices = group.map(({ originalIndex }) => originalIndex);
+      const firstIndex = Math.min(...indices);
       result[firstIndex] = mergedFeedback;
+      indices.forEach((idx) => {
+        if (idx !== firstIndex) indicesToRemove.add(idx);
+      });
     });
 
     const sortedIndicesToRemove = Array.from(indicesToRemove).sort((a, b) => b - a);
     sortedIndicesToRemove.forEach((index) => {
-      const isFirstInGroup = groups.some((group) => {
-        const firstIndex = Math.min(...group.map(({ originalIndex }) => originalIndex));
-        return firstIndex === index && group.length > 1;
-      });
-
-      if (!isFirstInGroup) {
-        if (result[index]) {
-          result[index] = {
-            ...result[index],
-            tag: "discarded",
-          };
-        }
-      }
+      result.splice(index, 1);
     });
 
     return result;
   }
 
+  const [didInitSave, setDidInitSave] = useState(false);
+
   useEffect(() => {
-    const adjusted = getAdjustedFeedbacks(file, assessment.feedbacks);
-    const merged = mergeIntersectingFeedbacks(adjusted);
+    if (!didInitSave) {
+      const adjusted = getAdjustedFeedbacks(file, assessment.feedbacks);
+      const merged = mergeIntersectingFeedbacks(adjusted);
 
-    const initStr = JSON.stringify(
-      assessment.feedbacks.map((fb) => ({
-        locationData: fb.locationData,
-        comment: fb.comment,
-        tag: fb.tag,
-        fileRef: fb.fileRef,
-      })),
-    );
+      const initStr = JSON.stringify(
+        assessment.feedbacks.map((fb) => ({
+          locationData: fb.locationData,
+          comment: fb.comment,
+          tag: fb.tag,
+          fileRef: fb.fileRef,
+        })),
+      );
+      const mergedStr = JSON.stringify(
+        merged.map((fb) => ({
+          locationData: fb.locationData,
+          comment: fb.comment,
+          tag: fb.tag,
+          fileRef: fb.fileRef,
+        })),
+      );
 
-    const adjustedStr = JSON.stringify(
-      adjusted.map((fb) => ({
-        locationData: fb.locationData,
-        comment: fb.comment,
-        tag: fb.tag,
-        fileRef: fb.fileRef,
-      })),
-    );
-    const mergedStr = JSON.stringify(
-      merged.map((fb) => ({
-        locationData: fb.locationData,
-        comment: fb.comment,
-        tag: fb.tag,
-        fileRef: fb.fileRef,
-      })),
-    );
-
-    if (adjustedStr !== initStr) {
-      onUpdate?.({ feedbacks: merged });
-      onUpdateLastSave?.({ feedbacks: merged });
+      if (mergedStr !== initStr) {
+        onUpdate?.({ feedbacks: merged });
+        onUpdateLastSave?.({ feedbacks: merged });
+      }
+      setDidInitSave(true);
     }
+  }, []);
 
-    if (mergedStr !== adjustedStr) {
-      onUpdate?.({ feedbacks: merged });
-      onUpdateLastSave?.({ feedbacks: merged });
+  useEffect(() => {
+    if (didInitSave) {
+      const adjusted = getAdjustedFeedbacks(file, assessment.feedbacks);
+      const merged = mergeIntersectingFeedbacks(adjusted);
+
+      const initStr = JSON.stringify(
+        assessment.feedbacks.map((fb) => ({
+          locationData: fb.locationData,
+          comment: fb.comment,
+          tag: fb.tag,
+          fileRef: fb.fileRef,
+        })),
+      );
+      const mergedStr = JSON.stringify(
+        merged.map((fb) => ({
+          locationData: fb.locationData,
+          comment: fb.comment,
+          tag: fb.tag,
+          fileRef: fb.fileRef,
+        })),
+      );
+
+      if (mergedStr !== initStr) {
+        onUpdate?.({ feedbacks: merged });
+      }
     }
-  }, [file.content, file.relativePath, assessment.feedbacks, onUpdate, onUpdateLastSave]);
+  }, [assessment.feedbacks, onUpdate, didInitSave]);
 
   useEffect(() => {
     if (activeFeedbackId === null || activeFeedbackId === undefined) {

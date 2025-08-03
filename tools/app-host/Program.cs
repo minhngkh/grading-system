@@ -42,53 +42,110 @@ if (
         );
 }
 
-var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
-
-var rubricDb = postgres.AddDatabase("rubricdb");
-var assignmentFlowDb = postgres.AddDatabase("assignmentflowdb");
-
 var mongo = builder
     .AddMongoDB("mongo", userName: username, password: password)
     .WithDataVolume();
 
 var pluginDb = mongo.AddDatabase("plugindb");
 
-var dbgateContainer = builder.AddContainer("dbgate", "dbgate/dbgate", "alpine");
-var dbgate = dbgateContainer
-    .WaitFor(postgres)
-    .WithVolume(VolumeNameGenerator.Generate(dbgateContainer, "data"), "/root/.dbgate")
-    .WithHttpEndpoint(targetPort: 3000, name: "dbgate-ui")
-    .WithEnvironment(ctx =>
-    {
-        ctx.EnvironmentVariables["CONNECTIONS"] = "con1,con2";
-        ctx.EnvironmentVariables["LABEL_con1"] = "postgres";
-        ctx.EnvironmentVariables["SERVER_con1"] = postgres.Resource.Name;
-        ctx.EnvironmentVariables["PORT_con1"] =
-            postgres.Resource.PrimaryEndpoint.TargetPort?.ToString() ?? "";
-        ctx.EnvironmentVariables["USER_con1"] =
-            postgres.Resource.UserNameParameter?.Value ?? "postgres";
-        ctx.EnvironmentVariables["PASSWORD_con1"] = postgres
-            .Resource
-            .PasswordParameter
-            .Value;
-        ctx.EnvironmentVariables["ENGINE_con1"] = "postgres@dbgate-plugin-postgres";
-
-        ctx.EnvironmentVariables["LABEL_con2"] = "mongo";
-        ctx.EnvironmentVariables["SERVER_con2"] = mongo.Resource.Name;
-        ctx.EnvironmentVariables["PORT_con2"] =
-            mongo.Resource.PrimaryEndpoint.TargetPort?.ToString() ?? "";
-        ctx.EnvironmentVariables["USER_con2"] =
-            mongo.Resource.UserNameParameter?.Value ?? "";
-        ctx.EnvironmentVariables["PASSWORD_con2"] =
-            mongo.Resource.PasswordParameter?.Value ?? "";
-        ctx.EnvironmentVariables["ENGINE_con2"] = "mongo@dbgate-plugin-mongo";
-    });
-
-var rabbitmq = builder
-    .AddRabbitMQ("messaging", username, password)
-    .WithManagementPlugin(
-        port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
+IResourceBuilder<IResourceWithConnectionString> rubricDb;
+IResourceBuilder<IResourceWithConnectionString> assignmentFlowDb;
+if (builder.Configuration.GetValue<bool>("Infra:UseDeploymentParts:Postgres", false))
+{
+    var rubricDbConnectionString = builder.AddParameter(
+        "rubricDbConnectionString",
+        secret: true,
+        value: Environment.GetEnvironmentVariable("RUBRIC_DB_CONNECTION_STRING")
+            ?? throw new InvalidOperationException(
+                "RUBRIC_DB_CONNECTION_STRING environment variable is not set."
+            )
     );
+
+    var assignmentFlowDbConnectionString = builder.AddParameter(
+        "assignmentFlowDbConnectionString",
+        secret: true,
+        value: Environment.GetEnvironmentVariable("ASSIGNMENTFLOW_DB_CONNECTION_STRING")
+            ?? throw new InvalidOperationException(
+                "ASSIGNMENTFLOW_DB_CONNECTION_STRING environment variable is not set."
+            )
+    );
+
+    rubricDb = builder.AddConnectionString(
+        "rubricdb",
+        ReferenceExpression.Create($"{rubricDbConnectionString}")
+    );
+
+    assignmentFlowDb = builder.AddConnectionString(
+        "assignmentflowdb",
+        ReferenceExpression.Create($"{assignmentFlowDbConnectionString}")
+    );
+}
+else
+{
+    var postgres = builder.AddPostgres("postgres", username, password).WithDataVolume();
+    rubricDb = postgres.AddDatabase("rubricdb");
+    assignmentFlowDb = postgres.AddDatabase("assignmentflowdb");
+
+    var dbgateContainer = builder.AddContainer("dbgate", "dbgate/dbgate", "alpine");
+    var dbgate = dbgateContainer
+        .WaitFor(postgres)
+        .WithVolume(
+            VolumeNameGenerator.Generate(dbgateContainer, "data"),
+            "/root/.dbgate"
+        )
+        .WithHttpEndpoint(targetPort: 3000, name: "dbgate-ui")
+        .WithEnvironment(ctx =>
+        {
+            ctx.EnvironmentVariables["CONNECTIONS"] = "con1,con2";
+            ctx.EnvironmentVariables["LABEL_con1"] = "postgres";
+            ctx.EnvironmentVariables["SERVER_con1"] = postgres.Resource.Name;
+            ctx.EnvironmentVariables["PORT_con1"] =
+                postgres.Resource.PrimaryEndpoint.TargetPort?.ToString() ?? "";
+            ctx.EnvironmentVariables["USER_con1"] =
+                postgres.Resource.UserNameParameter?.Value ?? "postgres";
+            ctx.EnvironmentVariables["PASSWORD_con1"] = postgres
+                .Resource
+                .PasswordParameter
+                .Value;
+            ctx.EnvironmentVariables["ENGINE_con1"] = "postgres@dbgate-plugin-postgres";
+
+            ctx.EnvironmentVariables["LABEL_con2"] = "mongo";
+            ctx.EnvironmentVariables["SERVER_con2"] = mongo.Resource.Name;
+            ctx.EnvironmentVariables["PORT_con2"] =
+                mongo.Resource.PrimaryEndpoint.TargetPort?.ToString() ?? "";
+            ctx.EnvironmentVariables["USER_con2"] =
+                mongo.Resource.UserNameParameter?.Value ?? "";
+            ctx.EnvironmentVariables["PASSWORD_con2"] =
+                mongo.Resource.PasswordParameter?.Value ?? "";
+            ctx.EnvironmentVariables["ENGINE_con2"] = "mongo@dbgate-plugin-mongo";
+        });
+}
+
+IResourceBuilder<IResourceWithConnectionString> messaging;
+if (builder.Configuration.GetValue<bool>("Infra:UseDeploymentParts:ServiceBus", false))
+{
+    var serviceBusConnectionString = builder.AddParameter(
+        "serviceBusConnectionString",
+        secret: true,
+        value: Environment.GetEnvironmentVariable("SERVICE_BUS_CONNECTION_STRING")
+            ?? throw new InvalidOperationException(
+                "SERVICE_BUS_CONNECTION_STRING environment variable is not set."
+            )
+    );
+
+    messaging = builder.AddConnectionString(
+        "messaging",
+        ReferenceExpression.Create($"{serviceBusConnectionString}")
+    );
+}
+else
+{
+    messaging = builder
+        .AddRabbitMQ("messaging", username, password)
+        .WithManagementPlugin(
+            port: builder.Configuration.GetValue<int?>("Infra:RabbitMQ:Management:Port")
+        );
+}
 
 var storage = builder
     .AddAzureStorage("storage")
@@ -113,8 +170,8 @@ if (builder.Configuration.GetValue<bool>("RubricEngine:Enabled", true))
         .WaitFor(rubricDb)
         .WithReference(rubricContextStore)
         .WaitFor(rubricContextStore)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq);
+        .WithReference(messaging)
+        .WaitFor(messaging);
 }
 
 IResourceBuilder<ProjectResource>? assignmentFlow = null;
@@ -130,8 +187,8 @@ if (builder.Configuration.GetValue<bool>("AssignmentFlow:Enabled", true))
         .WaitFor(assignmentFlowDb)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(messaging)
+        .WaitFor(messaging)
         .WithReference(rubricEngine)
         .WaitFor(rubricEngine);
 }
@@ -151,8 +208,8 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
         )
         .WithReference(pluginDb)
         .WaitFor(pluginDb)
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(messaging)
+        .WaitFor(messaging)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
@@ -169,8 +226,8 @@ if (builder.Configuration.GetValue<bool>("GradingService:Enabled", true))
             isProxied: toProxy,
             env: "PORT"
         )
-        .WithReference(rabbitmq)
-        .WaitFor(rabbitmq)
+        .WithReference(messaging)
+        .WaitFor(messaging)
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
