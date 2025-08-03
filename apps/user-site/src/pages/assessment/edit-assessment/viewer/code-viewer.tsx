@@ -502,17 +502,11 @@ const HighlightableViewer = ({
       })),
     );
 
-    if (adjustedStr !== initStr) {
-      onUpdate?.({ feedbacks: merged });
-      onUpdateLastSave?.({ feedbacks: merged });
-    }
-
-    if (mergedStr !== adjustedStr) {
+    if (mergedStr !== initStr || mergedStr !== adjustedStr) {
       onUpdate?.({ feedbacks: merged });
       onUpdateLastSave?.({ feedbacks: merged });
     }
   }, [file.content, file.relativePath, assessment.feedbacks, onUpdate, onUpdateLastSave]);
-
   useEffect(() => {
     if (activeFeedbackId === null || activeFeedbackId === undefined) {
       setTooltipFb(null);
