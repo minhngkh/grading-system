@@ -10,7 +10,7 @@
 
 # Main storage account
 resource "azurerm_storage_account" "main" {
-  name                     = "${var.name}-storage"
+  name                     = "${replace(var.name, "-", "")}storage"
   resource_group_name      = azurerm_resource_group.main.name
   location                 = azurerm_resource_group.main.location
   account_tier             = "Standard"
