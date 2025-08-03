@@ -21,7 +21,7 @@ interface TestRunnerMetadataProps {
 
 export function TestRunnerMetadata({ metadata }: TestRunnerMetadataProps) {
   const { feedback } = metadata;
-  const passedCount = feedback.filter(tc => tc.passed).length;
+  const passedCount = feedback.filter((tc) => tc.passed).length;
   const totalCount = feedback.length;
 
   return (
@@ -36,20 +36,21 @@ export function TestRunnerMetadata({ metadata }: TestRunnerMetadataProps) {
         </Badge>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
         {feedback.map((testCase) => (
           <Card key={testCase.testCase} className="p-3">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-medium flex items-center gap-2 text-sm">
                   Test {testCase.testCase}
-                  {testCase.passed ? (
+                  {testCase.passed ?
                     <CheckCircle className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <XCircle className="h-3 w-3 text-red-500" />
-                  )}
+                  : <XCircle className="h-3 w-3 text-red-500" />}
                 </span>
-                <Badge variant={testCase.passed ? "default" : "destructive"} className="text-xs">
+                <Badge
+                  variant={testCase.passed ? "default" : "destructive"}
+                  className="text-xs"
+                >
                   {testCase.passed ? "PASS" : "FAIL"}
                 </Badge>
               </div>
