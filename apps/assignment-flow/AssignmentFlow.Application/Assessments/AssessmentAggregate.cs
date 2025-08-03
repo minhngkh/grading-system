@@ -80,16 +80,14 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
 
     public void Assess(AutoGrading.AssessCriterionCommand command)
     {
-        ConditionalEmit(
-            command.Feedbacks.Count > 0,
-            () => new UpdateFeedBack.FeedbacksUpdatedEvent { Feedbacks = command.Feedbacks });
-
         var scoreItem = command.ScoreBreakdownItem;
         var isAIGrader = scoreItem.Grader.IsAIGrader;
-        Emit(new AutoGrading.CriterionAssessedEvent {
+        Emit(new AutoGrading.CriterionAssessedEvent
+        {
             ScoreBreakdownItem = isAIGrader
             ? scoreItem.NormalizedScore(State.Criteria)
             : scoreItem.Clone(),
+            Feedbacks = command.Feedbacks
         });
     }
 

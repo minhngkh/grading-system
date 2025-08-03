@@ -153,14 +153,10 @@ public class Assessment
         return Task.CompletedTask;
     }
 
-    private void UpdateLastModifiedData(IDomainEvent domainEvent)
-    {
-        LastModified = domainEvent.Timestamp.ToUniversalTime();
-        Version = domainEvent.AggregateSequenceNumber;
-    }
-
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGrading.CriterionAssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
+        Feedbacks.AddRange(domainEvent.AggregateEvent.Feedbacks.ToApiContracts());
+
         var breakdownItem = domainEvent.AggregateEvent.ScoreBreakdownItem.ToApiContract();
         
         // Update or add the breakdown item
@@ -218,5 +214,11 @@ public class Assessment
         StateMachine.Fire(AssessmentTrigger.Complete);
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
+    }
+
+    private void UpdateLastModifiedData(IDomainEvent domainEvent)
+    {
+        LastModified = domainEvent.Timestamp.ToUniversalTime();
+        Version = domainEvent.AggregateSequenceNumber;
     }
 }

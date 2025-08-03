@@ -56,6 +56,7 @@ public class AssessmentWriteModel
     internal void Apply(AutoGrading.CriterionAssessedEvent @event)
     {
         ScoreBreakdowns = ScoreBreakdowns.AddOrUpdate(@event.ScoreBreakdownItem);
+        Feedbacks.AddRange(@event.Feedbacks);
     }
 
     internal void Apply(AutoGrading.AutoGradingFinishedEvent _)
