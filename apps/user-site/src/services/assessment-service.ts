@@ -1,15 +1,16 @@
-import { Grader } from "./../types/assessment";
-import { buildFilterExpr, eq } from "@/lib/json-api-query";
-import {
+import type { AxiosRequestConfig, AxiosResponse } from "axios";
+import type {
   Assessment,
   AssessmentState,
   FeedbackItem,
   ScoreAdjustment,
   ScoreBreakdown,
 } from "@/types/assessment";
-import { GetAllResult, SearchParams } from "@/types/search-params";
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import type { GetAllResult, SearchParams } from "@/types/search-params";
+import axios from "axios";
 import { Deserializer } from "jsonapi-serializer";
+import { buildFilterExpr, eq } from "@/lib/json-api-query";
+import { Grader } from "./../types/assessment";
 
 const BASE_URL = import.meta.env.VITE_ASSIGNMENT_FLOW_URL;
 const ASSIGNMENT_FLOW_API_URL = `${BASE_URL}/api/v1`;
@@ -172,6 +173,7 @@ export class AssessmentService {
         score: item.score,
         createdAt: new Date(item.createdAt),
         scoreBreakdowns: item.scoreBreakdowns,
+        deltaScoreBreakdowns: item.deltaScoreBreakdowns,
         deltaScore: item.deltaScore,
       };
     });

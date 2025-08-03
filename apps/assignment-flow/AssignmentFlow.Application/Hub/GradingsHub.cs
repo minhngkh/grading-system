@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace AssignmentFlow.Application.Hub;
 
@@ -17,18 +18,13 @@ public class GradingsHub(AssignmentFlowDbContext dbContext) : Hub<IGradingClient
 
     public async Task<List<AssessmentProgress>> Register(string gradingId)
     {
-        //var userId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
-        //    ?? throw new HubException("Teacher ID not found.");
+        var userId = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new HubException("Teacher ID not found.");
 
-        //var gradingMatch = await dbContext.Gradings
-        //    .AsNoTracking()
-        //    .Where(g => g.Id == gradingId && g.TeacherId == userId)
-        //    .FirstOrDefaultAsync();
-
-        //if (gradingMatch == null)
-        //{
-        //    throw new HubException("Invalid grading access.");
-        //}
+        var gradingMatch = await dbContext.Gradings
+            .AsNoTracking()
+            .Where(g => g.Id == gradingId && g.TeacherId == userId)
+            .FirstOrDefaultAsync() ?? throw new HubException("Invalid grading access.");
 
         await Groups.AddToGroupAsync(Context.ConnectionId, gradingId);
 

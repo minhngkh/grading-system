@@ -1,13 +1,15 @@
+import type { ScoreAdjustment, ScoreBreakdown } from "@/types/assessment";
+import { ChevronDown, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import React from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -16,8 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronDown, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
-import { ScoreAdjustment, ScoreBreakdown } from "@/types/assessment";
 import { cn } from "@/lib/utils";
 
 interface ScoreAdjustmentDialogProps {
@@ -119,16 +119,14 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                           </TableRow>
 
                           {/* Criterion breakdown rows */}
-                          {adjustment.scoreBreakdowns.map(
+                          {adjustment.scoreBreakdowns
+                          .map(
                             (scoreBreakdown: ScoreBreakdown, scoreIndex: number) => {
-                              const deltaScore =
-                                adjustmentIndex === sortedScoreAdjustment.length - 1 ?
-                                  0
-                                : sortedScoreAdjustment[adjustmentIndex].scoreBreakdowns[
-                                    scoreIndex
-                                  ].rawScore -
-                                  sortedScoreAdjustment[adjustmentIndex + 1]
-                                    .scoreBreakdowns[scoreIndex].rawScore;
+      
+                              const deltaScore = (adjustment.deltaScoreBreakdowns
+                                .find((delta: ScoreBreakdown) => delta.criterionName === scoreBreakdown.criterionName)
+                                ?.rawScore || 0) * scaleFactor / 100;
+
                               return (
                                 <TableRow
                                   key={`${adjustmentIndex}-breakdown-${scoreIndex}`}

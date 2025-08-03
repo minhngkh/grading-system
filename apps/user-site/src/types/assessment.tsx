@@ -84,6 +84,7 @@ export type ScoreAdjustment = {
   score: number;
   createdAt: Date;
   scoreBreakdowns: ScoreBreakdown[];
+  deltaScoreBreakdowns: ScoreBreakdown[];
   deltaScore: number;
 };
 
