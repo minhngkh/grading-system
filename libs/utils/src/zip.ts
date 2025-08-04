@@ -12,7 +12,12 @@ export function zipFolderToBuffer(directory: string) {
     () => {
       const zip = new AdmZip();
 
-      const items = fs.readdirSync(directory, { withFileTypes: true });
+      let items = fs.readdirSync(directory, { withFileTypes: true });
+
+      if (items.length === 1 && items[0].isDirectory()) {
+        directory = path.join(directory, items[0].name);
+        items = fs.readdirSync(directory, { withFileTypes: true });
+      }
 
       for (const item of items) {
         logger.debug(`Adding ${item.name} to zip`);
