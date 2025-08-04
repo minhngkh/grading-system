@@ -15,3 +15,19 @@ region = "Southeast Asia"
 # region = "West Europe" 
 # region = "Australia East"
 # region = "Japan East"
+
+# Container images (update these with your actual registry and tags)
+rubric_engine_image    = "your-dockerhub-username/rubric-engine:latest"
+assignment_flow_image  = "your-dockerhub-username/assignment-flow:latest"
+
+# Authentication
+clerk_publishable_key = "pk_test_your-clerk-publishable-key-here"
+
+# Database connection strings
+rubric_db_connection_string        = "Host=your-postgres-host;Database=rubricdb;Username=your-username;Password=your-password;SSL Mode=Require;"
+assignment_flow_db_connection_string = "Host=your-postgres-host;Database=assignmentflowdb;Username=your-username;Password=your-password;SSL Mode=Require;"
+
+# For production deployment, set:
+# environment = "production"
+# name = "grading-system-prod"
+# Use stronger database instances and consider managed databases
