@@ -16,10 +16,6 @@ export async function getCategoryById(id: string) {
   return PluginCategoryModel.findById(id).lean().exec();
 }
 
-export async function getCategoryByAlias(alias: string) {
-  return PluginCategoryModel.findOne({ alias }).lean().exec();
-}
-
 export async function updateCategory(id: string, data: PluginCategory) {
   return PluginCategoryModel.findByIdAndUpdate(id, data, { new: true }).lean().exec();
 }

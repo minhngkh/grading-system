@@ -7,7 +7,7 @@ namespace RubricEngine.Application.Rubrics;
 /// </summary>
 public sealed class RubricName : StringValueObject
 {
-    public static RubricName Empty => new();
+    public static RubricName Empty => new("Untitled");
     private RubricName() { }
     [JsonConstructor]
     public RubricName(string value) : base(value) { }

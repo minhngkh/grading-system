@@ -4,44 +4,49 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="9.2.1" />
-    <PackageVersion Include="Aspire.Hosting" Version="9.2.1" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="9.2.1" />
-    <PackageVersion Include="Aspire.Hosting.MongoDB" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Hosting.NodeJs" Version="9.2.1" />
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="9.2.0" />
+    <PackageVersion Include="Aspire.Azure.Messaging.ServiceBus" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Hosting" Version="9.3.2" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Hosting.Azure.ServiceBus" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Hosting.MongoDB" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Hosting.NodeJs" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="9.3.1" />
     <PackageVersion Include="Aspire.MongoDB.Driver" Version="9.1.0" />
-    <PackageVersion Include="Aspire.Npgsql" Version="9.2.0" />
-    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.2.0" />
-    <PackageVersion Include="Aspire.RabbitMQ.Client" Version="9.1.0" />
-    <PackageVersion Include="Aspire.RabbitMQ.Client.v7" Version="9.2.0" />
-    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.NodeJS.Extensions" Version="9.4.0" />
+    <PackageVersion Include="Aspire.Npgsql" Version="9.3.1" />
+    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.3.1" />
+    <PackageVersion Include="Aspire.RabbitMQ.Client" Version="9.3.1" />
+    <PackageVersion Include="Aspire.RabbitMQ.Client.v7" Version="9.3.1" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.24.0" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.NodeJS.Extensions" Version="9.5.0" />
     <PackageVersion Include="EventFlow.MongoDB" Version="1.2.0" />
-    <PackageVersion Include="FluentValidation" Version="11.11.0" />
-    <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <PackageVersion Include="FluentValidation" Version="12.0.0" />
+    <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <PackageVersion Include="Grpc.AspNetCore" Version="2.71.0" />
     <PackageVersion Include="JsonApiDotNetCore" Version="5.6.0" />
-    <PackageVersion Include="MassTransit" Version="8.4.1" />
-    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.4.0" />
+    <PackageVersion Include="MassTransit" Version="8.5.1" />
+    <PackageVersion Include="MassTransit.Azure.ServiceBus.Core" Version="8.5.1" />
+    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.5.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.5" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.5.0" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="9.3.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.6.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="9.3.1" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.11.2" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.11.2" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.11.1" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.11.1" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.1" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.1.9" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.5.3" />
     <PackageVersion Include="SharpGrip.FluentValidation.AutoValidation.Endpoints" Version="1.5.0" />
+    <PackageVersion Include="Sqids" Version="3.1.0" />
     <PackageVersion Include="Stateless" Version="5.17.0" />
     <PackageVersion Include="System.Text.Json" Version="9.0.5" />
     <!-- Add the EventFlow package reference to the Domain project -->

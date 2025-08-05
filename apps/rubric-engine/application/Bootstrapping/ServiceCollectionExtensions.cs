@@ -7,11 +7,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using RubricEngine.Application.Models;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
+
 namespace RubricEngine.Application.Bootstrapping;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddBootstrapping(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    public static IServiceCollection AddBootstrapping(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IWebHostEnvironment environment
+    )
     {
         // Add application services here
         // Example: services.AddScoped<IMyService, MyService>();
@@ -28,7 +33,10 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddJwtAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services
             .AddAuthorization()
@@ -44,7 +52,7 @@ public static class ServiceCollectionExtensions
                     ValidateIssuer = true,
                     ValidateAudience = false, // Set to false if you want to allow any audience
                     ValidateIssuerSigningKey = true,
-                    ValidateLifetime = true
+                    ValidateLifetime = true,
                 };
 
                 //jwtOptions.MapInboundClaims = false;
@@ -53,7 +61,11 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddMessageBus(this IServiceCollection services, IConfiguration configuration, Assembly? assembly)
+    private static IServiceCollection AddMessageBus(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        Assembly? assembly
+    )
     {
         services.AddMassTransit(config =>
         {
@@ -62,18 +74,42 @@ public static class ServiceCollectionExtensions
             if (assembly != null)
                 config.AddConsumers(assembly);
 
-            config.UsingRabbitMq((context, configurator) =>
+            if (Environment.GetEnvironmentVariable("USE_SERVICE_BUS") == "true")
             {
-                configurator.Host(new Uri(configuration.GetConnectionString("messaging")!));
-                configurator.ConfigureEndpoints(context);
-            });
+                config.UsingAzureServiceBus(
+                    (context, configurator) =>
+                    {
+                        configurator.Host(
+                            configuration.GetConnectionString("messaging")!
+                        );
+                        configurator.ConfigureEndpoints(context);
+                        
+                        // Set global concurrency for Azure Service Bus
+                        configurator.ConcurrentMessageLimit = 10;
+                    }
+                );
+            }
+            else
+            {
+                config.UsingRabbitMq(
+                    (context, configurator) =>
+                    {
+                        configurator.Host(
+                            new Uri(configuration.GetConnectionString("messaging")!)
+                        );
+                        configurator.ConfigureEndpoints(context);
+                    }
+                );
+            }
         });
-        //services.AddHostedService<Worker>();
 
         return services;
     }
 
-    private static IServiceCollection AddProjectJsonApi(this IServiceCollection services, Assembly? assembly)
+    private static IServiceCollection AddProjectJsonApi(
+        this IServiceCollection services,
+        Assembly? assembly
+    )
     {
         services.AddJsonApi<RubricDbContext>(
             options =>
@@ -89,14 +125,18 @@ public static class ServiceCollectionExtensions
                 options.ResourceLinks = LinkTypes.None;
                 options.TopLevelLinks = LinkTypes.Pagination;
                 options.RelationshipLinks = LinkTypes.None;
-            }, discovery: discovery => discovery.AddAssembly(assembly));
+            },
+            discovery: discovery => discovery.AddAssembly(assembly)
+        );
 
         services.AddEndpointsApiExplorer();
 
         return services;
-    }   
+    }
 
-    private static IServiceCollection AddFluentValidation(this IServiceCollection services)
+    private static IServiceCollection AddFluentValidation(
+        this IServiceCollection services
+    )
     {
         services
             .AddValidatorsFromAssemblyContaining<Program>()
@@ -104,7 +144,10 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddServiceBootstrapping(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddServiceBootstrapping(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         services.AddTransient<DbInitializer>();
 

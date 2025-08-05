@@ -1,33 +1,94 @@
 import { z } from "zod";
 
+export enum Grader {
+  aiGrader = "AI",
+  teacher = "Teacher",
+}
+
+export enum ScoreBreakdownStatus {
+  Manual = "Mannual",
+  Failed = "Failed",
+  Graded = "Graded",
+}
+
 export const ScoreBreakdownSchema = z.object({
   criterionName: z.string(),
-  tag: z.string(),
+  performanceTag: z.string(),
+  grader: z.string(),
   rawScore: z.number(),
+  metadata: z.union([z.array(z.string()), z.record(z.unknown())]).optional(),
+  status: z.nativeEnum(ScoreBreakdownStatus),
 });
 
-export const FeedbackItemSchema = z.object({
+const BaseFeedbackSchema = z.object({
+  id: z.string().optional(),
   criterion: z.string(),
   fileRef: z.string(),
-  fromLine: z.number(),
-  toLine: z.number(),
-  fromCol: z.number(),
-  toCol: z.number(),
   comment: z.string(),
   tag: z.string(),
 });
 
+const TextLocationSchema = z.object({
+  type: z.literal("text"),
+  fromLine: z.number(),
+  toLine: z.number(),
+  fromCol: z.number().optional(),
+  toCol: z.number().optional(),
+});
+
+const PdfLocationSchema = z.object({
+  type: z.literal("pdf"),
+  page: z.number(),
+});
+
+const ImageLocationSchema = z.object({
+  type: z.literal("image"),
+});
+
+export const LocationDataSchema = z.discriminatedUnion("type", [
+  TextLocationSchema,
+  PdfLocationSchema,
+  ImageLocationSchema,
+]);
+
+export const FeedbackSchema = BaseFeedbackSchema.extend({
+  locationData: LocationDataSchema,
+});
+
+export const FeedbackListSchema = z.array(FeedbackSchema);
+
+export enum AssessmentState {
+  Created = "Created",
+  AutoGradingStarted = "AutoGradingStarted",
+  AutoGradingFinished = "AutoGradingFinished",
+  AutoGradingFailed = "AutoGradingFailed",
+  ManualGradingRequired = "ManualGradingRequired",
+  Completed = "Completed",
+}
+
 export const AssessmentSchema = z.object({
   id: z.string(),
   gradingId: z.string(),
-  scaleFactor: z.number(),
   submissionReference: z.string(),
   rawScore: z.number(),
   adjustedCount: z.number().optional(),
   scoreBreakdowns: z.array(ScoreBreakdownSchema),
-  feedbacks: z.array(FeedbackItemSchema),
+  feedbacks: z.array(FeedbackSchema),
+  status: z.nativeEnum(AssessmentState),
+  lastModified: z.date().optional(),
+  createdAt: z.date(),
 });
 
-export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;
-export type FeedbackItem = z.infer<typeof FeedbackItemSchema>;
+export type ScoreAdjustment = {
+  adjustmentSource: Grader;
+  score: number;
+  createdAt: Date;
+  scoreBreakdowns: ScoreBreakdown[];
+  deltaScoreBreakdowns: ScoreBreakdown[];
+  deltaScore: number;
+};
+
 export type Assessment = z.infer<typeof AssessmentSchema>;
+export type FeedbackItem = z.infer<typeof FeedbackSchema>;
+export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;
+export type LocationData = z.infer<typeof LocationDataSchema>;

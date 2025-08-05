@@ -1,20 +1,25 @@
 ﻿using EventFlow.Aggregates;
 using EventFlow.Core;
+using RubricEngine.Application.Protos;
+using RubricService = RubricEngine.Application.Protos.RubricProtoService.RubricProtoServiceClient;
 
 namespace AssignmentFlow.Application.Gradings;
 
 public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
 {
     private readonly ILogger<GradingAggregate> logger;
+    private readonly RubricService rubricService;
     public TeacherId TeacherId => State.TeacherId;
     public readonly GradingWriteModel State;
     public GradingAggregate(
         GradingId id,
-        ILogger<GradingAggregate> logger)
+        ILogger<GradingAggregate> logger,
+        RubricService rubricService)
         : base(id)
     {
         State = new GradingWriteModel();
         this.logger = logger;
+        this.rubricService = rubricService;
         Register(State);
     }
 
@@ -22,9 +27,29 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
     {
         Emit(new Create.GradingCreatedEvent
         {
-            TeacherId = command.TeacherId
+            TeacherId = command.TeacherId,
+            Reference = command.Reference
+        });
+
+        Emit(new UpdateScaleFactor.ScaleFactorUpdatedEvent
+        {
+            ScaleFactor = command.ScaleFactor
+        });
+
+        ConditionalEmit(command.Name is not null,
+        () => new UpdateInfo.InfoUpdatedEvent
+        {
+            GradingName = command.Name!
         });
     }
+
+    public void UpdateInfo(UpdateInfo.Command command)
+    {
+        Emit(new UpdateInfo.InfoUpdatedEvent
+        {
+            GradingName = command.GradingName
+        });
+    }   
 
     public void UpdateSelectors(UpdateCriterionSelectors.Command command)
     {
@@ -42,19 +67,32 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         });
     }
 
-    public void ChangeRubric(ChangeRubric.Command command)
+    public void ChangeRubric(RubricId rubricId)
     {
+        var rubric = rubricService.GetRubric(new GetRubricRequest { RubricId = rubricId });
+        var criteria = rubric.Criteria;
+        var selectors = criteria.Select(criterion =>
+        {
+            var criterionName = CriterionName.New(criterion.Name);
+            return Selector.New(criterionName, Pattern.All);
+        }).ToList();
+
         Emit(new ChangeRubric.RubricChangedEvent
         {
-            RubricId = command.Rubric
+            RubricId = rubricId
+        });
+
+        Emit(new UpdateCriterionSelectors.SelectorsUpdatedEvent
+        {
+            Selectors = selectors
         });
     }
 
-    public void AddSubmission(Submission submission)
+    public void AddSubmissions(List<Submission> submissions)
     {
         UploadSubmission.SubmissionCanBeUploadedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
-        Emit(new UploadSubmission.SubmissionAddedEvent(submission));
+        Emit(new UploadSubmission.SubmissionAddedEvent(submissions));
     }
 
     public void RemoveSubmission(RemoveSubmission.Command command)
@@ -77,6 +115,20 @@ public class GradingAggregate : AggregateRoot<GradingAggregate, GradingId>
         Start.AutoGradingCanBeFinishedSpecification.New().ThrowDomainErrorIfNotSatisfied(State);
 
         Emit(new Start.AutoGradingFinishedEvent());
+    }
+
+    public void RestartAutoGrading()
+    {
+        //TODO: Add specification to check if grading is in a state that allows re-starting auto-grading
+        Emit(new Start.AutoGradingRestartedEvent());
+    }
+
+    private void ConditionalEmit(bool condition, Func<AggregateEvent<GradingAggregate, GradingId>> eventPredicate)
+    {
+        if (condition)
+        {
+            Emit(eventPredicate());
+        }
     }
 }
 

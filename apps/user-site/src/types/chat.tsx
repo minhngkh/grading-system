@@ -2,10 +2,9 @@ import { z } from "zod";
 import { CriteriaSchema } from "./rubric";
 
 export const ChatRubricSchema = z.object({
-  rubricName: z.string().min(1, "Rubric name is required"),
+  rubricName: z.string(),
   tags: z.array(z.string()),
   criteria: z.array(CriteriaSchema),
-  weightInRange: z.string().optional().default("false"),
 });
 
 export type ChatRubric = z.infer<typeof ChatRubricSchema>;

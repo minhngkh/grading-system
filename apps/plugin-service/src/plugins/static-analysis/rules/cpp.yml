@@ -1,0 +1,26 @@
+rules:
+  - id: no-system
+    pattern: system(...)
+    message: "Avoid using system() due to security risks."
+    severity: ERROR
+    languages: [cpp]
+
+  - id: gets-usage
+    pattern: gets(...)
+    message: "Avoid using gets(), it is unsafe."
+    severity: ERROR
+    languages: [cpp]
+
+  - id: hardcoded-password
+    pattern: std::string password = $VAL;
+    message: "Possible hardcoded password."
+    severity: ERROR
+    languages: [cpp]
+
+  - id: variable-naming
+    pattern: $VAR = ...
+    message: "Variable name `$VAR` should use lower_case_with_underscores."
+    severity: INFO
+    languages: [cpp]
+    metadata:
+      max-character-regex: ".*[a-z]+[A-Z]+.*" 

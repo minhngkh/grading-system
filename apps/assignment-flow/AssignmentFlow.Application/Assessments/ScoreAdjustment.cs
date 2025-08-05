@@ -24,10 +24,6 @@ public class ScoreAdjustment : Identifiable<string>
     public string GradingId { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
-    [MaxLength(ModelConstants.ShortText)]
-    public string AssessmentId { get; set; } = string.Empty;
-
-    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public decimal Score { get; set; } = 0M;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
@@ -44,6 +40,9 @@ public class ScoreAdjustment : Identifiable<string>
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    [HasOne]
+    public Assessment? Assessment { get; set; }
 }
 
 public sealed class ScoreAdjustmentId(string id) : Identity<ScoreAdjustmentId>(id) { }

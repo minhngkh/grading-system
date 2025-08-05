@@ -38,6 +38,7 @@ export const CriteriaSchema = z.object({
       },
     ),
   plugin: z.string().optional(),
+  configuration: z.string().optional(),
 });
 
 export const RubricSchema = z
@@ -65,6 +66,11 @@ export const RubricSchema = z
       ),
     updatedOn: z.date().optional(),
     status: z.nativeEnum(RubricStatus).optional(),
+    attachments: z
+      .array(z.string().min(1, "Attachment name is required"))
+      .optional()
+      .nullable(),
+    metadata: z.record(z.string()).optional().nullable(),
   })
   .refine(
     (data) => {

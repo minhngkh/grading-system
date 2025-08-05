@@ -1,19 +1,18 @@
 import type { Rubric } from "@/types/rubric";
 import type { Step } from "@stepperize/react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { RubricService } from "@/services/rubric-service";
 import { RubricSchema } from "@/types/rubric";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { defineStepper } from "@stepperize/react";
-import { useNavigate } from "@tanstack/react-router";
-import { Fragment } from "react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import ChatWindow from "./create-step";
-import { useIsMobile } from "@/hooks/use-mobile";
-import PluginRubricTable from "./plugin-step";
-import FinalRubricTable from "./review-step";
+import { useAuth } from "@clerk/clerk-react";
+import { useCallback } from "react";
+import ChatWindow from "./chat";
+import FinalRubricTable from "./final-rubric-table";
+import { useQueryClient } from "@tanstack/react-query";
+import { RubricValidationState, validateRubric } from "@/lib/rubric-validate";
 
 type StepData = {
   title: string;
@@ -23,10 +22,6 @@ const { useStepper, steps, utils } = defineStepper<StepData[]>(
   {
     id: "input",
     title: "Create Rubric",
-  },
-  {
-    id: "edit",
-    title: "Configure Plugin",
   },
   {
     id: "complete",
@@ -43,23 +38,19 @@ export default function RubricGenerationPage({
   initialRubric,
   rubricStep,
 }: RubricGenerationPageProps) {
+  const navigate = useNavigate();
+  const auth = useAuth();
   const stepper = useStepper({ initialStep: rubricStep });
   const currentIndex = utils.getIndex(stepper.current.id);
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
-
+  const { location } = useRouterState();
   const form = useForm<Rubric>({
     resolver: zodResolver(RubricSchema),
     defaultValues: initialRubric,
   });
 
-  const isNextDisabled = () => {
-    if (stepper.isFirst) {
-      return !form.formState.isValid;
-    }
+  const queryClient = useQueryClient();
 
-    return false;
-  };
+  const formValues = form.watch();
 
   const handlePrev = () => {
     stepper.prev();
@@ -67,17 +58,23 @@ export default function RubricGenerationPage({
   };
 
   const handleNext = async () => {
-    if (!form.formState.isValid) {
+    const validationResult = validateRubric(formValues);
+    if (validationResult.state === RubricValidationState.VALUE_ERROR) {
+      toast.error(validationResult.message);
+      return;
+    }
+
+    if (validationResult.state === RubricValidationState.PLUGIN_ERROR) {
+      toast.error(validationResult.message);
       return;
     }
 
     if (stepper.isLast) {
       try {
-        await RubricService.updateRubric(initialRubric?.id!, form.getValues());
-        navigate({ to: "/rubrics" });
+        navigate({ to: location.search?.redirect ?? "/rubrics/view", replace: true });
       } catch (err) {
         toast.error("Failed to update rubric");
-        console.error(err);
+        console.error("Failed to update rubric: ", err);
       }
 
       return;
@@ -87,77 +84,44 @@ export default function RubricGenerationPage({
     sessionStorage.setItem("rubricStep", steps[currentIndex + 1].id);
   };
 
-  const onUpdateRubric = async (updatedRubricData: Partial<Rubric>) => {
-    try {
+  const onUpdateRubric = useCallback(
+    (updatedRubricData: Partial<Rubric>) => {
       const updatedRubric = {
-        ...form.getValues(),
+        ...formValues,
         ...updatedRubricData,
       };
 
-      const result = RubricSchema.safeParse(updatedRubric);
+      queryClient.invalidateQueries({
+        queryKey: ["rubric", updatedRubric.id],
+      });
 
-      if (!result.success) {
-        throw result.error;
-      }
+      queryClient.invalidateQueries({
+        queryKey: ["rubrics"],
+      });
 
-      await RubricService.updateRubric(initialRubric.id, updatedRubricData);
       form.reset(updatedRubric);
-    } catch (err) {
-      toast.error("Failed to update rubric");
-      console.error(err);
-    }
-  };
+    },
+    [formValues, auth],
+  );
 
   return (
     <div className="flex flex-col h-full">
-      {!isMobile && (
-        <nav aria-label="Checkout Steps" className="group my-4">
-          <ol
-            className="flex items-center justify-between gap-2"
-            aria-orientation="horizontal"
-          >
-            {stepper.all.map((step, index, array) => (
-              <Fragment key={step.id}>
-                <li className="flex items-center gap-4 flex-shrink-0">
-                  <Button
-                    type="button"
-                    role="tab"
-                    variant={index <= currentIndex ? "default" : "secondary"}
-                    aria-current={stepper.current.id === step.id ? "step" : undefined}
-                    aria-posinset={index + 1}
-                    aria-setsize={steps.length}
-                    aria-selected={stepper.current.id === step.id}
-                    className="flex size-8 items-center justify-center rounded-full"
-                  >
-                    {index + 1}
-                  </Button>
-                  <span className="text-sm font-medium">{step.title}</span>
-                </li>
-                {index < array.length - 1 && (
-                  <Separator
-                    className={`flex-1 ${index < currentIndex ? "bg-primary" : "bg-muted"}`}
-                  />
-                )}
-              </Fragment>
-            ))}
-          </ol>
-        </nav>
-      )}
       <div className="mt-8 space-y-4 flex-1 flex flex-col items-center">
         {stepper.switch({
-          input: () => <ChatWindow rubric={form.getValues()} onUpdate={onUpdateRubric} />,
-          edit: () => (
-            <PluginRubricTable rubricData={form.getValues()} onUpdate={onUpdateRubric} />
-          ),
-          complete: () => <FinalRubricTable rubricData={form.getValues()} />,
+          input: () => <ChatWindow rubric={formValues} onUpdate={onUpdateRubric} />,
+          complete: () => <FinalRubricTable rubricData={formValues} />,
         })}
 
         <div className="flex w-full justify-end gap-4">
           <Button variant="secondary" onClick={handlePrev} disabled={stepper.isFirst}>
             Back
           </Button>
-          <Button disabled={isNextDisabled()} onClick={handleNext}>
-            {stepper.isLast ? "Save" : "Next"}
+          <Button onClick={handleNext}>
+            {stepper.isLast ?
+              location.search?.redirect ?
+                "Back to grading"
+              : "Save"
+            : "Next"}
           </Button>
         </div>
       </div>

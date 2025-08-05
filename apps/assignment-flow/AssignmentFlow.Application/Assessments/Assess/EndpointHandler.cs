@@ -1,5 +1,4 @@
 ﻿using EventFlow;
-using EventFlow.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,6 +10,7 @@ public static class EndpointHandler
     {
         endpoint.MapPost("/{id}/scores", Assess)
             .WithName("Assess")
+            .Produces(StatusCodes.Status202Accepted)
             .ProducesProblem(StatusCodes.Status400BadRequest);
 
         return endpoint;
@@ -21,16 +21,13 @@ public static class EndpointHandler
         [FromRoute] string id,
         [FromBody] AssessRequest request,
         ICommandBus commandBus,
-        IQueryProcessor queryProcessor,
-        IHttpContextAccessor contextAccessor,
         CancellationToken cancellationToken)
     {
-        var teacherId = TeacherId.With("teacher");
         var assessmentId = AssessmentId.With(id);
 
         await commandBus.PublishAsync(new Command(assessmentId)
         {
-            ScoreBreakdowns = request.ScoreBreakdowns.ToValueObject(),
+            ScoreBreakdowns = request.ScoreBreakdowns.ToValueObject(Grader.Teacher),
             Grader = Grader.Teacher
         }, cancellationToken);
 

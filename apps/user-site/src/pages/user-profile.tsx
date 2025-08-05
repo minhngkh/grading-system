@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -6,14 +5,14 @@ import { useClerk } from "@clerk/clerk-react";
 import { CalendarDays, Clock, Link, Mail, Phone, User, Users } from "lucide-react";
 
 function formatMemberSince(date: Date) {
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(undefined, {
     month: "short",
     year: "numeric",
   });
 }
 
 function formatLastSignIn(date: Date) {
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -59,15 +58,16 @@ export default function UserProfile() {
         <Card>
           <CardContent className="flex-1">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <Avatar className="h-24 w-24">
-                <AvatarImage
-                  src={user?.imageUrl || "https://placehold.co/80/orange/white"}
-                  alt="User Avatar"
-                />
-                <AvatarFallback className="text-lg">
-                  {user?.fullName ? getInitials(user.fullName) : "User"}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative h-24 w-24 rounded-full overflow-hidden bg-muted flex items-center justify-center text-white text-lg font-semibold">
+                {user?.imageUrl ?
+                  <img
+                    src={user.imageUrl}
+                    alt="User Avatar"
+                    className="h-full w-full object-cover"
+                  />
+                : <span>{user?.fullName ? getInitials(user.fullName) : "User"}</span>}
+              </div>
+
               <div className="space-y-2">
                 <CardTitle className="text-2xl">{user?.fullName}</CardTitle>
                 {user?.username && (

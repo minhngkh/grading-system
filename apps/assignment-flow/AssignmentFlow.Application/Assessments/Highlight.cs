@@ -10,27 +10,29 @@ namespace AssignmentFlow.Application.Assessments;
 [JsonConverter(typeof(HighlightConverter))]
 public sealed class Highlight : ValueObject
 {
+    public static readonly Highlight Empty = new(Attachment.Empty, string.Empty);
+
     public Attachment Attachment { get; private set; }
 
     /// <summary>
     /// Gets the location information for the attachment within a document.
     /// </summary>
-    public DocumentLocation Location { get; private set; }
-    
-    public Highlight(Attachment attachment, DocumentLocation location)
+    public string LocationDataJson { get; private set; } = string.Empty;
+
+    public Highlight(Attachment attachment, string locationDataJson)
     {
         Attachment = attachment;
-        Location = location;
+        LocationDataJson = locationDataJson;
     }
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Highlight"/> class.
     /// </summary>
     /// <param name="attachment">The attachment to be associated with the feedback.</param>
-    /// <param name="location">The location information for the attachment within a document.</param>
-    public static Highlight New(Attachment attachment, DocumentLocation location) =>
-        new(attachment, location);
-    
+    /// <param name="locationDataJson">The location data in JSON format for the attachment within a document.</param>
+    public static Highlight New(Attachment attachment, string locationDataJson) =>
+        new(attachment, locationDataJson);
+
     /// <summary>
     /// Provides the components used for equality comparison.
     /// </summary>
@@ -38,7 +40,7 @@ public sealed class Highlight : ValueObject
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return Attachment;
-        yield return Location;
+        yield return LocationDataJson;
     }
 }
 
@@ -50,8 +52,8 @@ public sealed class HighlightConverter : JsonConverter<Highlight>
             return null;
         var jObject = JObject.Load(reader);
         var attachment = jObject.GetRequired<Attachment>("Attachment");
-        var location = jObject.GetRequired<DocumentLocation>("Location");
-        return Highlight.New(attachment, location);
+        var locationDataJson = jObject.GetRequired<string>("LocationDataJson");
+        return Highlight.New(attachment, locationDataJson);
     }
     public override bool CanWrite => false;
     public override void WriteJson(JsonWriter writer, Highlight? value, JsonSerializer serializer) => throw new NotSupportedException();

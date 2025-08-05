@@ -1,5 +1,4 @@
-﻿using AssignmentFlow.Application.Assessments.StartAutoGrading;
-using EventFlow.Aggregates;
+﻿using EventFlow.Aggregates;
 namespace AssignmentFlow.Application.Assessments;
 
 public class AssessmentWriteModel
@@ -17,6 +16,8 @@ public class AssessmentWriteModel
 
     public ScoreBreakdowns ScoreBreakdowns { get; private set; } = ScoreBreakdowns.Empty;
 
+    public HashSet<Criterion> Criteria { get; private set; } = [];
+
     public List<Feedback> Feedbacks { get; private set; } = [];
 
     public AssessmentStateMachine StateMachine { get; private set; } = new();
@@ -27,13 +28,17 @@ public class AssessmentWriteModel
         GradingId = @event.GradingId;
         Reference = @event.SubmissionReference;
         RubricId = @event.RubricId;
+        Criteria = @event.Criteria;
     }
 
-    internal void Apply(AutoGradingStartedEvent _)
+    internal void Apply(AutoGrading.AutoGradingStartedEvent @event)
     {
+        // Reset score breakdowns for a new auto-grading session
+        ScoreBreakdowns = @event.InitialScoreBreakdowns;
         StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
     }
 
+    //Keep this for backward compatibility
     internal void Apply(Assess.AssessedEvent @event)
     {
         ScoreBreakdowns = @event.ScoreBreakdowns;
@@ -47,5 +52,36 @@ public class AssessmentWriteModel
         {
             StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
         }
+    }
+
+    internal void Apply(AutoGrading.CriterionAssessedEvent @event)
+    {
+        ScoreBreakdowns = ScoreBreakdowns.AddOrUpdate(@event.ScoreBreakdownItem);
+        Feedbacks.AddRange(@event.Feedbacks);
+    }
+
+    internal void Apply(AutoGrading.AutoGradingFinishedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.FinishAutoGrading);
+    }
+
+    internal void Apply(AutoGrading.ManualGradingRequestedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.WaitForManualGrading);
+    }
+
+    internal void Apply(AutoGrading.AssessmentGradingCompletedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.Complete);
+    }
+
+    internal void Apply(Assess.AssessmentFailedEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);
+    }
+
+    internal void Apply(UpdateFeedBack.FeedbacksUpdatedEvent @event)
+    {
+        Feedbacks = @event.Feedbacks;
     }
 }

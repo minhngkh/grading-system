@@ -1,108 +1,184 @@
+import { buildFilterExpr, contains, eq } from "@/lib/json-api-query";
+import { GradingAnalytics, OverallGradingAnalytics } from "@/types/analytics";
 import { CriteriaSelector, GradingAttempt, GradingStatus } from "@/types/grading";
+import { GetAllResult, SearchParams } from "@/types/search-params";
 import axios, { AxiosRequestConfig } from "axios";
 import { Deserializer } from "jsonapi-serializer";
 
 const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api/v1`;
 const GRADING_API_URL = `${ASSIGNMENT_FLOW_API_URL}/gradings`;
 
-export type GetGradingsResult = {
-  data: GradingAttempt[];
-  meta: {
-    total: number;
-  };
-};
-
 export class GradingService {
-  static configHeaders: AxiosRequestConfig = {
-    headers: {
-      "Content-Type": "application/vnd.api+json",
-    },
-  };
+  private static buildHeaders(token: string): AxiosRequestConfig {
+    return {
+      headers: {
+        "Content-Type": "application/vnd.api+json",
+        Accept: "application/vnd.api+json",
+        Authorization: `Bearer ${token}`,
+      },
+    };
+  }
 
-  static fileConfigHeaders: AxiosRequestConfig = {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  };
+  private static buildFileHeaders(token: string): AxiosRequestConfig {
+    return {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Accept: "application/vnd.api+json",
+        Authorization: `Bearer ${token}`,
+      },
+    };
+  }
 
-  static gradingDeserializer = new Deserializer({
+  private static ConvertToGrading(record: any): GradingAttempt {
+    return {
+      ...record,
+      rubricId: !record.rubricId ? undefined : record.rubricId,
+      lastModified: record.lastModified ? new Date(record.lastModified) : undefined,
+      createdAt: new Date(record.createdAt),
+      scaleFactor: !record.scaleFactor ? 10 : record.scaleFactor,
+    };
+  }
+
+  private static gradingDeserializer = new Deserializer({
     keyForAttribute: "camelCase",
+    transform: (record: any) => this.ConvertToGrading(record),
   });
 
-  static async createGradingAttempt(): Promise<GradingAttempt> {
-    const response = await axios.post(GRADING_API_URL, {}, this.configHeaders);
-    return response.data;
+  static async createGradingAttempt(
+    rubricId: string | undefined,
+    token: string,
+  ): Promise<GradingAttempt> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.post(GRADING_API_URL, { rubricId }, configHeaders);
+    return this.ConvertToGrading(response.data);
   }
 
-  static async getGradingStatus(id: string): Promise<GradingStatus> {
+  static async getGradingStatus(id: string, token: string): Promise<GradingStatus> {
+    const configHeaders = await this.buildHeaders(token);
     const response = await axios.get(
       `${GRADING_API_URL}/${id}?fields[gradings]=status`,
-      this.configHeaders,
+      configHeaders,
     );
 
-    const data = await this.gradingDeserializer.deserialize(response.data);
-    return data.status;
+    const grading = await this.gradingDeserializer.deserialize(response.data);
+    return grading.status;
   }
 
-  static async updateGradingRubric(id: string, rubricId: string) {
-    return axios.put(`${GRADING_API_URL}/${id}/rubric`, { rubricId }, this.configHeaders);
+  static async updateGradingRubric(id: string, rubricId: string, token: string) {
+    const configHeaders = await this.buildHeaders(token);
+    return axios.put(`${GRADING_API_URL}/${id}/rubric`, { rubricId }, configHeaders);
   }
 
-  static async updateGradingScaleFactor(id: string, scaleFactor: number) {
+  static async updateGradingScaleFactor(id: string, scaleFactor: number, token: string) {
+    const configHeaders = await this.buildHeaders(token);
     return axios.put(
       `${GRADING_API_URL}/${id}/scaleFactor`,
       { scaleFactor },
-      this.configHeaders,
+      configHeaders,
     );
   }
 
-  static async updateGradingSelectors(id: string, selectors: CriteriaSelector[]) {
+  static async updateGradingSelectors(
+    id: string,
+    selectors: CriteriaSelector[],
+    token: string,
+  ) {
+    const configHeaders = this.buildHeaders(token);
     return await axios.put(
       `${GRADING_API_URL}/${id}/criterionSelectors`,
       { selectors },
-      this.configHeaders,
+      configHeaders,
     );
   }
 
   static async getGradingAttempts(
-    page?: number,
-    perPage?: number,
-    search?: string,
-  ): Promise<GetGradingsResult> {
+    searchParams: SearchParams,
+    token: string,
+  ): Promise<GetAllResult<GradingAttempt>> {
+    const { page, perPage, search, status } = searchParams;
     const params = new URLSearchParams();
 
-    if (page !== undefined) params.append("page[number]", page.toString());
-    if (perPage !== undefined) params.append("page[size]", perPage.toString());
-    if (search && search.length > 0) params.append("filter", `contains(id,'${search}')`);
+    if (page != undefined) params.append("page[number]", page.toString());
+    if (perPage != undefined) params.append("page[size]", perPage.toString());
+    params.append("sort", "-createdAt");
 
-    const url = `${GRADING_API_URL}?${params.toString()}`;
-    const response = await axios.get(url, this.configHeaders);
+    const filterExpr = buildFilterExpr([
+      search ? contains("name", search) : undefined,
+      status ? eq("status", status) : undefined,
+    ]);
+
+    if (filterExpr) {
+      params.append("filter", filterExpr);
+    }
+
+    const configHeaders = this.buildHeaders(token);
+    const response = await axios.get(
+      `${GRADING_API_URL}?${params.toString()}`,
+      configHeaders,
+    );
+
     const data = await this.gradingDeserializer.deserialize(response.data);
-    const meta = response.data.meta;
-
-    return { data, meta };
+    return { data, meta: response.data.meta };
   }
 
-  static async getGradingAttempt(id: string): Promise<GradingAttempt> {
-    const response = await axios.get(`${GRADING_API_URL}/${id}`, this.configHeaders);
+  static async getGradingAttempt(id: string, token: string): Promise<GradingAttempt> {
+    const configHeaders = this.buildHeaders(token);
+    const response = await axios.get(`${GRADING_API_URL}/${id}`, configHeaders);
     return this.gradingDeserializer.deserialize(response.data);
   }
 
-  static async uploadSubmission(id: string, file: File) {
-    return await axios.post(
+  static async uploadSubmission(
+    id: string,
+    files: File[],
+    token: string,
+  ): Promise<string[]> {
+    const configHeaders = this.buildFileHeaders(token);
+    const responses = await axios.post(
       `${GRADING_API_URL}/${id}/submissions`,
-      {
-        file,
-      },
-      this.fileConfigHeaders,
+      { files },
+      configHeaders,
+    );
+
+    return responses.data.map((ref: any) => ref.value);
+  }
+
+  static async startGrading(id: string, token: string) {
+    const configHeaders = this.buildHeaders(token);
+    return await axios.post(`${GRADING_API_URL}/${id}/start`, null, configHeaders);
+  }
+
+  static async rerunGrading(id: string, token: string) {
+    const configHeaders = this.buildHeaders(token);
+    return await axios.post(`${GRADING_API_URL}/${id}/restart`, null, configHeaders);
+  }
+
+  static async deleteSubmission(id: string, reference: string, token: string) {
+    const configHeaders = this.buildHeaders(token);
+    return await axios.delete(
+      `${GRADING_API_URL}/${id}/submissions/${reference}`,
+      configHeaders,
     );
   }
 
-  static async startGrading(id: string) {
-    return await axios.post(
-      `${GRADING_API_URL}/${id}/start`,
-      null,
-      this.fileConfigHeaders,
-    );
+  static async getAllGradingsSummary(token: string): Promise<OverallGradingAnalytics> {
+    const configHeaders = this.buildHeaders(token);
+    const response = await axios.get(`${GRADING_API_URL}/summary`, configHeaders);
+    return response.data;
+  }
+
+  static async getGradingSummary(id: string, token: string): Promise<GradingAnalytics> {
+    const configHeaders = this.buildHeaders(token);
+    const response = await axios.get(`${GRADING_API_URL}/${id}/summary`, configHeaders);
+    return response.data;
+  }
+
+  static async deleteGradingAttempt(id: string, token: string): Promise<void> {
+    const configHeaders = this.buildHeaders(token);
+    return axios.delete(`${GRADING_API_URL}/${id}`, configHeaders);
+  }
+
+  static async updateGradingName(id: string, name: string, token: string): Promise<void> {
+    const configHeaders = this.buildHeaders(token);
+    return axios.put(`${GRADING_API_URL}/${id}/info`, { name }, configHeaders);
   }
 }

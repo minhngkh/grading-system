@@ -16,9 +16,8 @@ import {
 import { useEffect, useState } from "react";
 import { ExactLocationDialog } from "./exact-location-dialog";
 import { ManualLocationDialog } from "./manual-location-dialog";
-import { GradingAttempt } from "@/types/grading";
+import { CriteriaSelector, GradingAttempt } from "@/types/grading";
 import { toast } from "sonner";
-import { getSubmissionName } from "@/lib/submission";
 
 enum SelectLocationType {
   Manual,
@@ -28,13 +27,13 @@ enum SelectLocationType {
 interface CriteriaSelectorProps {
   gradingAttempt: GradingAttempt;
   uploadedFiles: File[];
-  onGradingAttemptChange?: (attempt: Partial<GradingAttempt>) => void;
+  onSelectorsChange?: (selectors: CriteriaSelector[]) => void;
 }
 
 export default function CriteriaMapper({
   uploadedFiles,
   gradingAttempt,
-  onGradingAttemptChange,
+  onSelectorsChange,
 }: CriteriaSelectorProps) {
   const [dialogType, setDialogType] = useState<SelectLocationType | null>(null);
   const [criterionPathType, setCriterionPathType] = useState<Record<number, string>>({});
@@ -49,16 +48,13 @@ export default function CriteriaMapper({
     }
   }, [uploadedFiles]);
 
-  const updateCriterionValue = async (index: number, value: string) => {
+  const updateCriterionValue = (index: number, value: string) => {
     const updatedSelector = [...gradingAttempt.selectors];
-    updatedSelector[index].pattern = value;
 
-    try {
-      await onGradingAttemptChange?.({ selectors: updatedSelector });
-    } catch (error) {
-      toast.error("Failed to update selectors");
-      console.error("Error updating selectors:", error);
-    }
+    if (updatedSelector[index].pattern === value) return;
+
+    updatedSelector[index].pattern = value;
+    onSelectorsChange?.(updatedSelector);
   };
 
   const openDialog = (index: number, type: SelectLocationType | undefined) => {
@@ -66,21 +62,27 @@ export default function CriteriaMapper({
 
     setCriteriaIndex(index);
 
-    if (type === SelectLocationType.Manual) {
-      const file = uploadedFiles.find(
-        (file) =>
-          file.name === getSubmissionName(gradingAttempt.submissions[chosenFileIndex]),
+    const file = uploadedFiles.find((file) => {
+      return (
+        file.name.replace(/\.[^/.]+$/, "") ===
+        gradingAttempt.submissions[chosenFileIndex].reference
       );
+    });
 
-      if (file) {
-        setDialogType(type);
-        setManualFile(file);
-      } else {
-        setManualFile(null);
-        setDialogType(null);
-      }
-    } else {
-      setDialogType(type);
+    if (!file?.name.endsWith(".zip")) {
+      return toast.error(
+        "Path selection is only available for zip files. Please upload a zip file.",
+      );
+    }
+
+    if (!file) {
+      return toast.error("File not found for the selected submission.");
+    }
+
+    setDialogType(type);
+
+    if (type === SelectLocationType.Manual) {
+      setManualFile(file);
     }
   };
 
@@ -89,7 +91,7 @@ export default function CriteriaMapper({
     setCriteriaIndex(undefined);
   };
 
-  const selectLocation = (index: number, path: string) => {
+  const selectLocation = async (index: number, path: string) => {
     updateCriterionValue(index, path);
     closeDialog();
   };
@@ -110,90 +112,100 @@ export default function CriteriaMapper({
         </CardDescription>
       </CardHeader>
       <CardContent className="mt-2 text-sm">
-        <div className="my-4 gap-2 flex items-center">
-          <span>Using file </span>
-          <Select
-            value={getSubmissionName(gradingAttempt.submissions[chosenFileIndex])}
-            onValueChange={(value) => {
-              const index = gradingAttempt.submissions.findIndex(
-                (file) => getSubmissionName(file) === value,
-              );
-              if (index !== -1) {
-                setChosenFileIndex(index);
-                setCriterionPathType({});
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Choose file" />
-            </SelectTrigger>
-            <SelectContent>
-              {gradingAttempt.submissions.map((file, index) => (
-                <SelectItem key={index} value={getSubmissionName(file)}>
-                  {getSubmissionName(file)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span> to configure the grading selectors</span>
-        </div>
-        <div className="grid gap-4">
-          <div className="grid grid-cols-3 gap-4 font-semibold">
-            <div>Criteria</div>
-            <div>Select Method</div>
-            <div></div>
+        {!gradingAttempt.selectors || gradingAttempt.selectors.length === 0 ?
+          <div className="text-center py-8 text-muted-foreground">
+            No criteria selectors available. Please select a rubric or upload files to
+            continue.
           </div>
-
-          {gradingAttempt.selectors.map((criterion, index) => (
-            <div key={index} className="grid grid-cols-3 gap-4 items-center">
-              <div className="border rounded-md px-2 h-full flex items-center">
-                {criterion.criterion}
-              </div>
-
+        : <>
+            <div className="mb-2 gap-2 flex items-center">
+              <span>Using file </span>
               <Select
+                value={gradingAttempt.submissions[chosenFileIndex].reference}
                 onValueChange={(value) => {
-                  setCriterionPathType((prev) => ({
-                    ...prev,
-                    [index]: value,
-                  }));
+                  const index = gradingAttempt.submissions.findIndex(
+                    (file) => file.reference === value,
+                  );
+                  if (index !== -1) {
+                    setChosenFileIndex(index);
+                    setCriterionPathType({});
+                  }
                 }}
-                value={criterionPathType[index] ?? ""}
               >
-                <SelectTrigger className="w-full h-[100%]">
-                  <SelectValue placeholder="Select method" />
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose file" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Manual">Manual</SelectItem>
-                  <SelectItem value="Exact">Exact</SelectItem>
+                  {gradingAttempt.submissions.map((file, index) => (
+                    <SelectItem key={index} value={file.reference}>
+                      {file.reference}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-
-              <Button
-                disabled={
-                  SelectLocationType[
-                    criterionPathType[index] as keyof typeof SelectLocationType
-                  ] === undefined
-                }
-                variant="ghost"
-                className="w-full h-full justify-start border rounded-md px-3 py-2 text-left cursor-pointer hover:bg-muted/50"
-                onClick={() => {
-                  openDialog(
-                    index,
-                    SelectLocationType[
-                      criterionPathType[index] as keyof typeof SelectLocationType
-                    ],
-                  );
-                }}
-              >
-                <div className="truncate">
-                  {criterion.pattern === "*" ? "All files" : criterion.pattern}
-                </div>
-              </Button>
+              <span> to configure the grading selectors</span>
             </div>
-          ))}
-        </div>
+            <div className="grid gap-2">
+              <div className="grid grid-cols-3 gap-4 font-semibold">
+                <div>Criteria</div>
+                <div>Select Method</div>
+                <div>Path</div>
+              </div>
 
-        {criteriaIndex !== undefined && manualFile && (
+              {gradingAttempt.selectors.map((criterion, index) => (
+                <div key={index} className="grid grid-cols-3 gap-4 items-center">
+                  <div className="border rounded-md px-2 h-full flex items-center">
+                    {criterion.criterion}
+                  </div>
+
+                  <Select
+                    onValueChange={(value) => {
+                      setCriterionPathType((prev) => ({
+                        ...prev,
+                        [index]: value,
+                      }));
+                    }}
+                    value={criterionPathType[index] ?? ""}
+                  >
+                    <SelectTrigger className="w-full h-[100%]">
+                      <SelectValue placeholder="Select method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Manual">Manual</SelectItem>
+                      <SelectItem value="Exact">Exact</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    disabled={
+                      SelectLocationType[
+                        criterionPathType[index] as keyof typeof SelectLocationType
+                      ] === undefined
+                    }
+                    variant="ghost"
+                    className="w-full h-full justify-start border rounded-md px-3 py-2 text-left cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      openDialog(
+                        index,
+                        SelectLocationType[
+                          criterionPathType[index] as keyof typeof SelectLocationType
+                        ],
+                      );
+                    }}
+                  >
+                    <div className="truncate">
+                      {criterion.pattern === "*" || criterion.pattern === "**/*" ?
+                        "All files"
+                      : criterion.pattern}
+                    </div>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </>
+        }
+
+        {criteriaIndex != undefined && manualFile && (
           <ManualLocationDialog
             open={dialogType === SelectLocationType.Manual}
             onClose={closeDialog}
@@ -204,12 +216,12 @@ export default function CriteriaMapper({
           />
         )}
 
-        {criteriaIndex !== undefined && (
+        {criteriaIndex != undefined && (
           <ExactLocationDialog
             open={dialogType === SelectLocationType.Exact}
             onClose={closeDialog}
             criterionMapping={gradingAttempt.selectors[criteriaIndex]}
-            onConfirm={(path) => {
+            onConfirm={async (path) => {
               updateCriterionValue(criteriaIndex, path);
               closeDialog();
             }}

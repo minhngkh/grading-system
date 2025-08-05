@@ -1,4 +1,6 @@
 ﻿using JsonApiDotNetCore.Resources.Annotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 
 namespace AssignmentFlow.Application.Assessments;
 
@@ -9,36 +11,18 @@ namespace AssignmentFlow.Application.Assessments;
 public class FeedbackItemApiContract
 {
     public required string Criterion { get; set; }
-
-    /// <summary>
-    /// Gets or sets the file reference identifier.
-    /// </summary>
     public required string FileRef { get; set; }
 
-    /// <summary>
-    /// Gets or sets the starting line number for this feedback.
-    /// </summary>
-    public required int FromLine { get; set; }
+    //[JsonIgnore]: TODO: Keep this commented until we can make sure this works
+    public string LocationDataJson { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Gets or sets the ending line number for this feedback.
-    /// </summary>
-    public required int ToLine { get; set; }
+    [NotMapped]
+    public Dictionary<string, object?> LocationData
+    {
+        get => string.IsNullOrEmpty(LocationDataJson) ? [] : (System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object?>>(LocationDataJson) ?? []);
+        set => LocationDataJson = JsonSerializer.Serialize(value);
+    }
 
-    /// <summary>
-    /// Gets or sets the starting column number for this feedback.
-    /// </summary>
-    public required int FromCol { get; set; }
-
-    /// <summary>
-    /// Gets or sets the ending column number for this feedback.
-    /// </summary>
-    public required int ToCol { get; set; }
-
-    /// <summary>
-    /// Gets or sets the feedback comment text.
-    /// </summary>
     public required string Comment { get; set; }
-
     public required string Tag { get; set; }
 }

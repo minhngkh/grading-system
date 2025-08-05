@@ -1,5 +1,6 @@
 ﻿namespace AssignmentFlow.IntegrationEvents;
 
+[Obsolete("Use FeedbackItemV2 instead. This class will be removed in a future version.")]
 public class FeedbackItem
 {
     public required string Comment { get; set; }

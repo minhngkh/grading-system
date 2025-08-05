@@ -2,4 +2,5 @@
 
 public class UpdateFeedbacksRequest
 {
+    public List<FeedbackItemApiContract> Feedbacks { get; set; } = []; // All feedback
 }

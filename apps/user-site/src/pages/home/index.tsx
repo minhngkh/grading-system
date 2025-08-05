@@ -1,6 +1,7 @@
+import { SystemTools } from "@/consts/tools";
 import ToolsFilter from "@/pages/home/tool-filter";
 import { ToolsList } from "@/pages/home/tool-list";
-import { SystemTools, ToolType } from "@/types/tool";
+import { ToolType } from "@/types/tool";
 import { useState } from "react";
 
 export default function HomePage() {
@@ -18,7 +19,7 @@ export default function HomePage() {
           <ToolsFilter currentFilter={filter} filterFunction={handleFilter} />
         </div>
         <ToolsList
-          tools={SystemTools.filter((tool) => !filter || tool.type === filter)}
+          tools={SystemTools.filter((tool) => !filter || tool.types.includes(filter))}
         />
       </section>
     </div>

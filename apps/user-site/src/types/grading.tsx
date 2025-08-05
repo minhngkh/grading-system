@@ -4,7 +4,6 @@ export enum GradingStatus {
   Created = "Created",
   Started = "Started",
   Graded = "Graded",
-  Completed = "Completed",
   Failed = "Failed",
 }
 
@@ -21,16 +20,23 @@ export const SubmissionSchema = z.object({
 
 export const GradingSchema = z.object({
   id: z.string({ required_error: "Grading ID is required" }),
-  rubricId: z.string().optional(),
-  scaleFactor: z.number().min(1).optional(),
-  selectors: z
-    .array(SelectorSchema, {
-      invalid_type_error: "Selectors must be an array",
+  name: z.string({ required_error: "Grading name is required" }),
+  rubricId: z.string().nonempty({
+    message: "Rubric is required",
+  }),
+  scaleFactor: z
+    .number()
+    .min(1, {
+      message: "Scale factor must be at least 1",
     })
-    .min(1, { message: "Selectors cannot be empty" }),
-  status: z.nativeEnum(GradingStatus).optional(),
+    .optional(),
+  selectors: z.array(SelectorSchema).min(1, { message: "Selectors cannot be empty" }),
+  status: z.nativeEnum(GradingStatus),
   lastModified: z.date().optional(),
-  submissions: z.array(SubmissionSchema),
+  createdAt: z.date(),
+  submissions: z.array(SubmissionSchema).min(1, {
+    message: "At least one submission is required",
+  }),
 });
 
 export type CriteriaSelector = z.infer<typeof SelectorSchema>;

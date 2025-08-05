@@ -1,24 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 /**
- * A hook that returns a debounced value after the specified delay
- * @param value The value to debounce
- * @param delay The delay in milliseconds
- * @returns The debounced value
+ * A hook that returns a debounced value after the specified delay.
+ * It calls onChange only after debounce delay (not on initial mount).
  */
-export function useDebounce<T>(value: T, delay: number): T {
+export function useDebounceUpdate<T>(
+  value: T,
+  delay: number,
+  onChange?: (value: T) => void,
+): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  const isFirst = useRef(true);
 
   useEffect(() => {
-    // Update debounced value after delay
     const timer = setTimeout(() => {
       setDebouncedValue(value);
+
+      if (!isFirst.current) {
+        onChange?.(value);
+      }
     }, delay);
 
-    // Cancel the timeout if value changes or unmounts
-    return () => {
-      clearTimeout(timer);
-    };
+    isFirst.current = false;
+
+    return () => clearTimeout(timer);
   }, [value, delay]);
 
   return debouncedValue;
