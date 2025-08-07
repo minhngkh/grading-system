@@ -34,7 +34,7 @@ export abstract class CustomError<
   protected constructor(info: ErrorInfo<TCause>, data: TData, tag: TTag) {
     super(info.message);
     this.cause = info.cause;
-    super.name = tag;
+    this.name = tag;
     this._tag = tag;
     this.data = data;
   }

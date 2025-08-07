@@ -1,0 +1,25 @@
+{
+  "name": "@grading-system/plugin-shared",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts",
+      "default": "./src/*.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "nx": {
+    "name": "plugin-shared",
+    "projectType": "library"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@grading-system/typed-moleculer": "workspace:*",
+    "@grading-system/utils": "workspace:*"
+  }
+}
