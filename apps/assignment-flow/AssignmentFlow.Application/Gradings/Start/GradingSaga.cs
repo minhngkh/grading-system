@@ -191,7 +191,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         {
             SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
             AssessmentId = assessmentId,
-            Status = AssessmentState.AutoGradingFinished.ToString(),
+            Status = AssessmentState.Completed.ToString(),
             ErrorMessage = null
         });
 
@@ -230,7 +230,7 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
         {
             SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
             AssessmentId = assessmentId,
-            Status = AssessmentState.AutoGradingFinished.ToString(),
+            Status = AssessmentState.Completed.ToString(),
             ErrorMessage = string.Join(
                 Environment.NewLine,
                 domainEvent.AggregateEvent.Errors.Select(e => 
