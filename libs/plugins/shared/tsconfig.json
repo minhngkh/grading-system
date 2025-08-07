@@ -11,6 +11,9 @@
   "references": [
     {
       "path": "../../utils"
+    },
+    {
+      "path": "../../typed-moleculer"
     }
   ]
 }

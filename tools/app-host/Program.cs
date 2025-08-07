@@ -25,7 +25,7 @@ if (
     testRunnerPluginTool = builder
         .AddDockerfile(
             "test-runner-plugin-tool",
-            Path.Combine(rootPath, "libs", "plugin-tools", "test-runner")
+            Path.Combine(rootPath, "libs", "plugins", "test-runner")
         )
         .WithHttpEndpoint(
             targetPort: 5050,
@@ -213,8 +213,7 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
         .WithReference(submissionStore)
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
-        .WaitFor(rubricContextStore)
-        .WaitFor(testRunnerPluginTool);
+        .WaitFor(rubricContextStore);
 }
 
 IResourceBuilder<NxMonorepoProjectResource>? gradingService = null;

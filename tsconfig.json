@@ -15,10 +15,13 @@
       "path": "./apps/grading-service"
     },
     {
-      "path": "./libs/plugin-tools/type-coverage"
+      "path": "./libs/plugins/static-analysis"
     },
     {
-      "path": "./libs/plugin-tools/shared"
+      "path": "./libs/plugins/type-coverage"
+    },
+    {
+      "path": "./libs/plugins/shared"
     }
   ]
 }

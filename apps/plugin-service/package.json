@@ -12,7 +12,7 @@
       "dev": {
         "dependsOn": [
           {
-            "projects": "plugin-tools/static-analysis",
+            "projects": "static-analysis-plugin",
             "target": "install-deps"
           }
         ]
