@@ -1,0 +1,46 @@
+{
+  "name": "@grading-system/static-analysis-plugin",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts",
+      "default": "./src/*.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "nx": {
+    "name": "static-analysis-plugin",
+    "projectType": "library",
+    "targets": {
+      "install-deps": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "options": {
+          "commands": [
+            "uv sync",
+            "uv run semgrep install-semgrep-pro",
+            "uv run semgrep login || true"
+          ],
+          "parallel": false,
+          "cwd": "{projectRoot}"
+        },
+        "inputs": [
+          "{projectRoot}/pyproject.toml",
+          "{projectRoot}/uv.lock"
+        ],
+        "outputs": [
+          "{projectRoot}/.venv"
+        ]
+      }
+    }
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@grading-system/plugin-shared": "workspace:*",
+    "@grading-system/typed-moleculer": "workspace:*",
+    "@grading-system/utils": "workspace:*"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@grading-system/ai-plugin",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts",
+      "default": "./src/*.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "nx": {
+    "name": "ai-plugin",
+    "projectType": "library"
+  },
+  "dependencies": {
+    "type-coverage-core": "^2.29.7"
+  },
+  "devDependencies": {
+    "@grading-system/plugin-shared": "workspace:*",
+    "@grading-system/typed-moleculer": "workspace:*",
+    "@grading-system/utils": "workspace:*"
+  }
+}
