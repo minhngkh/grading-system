@@ -8,236 +8,316 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteRouteImport } from './routes/_auth/route'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
+import { Route as AuthSigninRouteImport } from './routes/_auth/signin'
+import { Route as AuthenticatedRubricsIndexRouteImport } from './routes/_authenticated/rubrics/index'
+import { Route as AuthenticatedGradingsIndexRouteImport } from './routes/_authenticated/gradings/index'
+import { Route as AuthenticatedRubricsCreateRouteImport } from './routes/_authenticated/rubrics/create'
+import { Route as AuthenticatedGradingsCreateRouteImport } from './routes/_authenticated/gradings/create'
+import { Route as AuthenticatedGradingsIdRouteImport } from './routes/_authenticated/gradings/$id'
+import { Route as AuthenticatedAssessmentsIdRouteImport } from './routes/_authenticated/assessments/$id'
+import { Route as AuthenticatedReviewAnalyticsRouteImport } from './routes/_authenticated/_review/analytics'
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/_auth/route'
-import { Route as IndexImport } from './routes/index'
-import { Route as AuthenticatedProfileImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedHomeImport } from './routes/_authenticated/home'
-import { Route as AuthenticatedChatImport } from './routes/_authenticated/chat'
-import { Route as AuthSignupImport } from './routes/_auth/signup'
-import { Route as AuthSigninImport } from './routes/_auth/signin'
-import { Route as AuthenticatedRubricsIndexImport } from './routes/_authenticated/rubrics/index'
-import { Route as AuthenticatedGradingsIndexImport } from './routes/_authenticated/gradings/index'
-import { Route as AuthenticatedRubricsCreateImport } from './routes/_authenticated/rubrics/create'
-import { Route as AuthenticatedGradingsCreateImport } from './routes/_authenticated/gradings/create'
-import { Route as AuthenticatedGradingsIdImport } from './routes/_authenticated/gradings/$id'
-import { Route as AuthenticatedAssessmentsIdImport } from './routes/_authenticated/assessments/$id'
-import { Route as AuthenticatedReviewAnalyticsImport } from './routes/_authenticated/_review/analytics'
-
-// Create/Update Routes
-
-const AuthenticatedRouteRoute = AuthenticatedRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AuthRouteRoute = AuthRouteImport.update({
+const AuthRouteRoute = AuthRouteRouteImport.update({
   id: '/_auth',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const IndexRoute = IndexImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AuthenticatedProfileRoute = AuthenticatedProfileImport.update({
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-
-const AuthenticatedHomeRoute = AuthenticatedHomeImport.update({
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-
-const AuthenticatedChatRoute = AuthenticatedChatImport.update({
+const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   id: '/chat',
   path: '/chat',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-
-const AuthSignupRoute = AuthSignupImport.update({
+const AuthSignupRoute = AuthSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-
-const AuthSigninRoute = AuthSigninImport.update({
+const AuthSigninRoute = AuthSigninRouteImport.update({
   id: '/signin',
   path: '/signin',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-
-const AuthenticatedRubricsIndexRoute = AuthenticatedRubricsIndexImport.update({
-  id: '/rubrics/',
-  path: '/rubrics/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-
-const AuthenticatedGradingsIndexRoute = AuthenticatedGradingsIndexImport.update(
-  {
+const AuthenticatedRubricsIndexRoute =
+  AuthenticatedRubricsIndexRouteImport.update({
+    id: '/rubrics/',
+    path: '/rubrics/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedGradingsIndexRoute =
+  AuthenticatedGradingsIndexRouteImport.update({
     id: '/gradings/',
     path: '/gradings/',
     getParentRoute: () => AuthenticatedRouteRoute,
-  } as any,
-)
-
-const AuthenticatedRubricsCreateRoute = AuthenticatedRubricsCreateImport.update(
-  {
+  } as any)
+const AuthenticatedRubricsCreateRoute =
+  AuthenticatedRubricsCreateRouteImport.update({
     id: '/rubrics/create',
     path: '/rubrics/create',
     getParentRoute: () => AuthenticatedRouteRoute,
-  } as any,
-)
-
+  } as any)
 const AuthenticatedGradingsCreateRoute =
-  AuthenticatedGradingsCreateImport.update({
+  AuthenticatedGradingsCreateRouteImport.update({
     id: '/gradings/create',
     path: '/gradings/create',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-
-const AuthenticatedGradingsIdRoute = AuthenticatedGradingsIdImport.update({
+const AuthenticatedGradingsIdRoute = AuthenticatedGradingsIdRouteImport.update({
   id: '/gradings/$id',
   path: '/gradings/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-
-const AuthenticatedAssessmentsIdRoute = AuthenticatedAssessmentsIdImport.update(
-  {
+const AuthenticatedAssessmentsIdRoute =
+  AuthenticatedAssessmentsIdRouteImport.update({
     id: '/assessments/$id',
     path: '/assessments/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
-  } as any,
-)
-
+  } as any)
 const AuthenticatedReviewAnalyticsRoute =
-  AuthenticatedReviewAnalyticsImport.update({
+  AuthenticatedReviewAnalyticsRouteImport.update({
     id: '/_review/analytics',
     path: '/analytics',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
-// Populate the FileRoutesByPath interface
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/signin': typeof AuthSigninRoute
+  '/signup': typeof AuthSignupRoute
+  '/chat': typeof AuthenticatedChatRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/analytics': typeof AuthenticatedReviewAnalyticsRoute
+  '/assessments/$id': typeof AuthenticatedAssessmentsIdRoute
+  '/gradings/$id': typeof AuthenticatedGradingsIdRoute
+  '/gradings/create': typeof AuthenticatedGradingsCreateRoute
+  '/rubrics/create': typeof AuthenticatedRubricsCreateRoute
+  '/gradings': typeof AuthenticatedGradingsIndexRoute
+  '/rubrics': typeof AuthenticatedRubricsIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/signin': typeof AuthSigninRoute
+  '/signup': typeof AuthSignupRoute
+  '/chat': typeof AuthenticatedChatRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/analytics': typeof AuthenticatedReviewAnalyticsRoute
+  '/assessments/$id': typeof AuthenticatedAssessmentsIdRoute
+  '/gradings/$id': typeof AuthenticatedGradingsIdRoute
+  '/gradings/create': typeof AuthenticatedGradingsCreateRoute
+  '/rubrics/create': typeof AuthenticatedRubricsCreateRoute
+  '/gradings': typeof AuthenticatedGradingsIndexRoute
+  '/rubrics': typeof AuthenticatedRubricsIndexRoute
+}
+export interface FileRoutesById {
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/_auth': typeof AuthRouteRouteWithChildren
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_auth/signin': typeof AuthSigninRoute
+  '/_auth/signup': typeof AuthSignupRoute
+  '/_authenticated/chat': typeof AuthenticatedChatRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/_review/analytics': typeof AuthenticatedReviewAnalyticsRoute
+  '/_authenticated/assessments/$id': typeof AuthenticatedAssessmentsIdRoute
+  '/_authenticated/gradings/$id': typeof AuthenticatedGradingsIdRoute
+  '/_authenticated/gradings/create': typeof AuthenticatedGradingsCreateRoute
+  '/_authenticated/rubrics/create': typeof AuthenticatedRubricsCreateRoute
+  '/_authenticated/gradings/': typeof AuthenticatedGradingsIndexRoute
+  '/_authenticated/rubrics/': typeof AuthenticatedRubricsIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | '/signin'
+    | '/signup'
+    | '/chat'
+    | '/home'
+    | '/profile'
+    | '/analytics'
+    | '/assessments/$id'
+    | '/gradings/$id'
+    | '/gradings/create'
+    | '/rubrics/create'
+    | '/gradings'
+    | '/rubrics'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/signin'
+    | '/signup'
+    | '/chat'
+    | '/home'
+    | '/profile'
+    | '/analytics'
+    | '/assessments/$id'
+    | '/gradings/$id'
+    | '/gradings/create'
+    | '/rubrics/create'
+    | '/gradings'
+    | '/rubrics'
+  id:
+    | '__root__'
+    | '/'
+    | '/_auth'
+    | '/_authenticated'
+    | '/_auth/signin'
+    | '/_auth/signup'
+    | '/_authenticated/chat'
+    | '/_authenticated/home'
+    | '/_authenticated/profile'
+    | '/_authenticated/_review/analytics'
+    | '/_authenticated/assessments/$id'
+    | '/_authenticated/gradings/$id'
+    | '/_authenticated/gradings/create'
+    | '/_authenticated/rubrics/create'
+    | '/_authenticated/gradings/'
+    | '/_authenticated/rubrics/'
+  fileRoutesById: FileRoutesById
+}
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+}
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_auth': {
       id: '/_auth'
       path: ''
       fullPath: ''
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRoute
+      preLoaderRoute: typeof AuthRouteRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof AuthenticatedRouteImport
-      parentRoute: typeof rootRoute
-    }
-    '/_auth/signin': {
-      id: '/_auth/signin'
-      path: '/signin'
-      fullPath: '/signin'
-      preLoaderRoute: typeof AuthSigninImport
-      parentRoute: typeof AuthRouteImport
-    }
-    '/_auth/signup': {
-      id: '/_auth/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof AuthSignupImport
-      parentRoute: typeof AuthRouteImport
-    }
-    '/_authenticated/chat': {
-      id: '/_authenticated/chat'
-      path: '/chat'
-      fullPath: '/chat'
-      preLoaderRoute: typeof AuthenticatedChatImport
-      parentRoute: typeof AuthenticatedRouteImport
-    }
-    '/_authenticated/home': {
-      id: '/_authenticated/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof AuthenticatedHomeImport
-      parentRoute: typeof AuthenticatedRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
       fullPath: '/profile'
-      preLoaderRoute: typeof AuthenticatedProfileImport
-      parentRoute: typeof AuthenticatedRouteImport
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/_review/analytics': {
-      id: '/_authenticated/_review/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AuthenticatedReviewAnalyticsImport
-      parentRoute: typeof AuthenticatedRouteImport
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/assessments/$id': {
-      id: '/_authenticated/assessments/$id'
-      path: '/assessments/$id'
-      fullPath: '/assessments/$id'
-      preLoaderRoute: typeof AuthenticatedAssessmentsIdImport
-      parentRoute: typeof AuthenticatedRouteImport
+    '/_authenticated/chat': {
+      id: '/_authenticated/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthenticatedChatRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/gradings/$id': {
-      id: '/_authenticated/gradings/$id'
-      path: '/gradings/$id'
-      fullPath: '/gradings/$id'
-      preLoaderRoute: typeof AuthenticatedGradingsIdImport
-      parentRoute: typeof AuthenticatedRouteImport
+    '/_auth/signup': {
+      id: '/_auth/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
-    '/_authenticated/gradings/create': {
-      id: '/_authenticated/gradings/create'
-      path: '/gradings/create'
-      fullPath: '/gradings/create'
-      preLoaderRoute: typeof AuthenticatedGradingsCreateImport
-      parentRoute: typeof AuthenticatedRouteImport
-    }
-    '/_authenticated/rubrics/create': {
-      id: '/_authenticated/rubrics/create'
-      path: '/rubrics/create'
-      fullPath: '/rubrics/create'
-      preLoaderRoute: typeof AuthenticatedRubricsCreateImport
-      parentRoute: typeof AuthenticatedRouteImport
-    }
-    '/_authenticated/gradings/': {
-      id: '/_authenticated/gradings/'
-      path: '/gradings'
-      fullPath: '/gradings'
-      preLoaderRoute: typeof AuthenticatedGradingsIndexImport
-      parentRoute: typeof AuthenticatedRouteImport
+    '/_auth/signin': {
+      id: '/_auth/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof AuthSigninRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
     '/_authenticated/rubrics/': {
       id: '/_authenticated/rubrics/'
       path: '/rubrics'
       fullPath: '/rubrics'
-      preLoaderRoute: typeof AuthenticatedRubricsIndexImport
-      parentRoute: typeof AuthenticatedRouteImport
+      preLoaderRoute: typeof AuthenticatedRubricsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/gradings/': {
+      id: '/_authenticated/gradings/'
+      path: '/gradings'
+      fullPath: '/gradings'
+      preLoaderRoute: typeof AuthenticatedGradingsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rubrics/create': {
+      id: '/_authenticated/rubrics/create'
+      path: '/rubrics/create'
+      fullPath: '/rubrics/create'
+      preLoaderRoute: typeof AuthenticatedRubricsCreateRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/gradings/create': {
+      id: '/_authenticated/gradings/create'
+      path: '/gradings/create'
+      fullPath: '/gradings/create'
+      preLoaderRoute: typeof AuthenticatedGradingsCreateRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/gradings/$id': {
+      id: '/_authenticated/gradings/$id'
+      path: '/gradings/$id'
+      fullPath: '/gradings/$id'
+      preLoaderRoute: typeof AuthenticatedGradingsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/assessments/$id': {
+      id: '/_authenticated/assessments/$id'
+      path: '/assessments/$id'
+      fullPath: '/assessments/$id'
+      preLoaderRoute: typeof AuthenticatedAssessmentsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/_review/analytics': {
+      id: '/_authenticated/_review/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedReviewAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
-
-// Create and export the route tree
 
 interface AuthRouteRouteChildren {
   AuthSigninRoute: typeof AuthSigninRoute
@@ -282,212 +362,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '': typeof AuthenticatedRouteRouteWithChildren
-  '/signin': typeof AuthSigninRoute
-  '/signup': typeof AuthSignupRoute
-  '/chat': typeof AuthenticatedChatRoute
-  '/home': typeof AuthenticatedHomeRoute
-  '/profile': typeof AuthenticatedProfileRoute
-  '/analytics': typeof AuthenticatedReviewAnalyticsRoute
-  '/assessments/$id': typeof AuthenticatedAssessmentsIdRoute
-  '/gradings/$id': typeof AuthenticatedGradingsIdRoute
-  '/gradings/create': typeof AuthenticatedGradingsCreateRoute
-  '/rubrics/create': typeof AuthenticatedRubricsCreateRoute
-  '/gradings': typeof AuthenticatedGradingsIndexRoute
-  '/rubrics': typeof AuthenticatedRubricsIndexRoute
-}
-
-export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '': typeof AuthenticatedRouteRouteWithChildren
-  '/signin': typeof AuthSigninRoute
-  '/signup': typeof AuthSignupRoute
-  '/chat': typeof AuthenticatedChatRoute
-  '/home': typeof AuthenticatedHomeRoute
-  '/profile': typeof AuthenticatedProfileRoute
-  '/analytics': typeof AuthenticatedReviewAnalyticsRoute
-  '/assessments/$id': typeof AuthenticatedAssessmentsIdRoute
-  '/gradings/$id': typeof AuthenticatedGradingsIdRoute
-  '/gradings/create': typeof AuthenticatedGradingsCreateRoute
-  '/rubrics/create': typeof AuthenticatedRubricsCreateRoute
-  '/gradings': typeof AuthenticatedGradingsIndexRoute
-  '/rubrics': typeof AuthenticatedRubricsIndexRoute
-}
-
-export interface FileRoutesById {
-  __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/_auth': typeof AuthRouteRouteWithChildren
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/_auth/signin': typeof AuthSigninRoute
-  '/_auth/signup': typeof AuthSignupRoute
-  '/_authenticated/chat': typeof AuthenticatedChatRoute
-  '/_authenticated/home': typeof AuthenticatedHomeRoute
-  '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/_review/analytics': typeof AuthenticatedReviewAnalyticsRoute
-  '/_authenticated/assessments/$id': typeof AuthenticatedAssessmentsIdRoute
-  '/_authenticated/gradings/$id': typeof AuthenticatedGradingsIdRoute
-  '/_authenticated/gradings/create': typeof AuthenticatedGradingsCreateRoute
-  '/_authenticated/rubrics/create': typeof AuthenticatedRubricsCreateRoute
-  '/_authenticated/gradings/': typeof AuthenticatedGradingsIndexRoute
-  '/_authenticated/rubrics/': typeof AuthenticatedRubricsIndexRoute
-}
-
-export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | ''
-    | '/signin'
-    | '/signup'
-    | '/chat'
-    | '/home'
-    | '/profile'
-    | '/analytics'
-    | '/assessments/$id'
-    | '/gradings/$id'
-    | '/gradings/create'
-    | '/rubrics/create'
-    | '/gradings'
-    | '/rubrics'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | ''
-    | '/signin'
-    | '/signup'
-    | '/chat'
-    | '/home'
-    | '/profile'
-    | '/analytics'
-    | '/assessments/$id'
-    | '/gradings/$id'
-    | '/gradings/create'
-    | '/rubrics/create'
-    | '/gradings'
-    | '/rubrics'
-  id:
-    | '__root__'
-    | '/'
-    | '/_auth'
-    | '/_authenticated'
-    | '/_auth/signin'
-    | '/_auth/signup'
-    | '/_authenticated/chat'
-    | '/_authenticated/home'
-    | '/_authenticated/profile'
-    | '/_authenticated/_review/analytics'
-    | '/_authenticated/assessments/$id'
-    | '/_authenticated/gradings/$id'
-    | '/_authenticated/gradings/create'
-    | '/_authenticated/rubrics/create'
-    | '/_authenticated/gradings/'
-    | '/_authenticated/rubrics/'
-  fileRoutesById: FileRoutesById
-}
-
-export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AuthRouteRoute: typeof AuthRouteRouteWithChildren
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-}
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
 }
-
-export const routeTree = rootRoute
+export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/_auth",
-        "/_authenticated"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/_auth": {
-      "filePath": "_auth/route.tsx",
-      "children": [
-        "/_auth/signin",
-        "/_auth/signup"
-      ]
-    },
-    "/_authenticated": {
-      "filePath": "_authenticated/route.tsx",
-      "children": [
-        "/_authenticated/chat",
-        "/_authenticated/home",
-        "/_authenticated/profile",
-        "/_authenticated/_review/analytics",
-        "/_authenticated/assessments/$id",
-        "/_authenticated/gradings/$id",
-        "/_authenticated/gradings/create",
-        "/_authenticated/rubrics/create",
-        "/_authenticated/gradings/",
-        "/_authenticated/rubrics/"
-      ]
-    },
-    "/_auth/signin": {
-      "filePath": "_auth/signin.tsx",
-      "parent": "/_auth"
-    },
-    "/_auth/signup": {
-      "filePath": "_auth/signup.tsx",
-      "parent": "/_auth"
-    },
-    "/_authenticated/chat": {
-      "filePath": "_authenticated/chat.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/home": {
-      "filePath": "_authenticated/home.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/profile": {
-      "filePath": "_authenticated/profile.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/_review/analytics": {
-      "filePath": "_authenticated/_review/analytics.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/assessments/$id": {
-      "filePath": "_authenticated/assessments/$id.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/gradings/$id": {
-      "filePath": "_authenticated/gradings/$id.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/gradings/create": {
-      "filePath": "_authenticated/gradings/create.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/rubrics/create": {
-      "filePath": "_authenticated/rubrics/create.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/gradings/": {
-      "filePath": "_authenticated/gradings/index.tsx",
-      "parent": "/_authenticated"
-    },
-    "/_authenticated/rubrics/": {
-      "filePath": "_authenticated/rubrics/index.tsx",
-      "parent": "/_authenticated"
-    }
-  }
-}
-ROUTE_MANIFEST_END */
