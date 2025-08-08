@@ -1,8 +1,13 @@
-﻿using AssignmentFlow.Application.Gradings.ChangeRubric;
+﻿using AssignmentFlow.Application.Gradings.Analytics;
+using AssignmentFlow.Application.Gradings.BulkSubmissionUpload;
+using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
+using AssignmentFlow.Application.Gradings.GetSASToken;
 using AssignmentFlow.Application.Gradings.RemoveSubmission;
+using AssignmentFlow.Application.Gradings.RestartAutoGrading;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
+using AssignmentFlow.Application.Gradings.UpdateInfo;
 using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
@@ -21,9 +26,14 @@ internal static class EndpointHandlers
             .MapUpdateCriterionSelectors()
             .MapUpdateScaleFactor()
             .MapUploadSubmission()
+            .MapBulkUploadSubmissions()
             .MapRemoveSubmission()
             .MapChangeRubric()
-            .MapStartGrading();
+            .MapStartGrading()
+            .MapGradingAnalytics()
+            .MapRestartAutoGrading()
+            .MapUpdateInfo()
+            .MapGetSASToken();
 
         return routeBuilder;
     }

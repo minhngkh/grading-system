@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light" | "system";
 
@@ -24,11 +24,11 @@ export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "vite-ui-theme",
-  ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
-  );
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return defaultTheme;
+    return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -36,37 +36,33 @@ export function ThemeProvider({
     root.classList.remove("light", "dark");
 
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-
+      const systemTheme =
+        window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
       root.classList.add(systemTheme);
-      return;
+    } else {
+      root.classList.add(theme);
     }
-
-    root.classList.add(theme);
   }, [theme]);
 
-  const value = {
+  const value: ThemeProviderState = {
     theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
+    setTheme: (newTheme: Theme) => {
+      localStorage.setItem(storageKey, newTheme);
+      setTheme(newTheme);
     },
   };
 
   return (
-    <ThemeProviderContext {...props} value={value}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
-    </ThemeProviderContext>
+    </ThemeProviderContext.Provider>
   );
 }
 
 export const useTheme = () => {
-  const context = use(ThemeProviderContext);
-
-  if (context === undefined)
+  const context = useContext(ThemeProviderContext);
+  if (context === undefined) {
     throw new Error("useTheme must be used within a ThemeProvider");
-
+  }
   return context;
 };

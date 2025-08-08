@@ -1,6 +1,3 @@
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -10,102 +7,75 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useDebounce } from "@/hooks/use-debounce";
-import { RubricService } from "@/services/rubric-service";
-import { Rubric } from "@/types/rubric";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { GradingAttempt } from "@/types/grading";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useCallback, useState, memo, JSX, useMemo } from "react";
+import { cn } from "@/lib/utils";
+import { useDebounceUpdate } from "@/hooks/use-debounce";
+import type { SearchParams } from "@/types/search-params";
+import { InfiniteQueryOption } from "@/types/query";
 
-interface ScrollableSelectProps {
+const PAGE_SIZE = 10;
+const SCROLL_THRESHOLD = 10;
+const DEBOUNCE_DELAY = 250;
+
+interface Item {
+  id: string;
+}
+
+interface ScrollableSelectProps<T extends Item> {
   placeholder?: string;
   emptyMessage?: string;
   className?: string;
-  onRubricChange?: (value: Rubric | undefined) => void;
-  gradingAttempt: GradingAttempt;
+  value?: T;
+  onValueChange: (value: T) => void;
+  selectFn: (item: T) => string;
+  queryOptionsFn: (searchParams: SearchParams) => InfiniteQueryOption<T>;
 }
 
-export function RubricSelect({
+function ScrollableSelect<T extends Item>({
   placeholder = "Select an item",
   emptyMessage = "No items found.",
   className,
-  onRubricChange,
-  gradingAttempt,
-}: ScrollableSelectProps) {
+  value,
+  onValueChange,
+  selectFn,
+  queryOptionsFn,
+}: ScrollableSelectProps<T>) {
   const [open, setOpen] = useState(false);
-  const [selectedValue, setSelectedValue] = useState<Rubric | undefined>();
-  const [items, setItems] = useState<Rubric[]>([]);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null);
-  const pageSize = 20;
+  const debouncedSearchTerm = useDebounceUpdate(searchTerm, DEBOUNCE_DELAY);
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const { data, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery(
+      queryOptionsFn({
+        search: debouncedSearchTerm,
+        page: 1,
+        perPage: PAGE_SIZE,
+      }),
+    );
 
-  const search = useCallback(
-    async (currentPage: number, search: string, resetItems = false) => {
-      try {
-        const result = await RubricService.getRubrics(currentPage, pageSize, search);
+  const items = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
 
-        if (resetItems) {
-          setItems(result.data);
-        } else {
-          setItems((prev) => [...prev, ...result.data]);
-        }
-
-        setHasMore(
-          result.meta.total >
-            (resetItems ? result.data.length : items.length + result.data.length),
-        );
-      } catch (error) {
-        console.error("Error loading data:", error);
+  const handleScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+      const nearBottom = scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD;
+      if (nearBottom && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
       }
     },
-    [],
+    [hasNextPage, isFetchingNextPage, fetchNextPage],
   );
 
-  // Load data when popover opens
-  useEffect(() => {
-    async function LoadData() {
-      setIsSearching(true);
-      setPage(1);
-      await search(1, debouncedSearchTerm, true);
-      setIsSearching(false);
-    }
-
-    LoadData();
-  }, [debouncedSearchTerm, search]);
-
-  useEffect(() => {
-    if (!gradingAttempt.rubricId || items.length === 0) return;
-
-    const matchedRubric = items.find((item) => item.id === gradingAttempt.rubricId);
-    if (matchedRubric) {
-      setSelectedValue(matchedRubric);
-    }
-  }, [gradingAttempt.rubricId, items]);
-
-  // Handle search input change
-  const handleSearchChange = async (value: string) => {
-    setSearchTerm(value);
-  };
-
-  // Handle scroll event to detect when user has scrolled to the bottom
-  const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
-    if (!hasMore || loading || isSearching) return;
-
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    // If scrolled to bottom (with a small threshold)
-    if (scrollHeight - scrollTop - clientHeight < 50) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      setLoading(true);
-      await search(nextPage, searchTerm);
-      setLoading(false);
-    }
-  };
+  const handleSelect = useCallback(
+    (item: T) => {
+      onValueChange(item);
+      setOpen(false);
+    },
+    [onValueChange],
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -113,71 +83,60 @@ export function RubricSelect({
         <Button
           variant="outline"
           role="combobox"
-          aria-expanded={open}
           className={cn("justify-between", className)}
         >
-          {selectedValue ? selectedValue.rubricName : placeholder}
+          {value ? selectFn(value) : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="p-0">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search items..."
             value={searchTerm}
-            disabled={isSearching}
-            onValueChange={handleSearchChange}
+            onValueChange={setSearchTerm}
           />
-          <CommandEmpty>
-            {isSearching ? (
-              <div className="flex items-center justify-center py-2">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
-              </div>
-            ) : (
-              emptyMessage
-            )}
-          </CommandEmpty>
-          <CommandGroup>
-            <CommandList
-              defaultValue={gradingAttempt.rubricId}
-              ref={listRef}
-              className="max-h-[300px] overflow-y-auto"
-              onScroll={handleScroll}
-            >
-              {items.map((item) => (
-                <CommandItem
-                  className="flex justify-between"
-                  key={item.id}
-                  value={item.id}
-                  onSelect={() => {
-                    setSelectedValue(item);
-                    onRubricChange?.(item);
-                    setOpen(false);
-                  }}
-                >
-                  {item.rubricName}
-                  <Check
-                    className={cn(
-                      "ml-2 h-4 w-4",
-                      selectedValue?.id === item.id ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                </CommandItem>
-              ))}
-              {/* Only show loading indicator here if we have items AND we're not searching */}
-              {loading && !isSearching && items.length > 0 && (
-                <div className="flex items-center justify-center py-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    Loading more items...
-                  </span>
-                </div>
-              )}
-            </CommandList>
-          </CommandGroup>
+          {items?.length === 0 ?
+            <CommandEmpty>{isFetching ? "Loading..." : emptyMessage}</CommandEmpty>
+          : <CommandGroup>
+              <CommandList
+                defaultValue={value?.id}
+                className="max-h-[150px] overflow-y-auto"
+                onScroll={handleScroll}
+              >
+                {items.map((item) => (
+                  <CommandItem
+                    className="flex justify-between"
+                    key={item.id}
+                    value={item.id}
+                    onSelect={() => handleSelect(item)}
+                  >
+                    {selectFn(item)}
+                    <Check
+                      className={cn(
+                        "ml-2 h-4 w-4",
+                        value?.id === item.id ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+                {isFetchingNextPage && (
+                  <div className="flex items-center justify-center py-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      Loading more...
+                    </span>
+                  </div>
+                )}
+              </CommandList>
+            </CommandGroup>
+          }
         </Command>
       </PopoverContent>
     </Popover>
   );
 }
+
+export const ScrollableSelectMemo = memo(ScrollableSelect) as <T extends Item>(
+  props: ScrollableSelectProps<T>,
+) => JSX.Element;

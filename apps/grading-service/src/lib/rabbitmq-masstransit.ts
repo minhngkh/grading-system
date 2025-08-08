@@ -47,11 +47,11 @@ export async function createEventConsumer(event: ServiceEvent) {
             callback(data);
             // channel.ack(message); // Acknowledge the message
           } catch (error) {
-            logger.error("Error processing message:", error);
+            logger.debug("Error processing message:", error);
             // channel.nack(message); // Reject the message
           }
         } else {
-          logger.info("Received null message");
+          logger.debug("Received null message");
         }
       });
     },
@@ -71,7 +71,7 @@ export async function createEventEmitter(event: ServiceEvent) {
       const wrappedData = Buffer.from(JSON.stringify(data));
       return channel.publish(event.name, "", wrappedData, {}, (err, ok) => {
         if (err) {
-          logger.error(`Failed to publish message: ${event.name}`);
+          logger.debug(`Failed to publish message: ${event.name}`);
           resultCallback?.(true);
         } else {
           logger.debug(`Message published successfully: ${event.name}`);

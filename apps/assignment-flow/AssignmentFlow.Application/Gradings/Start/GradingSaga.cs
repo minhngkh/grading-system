@@ -1,29 +1,42 @@
 ﻿using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Assessments.Assess;
 using AssignmentFlow.Application.Assessments.Create;
+using AssignmentFlow.Application.Hub;
 using EventFlow.Aggregates;
 using EventFlow.Sagas;
 using EventFlow.Sagas.AggregateSagas;
+using Microsoft.AspNetCore.SignalR;
+using RubricEngine.Application.Protos;
+using static RubricEngine.Application.Protos.RubricProtoService;
 namespace AssignmentFlow.Application.Gradings.Start;
 
 public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSagaLocator>,
     ISagaIsStartedBy<GradingAggregate, GradingId, AutoGradingStartedEvent>,
+    ISagaHandles<GradingAggregate, GradingId, AutoGradingRestartedEvent>,
     ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessmentCreatedEvent>,
-    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, Assessments.StartAutoGrading.AutoGradingStartedEvent>,
-    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessedEvent>
+    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, Assessments.AutoGrading.AutoGradingStartedEvent>,
+    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, Assessments.AutoGrading.AutoGradingFinishedEvent>,
+    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessedEvent>,
+    ISagaHandles<AssessmentAggregate, Assessments.AssessmentId, AssessmentFailedEvent>
 {
     private readonly ILogger<GradingSaga> logger;
     private readonly GradingRepository repository;
+    private readonly RubricProtoServiceClient rubricProtoService;
+    private readonly IHubContext<GradingsHub, IGradingClient> hubContext;
 
     private readonly GradingSagaWriteModel aggregateState;
 
     public GradingSaga(
         GradingSagaId id,
         ILogger<GradingSaga> logger,
-        GradingRepository repository) : base(id)
+        GradingRepository repository,
+        RubricProtoServiceClient rubricProtoService,
+        IHubContext<GradingsHub, IGradingClient> hubContext) : base(id)
     {
         this.logger = logger;
         this.repository = repository;
+        this.rubricProtoService = rubricProtoService;
+        this.hubContext = hubContext;
 
         aggregateState = new GradingSagaWriteModel();
         Register(aggregateState);
@@ -36,6 +49,11 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
     {
         var gradingSummary = await repository
             .GetGradingSummary(domainEvent.AggregateIdentity.Value, cancellationToken);
+
+        var rubric = await rubricProtoService.GetRubricAsync(new GetRubricRequest
+        {
+            RubricId = gradingSummary.RubricId
+        }, cancellationToken: cancellationToken);
 
         Emit(new GradingSagaStartedEvent
         {
@@ -57,19 +75,55 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
                 SubmissionReference = SubmissionReference.New(submission.Reference),
                 GradingId = Shared.GradingId.With(gradingSummary.Id),
                 TeacherId = TeacherId.With(gradingSummary.TeacherId),
-                RubricId = RubricId.With(gradingSummary.RubricId)
+                RubricId = RubricId.With(gradingSummary.RubricId),
+                Criteria = [.. rubric.Criteria.Select(c => Criterion.Parse(c))]
             });
         }
 
         logger.LogInformation("Completed creating assessments for grading {GradingId}", gradingSummary.Id);
     }
 
+    // This method is called when the grading is re-started, e.g., after a failure or manual intervention
+    // We don't need to re-create assessments, just re-start the auto-grading process
+    public async Task HandleAsync(IDomainEvent<GradingAggregate, GradingId, AutoGradingRestartedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Re-starting grading saga for GradingId {GradingId}", domainEvent.AggregateIdentity.Value);
+
+        var assessmentToRegrade = aggregateState.GradedAssessmentIds
+            .Union(aggregateState.FailedAssessmentIds)
+            .ToHashSet();
+
+        foreach (var assessmentId in assessmentToRegrade)
+        {
+            var submission = await repository.GetSubmissionAsync(
+                aggregateState.GradingId.Value,
+                aggregateState.AssessmentToSubmissionRefs[assessmentId],
+                cancellationToken);
+
+            Publish(new Assessments.AutoGrading.StartAutoGradingCommand(Assessments.AssessmentId.With(assessmentId))
+            {
+                RubricId = aggregateState.RubricId,
+                Submission = submission
+            });
+
+            // Update the progress for the assessment
+            await PublishProgressUpdate(new AssessmentProgress
+            {
+                SubmissionReference = submission.Reference,
+                AssessmentId = assessmentId,
+                Status = AssessmentState.AutoGradingStarted.ToString(),
+                ErrorMessage = null
+            });
+        }
+    }
+
     public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessmentCreatedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
     {
+        var assessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value);
         // Start tracking the assessment
         Emit(new GradingSagaAssessmentTrackedEvent
         {
-            AssessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value),
+            AssessmentId = assessmentId,
             SubmissionReference = domainEvent.AggregateEvent.SubmissionReference
         });
         try
@@ -79,46 +133,117 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
                 domainEvent.AggregateEvent.SubmissionReference,
                 cancellationToken);
 
-            Publish(new Assessments.StartAutoGrading.Command(domainEvent.AggregateIdentity)
+            Publish(new Assessments.AutoGrading.StartAutoGradingCommand(domainEvent.AggregateIdentity)
             {
                 RubricId = aggregateState.RubricId,
                 Submission = submission
+            });
+
+            await PublishProgressUpdate(new AssessmentProgress
+            {
+                SubmissionReference = domainEvent.AggregateEvent.SubmissionReference,
+                AssessmentId = assessmentId,
+                Status = AssessmentState.Created.ToString(),
+                ErrorMessage = null
             });
         }
         catch (Exception ex)
         {
             // Handle the case where the submission is not found
-            logger.LogError(ex, "Error starting auto grading for assessment {AssessmentId}", domainEvent.AggregateIdentity.Value);
+            logger.LogError(ex, "Error starting auto grading for assessment {AssessmentId}", assessmentId);
         }
     }
 
-    public Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, Assessments.StartAutoGrading.AutoGradingStartedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, Assessments.AutoGrading.AutoGradingStartedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
     {
+        var assessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value);
+
+        // When auto-grading starts, we clear all previous state related to this assessment
         Emit(new GradingSagaAssessmentAutoGradingStartedEvent
         {
-            AssessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value)
+            AssessmentId = assessmentId
         });
 
-        return Task.CompletedTask;
+        await PublishProgressUpdate(new AssessmentProgress
+        {
+            SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
+            AssessmentId = assessmentId,
+            Status = AssessmentState.AutoGradingStarted.ToString(),
+            ErrorMessage = null
+        });
     }
 
-    public Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
     {
-        if (domainEvent.AggregateEvent.Grader.IsAIGrader)
+        if (!domainEvent.AggregateEvent.Grader.IsAIGrader)
         {
-            Emit(new GradingSagaAssessmentAutoGradingFinishedEvent
-            {
-                AssessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value)
-            });
+            return; // This only handles AI grading
         }
 
-        HandleAutoGradingCompletion();
-        return Task.CompletedTask;
+        var assessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value);
+        // Emit event to mark this assessment as auto-graded
+        Emit(new GradingSagaAssessmentAutoGradingFinishedEvent
+        {
+            AssessmentId = assessmentId
+        });
+        
+        await PublishProgressUpdate(new AssessmentProgress
+        {
+            SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
+            AssessmentId = assessmentId,
+            Status = AssessmentState.Completed.ToString(),
+            ErrorMessage = null
+        });
+
+        await HandleAutoGradingCompletion();
     }
 
-    //TODO: Handle the case where some assessments failed to auto-grade
+    public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, AssessmentFailedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    {
+        var assessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value);
+        Emit(new GradingSagaAssessmentAutoGradingFailedEvent
+        {
+            AssessmentId = assessmentId
+        });
 
-    private void HandleAutoGradingCompletion()
+        await PublishProgressUpdate(new AssessmentProgress
+        {
+            SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
+            AssessmentId = assessmentId,
+            Status = AssessmentState.AutoGradingFailed.ToString(),
+            ErrorMessage = string.Join("; ", domainEvent.AggregateEvent.Errors.Select(e => $"{e.Key}: {e.Value}"))
+        });
+    }
+
+    public async Task HandleAsync(IDomainEvent<AssessmentAggregate, Assessments.AssessmentId, Assessments.AutoGrading.AutoGradingFinishedEvent> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+    {
+        var assessmentId = Shared.AssessmentId.With(domainEvent.AggregateIdentity.Value);
+        // Emit event to mark this assessment as auto-graded
+        Emit(new GradingSagaAssessmentAutoGradingFinishedEvent
+        {
+            AssessmentId = assessmentId
+        });
+
+        var errors = domainEvent.AggregateEvent.Errors;
+
+        await PublishProgressUpdate(new AssessmentProgress
+        {
+            SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
+            AssessmentId = assessmentId,
+            Status = AssessmentState.Completed.ToString(),
+            ErrorMessage = string.Join(
+                Environment.NewLine,
+                domainEvent.AggregateEvent.Errors.Select(e => 
+                $$"""
+                Criterion: {{e.Key}}
+                 •Failure Reason: {{e.Value}}
+                """))
+        });
+
+        await HandleAutoGradingCompletion();
+    }
+
+    private async Task HandleAutoGradingCompletion()
     {
         if (aggregateState.PendingSubmissionRefs.Count > 0)
         {
@@ -130,13 +255,33 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             return;
         }
 
+        if (aggregateState.UnderAutoGradingAssessmentIds.Count > 0)
+        {
+            return;
+        }
+
         if (aggregateState.FailedAssessmentIds.Count == 0)
         {
+            logger.LogInformation("All assessments auto-graded for grading {GradingId}", aggregateState.GradingId.Value);
             Publish(new CompleteAutoGradingCommand(GradingId.With(aggregateState.GradingId)));
+            await hubContext.Clients
+                .Group(aggregateState.GradingId.Value)
+                .Complete();
         }
         else
         {
             //TODO: Handle the case where some assessments failed to auto-grade
         }
+    }
+
+    private async Task PublishProgressUpdate(AssessmentProgress progress)
+    {
+        //TODO: Cache the current progress state to avoid unnecessary database calls
+
+        await hubContext.Clients
+            .Group(aggregateState.GradingId.Value)
+            .ReceiveAssessmentProgress(progress);
+
+        logger.LogInformation("Progress updated for assessment {AssessmentId} with status {Status}", progress.AssessmentId, progress.Status);
     }
 }

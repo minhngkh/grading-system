@@ -1,40 +1,33 @@
 import ErrorComponent from "@/components/app/route-error";
 import PendingComponent from "@/components/app/route-pending";
-import UploadAssignmentPage from "@/pages/grading/grading-session";
 import { GradingService } from "@/services/grading-service";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { z } from "zod";
 
 export const Route = createFileRoute("/_authenticated/gradings/create")({
-  component: RouteComponent,
-  beforeLoad: async () => {
-    let gradingId = sessionStorage.getItem("gradingId") ?? undefined;
-    return { gradingId };
-  },
-  loader: async ({ context: { gradingId } }) => {
-    if (!gradingId) {
-      return await GradingService.createGradingAttempt();
+  preload: false,
+  component: () => null,
+  validateSearch: z.object({
+    rubricId: z.string().optional(),
+  }),
+  loaderDeps: ({ search }) => search,
+  loader: async ({ context: { auth, queryClient }, deps: { rubricId } }) => {
+    const token = await auth.getToken();
+    if (!token) {
+      throw new Error("Authentication token is required");
     }
 
-    return await GradingService.getGradingAttempt(gradingId);
+    const grading = await GradingService.createGradingAttempt(rubricId, token);
+    queryClient.invalidateQueries({
+      queryKey: ["gradingAttempts"],
+    });
+
+    throw redirect({
+      to: "/gradings/$gradingId",
+      params: { gradingId: grading.id },
+      replace: true,
+    });
   },
-  onLeave: () => {
-    sessionStorage.removeItem("gradingStep");
-    sessionStorage.removeItem("gradingId");
-  },
-  errorComponent: () => ErrorComponent(),
-  pendingComponent: () => PendingComponent("Loading grading..."),
+  pendingComponent: () => <PendingComponent message="Creating grading session..." />,
+  errorComponent: () => <ErrorComponent message="Failed to create grading session" />,
 });
-
-function RouteComponent() {
-  const gradingStep = sessionStorage.getItem("gradingStep") ?? undefined;
-  const { gradingId } = Route.useRouteContext();
-  const attempt = Route.useLoaderData();
-
-  if (!gradingId) {
-    sessionStorage.setItem("gradingId", attempt.id);
-  }
-
-  return (
-    <UploadAssignmentPage initialStep={gradingStep} initialGradingAttempt={attempt} />
-  );
-}

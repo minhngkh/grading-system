@@ -9,16 +9,20 @@ import axios, { AxiosRequestConfig } from "axios";
 const AI_PLUGIN_URL = `${import.meta.env.VITE_PLUGIN_SERVICE_URL}/api/v1/plugins/ai`;
 
 export class ChatService {
-  static configHeaders: AxiosRequestConfig = {
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  };
+  private static async buildHeaders(token: string): Promise<AxiosRequestConfig> {
+    return {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    };
+  }
 
   static async sendRubricMessage(
     messages: ChatMessage[],
-    rubric?: ChatRubric,
+    rubric: ChatRubric,
+    token: string,
   ): Promise<RubricAgentResponse> {
     const formattedMessages = messages.map((message) => ({
       role: message.who === "user" ? "user" : "assistant",
@@ -37,20 +41,24 @@ export class ChatService {
       ],
     }));
 
+    // Weight in range is a boolean, but the API expects it as a string, fix this later
     const data = {
-      rubric: rubric,
+      rubric: { ...rubric, weightInRange: "false" },
       messages: formattedMessages,
     };
 
-    const res = await axios.post(`${AI_PLUGIN_URL}/chat`, data, this.configHeaders);
+    const configHeaders = await this.buildHeaders(token);
+    const res = await axios.post(`${AI_PLUGIN_URL}/chat`, data, configHeaders);
     return {
       message: res.data.message,
-      // TODO: Handle rubric schema validation
       rubric: res.data.rubric ? res.data.rubric : undefined,
     };
   }
 
-  static async sendChatMessage(messages: ChatMessage[]): Promise<AgentChatResponse> {
+  static async sendChatMessage(
+    messages: ChatMessage[],
+    token: string,
+  ): Promise<AgentChatResponse> {
     const formattedMessages = messages.map((message) => ({
       role: message.who === "user" ? "user" : "assistant",
       content: [
@@ -72,7 +80,8 @@ export class ChatService {
       messages: formattedMessages,
     });
 
-    const res = await axios.post(`${AI_PLUGIN_URL}/chat`, data, this.configHeaders);
+    const configHeaders = await this.buildHeaders(token);
+    const res = await axios.post(`${AI_PLUGIN_URL}/chat`, data, configHeaders);
     return {
       message: res.data.message,
     };

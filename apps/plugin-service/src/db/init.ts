@@ -1,104 +1,100 @@
-import type { Types } from "mongoose";
 import type { Plugin, PluginCategory } from "./models";
 import { asError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
+import { CATEGORIES, plugins as pluginsInfo } from "@/plugins/info";
 import { PluginCategoryModel, PluginModel } from "./models";
 
-const CATEGORIES = [
-  {
-    alias: "general",
-    name: "General",
-    description: "General purpose plugins",
-  },
-  {
-    alias: "ai",
-    name: "AI",
-    description: "Plugins utilizing AI models",
-  },
-  {
-    alias: "code",
-    name: "Code",
-    description: "Code replated plugins",
-  },
-] as const satisfies PluginCategory[];
+// const categories = [
+//   {
+//     _id: "general",
+//     name: "General",
+//     description: "General purpose plugins",
+//   },
+//   {
+//     _id: "ai",
+//     name: "AI",
+//     description: "Plugins utilizing AI models",
+//   },
+//   {
+//     _id: "code",
+//     name: "Code",
+//     description: "Code replated plugins",
+//   },
+// ] as const satisfies PluginCategory[];
 
-const PLUGINS = [
-  {
-    alias: "ai",
-    name: "AI grader",
-    description: "Grade rubric using AI language models",
-    categoryAliases: ["ai", "general"],
-    enabled: true,
-  },
-  {
-    alias: "test-runner",
-    name: "Test Runner",
-    description: "Run tests on submissions",
-    categoryAliases: ["code"],
-    enabled: false,
-  },
-  {
-    alias: "test",
-    name: "Test Plugin",
-    description: "A test plugin for demonstration purposes",
-    categoryAliases: [],
-    enabled: false,
-  },
-] satisfies (Omit<Plugin, "categories"> & {
-  categoryAliases: (typeof CATEGORIES)[number]["alias"][];
-})[];
+const categories = CATEGORIES.map(
+  (cat) =>
+    ({
+      _id: cat.id,
+      name: cat.name,
+      description: cat.description,
+    }) as PluginCategory,
+);
+
+const plugins = Object.entries(pluginsInfo).map(
+  ([_, plugin]) =>
+    ({
+      _id: plugin.id,
+      name: plugin.name,
+      description: plugin.description,
+      categories: plugin.categories,
+      enabled: plugin.enabled,
+      operations: plugin.operations,
+      configSchema: plugin.configSchema,
+      checkConfig: plugin.checkConfig,
+    }) as Plugin,
+);
 
 export async function syncDB() {
   try {
-    const CategoryAliasIdMap = new Map<string, Types.ObjectId>();
-
     const existingCategories = await PluginCategoryModel.find({
-      alias: { $in: CATEGORIES.map((cat) => cat.alias) },
+      _id: { $in: categories.map((cat) => cat._id) },
     })
       .lean()
       .exec();
 
-    for (const category of existingCategories) {
-      CategoryAliasIdMap.set(category.alias, category._id);
-    }
+    logger.debug("Existing categories:", existingCategories);
 
-    const missingCategories = CATEGORIES.filter(
-      (cat) => !CategoryAliasIdMap.has(cat.alias),
+    const missingCategories = categories.filter((cat) =>
+      existingCategories.every((existing) => existing._id !== cat._id),
     );
 
-    Promise.all(
+    await Promise.all(
       missingCategories.map(async (cat) => {
-        const newCategory = await PluginCategoryModel.create({
-          alias: cat.alias,
+        await PluginCategoryModel.create({
+          _id: cat._id,
           name: cat.name,
           description: cat.description,
         });
-
-        CategoryAliasIdMap.set(cat.alias, newCategory._id);
       }),
     );
 
-    const pluginDocuments = PLUGINS.map((plugin) => {
-      const categoryIds = plugin.categoryAliases.map((alias) =>
-        CategoryAliasIdMap.get(alias)!,
-      );
+    // await PluginModel.insertMany(plugins, { ordered: false }).catch((err) => {
+    //   if (!(err instanceof Error && err.name === "MongoBulkWriteError")) {
+    //     throw err;
+    //   }
+    // });
 
-      logger.debug(`${categoryIds}`);
+    // Remove all existing plugins and replace with current ones
+    // await PluginModel.deleteMany({});
+    // await PluginModel.insertMany(plugins, { ordered: false });
 
-      return {
-        alias: plugin.alias,
-        name: plugin.name,
-        description: plugin.description,
-        categories: categoryIds,
-        enabled: plugin.enabled,
-      };
-    });
+    // Get current plugin IDs from configuration
+    const currentPluginIds = plugins.map((p) => p._id);
 
-    await PluginModel.insertMany(pluginDocuments, { ordered: false }).catch((err) => {
-      if (!(err instanceof Error && err.name === "MongoBulkWriteError")) {
-        throw err;
-      }
-    });
+    // Remove plugins that are no longer in configuration
+    await PluginModel.deleteMany({ _id: { $nin: currentPluginIds } });
+
+    // Upsert current plugins
+    const pluginOperations = plugins.map((plugin) => ({
+      replaceOne: {
+        filter: { _id: plugin._id },
+        replacement: plugin,
+        upsert: true,
+      },
+    }));
+
+    await PluginModel.bulkWrite(pluginOperations, { ordered: false });
 
     logger.info("DB Sync completed: Categories and plugins initialized");
   } catch (error) {

@@ -1,4 +1,6 @@
-﻿namespace AssignmentFlow.Application.Gradings;
+﻿using Microsoft.Extensions.DependencyInjection;
+
+namespace AssignmentFlow.Application.Gradings;
 
 public static class ServiceCollectionExtensions
 {
@@ -6,6 +8,7 @@ public static class ServiceCollectionExtensions
     {
         return services
             .AddTransient<GradingWriteModel>()
-            .AddTransient<GradingRepository>();
+            .AddTransient<GradingRepository>()
+            .AddTransient<ISubmissionUploadService, SubmissionUploadService>();
     }
 }

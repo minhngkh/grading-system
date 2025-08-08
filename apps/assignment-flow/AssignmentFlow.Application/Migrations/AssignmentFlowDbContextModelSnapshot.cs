@@ -18,10 +18,13 @@ namespace AssignmentFlow.Application.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.5")
+                .HasAnnotation("ProductVersion", "9.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.HasSequence("References_Sequence")
+                .IncrementsBy(10);
 
             modelBuilder.Entity("AssignmentFlow.Application.Assessments.Assessment", b =>
                 {
@@ -31,6 +34,9 @@ namespace AssignmentFlow.Application.Migrations
 
                     b.Property<int>("AdjustedCount")
                         .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("GradingId")
                         .IsRequired()
@@ -80,8 +86,6 @@ namespace AssignmentFlow.Application.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("AssessmentId")
-                        .IsRequired()
-                        .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -105,6 +109,8 @@ namespace AssignmentFlow.Application.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssessmentId");
+
                     b.ToTable("ScoreAdjustments");
                 });
 
@@ -114,8 +120,19 @@ namespace AssignmentFlow.Application.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("RubricId")
                         .IsRequired()
@@ -143,6 +160,23 @@ namespace AssignmentFlow.Application.Migrations
                     b.ToTable("Gradings");
                 });
 
+            modelBuilder.Entity("AssignmentFlow.Application.Shared.Sequence", b =>
+                {
+                    b.Property<long>("CurrentValue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseHiLo(b.Property<long>("CurrentValue"), "References_Sequence");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("CurrentValue");
+
+                    b.ToTable("Sequences");
+                });
+
             modelBuilder.Entity("AssignmentFlow.Application.Assessments.Assessment", b =>
                 {
                     b.OwnsMany("AssignmentFlow.Application.Assessments.ScoreBreakdownApiContract", "ScoreBreakdowns", b1 =>
@@ -158,12 +192,24 @@ namespace AssignmentFlow.Application.Migrations
                                 .IsRequired()
                                 .HasColumnType("text");
 
+                            b1.Property<string>("Grader")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.Property<string>("MetadataJson")
+                                .IsRequired()
+                                .HasColumnType("text");
+
                             b1.Property<string>("PerformanceTag")
                                 .IsRequired()
                                 .HasColumnType("text");
 
                             b1.Property<decimal>("RawScore")
                                 .HasColumnType("numeric");
+
+                            b1.Property<string>("Status")
+                                .IsRequired()
+                                .HasColumnType("text");
 
                             b1.HasKey("AssessmentId", "__synthesizedOrdinal");
 
@@ -196,21 +242,16 @@ namespace AssignmentFlow.Application.Migrations
                                 .IsRequired()
                                 .HasColumnType("text");
 
-                            b1.Property<int>("FromCol")
-                                .HasColumnType("integer");
+                            b1.Property<string>("Id")
+                                .HasColumnType("text");
 
-                            b1.Property<int>("FromLine")
-                                .HasColumnType("integer");
+                            b1.Property<string>("LocationDataJson")
+                                .IsRequired()
+                                .HasColumnType("text");
 
                             b1.Property<string>("Tag")
                                 .IsRequired()
                                 .HasColumnType("text");
-
-                            b1.Property<int>("ToCol")
-                                .HasColumnType("integer");
-
-                            b1.Property<int>("ToLine")
-                                .HasColumnType("integer");
 
                             b1.HasKey("AssessmentId", "__synthesizedOrdinal");
 
@@ -229,6 +270,10 @@ namespace AssignmentFlow.Application.Migrations
 
             modelBuilder.Entity("AssignmentFlow.Application.Assessments.ScoreAdjustment", b =>
                 {
+                    b.HasOne("AssignmentFlow.Application.Assessments.Assessment", "Assessment")
+                        .WithMany("ScoreAdjustmentsHistory")
+                        .HasForeignKey("AssessmentId");
+
                     b.OwnsMany("AssignmentFlow.Application.Assessments.ScoreBreakdownApiContract", "DeltaScoreBreakdowns", b1 =>
                         {
                             b1.Property<string>("ScoreAdjustmentId")
@@ -242,12 +287,24 @@ namespace AssignmentFlow.Application.Migrations
                                 .IsRequired()
                                 .HasColumnType("text");
 
+                            b1.Property<string>("Grader")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.Property<string>("MetadataJson")
+                                .IsRequired()
+                                .HasColumnType("text");
+
                             b1.Property<string>("PerformanceTag")
                                 .IsRequired()
                                 .HasColumnType("text");
 
                             b1.Property<decimal>("RawScore")
                                 .HasColumnType("numeric");
+
+                            b1.Property<string>("Status")
+                                .IsRequired()
+                                .HasColumnType("text");
 
                             b1.HasKey("ScoreAdjustmentId", "__synthesizedOrdinal");
 
@@ -272,12 +329,24 @@ namespace AssignmentFlow.Application.Migrations
                                 .IsRequired()
                                 .HasColumnType("text");
 
+                            b1.Property<string>("Grader")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.Property<string>("MetadataJson")
+                                .IsRequired()
+                                .HasColumnType("text");
+
                             b1.Property<string>("PerformanceTag")
                                 .IsRequired()
                                 .HasColumnType("text");
 
                             b1.Property<decimal>("RawScore")
                                 .HasColumnType("numeric");
+
+                            b1.Property<string>("Status")
+                                .IsRequired()
+                                .HasColumnType("text");
 
                             b1.HasKey("ScoreAdjustmentId", "__synthesizedOrdinal");
 
@@ -288,6 +357,8 @@ namespace AssignmentFlow.Application.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("ScoreAdjustmentId");
                         });
+
+                    b.Navigation("Assessment");
 
                     b.Navigation("DeltaScoreBreakdowns");
 
@@ -355,6 +426,11 @@ namespace AssignmentFlow.Application.Migrations
                     b.Navigation("Selectors");
 
                     b.Navigation("SubmissionPersistences");
+                });
+
+            modelBuilder.Entity("AssignmentFlow.Application.Assessments.Assessment", b =>
+                {
+                    b.Navigation("ScoreAdjustmentsHistory");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,50 +1,46 @@
-using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Bootstrapping;
 using AssignmentFlow.Application.Gradings;
-using EventFlow.EntityFramework;
-using EventFlow.EntityFramework.Extensions;
-using EventFlow.Extensions;
-using EventFlow.PostgreSql.Connections;
-using EventFlow.PostgreSql.EventStores;
-using EventFlow.PostgreSql.Extensions;
+using AssignmentFlow.Application.Hub;
 using JsonApiDotNetCore.Configuration;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddNpgsqlDbContext<AssignmentFlowDbContext>(connectionName: "assignmentflowdb");
-builder.AddRabbitMQClient(connectionName: "messaging");
+
+if (Environment.GetEnvironmentVariable("USE_SERVICE_BUS") == "true")
+{
+    builder.AddAzureServiceBusClient(connectionName: "messaging");
+}
+else
+{
+    builder.AddRabbitMQClient(connectionName: "messaging");
+}
+
 builder.AddAzureBlobClient("submissions-store");
 
-builder.Services
-    .AddBootstrapping(builder.Configuration, builder.Environment)
+builder
+    .Services.AddBootstrapping(builder.Configuration, builder.Environment)
     .AddShared(builder.Configuration, builder.Environment)
     .AddGradings();
 
-builder.Services.AddEventFlow(ef => ef
-    .Configure(o =>
-    {
-        o.IsAsynchronousSubscribersEnabled = true;
-        o.ThrowSubscriberExceptions = true;
-    })
-    .ConfigurePostgreSql(PostgreSqlConfiguration.New
-        .SetConnectionString(builder.Configuration.GetConnectionString("assignmentflowdb")))
-    .UseEventPersistence<PostgreSqlEventPersistence>()
-    .AddDefaults(typeof(Program).Assembly)
-    .ConfigureEntityFramework(EntityFrameworkConfiguration.New)
-    .AddDbContextProvider<AssignmentFlowDbContext, AssignmentFlowDbContextProvider>()
-    .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
-    .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>()
-);
+var allowedOrigins =
+    builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:5173"];
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
-    {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
+    options.AddPolicy(
+        "AllowAll",
+        builder =>
+        {
+            builder
+                .WithOrigins(allowedOrigins)
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        }
+    );
 });
 
 builder.AddServiceDefaults();
@@ -52,18 +48,25 @@ builder.AddServiceDefaults();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
-}
+
+app.MapOpenApi();
+app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
 
 app.UseCors("AllowAll");
+
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(2),
+};
+
+app.UseWebSockets(webSocketOptions);
 
 // Initialize the database
 using (var scope = app.Services.CreateScope())
 {
-    var dbInitializer = ActivatorUtilities.CreateInstance<DbInitializer>(scope.ServiceProvider);
+    var dbInitializer = ActivatorUtilities.CreateInstance<DbInitializer>(
+        scope.ServiceProvider
+    );
     await dbInitializer.InitializeAsync();
 }
 
@@ -76,6 +79,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseJsonApi();
+app.MapHub<GradingsHub>("/hubs/gradings");
 app.MapAssignmentFlowEndpoints();
 
 app.UseHealthChecks("/health");

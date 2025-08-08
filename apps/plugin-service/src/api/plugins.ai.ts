@@ -63,17 +63,7 @@ export function route(broker: ServiceBroker) {
     async (c) => {
       const body = c.req.valid("json");
 
-      const responseResult = await actionCaller<AIService>()(
-        broker,
-        "v1.ai.chatRubric",
-        body,
-      );
-
-      if (responseResult.isErr()) {
-        throw responseResult.error;
-      }
-
-      const response = responseResult.value;
+      const response = await actionCaller<AIService>()(broker, "v1.ai.chatRubric", body);
 
       if (!response.stream) {
         return c.json(response.result);

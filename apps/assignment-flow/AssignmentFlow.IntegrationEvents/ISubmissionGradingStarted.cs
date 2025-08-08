@@ -7,6 +7,8 @@ public interface ISubmissionGradingStarted
 {
     public string AssessmentId { get; set; }
     public Criterion[] Criteria { get; set; }
+    public Dictionary<string, object?> Metadata { get; set; }
+    public string[] Attachments { get; set; }
 }
 
 public class Criterion
@@ -22,5 +24,5 @@ public class Level
 {
     public required string Tag { get; set; }
     public required string Description { get; set; }
-    public required decimal Weight { get; set; } // FIXME: this is a string in payload
+    public required decimal Weight { get; set; }
 }

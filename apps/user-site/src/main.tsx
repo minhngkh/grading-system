@@ -4,10 +4,12 @@ import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { routeTree } from "./routeTree.gen";
 import { LoadingScreen } from "./components/app/loading-screen";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const queryClient = new QueryClient();
 
 const router = createRouter({
   routeTree,
@@ -15,6 +17,7 @@ const router = createRouter({
   scrollRestoration: true,
   context: {
     auth: undefined!,
+    queryClient,
   },
 });
 
@@ -31,7 +34,11 @@ function App() {
     return <LoadingScreen />;
   }
 
-  return <RouterProvider router={router} context={{ auth }} />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} context={{ auth }} />
+    </QueryClientProvider>
+  );
 }
 
 const rootElement = document.getElementById("root")!;

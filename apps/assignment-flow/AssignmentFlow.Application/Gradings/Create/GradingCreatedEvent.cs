@@ -7,4 +7,5 @@ namespace AssignmentFlow.Application.Gradings.Create;
 public class GradingCreatedEvent : AggregateEvent<GradingAggregate, GradingId>
 {
     public required TeacherId TeacherId { get; init; }
+    public required string Reference { get; init; }
 }

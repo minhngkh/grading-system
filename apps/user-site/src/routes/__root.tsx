@@ -6,14 +6,16 @@ import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { useAuth } from "@clerk/clerk-react";
 import { ErrorBoundary } from "@/components/layout/error-boundary";
 import { Toaster } from "@/components/ui/sonner";
-import { NavigationItems } from "@/types/navigation";
+import { NavigationItems } from "@/consts/navigations";
+import { QueryClient } from "@tanstack/react-query";
 
 interface AppRouterContext {
   auth: ReturnType<typeof useAuth>;
+  queryClient: QueryClient;
 }
 
 export const Route = createRootRouteWithContext<AppRouterContext>()({
-  component: () => <Root />,
+  component: Root,
   errorComponent: ErrorBoundary,
 });
 

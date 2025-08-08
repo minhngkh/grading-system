@@ -1,4 +1,4 @@
-import RubricView from "@/components/app/rubric-view";
+import { RubricView } from "@/components/app/rubric-view";
 import {
   Dialog,
   DialogContent,
@@ -6,66 +6,60 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { RubricService } from "@/services/rubric-service";
 import { Rubric } from "@/types/rubric";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 type RubricDialogProps = {
-  rubricId?: string;
   initialRubric?: Rubric;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
 
-export const ViewRubricDialog = ({
-  rubricId,
+export function ViewRubricDialog({
   initialRubric,
   open,
   onOpenChange,
-}: RubricDialogProps) => {
-  const [rubric, setRubric] = useState<Rubric | undefined>(initialRubric);
-  const [isLoading, setIsLoading] = useState(false);
-
+}: RubricDialogProps) {
+  // Keyboard shortcuts
   useEffect(() => {
-    const fetchRubric = async () => {
-      if (!rubricId) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!open) return;
 
-      try {
-        setIsLoading(true);
-        const fetchedRubric = await RubricService.getRubric(rubricId);
-        setRubric(fetchedRubric);
-      } catch (error) {
-        console.error("Error fetching rubric:", error);
-      } finally {
-        setIsLoading(false);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onOpenChange?.(false);
+      } else if (e.key === "r" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
       }
     };
 
-    if (!rubric) fetchRubric();
-  }, [rubricId]);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-describedby={undefined} className="min-w-[80%]">
+      <DialogContent
+        aria-describedby={undefined}
+        className="min-w-[60%] max-w-[80%] max-h-[90vh] flex flex-col gap-0"
+      >
         <DialogHeader>
-          <DialogTitle>View Rubric</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Rubric: {initialRubric?.rubricName}
+          </DialogTitle>
           <DialogDescription>
-            Review the details of the selected rubric.
+            View the details of the rubric including its criteria and scoring.
           </DialogDescription>
         </DialogHeader>
-        {isLoading ?
-          <div>Loading...</div>
-        : rubric ?
-          <>
-            <DialogHeader>
-              <DialogTitle>{rubric?.rubricName}</DialogTitle>
-            </DialogHeader>
-            <div className="w-full h-full flex flex-col">
-              <RubricView rubricData={rubric} showPlugins />
-            </div>
-          </>
-        : <div>No rubric found</div>}
+
+        <div className="flex-1 overflow-auto mt-2">
+          <div className="grid w-full overflow-auto pr-2 pb-2 custom-scrollbar">
+            {initialRubric ?
+              <RubricView rubricData={initialRubric} />
+            : <p>No rubric available</p>}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
-};
+}

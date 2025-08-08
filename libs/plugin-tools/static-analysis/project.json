@@ -1,0 +1,27 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "plugin-tools/static-analysis",
+  "projectType": "library",
+  "targets": {
+    "install-deps": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "options": {
+        "commands": [
+          "uv sync",
+          "uv run semgrep install-semgrep-pro",
+          "uv run semgrep login || true"
+        ],
+        "parallel": false,
+        "cwd": "{projectRoot}"
+      },
+      "inputs": [
+        "{projectRoot}/pyproject.toml",
+        "{projectRoot}/uv.lock"
+      ],
+      "outputs": [
+        "{projectRoot}/.venv"
+      ]
+    }
+  }
+}

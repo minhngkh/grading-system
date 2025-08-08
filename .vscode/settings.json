@@ -4,6 +4,10 @@
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "never"
   },
+  "files.associations": {
+    "*.css": "tailwindcss",
+    "*.scss": "tailwindcss"
+  },
 
   // Enable eslint for all supported languages
   "eslint.validate": [
@@ -34,4 +38,5 @@
   "typescript.preferences.importModuleSpecifier": "non-relative",
   "javascript.preferences.importModuleSpecifier": "non-relative",
   "typescript.tsdk": "node_modules/typescript/lib",
+  "nxConsole.generateAiAgentRules": true
 }

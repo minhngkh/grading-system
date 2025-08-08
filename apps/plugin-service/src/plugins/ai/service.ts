@@ -1,9 +1,17 @@
 import type { Context } from "moleculer";
+import type { PluginOperations } from "@/plugins/info";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
 import { coreMessageSchema } from "ai";
 import { ZodParams } from "moleculer-zod-validator";
 import z from "zod";
-import { generateChatResponse, gradeUsingRubric, rubricSchema } from "./core";
+import { getTransporter } from "@/lib/transporter";
+import {
+  criterionGradingFailedEvent,
+  criterionGradingSuccessEvent,
+} from "@/messaging/events";
+import { gradeSubmission } from "@/plugins/ai/grade";
+import { gradeSubmissionActionParams } from "@/plugins/data";
+import { generateChatResponse, rubricSchema } from "./core";
 
 export const chatRubricActionSchema = z.object({
   messages: z.array(coreMessageSchema).describe("Chat messages"),
@@ -22,46 +30,93 @@ export const chatRubricActionSchema = z.object({
 });
 export const chatRubricActionParams = new ZodParams(chatRubricActionSchema.shape);
 
-export const gradeActionSchema = z.object({
-  rubric: rubricSchema,
-  prompt: z.string().min(1),
-});
-export const gradeActionParams = new ZodParams(gradeActionSchema.shape);
-
 export const aiService = defineTypedService2({
   name: "ai",
   version: 1,
   actions: {
     chatRubric: {
       params: chatRubricActionParams.schema,
-      handler(ctx: Context<typeof chatRubricActionParams.context>) {
+      async handler(ctx: Context<typeof chatRubricActionParams.context>) {
         const params = ctx.params;
 
-        return generateChatResponse({
+        const result = await generateChatResponse({
           messages: params.messages,
           weightInRange: params.weightInRange,
           rubric: params.rubric,
           stream: params.stream,
         });
-      },
-    },
-    grade: {
-      params: gradeActionParams.schema,
-      handler(ctx: Context<typeof gradeActionParams.context>) {
-        const { rubric, prompt } = ctx.params;
 
-        if (!rubric) {
-          throw new Error("Rubric is null or undefined");
+        if (result.isErr()) {
+          throw new Error(result.error.message);
         }
-        return gradeUsingRubric(rubric, prompt);
+
+        return result.value;
       },
     },
-    // test: {
-    //   handler(ctx: Context) {
-    //     return "hello world";
-    //   },
-    // },
+
+    gradeSubmission: {
+      params: gradeSubmissionActionParams.schema,
+      async handler(ctx: Context<typeof gradeSubmissionActionParams.context>) {
+        const params = ctx.params;
+
+        const result = await gradeSubmission({
+          attemptId: params.assessmentId,
+          criterionDataList: params.criterionDataList,
+          attachments: params.attachments,
+          metadata: params.metadata,
+        });
+
+        if (result.isErr()) {
+          throw new Error(result.error.message);
+        }
+
+        const transporter = await getTransporter();
+
+        const promises = result.value.map((value) =>
+          value
+            .orTee((error) => {
+              for (const criterion of error.data.criterionNames) {
+                transporter.emit(criterionGradingFailedEvent, {
+                  assessmentId: params.assessmentId,
+                  criterionName: criterion,
+                  error: error.message,
+                });
+              }
+            })
+            .andTee((value) => {
+              for (const item of value) {
+                transporter.emit(criterionGradingSuccessEvent, {
+                  assessmentId: params.assessmentId,
+                  criterionName: item.criterion,
+                  metadata: {
+                    ignoredFiles: item.ignoredFiles,
+                  },
+                  scoreBreakdown: {
+                    tag: item.tag,
+                    rawScore: item.score,
+                    summary: item.summary,
+                    feedbackItems: item.feedback.map((feedbackItem) => ({
+                      comment: feedbackItem.comment,
+                      fileRef: feedbackItem.fileRef,
+                      tag: "info",
+                      locationData: feedbackItem.locationData,
+                    })),
+                  },
+                });
+              }
+            }),
+        );
+
+        await Promise.all(promises);
+      },
+    },
   },
 });
 
 export type AIService = typeof aiService;
+
+export const aiPluginOperations = {
+  grade: {
+    action: "v1.ai.gradeSubmission",
+  },
+} satisfies PluginOperations<AIService>;

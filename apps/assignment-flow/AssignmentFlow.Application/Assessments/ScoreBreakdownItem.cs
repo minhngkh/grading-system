@@ -1,6 +1,8 @@
 using EventFlow.ValueObjects;
+using Google.Protobuf;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Numerics;
 
 namespace AssignmentFlow.Application.Assessments;
 
@@ -8,8 +10,13 @@ namespace AssignmentFlow.Application.Assessments;
 /// Represents a single score breakdown item, including its criterion, score, performance tag, and feedback.
 /// </summary>
 [JsonConverter(typeof(ScoreBreakdownItemConverter))]
-public sealed class ScoreBreakdownItem : ValueObject
+public sealed class ScoreBreakdownItem : ValueObject, IDeepCloneable<ScoreBreakdownItem>
 {
+    public static ScoreBreakdownItem Pending(string criterion) => new(CriterionName.New(criterion)) { Status = "Pending" , Grader = Grader.AIGrader };
+    public static ScoreBreakdownItem Mannual(string criterion) => new(CriterionName.New(criterion)) { Status = "Mannual", Grader = Grader.Teacher };
+
+    public Grader Grader { get; init; } = Grader.AIGrader;
+
     /// <summary>
     /// Gets the criterion identity associated with this score breakdown item.
     /// </summary>
@@ -19,17 +26,16 @@ public sealed class ScoreBreakdownItem : ValueObject
     /// Gets or sets the raw percentage score awarded for this breakdown item.
     /// This represents the assessed percentage for the criterion before aggregation into the final score.
     /// </summary>
-    public required Percentage RawScore { get; set; }
-
-    public void NormalizeRawScore(decimal factor)
-    {
-        RawScore *= (factor / 100);
-    }
+    public Percentage RawScore { get; set; } = Percentage.Zero;
 
     /// <summary>
     /// Gets or sets the performance tag for this breakdown item.
     /// </summary>
-    public required PerformanceTag PerformanceTag { get; init; }
+    public PerformanceTag PerformanceTag { get; set; } = PerformanceTag.Default;
+    public string MetadataJson { get; set; } = string.Empty;
+
+    public string Status { get; set; } = "Pending"; // Default status, can be updated based on grading logic
+    public string FailureReason { get; set; } = string.Empty; // Optional reason for failure, if applicable
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ScoreBreakdownItem"/> class with the specified criterion.
@@ -40,17 +46,40 @@ public sealed class ScoreBreakdownItem : ValueObject
         CriterionName = criterionName;
     }
 
-    /// <summary>
-    /// Provides the components used for equality comparison.
-    /// </summary>
-    /// <returns>An enumerable of equality components.</returns>
-    protected override IEnumerable<object> GetEqualityComponents()
+    public bool IsCompleted => Status == "Graded" || Status == "Failed" || Status == "Mannual";
+
+    public void MarkAsGraded()
     {
-        yield return CriterionName;
-        yield return RawScore;
-        yield return PerformanceTag;
+        Status = "Graded";
     }
-    
+
+    public void MarkAsFailed(string reason)
+    {
+        Status = "Failed";
+        FailureReason = reason;
+    }
+
+    public ScoreBreakdownItem Clone()
+    {
+        return new ScoreBreakdownItem(CriterionName)
+        {
+            RawScore = RawScore,
+            PerformanceTag = PerformanceTag,
+            MetadataJson = MetadataJson,
+            Grader = Grader,
+            Status = Status,
+            FailureReason = FailureReason
+        };
+    }
+
+    public ScoreBreakdownItem NormalizedScore(IEnumerable<Criterion> criteria)
+    {
+        var item = Clone();
+        var criterion = criteria.FirstOrDefault(c => c.Name == CriterionName);
+        item.RawScore *= (criterion?.Weight ?? 0) / 100m; // Normalize score based on criterion weight
+        return item;
+    }
+
     // Adds RawScores if other item matches the CriterionName and PerformanceTag
     public static ScoreBreakdownItem operator +(ScoreBreakdownItem a, ScoreBreakdownItem b)
     {
@@ -60,7 +89,11 @@ public sealed class ScoreBreakdownItem : ValueObject
         return new ScoreBreakdownItem(a.CriterionName)
         {
             RawScore = a.RawScore + b.RawScore,
-            PerformanceTag = a.PerformanceTag
+            Grader = a.Grader,
+            PerformanceTag = a.PerformanceTag,
+            MetadataJson = a.MetadataJson,
+            Status = a.Status,
+            FailureReason = a.FailureReason // This should be cleared since we're manually adding scores
         };
     }
 
@@ -73,8 +106,27 @@ public sealed class ScoreBreakdownItem : ValueObject
         return new ScoreBreakdownItem(a.CriterionName)
         {
             RawScore = a.RawScore - b.RawScore,
-            PerformanceTag = a.PerformanceTag
+            Grader = a.Grader,
+            PerformanceTag = a.PerformanceTag,
+            MetadataJson = a.MetadataJson,
+            Status = a.Status,
+            FailureReason = a.FailureReason // This should be cleared since we're manually subtracting scores
         };
+    }
+
+    /// <summary>
+    /// Provides the components used for equality comparison.
+    /// </summary>
+    /// <returns>An enumerable of equality components.</returns>
+    protected override IEnumerable<object> GetEqualityComponents()
+    {
+        yield return CriterionName;
+        yield return RawScore;
+        yield return PerformanceTag;
+        yield return MetadataJson;
+        yield return Grader;
+        yield return Status;
+        yield return FailureReason;
     }
 }
 
@@ -88,11 +140,19 @@ public sealed class ScoreBreakdownItemConverter : JsonConverter<ScoreBreakdownIt
         var criterionIdentity = jObject.GetRequired<CriterionName>("CriterionName");
         var score = jObject.GetRequired<Percentage>("RawScore");
         var performanceTag = jObject.GetRequired<PerformanceTag>("PerformanceTag");
+        var grader = jObject.GetRequired<Grader>("Grader");
+        var status = jObject.GetRequired<string>("Status");
+        var metadataJson = jObject.Get<string>("MetadataJson") ?? string.Empty;
+        var failureReason = jObject.Get<string>("FailureReason") ?? string.Empty;
 
         return new ScoreBreakdownItem(criterionIdentity)
         {
             RawScore = score,
+            Status = status,
+            Grader = grader,
             PerformanceTag = performanceTag,
+            MetadataJson = metadataJson,
+            FailureReason = failureReason
         };
     }
     public override bool CanWrite => false;

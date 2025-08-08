@@ -1,16 +1,17 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using AssignmentFlow.Application.Gradings.ChangeRubric;
+﻿using AssignmentFlow.Application.Gradings.ChangeRubric;
 using AssignmentFlow.Application.Gradings.Create;
 using AssignmentFlow.Application.Gradings.RemoveSubmission;
 using AssignmentFlow.Application.Gradings.Start;
 using AssignmentFlow.Application.Gradings.UpdateCriterionSelectors;
+using AssignmentFlow.Application.Gradings.UpdateInfo;
 using AssignmentFlow.Application.Gradings.UpdateScaleFactor;
 using AssignmentFlow.Application.Gradings.UploadSubmission;
 using EventFlow.Aggregates;
 using EventFlow.ReadStores;
 using JsonApiDotNetCore.Resources;
 using JsonApiDotNetCore.Resources.Annotations;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using static JsonApiDotNetCore.Resources.Annotations.AttrCapabilities;
 
 namespace AssignmentFlow.Application.Gradings;
@@ -25,7 +26,9 @@ public class Grading
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionAddedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, SubmissionRemovedEvent>,
     IAmReadModelFor<GradingAggregate, GradingId, AutoGradingStartedEvent>,
-    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingFinishedEvent>
+    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingFinishedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, AutoGradingRestartedEvent>,
+    IAmReadModelFor<GradingAggregate, GradingId, InfoUpdatedEvent>
 {
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
@@ -38,6 +41,12 @@ public class Grading
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     [MaxLength(ModelConstants.ShortText)]
     public string RubricId { get; set; } = string.Empty;
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public string Name { get; set; } = string.Empty;
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public string Reference { get; set; } = string.Empty;
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public decimal ScaleFactor { get; set; }
@@ -55,17 +64,19 @@ public class Grading
             {
                 Criterion = selector.Criterion,
                 Files = [.. s.Attachments.Where(attachment => {
-                    //"http://127.0.0.1:27000/devstoreaccount1/submissions-store/grading-3a2508d0-906d-08dd-2ca9-aa917e2110cc/psd.pdf"
-                    var path = attachment[attachment.IndexOf(Id)..];
-                    return Pattern.New(selector.Pattern).Match(Id, path);
+                    return Pattern.New(selector.Pattern).Match(attachment);
                 })]
-            })
+            }),
+            Selectors = Selectors
         });
     
     public List<SubmissionPersistence> SubmissionPersistences { get; set; } = [];
 
     [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
     public DateTimeOffset LastModified { get; set; }
+
+    [Attr(Capabilities = AllowView | AllowSort | AllowFilter)]
+    public DateTimeOffset CreatedAt { get; set; }
 
     [Attr(Capabilities = AllowView)]
     public int Version { get; private set; }
@@ -86,7 +97,9 @@ public class Grading
         CancellationToken cancellationToken)
     {
         TeacherId = domainEvent.AggregateEvent.TeacherId.Value;
-
+        Reference = domainEvent.AggregateEvent.Reference;
+        Name = domainEvent.AggregateEvent.Reference; // Reference is used as the name by default
+        CreatedAt = domainEvent.Timestamp.ToUniversalTime();
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
     }
@@ -123,12 +136,14 @@ public class Grading
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, SubmissionAddedEvent> domainEvent, CancellationToken cancellationToken)
     {
-        var submission = domainEvent.AggregateEvent.Submission;
-        SubmissionPersistences.Add(new()
-        {
-            Reference = submission.Reference.Value,
-            Attachments = submission.Attachments.ConvertAll(a => a.Value)
-        });
+        var submissions = domainEvent.AggregateEvent.Submissions
+            .ConvertAll(submission => new SubmissionPersistence
+            {
+                Reference = submission.Reference.Value,
+                Attachments = submission.Attachments.ConvertAll(a => a.Value)
+            });
+
+        SubmissionPersistences.AddRange(submissions);
         
         UpdateLastModifiedData(domainEvent);
         return Task.CompletedTask;
@@ -152,6 +167,19 @@ public class Grading
     {
         await StateMachine.FireAsync(GradingTrigger.FinishGrading);
         UpdateLastModifiedData(domainEvent);
+    }
+
+    public async Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, AutoGradingRestartedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        await StateMachine.FireAsync(GradingTrigger.Restart);
+        UpdateLastModifiedData(domainEvent);
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<GradingAggregate, GradingId, InfoUpdatedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        Name = domainEvent.AggregateEvent.GradingName;
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
     }
 
     private void UpdateLastModifiedData(IDomainEvent domainEvent)

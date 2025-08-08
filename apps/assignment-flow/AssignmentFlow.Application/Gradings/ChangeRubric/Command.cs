@@ -14,7 +14,7 @@ public class CommandHandler : CommandHandler<GradingAggregate, GradingId, Comman
         if (aggregate.IsNew)
             return Task.CompletedTask;
 
-        aggregate.ChangeRubric(command);
+        aggregate.ChangeRubric(command.Rubric);
 
         return Task.CompletedTask;
     }

@@ -1,20 +1,27 @@
 ﻿using AssignmentFlow.IntegrationEvents;
+using System.Text.Json;
 
 namespace AssignmentFlow.Application.Assessments;
 
 public static class ValueObjectExtensions
 {
     public static ScoreBreakdowns ToValueObject(this IEnumerable<ScoreBreakdownApiContract> apiContracts)
-        => ScoreBreakdowns.New([.. apiContracts.Select(ToValueObject)]);
+    => ScoreBreakdowns.New([.. apiContracts.Select(s => s.ToValueObject())]);
 
-    public static ScoreBreakdownItem ToValueObject(this ScoreBreakdownApiContract apiContract)
+    public static ScoreBreakdowns ToValueObject(this IEnumerable<ScoreBreakdownApiContract> apiContracts, Grader grader)
+        => ScoreBreakdowns.New([.. apiContracts.Select(s => s.ToValueObject(grader))]);
+
+    public static ScoreBreakdownItem ToValueObject(this ScoreBreakdownApiContract apiContract, Grader? grader = null)
     {
-        return new ScoreBreakdownItem(
-            CriterionName.New(apiContract.CriterionName))
-            {
-                RawScore = Percentage.New(apiContract.RawScore),
-                PerformanceTag = PerformanceTag.New(apiContract.PerformanceTag)
-            };
+        var criterionName = CriterionName.New(apiContract.CriterionName);
+        return new ScoreBreakdownItem(criterionName)
+        {
+            RawScore = Percentage.New(apiContract.RawScore),
+            PerformanceTag = PerformanceTag.New(apiContract.PerformanceTag),
+            MetadataJson = apiContract.MetadataJson,
+            Grader = grader ?? Grader.New(apiContract.Grader),
+            Status = string.IsNullOrEmpty(apiContract.Status) ? "Graded" : apiContract.Status
+        };
     }
 
     public static Feedback ToValueObject(this FeedbackItemApiContract apiContract)
@@ -23,9 +30,58 @@ public static class ValueObjectExtensions
             Comment.New(apiContract.Comment),
             Highlight.New(
                 Attachment.New(apiContract.FileRef),
-                DocumentLocation.New(apiContract.FromLine, apiContract.ToLine, apiContract.FromCol, apiContract.ToCol)),
+                string.IsNullOrEmpty(apiContract.LocationDataJson) ? JsonSerializer.Serialize(apiContract.LocationData) : apiContract.LocationDataJson
+            ),
             Tag.New(apiContract.Tag));
 
+    public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(
+        this ScoreBreakdownV2 apiContract,
+        string criterion,
+        Grader grader,
+        Dictionary<string, object?> metadata,
+        ISequenceRepository<Feedback> sequenceRepository)
+    {
+        var criterionName = CriterionName.New(criterion);
+
+        var breakdownItem = new ScoreBreakdownItem(criterionName)
+        {
+            RawScore = Percentage.New(apiContract.RawScore),
+            PerformanceTag = PerformanceTag.New(apiContract.Tag),
+            MetadataJson = JsonSerializer.Serialize(metadata),
+            Grader = grader
+        };
+
+        List<Feedback> feedbackItems = [];
+        if (!string.IsNullOrEmpty(apiContract.Summary))
+        {
+            var summary = Feedback.Summary(
+                criterionName,
+                Comment.New(apiContract.Summary));
+            feedbackItems.Add(summary);
+        }
+        feedbackItems.AddRange(apiContract.FeedbackItems
+            .Select(fb => fb.ToValueObject(criterionName, sequenceRepository)));
+
+        return (breakdownItem, feedbackItems);
+    }
+
+    public static Feedback ToValueObject(
+        this FeedbackItemV2 apiContract,
+        CriterionName criterion,
+        ISequenceRepository<Feedback> sequenceRepository)
+    {
+        var comment = Comment.New(apiContract.Comment);
+
+        var locationDataJson = JsonSerializer.Serialize(apiContract.LocationData);
+        var attachment = Attachment.New(apiContract.FileRef);
+        var feedbackAttachment = Highlight.New(attachment, locationDataJson);
+
+        var feedbackTag = Tag.New(apiContract.Tag);
+
+        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag);
+    }
+
+    [Obsolete("Obsoleted because the target model have been obsolete")]
     public static (ScoreBreakdowns, List<Feedback>) ToValueObject(this IEnumerable<ScoreBreakdown> apiContracts)
     {
         var results = apiContracts
@@ -38,6 +94,7 @@ public static class ValueObjectExtensions
         return (ScoreBreakdowns.New(scoreBreakdownItems), allFeedback);
     }
 
+    [Obsolete]
     public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(this ScoreBreakdown apiContract)
     {
         var criterionName = CriterionName.New(apiContract.CriterionName);
@@ -47,20 +104,25 @@ public static class ValueObjectExtensions
             RawScore = Percentage.New(apiContract.RawScore),
             PerformanceTag = PerformanceTag.New(apiContract.Tag)
         },
-            apiContract.FeedbackItems.ConvertAll(fb => fb.ToValueObject(criterionName)));
+
+        apiContract.FeedbackItems.ConvertAll(fb => fb.ToValueObject(criterionName)));
     }
 
+    [Obsolete]
     public static Feedback ToValueObject(this FeedbackItem apiContract, CriterionName criterion)
     {
         var comment = Comment.New(apiContract.Comment);
 
-        var documentLocation = DocumentLocation.New(
-            apiContract.FromLine,
-            apiContract.ToLine,
-            apiContract.FromCol,
-            apiContract.ToCol);
+        var locationData = new Dictionary<string, object?>
+        {
+            ["fromLine"] = apiContract.FromLine,
+            ["toLine"] = apiContract.ToLine,
+            ["fromCol"] = apiContract.FromCol,
+            ["toCol"] = apiContract.ToCol
+        };
+        var locationDataJson = JsonSerializer.Serialize(locationData);
         var attachment = Attachment.New(apiContract.FileRef);
-        var feedbackAttachment = Highlight.New(attachment, documentLocation);
+        var feedbackAttachment = Highlight.New(attachment, locationDataJson);
 
         var feedbackTag = Tag.New(apiContract.Tag);
 

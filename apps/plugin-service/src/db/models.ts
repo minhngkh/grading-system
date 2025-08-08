@@ -10,10 +10,10 @@ import { TimeStamps } from "@typegoose/typegoose/lib/defaultClasses";
 
 @modelOptions({ schemaOptions: { collection: "plugins.categories" } })
 export class PluginCategory extends TimeStamps {
-  @prop({ required: true, unique: true })
-  public alias!: string;
+  @prop()
+  public _id!: string;
 
-  @prop({ required: true, unique: true })
+  @prop({ required: true })
   public name!: string;
 
   @prop()
@@ -24,8 +24,8 @@ export const PluginCategoryModel = getModelForClass(PluginCategory);
 
 @modelOptions({ schemaOptions: { collection: "plugins" } })
 export class Plugin extends TimeStamps {
-  @prop({ required: true, unique: true })
-  public alias!: string; // A unique identifier, e.g., "ai-rubric-generator", "python-code-runner"
+  @prop()
+  public _id!: string;
 
   @prop({ required: true })
   public name!: string; // User-friendly name, e.g., "AI Rubric Generator"
@@ -33,8 +33,8 @@ export class Plugin extends TimeStamps {
   @prop()
   public description?: string;
 
-  @prop({ ref: () => PluginCategory, default: [] })
-  public categories!: Ref<PluginCategory>[];
+  @prop({ ref: () => PluginCategory, type: () => String })
+  public categories!: Ref<PluginCategory, string>[];
 
   @prop({ default: true })
   public enabled!: boolean;
@@ -42,38 +42,77 @@ export class Plugin extends TimeStamps {
 
 export const PluginModel = getModelForClass(Plugin);
 
-export abstract class BasePluginConfig {}
+// @modelOptions({
+//   schemaOptions: {
+//     _id: false,
+//     discriminatorKey: "type",
+//   },
+// })
+// export abstract class BasePluginConfig {
+//   @prop({ required: true })
+//   public type!: string;
+// }
 
-enum PluginConfigType {
-  AI = "ai",
-}
+// export class AIPluginConfig extends BasePluginConfig {
+//   @prop({ required: true })
+//   public model!: string; // e.g., "google:gemini-2.5-flash", "openai:gpt-4o-mini"
 
-export class AIPluginConfig extends BasePluginConfig {
-  @prop({ required: true })
-  public model!: string; // e.g., "google:gemini-2.5-flash", "openai:gpt-4o-mini"
+//   @prop({ required: true })
+//   public promptTemplate!: string; // e.g., "Generate a rubric for {task}"
 
-  @prop({ required: true })
-  public promptTemplate!: string; // e.g., "Generate a rubric for {task}"
+//   @prop({
+//     allowMixed: Severity.ALLOW,
+//     type: () => mongoose.Schema.Types.Mixed,
+//     default: {},
+//   })
+//   public additionalSettings?: Record<string, any>; // e.g., temperature, max tokens
+// }
 
-  @prop({
-    allowMixed: Severity.ALLOW,
-    type: () => mongoose.Schema.Types.Mixed,
-    default: {},
-  })
-  public additionalSettings?: Record<string, any>; // e.g., temperature, max tokens
-}
+// class TestCase {
+//   @prop({ required: true })
+//   public input!: string; // stdin input for the test case
+
+//   @prop({ required: true })
+//   public output!: string; // expected stdout output
+
+//   @prop()
+//   public description?: string; // optional description of the test case
+// }
+
+// export class TestRunnerConfig extends BasePluginConfig {
+//   @prop({ required: true })
+//   public runCommand!: string;
+
+//   @prop()
+//   public initCommand!: string;
+
+//   @prop({ _id: false, type: TestCase })
+//   public testCases!: TestCase[];
+// }
+
+// @modelOptions({
+//   schemaOptions: {
+//     _id: false,
+//   },
+// })
+// export class BasePluginConfig {
+//   @prop({ required: true })
+//   public type!: string;
+
+// }
 
 @modelOptions({ schemaOptions: { collection: "plugins.configs" } })
 export class PluginConfig extends TimeStamps {
-  @prop({ ref: () => Plugin, required: true })
+  @prop({ ref: () => Plugin, type: () => String, required: true })
   public plugin!: Ref<Plugin>;
 
   @prop({
+    _id: false,
     required: true,
-    type: () => BasePluginConfig,
-    discriminators: () => [{ type: AIPluginConfig, value: PluginConfigType.AI }],
+    allowMixed: Severity.ALLOW,
+    type: () => mongoose.Schema.Types.Mixed,
   })
-  public config!: BasePluginConfig;
+  public config!: any;
 }
 
 export const PluginConfigModel = getModelForClass(PluginConfig);

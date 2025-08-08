@@ -37,6 +37,9 @@ public sealed class Feedback : ValueObject
     public static Feedback New(CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
         => new(criterion, comment, highlight, tag);
 
+    public static Feedback Summary (CriterionName criterion, Comment comment)
+        => new(criterion, comment, Highlight.Empty, Tag.Summary);
+
     /// <summary>
     /// Provides the components used for equality comparison.
     /// </summary>
@@ -45,8 +48,8 @@ public sealed class Feedback : ValueObject
     {
         yield return Criterion;
         yield return Comment;
-        yield return Highlight;
         yield return Tag;
+        yield return Highlight;
     }
 }
 
@@ -61,12 +64,12 @@ public sealed class FeedbackConverter : JsonConverter<Feedback>
         var comment = jObject.GetRequired<Comment>("Comment");
         var highlight = jObject.GetRequired<Highlight>("Highlight");
         var tag = jObject.GetRequired<Tag>("Tag");
+
         return Feedback.New(criterion, comment, highlight, tag);
     }
     public override bool CanWrite => false;
     public override void WriteJson(JsonWriter writer, Feedback? value, JsonSerializer serializer) => throw new NotSupportedException();
 }
-
 
 public sealed class Comment : StringValueObject
 {
@@ -74,22 +77,30 @@ public sealed class Comment : StringValueObject
     private Comment() { }
     [JsonConstructor]
     public Comment(string value) : base(value) { }
-    protected override int? MaxLength => ModelConstants.VeryLongText;
+
+    // FIXME: Why hard limit
+    // protected override int? MaxLength => ModelConstants.VeryLongText;
+    protected override int? MaxLength => 5000;
     public static Comment New(string value) => new(value);
 }
 
 public sealed class Tag : StringValueObject
 {
     public static Tag Empty => new();
+    public static Tag Summary => new("summary");
     public static Tag Info => new("info");
     public static Tag Success => new("success");
     public static Tag Notice => new("notice");
     public static Tag Tip => new("tip");
     public static Tag Caution => new("caution");
+    public static Tag Discarded => new("discarded");
+    public static Tag Critical => new("critical");
+    public static Tag Error => new("error");
+    public static Tag Warning => new("warning");
 
     private static readonly HashSet<string> ValidTags = new(StringComparer.OrdinalIgnoreCase)
     {
-        "info", "success", "notice", "tip", "caution"
+        "summary", "info", "success", "notice", "tip", "caution", "discarded", "critical", "error", "warning"
     };
 
     private Tag() { }
@@ -115,6 +126,6 @@ public sealed class Tag : StringValueObject
         throw new ArgumentException($"Invalid tag value: '{value}'. Valid values are: 'info', 'success', 'notice', 'tip', 'caution'", nameof(value));
     }
 
-    protected override int? MaxLength => ModelConstants.TinyText;
+    protected override int? MaxLength => ModelConstants.ShortText;
     public static Tag New(string value) => new(value);
 }

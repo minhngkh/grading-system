@@ -11,9 +11,12 @@
   </ItemGroup>
 	
   <ItemGroup>
+	<PackageReference Include="Aspire.Azure.Messaging.ServiceBus" />
+	<PackageReference Include="Aspire.Azure.Storage.Blobs" />
 	<PackageReference Include="Aspire.Npgsql" />
 	<PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
 	<PackageReference Include="Aspire.RabbitMQ.Client.v7" />
+	<PackageReference Include="Azure.Storage.Blobs" />
 	<PackageReference Include="EventFlow" />
 	<PackageReference Include="EventFlow.EntityFramework" />
 	<PackageReference Include="EventFlow.PostgreSql" />
@@ -22,6 +25,7 @@
 	<PackageReference Include="Grpc.AspNetCore" />
 	<PackageReference Include="JsonApiDotNetCore" />
 	<PackageReference Include="MassTransit" />
+	<PackageReference Include="MassTransit.Azure.ServiceBus.Core" />
 	<PackageReference Include="MassTransit.RabbitMQ" />
 	<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
 	<PackageReference Include="Microsoft.AspNetCore.OpenApi" />

@@ -8,12 +8,13 @@ import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPISpecs } from "hono-openapi";
 import { resolver } from "hono-openapi/zod";
-import { logger as honoLogger } from "hono/logger";
 import { cors } from "hono/cors";
+import { logger as honoLogger } from "hono/logger";
 import { Errors } from "moleculer";
 import z from "zod";
-import { route as pluginsRoute } from "@/api/plugins";
 import { route as aiRoute } from "@/api/plugins.ai";
+import { route as testRunnerRoute} from "@/api/plugins.test-runner";
+import { route as rootRoute } from "@/api/root";
 
 type ResponseType = NonNullable<DescribeRouteOptions["responses"]>[string];
 
@@ -111,8 +112,9 @@ export function createApiGateway(broker: ServiceBroker) {
     }),
   );
 
+  api.route("/plugins/test-runner", testRunnerRoute(broker));
   api.route("/plugins/ai", aiRoute(broker));
-  api.route("/", pluginsRoute(broker));
+  api.route("/", rootRoute(broker));
 
   addDocs(api, BASE_PATH);
 
