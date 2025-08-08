@@ -10,6 +10,7 @@ import { ScoreAdjustmentDialog } from "@/components/app/score-adjustment-dialog"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { getScoreAdjustmentsQueryOptions } from "@/queries/assessment-queries";
 
@@ -214,13 +215,16 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           className="flex-1 flex flex-col"
         >
           <div className="sticky top-0 bg-background flex flex-wrap md:flex-row items-center justify-between py-2">
-            <TabsList>
-              {rubric.criteria.map((criterion, index) => (
-                <TabsTrigger key={index} className="text-xs" value={criterion.name}>
-                  {criterion.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <ScrollArea type="always" className="max-w-full rounded-lg">
+              <TabsList>
+                {rubric.criteria.map((criterion, index) => (
+                  <TabsTrigger key={index} className="text-xs" value={criterion.name}>
+                    {criterion.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <ScrollBar orientation="horizontal" className="w-full" />
+            </ScrollArea>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold">Total Score:</span>
