@@ -11,13 +11,6 @@ export const Route = createFileRoute(
   "/_authenticated/gradings/$gradingId/assessments/$assessmentId",
 )({
   component: RouteComponent,
-  loader: async ({
-    params: { assessmentId, gradingId },
-    context: { auth, queryClient },
-  }) => {
-    queryClient.ensureQueryData(getGradingAttemptQueryOptions(gradingId, auth));
-    queryClient.ensureQueryData(getAssessmentQueryOptions(assessmentId, auth));
-  },
 });
 
 function RouteComponent() {
@@ -28,21 +21,13 @@ function RouteComponent() {
     data: assessment,
     isPending: isFetchingAssessment,
     error: assessmentError,
-  } = useQuery(
-    getAssessmentQueryOptions(assessmentId, auth, {
-      placeholderData: keepPreviousData,
-    }),
-  );
+  } = useQuery(getAssessmentQueryOptions(assessmentId, auth));
 
   const {
     data: grading,
     isPending: isFetchingGrading,
     error: gradingError,
-  } = useQuery(
-    getGradingAttemptQueryOptions(gradingId, auth, {
-      placeholderData: keepPreviousData,
-    }),
-  );
+  } = useQuery(getGradingAttemptQueryOptions(gradingId, auth));
 
   const {
     data: rubric,

@@ -91,6 +91,14 @@ export default function GradingResult({
       updated[index] = { ...updated[index], status: newStatus.status };
       return updated;
     });
+
+    queryClient.invalidateQueries({
+      queryKey: ["scoreAdjustments", newStatus.assessmentId],
+    });
+
+    queryClient.invalidateQueries({
+      queryKey: ["assessment", newStatus.assessmentId],
+    });
   }, []);
 
   useEffect(() => {

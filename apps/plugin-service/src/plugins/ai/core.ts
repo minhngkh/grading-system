@@ -39,7 +39,7 @@ const gradingOptions: LanguageModelWithOptions = {
   model: registry.languageModel("google:gemini-2.5-flash"),
   providerOptions: googleProviderOptions["gemini-2.5-flash"]({
     thinking: {
-      mode: "disabled",
+      mode: "enabled",
     },
   }),
 };
