@@ -28,6 +28,10 @@ export async function getConfig(id: string) {
   return await PluginConfigModel.findById(id).lean().exec();
 }
 
+export async function getConfigs(ids: string[]) {
+  return await PluginConfigModel.find({ _id: { $in: ids } }).lean().exec();
+}
+
 export async function getConfigOfPlugin(configId: string, pluginId: string) {
   return await PluginConfigModel.findOne({ _id: configId, plugin: pluginId })
     .lean()

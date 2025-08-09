@@ -1,11 +1,14 @@
 import type { Entries, ExtendEntries } from "@grading-system/utils/typescript";
 import type { ServiceBroker } from "moleculer";
+import { StaticAnalysisService } from "@grading-system/static-analysis-plugin/service";
 import { actionCaller } from "@grading-system/typed-moleculer/action";
-import { asError } from "@grading-system/utils/error";
+import { asError, wrapError } from "@grading-system/utils/error";
+import logger from "@grading-system/utils/logger";
 import { fromPromise, fromSafePromise, okAsync, safeTry } from "neverthrow";
 import { getTransporter } from "@/lib/transporter";
 import { criterionGradingFailedEvent, submissionStartedEvent } from "@/messaging/events";
 import { plugins, pluginsMap } from "@/plugins/info";
+import { getConfigs } from "@/services/config";
 
 export async function initMessaging(broker: ServiceBroker) {
   // All of the function above can throw and make the system exit as it should
@@ -49,12 +52,23 @@ export async function initMessaging(broker: ServiceBroker) {
         {} as ExtendEntries<typeof plugins, { criteria: typeof data.criteria }>,
       );
 
+      const configIds = [];
+
       for (const criterion of data.criteria) {
         if (pluginsMap.has(criterion.plugin)) {
           tasks[pluginsMap.get(criterion.plugin)!].criteria.push(criterion);
+
+          if (criterion.configuration) {
+            configIds.push(criterion.configuration);
+          }
         } else {
-          console.warn(`Unsupported plugin: ${criterion.plugin}, fallback to 'ai'`);
+          logger.debug(`Unsupported plugin: ${criterion.plugin}, fallback to 'ai'`);
           tasks.ai.criteria.push(criterion);
+
+          if (criterion.configuration) {
+            configIds.push(criterion.configuration);
+          }
+
           // transporter.emit(criterionGradingFailedEvent, {
           //   assessmentId: data.assessmentId,
           //   criterionName: criterion.criterionName,
@@ -63,6 +77,10 @@ export async function initMessaging(broker: ServiceBroker) {
         }
       }
 
+      const configs = yield* fromPromise(getConfigs(configIds), (error) =>
+        wrapError(error, "Failed to get plugin configs"),
+      );
+
       const promises = [];
 
       for (const [_, task] of Object.entries(tasks)) {
@@ -70,11 +88,34 @@ export async function initMessaging(broker: ServiceBroker) {
           continue;
         }
 
+        const criteria = [];
+        for (const criterion of task.criteria) {
+          if (criterion.configuration) {
+            const config = configs.find(
+              (c) => c._id.toString() === criterion.configuration,
+            );
+            if (config) {
+              criteria.push({
+                ...criterion,
+                configuration: config.config,
+              });
+            } else {
+              logger.error(
+                `Configuration not found for criterion ${criterion.criterionName}`,
+              );
+            }
+          }
+        }
+
+        // actionCaller<StaticAnalysisService>()(broker, "v1.static-analysis.gradeSubmission", {
+        //   criterionDataList
+        // });
+
         promises.push(
           fromPromise(
             actionCaller<(typeof task)["~type"]>()(broker, task.operations.grade.action, {
               assessmentId: data.assessmentId,
-              criterionDataList: task.criteria,
+              criterionDataList: criteria,
               attachments: data.attachments,
               metadata: data.metadata,
             }).then(() => undefined),

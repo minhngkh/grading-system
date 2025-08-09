@@ -217,6 +217,15 @@ importers:
         specifier: ^2.29.7
         version: 2.29.7(typescript@5.9.2)
     devDependencies:
+      '@grading-system/plugin-shared':
+        specifier: workspace:*
+        version: link:../../libs/plugins/shared
+      '@grading-system/static-analysis-plugin':
+        specifier: workspace:*
+        version: link:../../libs/plugins/static-analysis
+      '@grading-system/type-coverage-plugin':
+        specifier: workspace:*
+        version: link:../../libs/plugins/type-coverage
       '@grading-system/typed-moleculer':
         specifier: workspace:*
         version: link:../../libs/typed-moleculer
@@ -16422,7 +16431,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 24.0.10
+      '@types/node': 22.15.35
       long: 5.3.2
     optional: true
 

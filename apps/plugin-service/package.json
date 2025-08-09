@@ -30,6 +30,9 @@
     "type-coverage-core": "^2.29.7"
   },
   "devDependencies": {
+    "@grading-system/plugin-shared": "workspace:*",
+    "@grading-system/static-analysis-plugin": "workspace:*",
+    "@grading-system/type-coverage-plugin": "workspace:*",
     "@grading-system/typed-moleculer": "workspace:*",
     "@grading-system/utils": "workspace:*"
   }

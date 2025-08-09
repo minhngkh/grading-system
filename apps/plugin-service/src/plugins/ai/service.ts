@@ -1,5 +1,5 @@
+import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
 import type { Context } from "moleculer";
-import type { PluginOperations } from "@/plugins/info";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
 import { coreMessageSchema } from "ai";

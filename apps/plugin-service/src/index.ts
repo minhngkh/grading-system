@@ -16,9 +16,9 @@ import { staticAnalysisService } from "./plugins/static-analysis/service";
 
 const broker = createZodValidatedServiceBroker();
 broker.createService(aiService);
-broker.createService(staticAnalysisService);
+// broker.createService(staticAnalysisService);
 broker.createService(testRunnerService);
-broker.createService(typeCoverageService);
+// broker.createService(typeCoverageService);
 
 const api = createApiGateway(broker);
 

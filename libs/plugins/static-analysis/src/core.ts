@@ -26,14 +26,28 @@ const EXPERIMENTAL_MODE = process.env.SEMGREP_EXPERIMENTAL_MODE === "true";
 
 export const gradeSubmission = defaultGradeSubmissionFunc(
   gradeCriterion,
-  (result, toFileRef) => {
+  (result, gradeInfo) => {
     const scannedFilesSet = new Set(result.scannedFiles);
     const ignoredFiles = [];
-    for (const filePath of value.fileList) {
+    for (const filePath of gradeInfo.fileList) {
       if (!scannedFilesSet.has(filePath)) {
-        ignoredFiles.push(toFileRef(filePath));
+        ignoredFiles.push(gradeInfo.toFileRef(filePath));
       }
     }
+
+    const finalResult = {
+      criterion: gradeInfo.criterionData.criterionName,
+      score: result.score,
+      feedback: result.feedbacks.map((item) => ({
+        ...item,
+        fileRef: gradeInfo.toFileRef(item.filePath),
+      })),
+      ignoredFiles,
+    };
+
+    logger.debug("Graded criterion result", finalResult);
+
+    return finalResult;
   },
 );
 

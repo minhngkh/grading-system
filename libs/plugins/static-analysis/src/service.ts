@@ -1,3 +1,4 @@
+import type { Feedback } from "@grading-system/plugin-shared/plugin/data";
 import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
 import type { Context } from "moleculer";
 import {
@@ -5,9 +6,7 @@ import {
   criterionGradingSuccessEvent,
 } from "@grading-system/plugin-shared/events/index";
 import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
-import {
-  createSubmissionSchemaWithConfig,
-} from "@grading-system/plugin-shared/plugin/data";
+import { createSubmissionSchemaWithConfig } from "@grading-system/plugin-shared/plugin/data";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
 import { ZodParams } from "moleculer-zod-validator";
@@ -43,7 +42,10 @@ export const staticAnalysisService = defineTypedService2({
         const promises = result.value.map((value) =>
           value
             .orTee((error) => {
-              logger.info(`internal: Grading failed for ${error.data.criterionName}`, error);
+              logger.info(
+                `internal: Grading failed for ${error.data.criterionName}`,
+                error,
+              );
 
               transporter.emit(criterionGradingFailedEvent, {
                 assessmentId: params.assessmentId,
@@ -57,24 +59,12 @@ export const staticAnalysisService = defineTypedService2({
                 criterionName: value.criterion,
                 metadata: {
                   ignoredFiles: value.result.ignoredFiles,
-                  // feedbackItems: value.feedback.map((feedbackItem) => ({
-                  //   comment: feedbackItem.message || "",
-                  //   fileRef: feedbackItem.fileRef,
-                  //   tag: feedbackItem.severity,
-                  //   locationData: {
-                  //     type: "text",
-                  //     fromLine: feedbackItem.position.fromLine,
-                  //     fromColumn: feedbackItem.position.fromCol,
-                  //     toLine: feedbackItem.position.toLine,
-                  //     toColumn: feedbackItem.position.toCol,
-                  //   },
-                  // })) satisfies Feedback[],
                 },
                 scoreBreakdown: {
                   tag: "",
-                  rawScore: value.score,
+                  rawScore: value.result.score,
                   // feedbackItems: []
-                  feedbackItems: value.feedback.map((feedbackItem) => ({
+                  feedbackItems: value.result.feedback.map((feedbackItem) => ({
                     comment: feedbackItem.message || "",
                     fileRef: feedbackItem.fileRef,
                     tag: feedbackItem.severity,
@@ -104,55 +94,3 @@ export const staticAnalysisPluginOperations = {
     action: "v1.static-analysis.gradeSubmission",
   },
 } satisfies PluginOperations<StaticAnalysisService>;
-
-// import type { Context } from 'moleculer';
-// import type { AnalysisRequest } from './types';
-// import { defineTypedService2 } from '@grading-system/typed-moleculer/service';
-// import { ZodParams } from 'moleculer-zod-validator';
-// import { z } from 'zod';
-// import { analyzeFiles } from './core';
-// import { analyzeZipBuffer } from './grade-zip';
-
-// const fileSchema = z.object({
-//   filename: z.string().min(1),
-//   content: z.string().min(1),
-// });
-
-// const analyzeParams = new ZodParams({
-//   files: z.array(fileSchema).min(1),
-//   rules: z.string().optional(),
-// });
-
-// const analyzeZipParams = new ZodParams({
-//   zip: z.instanceof(Buffer),
-// });
-
-// export const staticAnalysisService = defineTypedService2({
-//   name: 'static_analysis',
-//   version: 1,
-//   actions: {
-//     analyze: {
-//       params: analyzeParams.schema,
-//       async handler(ctx: Context<typeof analyzeParams.context>) {
-//         const req: AnalysisRequest = {
-//           files: ctx.params.files,
-//           rules: ctx.params.rules,
-//         };
-//         return analyzeFiles(req);
-//       },
-//     },
-//     analyzeZip: {
-//       params: analyzeZipParams.schema,
-//       async handler(ctx: Context<typeof analyzeZipParams.context>) {
-//         return analyzeZipBuffer(ctx.params.zip);
-//       },
-//     },
-//     test: {
-//       handler() {
-//         return 'static_analysis service is running';
-//       },
-//     },
-//   },
-// });
-
-// export type StaticAnalysisService = typeof staticAnalysisService;

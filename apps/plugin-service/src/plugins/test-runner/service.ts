@@ -1,5 +1,5 @@
+import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
 import type { Context } from "moleculer";
-import type { PluginOperations } from "@/plugins/info";
 import type { CachedData, CallData } from "@/plugins/test-runner/core";
 import type { GoJudge } from "@/plugins/test-runner/go-judge-api";
 import { actionCaller } from "@grading-system/typed-moleculer/action";

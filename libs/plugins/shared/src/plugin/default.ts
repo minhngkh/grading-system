@@ -1,3 +1,4 @@
+import type { DefaultError } from "@grading-system/utils/error";
 import type { ResultAsync } from "neverthrow";
 import type { CriterionData } from "@/plugin/data";
 import fs from "node:fs/promises";
@@ -6,7 +7,7 @@ import {
   getBlobNameParts,
   getBlobNameRest,
 } from "@grading-system/utils/azure-storage-blob";
-import { asError, DefaultError } from "@grading-system/utils/error";
+import { asError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { errAsync, fromPromise, okAsync, Result, safeTry } from "neverthrow";
 import {
@@ -116,7 +117,7 @@ export function defaultGradeSubmissionFunc<
         (criterionData) => criterionData.fileRefs,
       );
 
-      const { downloadDir, blobNameRoot } = yield* downloadBlobBatch(
+      let { downloadDir, blobNameRoot } = yield* downloadBlobBatch(
         submissionStore,
         allBlobNames,
         IDENTIFIER_PATH_LEVELS,
@@ -124,6 +125,16 @@ export function defaultGradeSubmissionFunc<
       );
 
       const { rest: submissionRef } = getBlobNameParts(blobNameRoot);
+
+      const submissionType = yield* detectFileListType(downloadDir);
+
+      let fileRefPrefix = submissionRef
+      if (submissionType === "single-folder") {
+        downloadDir = path.join(downloadDir, blobNameRoot);
+        blobNameRoot = path.join(blobNameRoot, submissionRef);
+
+        fileRefPrefix = path.join(submissionRef, getBlobNameParts(blobNameRoot).rest);
+      }
 
       const symlinkPromises = data.criterionDataList.map((criterionData) => {
         const blobNameRestList = Result.combine(
@@ -169,7 +180,7 @@ export function defaultGradeSubmissionFunc<
       });
 
       function toFileRef(filePath: string) {
-        return path.join(submissionRef, filePath);
+        return path.join(fileRefPrefix, filePath);
       }
 
       const gradeCriterionPromises = symlinkPromises.map((promise) =>
@@ -234,16 +245,16 @@ type FileListType = "single-folder" | "single-file";
  * The fieList in grading info can either be a list of files inside a single folder (from
  * zip extraction) or a single file, we need to detect this
  */
-function detectFileListType(
-  fileList: string[],
-  directory: string,
-): ResultAsync<FileListType, DefaultError> {
-  if (fileList.length === 1) {
-    const filePath = path.join(directory, fileList[0]);
-    return fromPromise(fs.stat(filePath), asError).map((value) => {
-      return value.isDirectory() ? "single-folder" : "single-file";
+function detectFileListType(directory: string): ResultAsync<FileListType, DefaultError> {
+  return fromPromise(fs.readdir(directory), asError).andThen((files) => {
+    const firstEntryPath = path.join(directory, files[0]);
+    return fromPromise(fs.stat(firstEntryPath), asError).map((stat) => {
+      // If there's only one entry and it's a file, it's a single file submission.
+      // Otherwise, it's treated as a folder submission (either a folder within the zip, or multiple files).
+      if (files.length === 1 && stat.isFile()) {
+        return "single-file";
+      }
+      return "single-folder";
     });
-  }
-
-  return okAsync("single-folder");
+  });
 }
