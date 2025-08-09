@@ -5,10 +5,12 @@ namespace AssignmentFlow.IntegrationEvents;
 [EntityName("grading.submission.started")]
 public interface ISubmissionGradingStarted
 {
-    public string AssessmentId { get; set; }
-    public Criterion[] Criteria { get; set; }
-    public Dictionary<string, object?> Metadata { get; set; }
-    public string[] Attachments { get; set; }
+    public string AssessmentId { get; }
+    public Criterion[] Criteria { get; }
+    public Dictionary<string, object?> Metadata { get; }
+    public string[] Attachments { get; }
+    public string GradingId { get; }
+    public int Total { get; }
 }
 
 public class Criterion

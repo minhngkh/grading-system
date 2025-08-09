@@ -22,6 +22,8 @@ public class AssessmentWriteModel
 
     public AssessmentStateMachine StateMachine { get; private set; } = new();
 
+    public int Total { get; set; } = 0;
+
     internal void Apply(Create.AssessmentCreatedEvent @event)
     {
         TeacherId = @event.TeacherId;
@@ -29,6 +31,7 @@ public class AssessmentWriteModel
         Reference = @event.SubmissionReference;
         RubricId = @event.RubricId;
         Criteria = @event.Criteria;
+        Total = @event.Total;
     }
 
     internal void Apply(AutoGrading.AutoGradingStartedEvent @event)

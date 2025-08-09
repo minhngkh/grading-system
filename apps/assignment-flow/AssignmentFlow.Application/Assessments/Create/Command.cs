@@ -7,7 +7,7 @@ public class Command(AssessmentId id) : Command<AssessmentAggregate, AssessmentI
     public required GradingId GradingId { get; init; }
     public required TeacherId TeacherId { get; init; }
     public required RubricId RubricId { get; init; }
-
+    public required int Total { get; init; }
     public HashSet<Criterion> Criteria { get; init; } = [];
 }
 

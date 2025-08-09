@@ -76,7 +76,8 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
                 GradingId = Shared.GradingId.With(gradingSummary.Id),
                 TeacherId = TeacherId.With(gradingSummary.TeacherId),
                 RubricId = RubricId.With(gradingSummary.RubricId),
-                Criteria = [.. rubric.Criteria.Select(c => Criterion.Parse(c))]
+                Criteria = [.. rubric.Criteria.Select(c => Criterion.Parse(c))],
+                Total = gradingSummary.Submissions.Count
             });
         }
 
@@ -95,21 +96,12 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
 
         foreach (var assessmentId in assessmentToRegrade)
         {
-            var submission = await repository.GetSubmissionAsync(
-                aggregateState.GradingId.Value,
-                aggregateState.AssessmentToSubmissionRefs[assessmentId],
-                cancellationToken);
-
-            Publish(new Assessments.AutoGrading.StartAutoGradingCommand(Assessments.AssessmentId.With(assessmentId))
-            {
-                RubricId = aggregateState.RubricId,
-                Submission = submission
-            });
+            Publish(new Assessments.AutoGrading.StartAutoGradingCommand(Assessments.AssessmentId.With(assessmentId)));
 
             // Update the progress for the assessment
             await PublishProgressUpdate(new AssessmentProgress
             {
-                SubmissionReference = submission.Reference,
+                SubmissionReference = aggregateState.AssessmentToSubmissionRefs[assessmentId],
                 AssessmentId = assessmentId,
                 Status = AssessmentState.AutoGradingStarted.ToString(),
                 ErrorMessage = null
@@ -126,18 +118,10 @@ public class GradingSaga : AggregateSaga<GradingSaga, GradingSagaId, GradingSaga
             AssessmentId = assessmentId,
             SubmissionReference = domainEvent.AggregateEvent.SubmissionReference
         });
+
         try
         {
-            var submission = await repository.GetSubmissionAsync(
-                aggregateState.GradingId.Value,
-                domainEvent.AggregateEvent.SubmissionReference,
-                cancellationToken);
-
-            Publish(new Assessments.AutoGrading.StartAutoGradingCommand(domainEvent.AggregateIdentity)
-            {
-                RubricId = aggregateState.RubricId,
-                Submission = submission
-            });
+            Publish(new Assessments.AutoGrading.StartAutoGradingCommand(domainEvent.AggregateIdentity));
 
             await PublishProgressUpdate(new AssessmentProgress
             {
