@@ -1,6 +1,7 @@
 import type { Context } from "moleculer";
 import type { PluginOperations } from "@/plugins/info";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
+import logger from "@grading-system/utils/logger";
 import { coreMessageSchema } from "ai";
 import { ZodParams } from "moleculer-zod-validator";
 import z from "zod";
@@ -47,7 +48,7 @@ export const aiService = defineTypedService2({
         });
 
         if (result.isErr()) {
-          throw new Error(result.error.message);
+          throw new Error(result.error.message, { cause: result.error });
         }
 
         return result.value;
@@ -75,6 +76,8 @@ export const aiService = defineTypedService2({
         const promises = result.value.map((value) =>
           value
             .orTee((error) => {
+              logger.debug("Failed to grade criterion", error);
+
               for (const criterion of error.data.criterionNames) {
                 transporter.emit(criterionGradingFailedEvent, {
                   assessmentId: params.assessmentId,

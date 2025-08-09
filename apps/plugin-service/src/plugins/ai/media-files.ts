@@ -18,7 +18,8 @@ const SUPPORTED_CONTENT_TYPES = [
   "image/heic",
   "image/heif",
   "application/pdf",
-  // "text/plain",
+  // Check this and include in the prompt instead
+  "text/plain",
 ];
 
 function signSupportedBlobs(container: BlobContainer, blobNameList: string[]) {

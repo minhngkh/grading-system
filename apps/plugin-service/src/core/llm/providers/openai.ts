@@ -11,5 +11,6 @@ export const openai = customProvider({
     "gpt-4o-mini": originalOpenAI("gpt-4o-mini"),
     "o4-mini": originalOpenAI("o4-mini"),
     "gpt-4.1-mini": originalOpenAI("gpt-4.1-mini"),
+    "gpt-5-mini": originalOpenAI("gpt-5-mini"),
   },
 });
