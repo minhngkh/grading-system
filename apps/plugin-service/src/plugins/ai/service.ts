@@ -1,6 +1,7 @@
 import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
 import type { Context } from "moleculer";
 import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
+import { defaultGradeSubmissionActionParams } from "@grading-system/plugin-shared/plugin/data";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
 import { coreMessageSchema } from "ai";
@@ -11,7 +12,6 @@ import {
   criterionGradingSuccessEvent,
 } from "@/messaging/events";
 import { gradeSubmission } from "@/plugins/ai/grade";
-import { gradeSubmissionActionParams } from "@/plugins/data";
 import { generateChatResponse, rubricSchema } from "./core";
 
 export const chatRubricActionSchema = z.object({
@@ -56,8 +56,8 @@ export const aiService = defineTypedService2({
     },
 
     gradeSubmission: {
-      params: gradeSubmissionActionParams.schema,
-      async handler(ctx: Context<typeof gradeSubmissionActionParams.context>) {
+      params: defaultGradeSubmissionActionParams.schema,
+      async handler(ctx: Context<typeof defaultGradeSubmissionActionParams.context>) {
         const params = ctx.params;
 
         const result = await gradeSubmission({

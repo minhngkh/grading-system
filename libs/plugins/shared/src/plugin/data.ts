@@ -1,4 +1,5 @@
 import type { ZodType, ZodTypeDef } from "zod";
+import { ZodParams } from "moleculer-zod-validator";
 import { z } from "zod";
 
 const submissionSchema = z.object({
@@ -20,6 +21,10 @@ const submissionSchema = z.object({
   attachments: z.array(z.string()),
   metadata: z.record(z.unknown()),
 });
+
+type DefaultSubmission = z.infer<typeof submissionSchema>;
+
+export const defaultGradeSubmissionActionParams = new ZodParams(submissionSchema.shape);
 
 export function createSubmissionSchemaWithConfig<TConfig extends object>(
   schema: ZodType<TConfig, ZodTypeDef, unknown>,
@@ -57,11 +62,14 @@ export function createSubmissionSchemaWithConfig<TConfig extends object>(
 //   }[];
 // }
 
-export type CriterionData<TConfig extends object> = z.infer<
-  ReturnType<typeof createSubmissionSchemaWithConfig<TConfig>>
->["criterionDataList"][number];
+export type CriterionData<TConfig extends object | null = null> =
+  TConfig extends object ?
+    z.infer<
+      ReturnType<typeof createSubmissionSchemaWithConfig<TConfig>>
+    >["criterionDataList"][number]
+  : DefaultSubmission["criterionDataList"][number];
 
-export type Criterion<TConfig extends object> = Pick<
+export type Criterion<TConfig extends object | null = null> = Pick<
   CriterionData<TConfig>,
   "criterionName" | "levels"
 >;

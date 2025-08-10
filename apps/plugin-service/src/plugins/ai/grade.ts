@@ -1,10 +1,12 @@
+import type { Criterion, CriterionData } from "@grading-system/plugin-shared/plugin/data";
 import type { FilePart } from "ai";
 import type { LanguageModelWithOptions } from "@/core/llm/types";
-import type { Criterion, CriterionData } from "@/plugins/data";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { EmptyListError } from "@grading-system/plugin-shared/lib/error";
+import { feedbackSchema } from "@grading-system/plugin-shared/plugin/data";
+import { ErrorWithCriteriaInfo } from "@grading-system/plugin-shared/plugin/error";
 import {
   getBlobNameParts,
   getBlobNameRest,
@@ -20,8 +22,6 @@ import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-
 import { gradingSystemPrompt } from "@/plugins/ai/prompts/grade";
 import { packFilesSubsets } from "@/plugins/ai/repomix";
 import { generateRubricContext } from "@/plugins/ai/rubric-metadata";
-import { feedbackSchema } from "@/plugins/data";
-import { ErrorWithCriteriaInfo } from "@/plugins/error";
 
 const llmOptions: LanguageModelWithOptions = {
   model: registry.languageModel("google:gemini-2.5-flash"),
