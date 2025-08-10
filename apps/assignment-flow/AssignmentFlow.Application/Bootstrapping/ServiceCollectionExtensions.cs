@@ -1,22 +1,24 @@
-using System.Reflection;
 using AssignmentFlow.Application.Assessments;
 using AssignmentFlow.Application.Gradings;
 using EventFlow.EntityFramework;
 using EventFlow.EntityFramework.Extensions;
 using EventFlow.Extensions;
+using EventFlow.Hangfire.Extensions;
 using EventFlow.PostgreSql.Connections;
 using EventFlow.PostgreSql.EventStores;
 using EventFlow.PostgreSql.Extensions;
 using FluentValidation;
+using Hangfire;
+using Hangfire.PostgreSql;
 using JsonApiDotNetCore.Configuration;
 using JsonApiDotNetCore.Resources.Annotations;
 using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using RubricEngine.Application.Protos;
 using SharpGrip.FluentValidation.AutoValidation.Endpoints.Extensions;
+using System.Reflection;
 
 namespace AssignmentFlow.Application.Bootstrapping;
 
@@ -32,6 +34,7 @@ public static class ServiceCollectionExtensions
             .AddOpenApi()
             .AddJwtAuthentication(configuration)
             .AddMessageBus(configuration, typeof(Program).Assembly)
+            .AddHangfireJobScheduler(configuration)
             .AddProjectEventFlow(configuration, typeof(Program).Assembly)
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
@@ -210,7 +213,20 @@ public static class ServiceCollectionExtensions
             .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
             .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>(
                 cfg => cfg.Include(a => a.ScoreAdjustmentsHistory))
+            .UseHangfireJobScheduler()
         );
+
+        return services;
+    }
+
+    private static IServiceCollection AddHangfireJobScheduler(this IServiceCollection services, IConfiguration configuration)
+    {
+        services
+            .AddHangfire(config => config.UsePostgreSqlStorage(options =>
+            {
+                options.UseNpgsqlConnection(configuration.GetConnectionString("assignmentflowdb"));
+            }))
+            .AddHangfireServer();
 
         return services;
     }

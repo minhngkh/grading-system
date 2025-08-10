@@ -17,6 +17,7 @@ public class Assessment
     IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.AutoGradingFinishedEvent>,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, Assess.AssessedEvent>,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, Assess.AssessmentFailedEvent>,
+    IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.AutoGradingCancelledEvent>,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.CriterionAssessedEvent>,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, UpdateFeedBack.FeedbacksUpdatedEvent>,
     IAmReadModelFor<AssessmentAggregate, AssessmentId, AutoGrading.ManualGradingRequestedEvent>,
@@ -109,6 +110,13 @@ public class Assessment
     }
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, Assess.AssessmentFailedEvent> domainEvent, CancellationToken cancellationToken)
+    {
+        StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);
+        UpdateLastModifiedData(domainEvent);
+        return Task.CompletedTask;
+    }
+
+    public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGradingCancelledEvent> domainEvent, CancellationToken cancellationToken)
     {
         StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);
         UpdateLastModifiedData(domainEvent);

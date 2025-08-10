@@ -82,6 +82,14 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         FinishAutoGrading();
     }
 
+    public void CancelAutoGrading()
+    {
+        if (!AutoGrading.AutoGradingCanBeFinishedSpecification.New().IsSatisfiedBy(State))
+        {
+            Emit(new AutoGrading.AutoGradingCancelledEvent() { GradingId = State.GradingId});
+        }
+    }
+
     public void Assess(AutoGrading.AssessCriterionCommand command)
     {
         var scoreItem = command.ScoreBreakdownItem;

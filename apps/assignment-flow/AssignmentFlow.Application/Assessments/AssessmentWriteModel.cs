@@ -41,6 +41,11 @@ public class AssessmentWriteModel
         StateMachine.Fire(AssessmentTrigger.StartAutoGrading);
     }
 
+    internal void Apply(AutoGrading.AutoGradingCancelledEvent _)
+    {
+        StateMachine.Fire(AssessmentTrigger.CancelAutoGrading);
+    }
+
     //Keep this for backward compatibility
     internal void Apply(Assess.AssessedEvent @event)
     {
