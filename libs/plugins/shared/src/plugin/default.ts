@@ -128,9 +128,9 @@ export function defaultGradeSubmissionFunc<
 
       const submissionType = yield* detectFileListType(downloadDir);
 
-      let fileRefPrefix = submissionRef
+      let fileRefPrefix = submissionRef;
       if (submissionType === "single-folder") {
-        downloadDir = path.join(downloadDir, blobNameRoot);
+        downloadDir = path.join(downloadDir, submissionRef);
         blobNameRoot = path.join(blobNameRoot, submissionRef);
 
         fileRefPrefix = path.join(submissionRef, getBlobNameParts(blobNameRoot).rest);

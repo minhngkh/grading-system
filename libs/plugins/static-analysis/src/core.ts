@@ -9,13 +9,8 @@ import logger from "@grading-system/utils/logger";
 import { okAsync, safeTry } from "neverthrow";
 import { rulesetMap } from "./config";
 
-const workspaceRoot = path.join(process.cwd(), "..", "..");
-const pluginToolProjectPath = path.join(
-  workspaceRoot,
-  "libs",
-  "plugin-tools",
-  "static-analysis",
-);
+// const workspaceRoot = path.join(process.cwd(), "..", "..", "..");
+const pluginToolProjectPath = process.cwd();
 const pluginToolPath = "uv";
 
 const tool = new LocalCommandExecutor({

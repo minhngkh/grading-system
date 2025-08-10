@@ -1,20 +1,17 @@
 import "dotenv/config";
 
-import { stat } from "node:fs";
 import process from "node:process";
-import { createZodValidatedServiceBroker } from "@grading-system/typed-moleculer/service";
+import { createMoleculerBroker } from "@grading-system/plugin-shared/lib/transporter";
 import logger from "@grading-system/utils/logger";
 import { serve } from "@hono/node-server";
 import { initMessaging } from "@/messaging";
 import { testRunnerService } from "@/plugins/test-runner/service";
-import { typeCoverageService } from "@/plugins/type-coverage/service";
 import { createApiGateway } from "./api";
 import { syncDB } from "./db/init";
 import { connectMongoDB } from "./db/mongoose";
 import { aiService } from "./plugins/ai/service";
-import { staticAnalysisService } from "./plugins/static-analysis/service";
 
-const broker = createZodValidatedServiceBroker();
+const broker = createMoleculerBroker();
 broker.createService(aiService);
 // broker.createService(staticAnalysisService);
 broker.createService(testRunnerService);

@@ -1,11 +1,11 @@
 import "dotenv/config";
 
 import process from "node:process";
-import { createZodValidatedServiceBroker } from "@grading-system/typed-moleculer/service";
+import { createMoleculerBroker } from "@grading-system/plugin-shared/lib/transporter";
 import logger from "@grading-system/utils/logger";
 import { staticAnalysisService } from "./service";
 
-const broker = createZodValidatedServiceBroker();
+const broker = createMoleculerBroker();
 broker.createService(staticAnalysisService);
 
 async function start() {
