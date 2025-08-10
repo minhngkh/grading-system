@@ -179,6 +179,7 @@ public static class ScoreBreakdownsExtension
             FileRef = fb.Highlight.Attachment,
             LocationDataJson = fb.Highlight.LocationDataJson,
             Tag = fb.Tag,
+            Author = fb.Grader
         });
     }
 }

@@ -29,7 +29,7 @@ public static class EndpointHandler
         var assessmentId = AssessmentId.With(id);
         await commandBus.PublishAsync(new Command(assessmentId)
         {
-            Feedbacks = [.. request.Feedbacks.Select(f => f.ToValueObject())],
+            Feedbacks = [.. request.Feedbacks.Select(f => f.ToValueObject(Grader.Teacher))],
         }, cancellationToken);
 
         return TypedResults.Ok();

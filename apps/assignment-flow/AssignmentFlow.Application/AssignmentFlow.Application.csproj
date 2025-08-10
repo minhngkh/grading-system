@@ -14,10 +14,14 @@
 	<PackageReference Include="Aspire.RabbitMQ.Client.v7" />
 	<PackageReference Include="EventFlow" />
 	<PackageReference Include="EventFlow.EntityFramework" />
+	<PackageReference Include="EventFlow.Hangfire" />
 	<PackageReference Include="EventFlow.PostgreSql" />
 	<PackageReference Include="FluentValidation" />
 	<PackageReference Include="FluentValidation.AspNetCore" />
 	<PackageReference Include="Grpc.AspNetCore" />
+	<PackageReference Include="Hangfire.AspNetCore" />
+	<PackageReference Include="Hangfire.Core" />
+	<PackageReference Include="Hangfire.PostgreSql" />
 	<PackageReference Include="JsonApiDotNetCore" />
 	<PackageReference Include="MassTransit" />
 	<PackageReference Include="MassTransit.Azure.ServiceBus.Core" />

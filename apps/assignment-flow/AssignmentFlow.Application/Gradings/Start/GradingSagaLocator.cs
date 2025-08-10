@@ -18,6 +18,7 @@ public class GradingSagaLocator : ISagaLocator
             Assessments.Assess.AssessedEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(@event.GradingId))),
             AutoGradingRestartedEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(domainEvent.GetIdentity().Value))),
             Assessments.Assess.AssessmentFailedEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(@event.GradingId))),
+            Assessments.AutoGrading.AutoGradingCancelledEvent @event => Task.FromResult<ISagaId>(new GradingSagaId(GetGradingSagaId(@event.GradingId))),
             _ => throw new ArgumentNullException(nameof(domainEvent))
         };
     }

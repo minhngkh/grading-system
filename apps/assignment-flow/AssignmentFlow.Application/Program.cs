@@ -1,6 +1,7 @@
 using AssignmentFlow.Application.Bootstrapping;
 using AssignmentFlow.Application.Gradings;
 using AssignmentFlow.Application.Hub;
+using Hangfire;
 using JsonApiDotNetCore.Configuration;
 using Scalar.AspNetCore;
 

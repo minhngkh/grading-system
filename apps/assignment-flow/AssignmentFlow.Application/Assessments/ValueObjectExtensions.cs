@@ -24,7 +24,7 @@ public static class ValueObjectExtensions
         };
     }
 
-    public static Feedback ToValueObject(this FeedbackItemApiContract apiContract)
+    public static Feedback ToValueObject(this FeedbackItemApiContract apiContract, Grader grader)
         => Feedback.New(
             CriterionName.New(apiContract.Criterion),
             Comment.New(apiContract.Comment),
@@ -32,7 +32,8 @@ public static class ValueObjectExtensions
                 Attachment.New(apiContract.FileRef),
                 string.IsNullOrEmpty(apiContract.LocationDataJson) ? JsonSerializer.Serialize(apiContract.LocationData) : apiContract.LocationDataJson
             ),
-            Tag.New(apiContract.Tag));
+            Tag.New(apiContract.Tag),
+            grader);
 
     public static (ScoreBreakdownItem, List<Feedback>) ToValueObject(
         this ScoreBreakdownV2 apiContract,
@@ -56,7 +57,8 @@ public static class ValueObjectExtensions
         {
             var summary = Feedback.Summary(
                 criterionName,
-                Comment.New(apiContract.Summary));
+                Comment.New(apiContract.Summary),
+                Grader.AIGrader);
             feedbackItems.Add(summary);
         }
         feedbackItems.AddRange(apiContract.FeedbackItems
@@ -78,7 +80,7 @@ public static class ValueObjectExtensions
 
         var feedbackTag = Tag.New(apiContract.Tag);
 
-        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag);
+        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag, Grader.AIGrader);
     }
 
     [Obsolete("Obsoleted because the target model have been obsolete")]
@@ -126,6 +128,6 @@ public static class ValueObjectExtensions
 
         var feedbackTag = Tag.New(apiContract.Tag);
 
-        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag);
+        return Feedback.New(criterion, comment, feedbackAttachment, feedbackTag, Grader.Default);
     }
 }

@@ -1,6 +1,6 @@
-﻿using Azure.Storage;
-using Azure.Storage.Blobs;
+﻿using Azure.Storage.Blobs;
 using Azure.Storage.Sas;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssignmentFlow.Application.Gradings.GetSASToken;
@@ -17,8 +17,8 @@ public static class EndpointHandler
         return endpoint;
     }
 
-    //[Authorize]
-    private static async Task<IResult> GetSASToken(
+    [Authorize]
+    private static IResult GetSASToken(
         [FromServices] BlobServiceClient blobServiceClient,
         [FromServices] IConfiguration configuration,
         CancellationToken cancellationToken)

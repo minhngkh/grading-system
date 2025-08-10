@@ -26,19 +26,22 @@ public sealed class Feedback : ValueObject
     /// </summary>
     public Highlight Highlight { get; private set; }
 
-    private Feedback(CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
+    public Grader Grader { get; private set; }
+
+    private Feedback(CriterionName criterion, Comment comment, Highlight highlight, Tag tag, Grader grader)
     {
         Criterion = criterion;
         Comment = comment;
         Highlight = highlight;
         Tag = tag;
+        Grader = grader;
     }
 
-    public static Feedback New(CriterionName criterion, Comment comment, Highlight highlight, Tag tag)
-        => new(criterion, comment, highlight, tag);
+    public static Feedback New(CriterionName criterion, Comment comment, Highlight highlight, Tag tag, Grader grader)
+        => new(criterion, comment, highlight, tag, grader);
 
-    public static Feedback Summary (CriterionName criterion, Comment comment)
-        => new(criterion, comment, Highlight.Empty, Tag.Summary);
+    public static Feedback Summary (CriterionName criterion, Comment comment, Grader grader)
+        => new(criterion, comment, Highlight.Empty, Tag.Summary, grader);
 
     /// <summary>
     /// Provides the components used for equality comparison.
@@ -64,8 +67,9 @@ public sealed class FeedbackConverter : JsonConverter<Feedback>
         var comment = jObject.GetRequired<Comment>("Comment");
         var highlight = jObject.GetRequired<Highlight>("Highlight");
         var tag = jObject.GetRequired<Tag>("Tag");
+        var grader = jObject.Get<Grader>("Grader") ?? Grader.Default;
 
-        return Feedback.New(criterion, comment, highlight, tag);
+        return Feedback.New(criterion, comment, highlight, tag, grader);
     }
     public override bool CanWrite => false;
     public override void WriteJson(JsonWriter writer, Feedback? value, JsonSerializer serializer) => throw new NotSupportedException();

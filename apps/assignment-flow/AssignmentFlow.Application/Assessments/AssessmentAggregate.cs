@@ -30,7 +30,8 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
             GradingId = command.GradingId,
             TeacherId = command.TeacherId,
             RubricId = command.RubricId,
-            Criteria = command.Criteria
+            Criteria = command.Criteria,
+            Total = command.Total
         });
     }
 
@@ -72,10 +73,23 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         Emit(new AutoGrading.AutoGradingStartedEvent
         {
             GradingId = State.GradingId,
+            RubricId = State.RubricId,
+            Reference = State.Reference,
             InitialScoreBreakdowns = initialScoreBreakdowns,
+            Total = State.Total
         });
 
         FinishAutoGrading();
+
+        Task.Delay(TimeSpan.FromMinutes(4)).ContinueWith(_ => CancelAutoGrading(), TaskScheduler.Default);
+    }
+
+    public void CancelAutoGrading()
+    {
+        if (!AutoGrading.AutoGradingCanBeFinishedSpecification.New().IsSatisfiedBy(State))
+        {
+            Emit(new AutoGrading.AutoGradingCancelledEvent() { GradingId = State.GradingId});
+        }
     }
 
     public void Assess(AutoGrading.AssessCriterionCommand command)

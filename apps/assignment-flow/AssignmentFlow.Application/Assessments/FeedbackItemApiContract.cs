@@ -25,4 +25,5 @@ public class FeedbackItemApiContract
 
     public required string Comment { get; set; }
     public required string Tag { get; set; }
+    public required string Author { get; set; } = string.Empty; // Author can be empty for AI-generated feedback
 }

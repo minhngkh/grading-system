@@ -1,4 +1,5 @@
 ﻿using EventFlow;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AssignmentFlow.Application.Assessments.AutoGrading;
@@ -15,7 +16,7 @@ public static class EndpointHandler
         return endpoint;
     }
 
-    //[Authorize]
+    [Authorize]
     private static async Task<IResult> StartAutoGrading(
         [FromRoute] string id,
         ICommandBus commandBus,
