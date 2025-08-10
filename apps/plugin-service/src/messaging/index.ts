@@ -94,16 +94,15 @@ export async function initMessaging(broker: ServiceBroker) {
               (c) => c._id.toString() === criterion.configuration,
             );
             if (config) {
-              criteria.push({
-                ...criterion,
-                configuration: config.config,
-              });
+              criterion.configuration = config.config;
             } else {
               logger.error(
                 `Configuration not found for criterion ${criterion.criterionName}`,
               );
             }
           }
+
+          criteria.push(criterion);
         }
 
         // actionCaller<StaticAnalysisService>()(broker, "v1.static-analysis.gradeSubmission", {
