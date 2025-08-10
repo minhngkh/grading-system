@@ -52,7 +52,6 @@ var app = builder.Build();
 
 app.MapOpenApi();
 app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
-app.UseHangfireDashboard();
 
 app.UseCors("AllowAll");
 
