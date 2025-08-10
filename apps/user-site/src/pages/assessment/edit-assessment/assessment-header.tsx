@@ -23,6 +23,7 @@ import {
   updateScoreMutationOptions,
   rerunAssessmentMutationOptions,
 } from "@/queries/assessment-queries";
+import { isEqual } from "lodash";
 
 interface AssessmentHeaderProps {
   assessment: Assessment;
@@ -44,12 +45,12 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   const [open, setOpen] = useState(false);
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
 
-  const feedbackChanged =
-    JSON.stringify(assessment.feedbacks) !== JSON.stringify(lastSavedData.feedbacks);
+  const feedbackChanged = !isEqual(assessment.feedbacks, lastSavedData.feedbacks);
 
-  const scoreChanged =
-    JSON.stringify(assessment.scoreBreakdowns) !==
-    JSON.stringify(lastSavedData.scoreBreakdowns);
+  const scoreChanged = !isEqual(
+    assessment.scoreBreakdowns,
+    lastSavedData.scoreBreakdowns,
+  );
 
   const hasUnsavedChanges = feedbackChanged || scoreChanged;
 
@@ -60,11 +61,11 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     updateFeedbackMutationOptions(assessment.id, auth, {
       onSuccess: () => {
         toast.success("Feedback updated successfully");
-        onUpdateLastSave({ feedbacks: assessment.feedbacks });
         queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
         queryClient.invalidateQueries({
           queryKey: ["allGradingAssessments", grading.id],
         });
+        onUpdateLastSave({ feedbacks: assessment.feedbacks });
       },
       onError: (error) => {
         console.error("Failed to update feedback:", error);
@@ -77,7 +78,6 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
     updateScoreMutationOptions(assessment.id, auth, {
       onSuccess: (_, scoreBreakdowns) => {
         toast.success("Score updated successfully");
-        onUpdateLastSave({ scoreBreakdowns });
 
         queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
         queryClient.invalidateQueries({
@@ -86,6 +86,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         queryClient.invalidateQueries({
           queryKey: ["scoreAdjustments", assessment.id],
         });
+        onUpdateLastSave({ scoreBreakdowns });
       },
       onError: (error) => {
         onUpdate({ status: AssessmentState.AutoGradingFailed });
@@ -102,7 +103,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         onUpdate({ status: AssessmentState.AutoGradingStarted });
         onUpdateLastSave({ status: AssessmentState.AutoGradingStarted });
       },
-      onSuccess: () => {
+      onSuccess: async () => {
         queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
         queryClient.invalidateQueries({
           queryKey: ["scoreAdjustments", assessment.id],

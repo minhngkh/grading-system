@@ -4,7 +4,7 @@ pre {
 code {
   display: grid;
   font-size: 14px;
-  padding-left: 1em; /* Add space between line numbers and content */
+  padding-left: 1.5em; /* Add space between line numbers and content */
 }
 
 .line {

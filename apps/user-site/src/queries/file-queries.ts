@@ -17,7 +17,7 @@ export function getFileItemsQueryOptions(
     queryFn: async () => {
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required to access files.");
-      return FileService.loadFileItems(`${gradingId}/${reference}`);
+      return FileService.loadFileItems(`${gradingId}/${reference}`, token);
     },
     enabled: Boolean(reference !== undefined),
     staleTime: Infinity,

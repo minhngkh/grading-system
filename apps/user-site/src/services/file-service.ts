@@ -6,18 +6,19 @@ const ASSIGNMENT_FLOW_API_URL = `${import.meta.env.VITE_ASSIGNMENT_FLOW_URL}/api
 const BLOB_ENDPOINT = import.meta.env.VITE_BLOB_STORAGE_URL;
 
 export class FileService {
-  private static async buildHeaders(): Promise<AxiosRequestConfig> {
+  private static async buildHeaders(token: string): Promise<AxiosRequestConfig> {
     return {
       headers: {
         "Content-Type": "application/vnd.api+json",
         Accept: "application/vnd.api+json",
+        Authorization: `Bearer ${token}`,
       },
     };
   }
 
-  static async getSasToken(): Promise<string> {
+  static async getSasToken(token: string): Promise<string> {
     try {
-      const config = await this.buildHeaders();
+      const config = await this.buildHeaders(token);
 
       const url = `${ASSIGNMENT_FLOW_API_URL}/gradings/sasToken`;
 
@@ -33,9 +34,9 @@ export class FileService {
     }
   }
 
-  static async loadFileItems(prefix: string): Promise<FileItem[]> {
+  static async loadFileItems(prefix: string, token: string): Promise<FileItem[]> {
     try {
-      const sasToken = await this.getSasToken();
+      const sasToken = await this.getSasToken(token);
       const blobServiceClient = new BlobServiceClient(`${BLOB_ENDPOINT}?${sasToken}`);
       const containerClient = blobServiceClient.getContainerClient("submissions-store");
 

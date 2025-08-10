@@ -119,13 +119,15 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                           </TableRow>
 
                           {/* Criterion breakdown rows */}
-                          {adjustment.scoreBreakdowns
-                          .map(
+                          {adjustment.scoreBreakdowns.map(
                             (scoreBreakdown: ScoreBreakdown, scoreIndex: number) => {
-      
-                              const deltaScore = (adjustment.deltaScoreBreakdowns
-                                .find((delta: ScoreBreakdown) => delta.criterionName === scoreBreakdown.criterionName)
-                                ?.rawScore || 0) * scaleFactor / 100;
+                              const deltaScore =
+                                ((adjustment.deltaScoreBreakdowns.find(
+                                  (delta: ScoreBreakdown) =>
+                                    delta.criterionName === scoreBreakdown.criterionName,
+                                )?.rawScore || 0) *
+                                  scaleFactor) /
+                                100;
 
                               return (
                                 <TableRow
@@ -150,7 +152,7 @@ export const ScoreAdjustmentDialog: React.FC<ScoreAdjustmentDialogProps> = ({
                                           : "text-muted-foreground",
                                         )}
                                       >
-                                        {deltaScore}%
+                                        {deltaScore}
                                         {deltaScore > 0 ?
                                           <TrendingUp className="ml-1 inline h-3 w-3" />
                                         : deltaScore < 0 && (
