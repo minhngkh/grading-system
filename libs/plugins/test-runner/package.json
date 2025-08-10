@@ -1,0 +1,27 @@
+{
+  "name": "@grading-system/test-runner-plugin",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./*": {
+      "types": "./src/*.ts",
+      "import": "./src/*.ts",
+      "default": "./src/*.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "dev": "node --enable-source-maps --import @swc-node/register/esm-register --watch --watch-preserve-output ./src/index.ts"
+  },
+  "nx": {
+    "name": "test-runner-plugin",
+    "projectType": "library"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@grading-system/plugin-shared": "workspace:*",
+    "@grading-system/typed-moleculer": "workspace:*",
+    "@grading-system/utils": "workspace:*"
+  }
+}
