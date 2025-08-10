@@ -2,6 +2,7 @@ import type { Buffer } from "node:buffer";
 import type { GoJudge } from "./go-judge-api";
 import process from "node:process";
 import { createHttpClient } from "@grading-system/plugin-shared/lib/http-client";
+import logger from "@grading-system/utils/logger";
 
 const httpClient = createHttpClient({
   baseUrl: process.env.GO_JUDGE_API_URL,
@@ -15,11 +16,15 @@ export function runProgram(
   callback?: {
     type: string;
     id: string;
+    name: string;
   },
 ) {
   let runUrl = "run";
   if (callback) {
-    runUrl += `?callback=${encodeURIComponent(`${SELF_URL}/api/v1/plugins/test-runner/callback?type=${callback.type}&id=${callback.id}`)}`;
+    const callbackUrl = encodeURIComponent(`${SELF_URL}/api/v1/plugins/test-runner/callback?type=${callback.type}&id=${callback.id}&name=${callback.name}`);
+    logger.debug("Callback URL:", callbackUrl);
+
+    runUrl += `?callback=${callbackUrl}`;
   }
 
   return httpClient
@@ -50,3 +55,5 @@ export function deleteFile(fileId: string) {
   // DELETE usually returns 204 No Content, so we can use z.any()
   return httpClient.delete<void>(`/file/${fileId}`).map(() => undefined as void);
 }
+
+export type { GoJudge };

@@ -1,30 +1,26 @@
 import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
 import type { Context } from "moleculer";
-import type { CachedData, CallData } from "./core";
 import type { GoJudge } from "./go-judge-api";
 import {
   criterionGradingFailedEvent,
   criterionGradingSuccessEvent,
 } from "@grading-system/plugin-shared/events/index";
-import { cache } from "@grading-system/plugin-shared/lib/cache";
 import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
 import { createSubmissionSchemaWithConfig } from "@grading-system/plugin-shared/plugin/data";
-import { actionCaller } from "@grading-system/typed-moleculer/action";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
 import { ZodParams } from "moleculer-zod-validator";
 import { testRunnerConfigSchema } from "./config";
 import {
-  CALLBACK_STEP,
   compareOutput,
-  getCachedData,
   gradeSubmission,
   initializeSubmission,
   runSubmission,
 } from "./core";
+import { TestRunnerMemory } from "./memory";
 
 type CallbackData = {
-  query: { id: string };
+  query: { id: string; name: string };
   body: GoJudge.RunResult;
 };
 
@@ -54,27 +50,19 @@ export const testRunnerService = defineTypedService2({
 
         const transporter = await getTransporter();
 
-        const promises = result.value.map(
-          (value) =>
-            value.orTee((error) => {
-              logger.info(
-                `internal: Grading failed for ${error.data.criterionName}`,
-                error,
-              );
+        const promises = result.value.map((value) =>
+          value.orTee((error) => {
+            logger.info(
+              `internal: Grading failed for ${error.data.criterionName}`,
+              error,
+            );
 
-              transporter.emit(criterionGradingFailedEvent, {
-                assessmentId: params.assessmentId,
-                criterionName: error.data.criterionName,
-                error: error.message,
-              });
-            }),
-          // .andTee(() => {
-          //   transporter.emit(criterionGradingFailedEvent, {
-          //     assessmentId: params.assessmentId,
-          //     criterionName: params.criterionDataList[0].criterionName,
-          //     error: "waiting implementation",
-          //   });
-          // }),
+            transporter.emit(criterionGradingFailedEvent, {
+              assessmentId: params.assessmentId,
+              criterionName: error.data.criterionName,
+              error: error.message,
+            });
+          }),
         );
 
         await Promise.all(promises);
@@ -85,32 +73,32 @@ export const testRunnerService = defineTypedService2({
       async handler(ctx: Context<CallbackData>) {
         const { query, body } = ctx.params;
 
-        const info = await cache.hmget<Pick<CachedData, "config" | "criterionData">>(
-          `test-runner:${query.id}`,
-          "config",
-          "criterionData",
-        );
+        // logger.debug(`Initializing submission for ${query.id}`, info);
 
-        logger.debug(`Initializing submission for ${query.id}`, info);
+        const data = await TestRunnerMemory.getCallData(query.id);
 
-        if (info === null) {
-          throw new Error(`No submission found for id: ${query.id}`);
+        const transporter = await getTransporter();
+
+        if (data.isErr()) {
+          transporter.emit(criterionGradingFailedEvent, {
+            assessmentId: query.id,
+            criterionName: query.name,
+            error: data.error.message,
+          });
+
+          return;
         }
 
-        const data: CallData = {
+        const result = await initializeSubmission({
           attemptId: query.id,
-          config: info.config,
-          criterionData: info.criterionData,
-        };
-
-        const result = await initializeSubmission(data);
+          config: data.value.config,
+          criterionData: data.value.criterionData,
+        });
 
         if (result.isErr()) {
-          const transporter = await getTransporter();
-
           transporter.emit(criterionGradingFailedEvent, {
-            assessmentId: data.attemptId,
-            criterionName: data.criterionData.criterionName,
+            assessmentId: query.id,
+            criterionName: query.name,
             error: result.error.message,
           });
 
@@ -128,41 +116,41 @@ export const testRunnerService = defineTypedService2({
       async handler(ctx: Context<CallbackData>) {
         const { query, body } = ctx.params;
 
-        const info = await cache.hmget<Pick<CallData, "config" | "criterionData">>(
-          `test-runner:${query.id}`,
-          "config",
-          "criterionData",
-        );
-
-        if (info === null) {
-          throw new Error(`No submission found for id: ${query.id}`);
-        }
-
-        const data: CallData = {
-          attemptId: query.id,
-          config: info.config,
-          criterionData: info.criterionData,
-        };
-
         const transporter = await getTransporter();
 
         const initResult = body[0];
         if (initResult.exitStatus !== 0) {
           transporter.emit(criterionGradingFailedEvent, {
-            assessmentId: data.attemptId,
-            criterionName: data.criterionData.criterionName,
+            assessmentId: query.id,
+            criterionName: query.name,
             error: `Build failed:\n ${initResult.files?.stderr}`,
           });
-          
+
           return;
         }
 
-        const result = await runSubmission(data);
+        const data = await TestRunnerMemory.getCallData(query.id);
+
+        if (data.isErr()) {
+          transporter.emit(criterionGradingFailedEvent, {
+            assessmentId: query.id,
+            criterionName: query.name,
+            error: data.error.message,
+          });
+
+          return;
+        }
+
+        const result = await runSubmission({
+          attemptId: query.id,
+          config: data.value.config,
+          criterionData: data.value.criterionData,
+        });
 
         if (result.isErr()) {
           transporter.emit(criterionGradingFailedEvent, {
-            assessmentId: data.attemptId,
-            criterionName: data.criterionData.criterionName,
+            assessmentId: query.id,
+            criterionName: query.name,
             error: result.error.message,
           });
         }
@@ -170,12 +158,7 @@ export const testRunnerService = defineTypedService2({
     },
 
     aggregateResults: {
-      async handler(
-        ctx: Context<{
-          query: { id: string };
-          body: GoJudge.RunResult;
-        }>,
-      ) {
+      async handler(ctx: Context<CallbackData>) {
         const { query, body } = ctx.params;
 
         // const info = await cache
@@ -186,13 +169,19 @@ export const testRunnerService = defineTypedService2({
         //   .hgetall<CallData>(`test-runner:${params.query.id}`)
         //   .exec();
 
-        const data = await getCachedData(query.id);
+        const transporter = await getTransporter();
+
+        const data = await TestRunnerMemory.getCallData(query.id);
 
         if (data.isErr()) {
-          throw new Error(`No submission found for id: ${query.id}`);
-        }
+          transporter.emit(criterionGradingFailedEvent, {
+            assessmentId: query.id,
+            criterionName: query.name,
+            error: data.error.message,
+          });
 
-        const transporter = await getTransporter();
+          return;
+        }
 
         const feedback = [];
 
@@ -218,6 +207,7 @@ export const testRunnerService = defineTypedService2({
             input: data.value.config.testCases[idx].input,
             output: actualOutput,
             expectedOutput,
+            error: result.files!.stderr,
           });
         }
 
@@ -237,7 +227,7 @@ export const testRunnerService = defineTypedService2({
           },
           scoreBreakdown: {
             tag: "",
-            rawScore: count / feedback.length,
+            rawScore: Math.round((count / feedback.length) * 100),
             feedbackItems: [],
           },
         });

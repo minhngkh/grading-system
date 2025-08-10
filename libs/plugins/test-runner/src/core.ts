@@ -8,7 +8,6 @@ import {
   IDENTIFIER_PATH_LEVELS,
   submissionStore,
 } from "@grading-system/plugin-shared/lib/blob-storage";
-import { cache, CacheError } from "@grading-system/plugin-shared/lib/cache";
 import { EmptyListError } from "@grading-system/plugin-shared/lib/error";
 import { cleanTempDirectory, symlinkFiles } from "@grading-system/plugin-shared/lib/file";
 import { detectFileListType } from "@grading-system/plugin-shared/plugin/default";
@@ -19,9 +18,10 @@ import {
 } from "@grading-system/utils/azure-storage-blob";
 import logger from "@grading-system/utils/logger";
 import { zipFolderToBuffer } from "@grading-system/utils/zip";
-import { errAsync, fromPromise, okAsync, Result, safeTry } from "neverthrow";
+import { errAsync, okAsync, Result, safeTry } from "neverthrow";
 import { z } from "zod";
 import { prepareFile, runProgram } from "./go-judge";
+import { TestRunnerMemory } from "./memory";
 
 const FILE_STORE_PATH = process.env.GO_JUDGE_STORE_DIR!;
 
@@ -31,9 +31,12 @@ export const CALLBACK_STEP = {
   RUN: "run",
 } as const;
 
+export type CallbackStep = (typeof CALLBACK_STEP)[keyof typeof CALLBACK_STEP];
+
 export const testRunnerCallbackUrlSchema = z.object({
   type: z.enum(Object.values(CALLBACK_STEP) as [string, ...string[]]),
   id: z.string().describe("Unique identifier for the callback"),
+  name: z.string().describe("Name of the criterion or submission"),
 });
 
 export type CachedData = {
@@ -164,8 +167,8 @@ export function uploadSubmission(data: {
       return errAsync(new EmptyListError({ message: "No files to run" }));
     }
 
-    logger.debug("zipping folder", data.directory);
-    const firstDir = data.fileList[0].split(path.sep)[0];
+    // logger.debug("zipping folder", data.directory);
+    // const firstDir = data.fileList[0].split(path.sep)[0];
 
     const zipBuffer = yield* zipFolderToBuffer(data.directory);
 
@@ -177,27 +180,10 @@ export function uploadSubmission(data: {
 
     logger.debug("prepared file", fileId);
 
-    const key = `test-runner:${data.attemptId}`;
-    yield* fromPromise(
-      cache
-        .multi()
-        // store the config (JSON‐stringified), initial state, and 0 accesses
-        .hset(key, {
-          config: data.config,
-          criterionData: data.criterionData,
-          state: CALLBACK_STEP.UPLOAD,
-          processed: 0,
-          total: data.config.testCases.length,
-        } as CachedData)
-        // make sure the list exists (optional—LPUSH then LTRIM could also work)
-        .del(`${key}:results`)
-        .exec(),
-      (error) =>
-        new CacheError({
-          message: "Failed to initialize test runner state",
-          cause: error,
-        }),
-    );
+    yield* TestRunnerMemory.setUploadState(data.attemptId, {
+      config: data.config,
+      criterionData: data.criterionData,
+    });
 
     yield* runProgram(
       {
@@ -215,10 +201,13 @@ export function uploadSubmission(data: {
         ],
       },
       {
-        id: data.attemptId,
         type: CALLBACK_STEP.UPLOAD,
+        id: data.attemptId,
+        name: data.criterionData.criterionName,
       },
     );
+
+    // TODO: delete the uploaded file
 
     return okAsync();
   });
@@ -255,8 +244,9 @@ export function initializeSubmission(data: CallData) {
           ],
         },
         {
-          id: data.attemptId,
           type: CALLBACK_STEP.INIT,
+          id: data.attemptId,
+          name: data.criterionData.criterionName,
         },
       );
 
@@ -301,8 +291,9 @@ export function runSubmission(data: CallData) {
         }),
       },
       {
-        id: data.attemptId,
         type: CALLBACK_STEP.RUN,
+        id: data.attemptId,
+        name: data.criterionData.criterionName,
       },
     );
 
@@ -347,33 +338,6 @@ function createIOFiles(options: { stdin?: string; stdout?: boolean; stderr?: boo
 
 function createDirStorePath(attemptId: string) {
   return attemptId;
-}
-
-export function getCachedData(id: string) {
-  return fromPromise(
-    cache.hmget<Pick<CallData, "config" | "criterionData">>(
-      `test-runner:${id}`,
-      "config",
-      "criterionData",
-    ),
-    (error) =>
-      new CacheError({
-        message: "Failed to get cached data",
-        cause: error,
-      }),
-  ).andThen((data) => {
-    if (data === null) {
-      return errAsync(
-        new CacheError({
-          message: `No cached found for id: ${id}`,
-        }),
-      );
-    }
-    return okAsync({
-      config: data.config,
-      criterionData: data.criterionData,
-    });
-  });
 }
 
 export function compareOutput(

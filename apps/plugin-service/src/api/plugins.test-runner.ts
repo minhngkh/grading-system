@@ -1,12 +1,12 @@
+import type { GoJudge } from "@grading-system/test-runner-plugin/go-judge";
+import type { TestRunnerService } from "@grading-system/test-runner-plugin/service";
 import type { ServiceBroker } from "moleculer";
-import type { GoJudge } from "@/plugins/test-runner/go-judge-api";
-import type { TestRunnerService } from "@/plugins/test-runner/service";
+import { testRunnerCallbackUrlSchema } from "@grading-system/test-runner-plugin/core";
 import { actionCaller } from "@grading-system/typed-moleculer/action";
 import logger from "@grading-system/utils/logger";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { validator } from "hono-openapi/zod";
-import { testRunnerCallbackUrlSchema } from "@/plugins/test-runner/core";
 
 export function route(broker: ServiceBroker) {
   return new Hono().post(

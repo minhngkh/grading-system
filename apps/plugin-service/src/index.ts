@@ -5,7 +5,6 @@ import { createMoleculerBroker } from "@grading-system/plugin-shared/lib/transpo
 import logger from "@grading-system/utils/logger";
 import { serve } from "@hono/node-server";
 import { initMessaging } from "@/messaging";
-import { testRunnerService } from "@/plugins/test-runner/service";
 import { createApiGateway } from "./api";
 import { syncDB } from "./db/init";
 import { connectMongoDB } from "./db/mongoose";
