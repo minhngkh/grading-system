@@ -163,6 +163,9 @@ public class Assessment
 
     public Task ApplyAsync(IReadModelContext context, IDomainEvent<AssessmentAggregate, AssessmentId, AutoGrading.CriterionAssessedEvent> domainEvent, CancellationToken cancellationToken)
     {
+        Feedbacks.RemoveAll(fb => 
+            fb.Criterion == domainEvent.AggregateEvent.ScoreBreakdownItem.CriterionName &&
+            fb.Author == Grader.AIGrader);
         Feedbacks.AddRange(domainEvent.AggregateEvent.Feedbacks.ToApiContracts());
 
         var breakdownItem = domainEvent.AggregateEvent.ScoreBreakdownItem.ToApiContract();

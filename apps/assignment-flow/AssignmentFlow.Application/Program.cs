@@ -1,6 +1,7 @@
 using AssignmentFlow.Application.Bootstrapping;
 using AssignmentFlow.Application.Gradings;
 using AssignmentFlow.Application.Hub;
+using Hangfire;
 using JsonApiDotNetCore.Configuration;
 using Scalar.AspNetCore;
 
@@ -51,6 +52,7 @@ var app = builder.Build();
 
 app.MapOpenApi();
 app.MapScalarApiReference(options => options.Servers = Array.Empty<ScalarServer>());
+app.UseHangfireDashboard();
 
 app.UseCors("AllowAll");
 
