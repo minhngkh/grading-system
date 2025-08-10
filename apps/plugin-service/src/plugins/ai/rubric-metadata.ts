@@ -1,9 +1,9 @@
+import { rubricContextStore } from "@grading-system/plugin-shared/lib/blob-storage";
+import { createTempDirectory } from "@grading-system/plugin-shared/lib/file";
 import { getBlobNameParts } from "@grading-system/utils/azure-storage-blob";
 import { deleteDirectory } from "@grading-system/utils/file";
 import logger from "@grading-system/utils/logger";
 import { okAsync, safeTry } from "neverthrow";
-import { rubricContextStore } from "@/lib/blob-storage";
-import { createTempDirectory } from "@/lib/file";
 import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-files";
 import {
   gradingContextHeader,

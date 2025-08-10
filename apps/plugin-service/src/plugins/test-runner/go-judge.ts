@@ -1,7 +1,7 @@
 import type { Buffer } from "node:buffer";
 import type { GoJudge } from "./go-judge-api";
 import process from "node:process";
-import { createHttpClient } from "@/lib/http-client";
+import { createHttpClient } from "@grading-system/plugin-shared/lib/http-client";
 
 const httpClient = createHttpClient({
   baseUrl: process.env.GO_JUDGE_API_URL,

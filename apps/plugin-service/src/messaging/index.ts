@@ -1,11 +1,10 @@
-import type { Entries, ExtendEntries } from "@grading-system/utils/typescript";
+import type { ExtendEntries } from "@grading-system/utils/typescript";
 import type { ServiceBroker } from "moleculer";
-import { StaticAnalysisService } from "@grading-system/static-analysis-plugin/service";
+import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
 import { actionCaller } from "@grading-system/typed-moleculer/action";
 import { asError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
 import { fromPromise, fromSafePromise, okAsync, safeTry } from "neverthrow";
-import { getTransporter } from "@/lib/transporter";
 import { criterionGradingFailedEvent, submissionStartedEvent } from "@/messaging/events";
 import { plugins, pluginsMap } from "@/plugins/info";
 import { getConfigs } from "@/services/config";

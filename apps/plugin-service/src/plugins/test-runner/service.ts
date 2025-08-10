@@ -2,12 +2,12 @@ import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info
 import type { Context } from "moleculer";
 import type { CachedData, CallData } from "@/plugins/test-runner/core";
 import type { GoJudge } from "@/plugins/test-runner/go-judge-api";
+import { cache } from "@grading-system/plugin-shared/lib/cache";
+import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
 import { actionCaller } from "@grading-system/typed-moleculer/action";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
 import { expect } from "vitest";
-import { cache } from "@/lib/cache";
-import { getTransporter } from "@/lib/transporter";
 import {
   criterionGradingFailedEvent,
   criterionGradingSuccessEvent,

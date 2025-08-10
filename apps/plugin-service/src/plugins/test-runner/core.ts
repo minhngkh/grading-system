@@ -4,6 +4,14 @@ import type { GoJudge } from "@/plugins/test-runner/go-judge-api";
 import path from "node:path/posix";
 import process from "node:process";
 import {
+  downloadBlobBatch,
+  IDENTIFIER_PATH_LEVELS,
+  submissionStore,
+} from "@grading-system/plugin-shared/lib/blob-storage";
+import { cache, CacheError } from "@grading-system/plugin-shared/lib/cache";
+import { EmptyListError } from "@grading-system/plugin-shared/lib/error";
+import { cleanTempDirectory, symlinkFiles } from "@grading-system/plugin-shared/lib/file";
+import {
   getBlobNameParts,
   getBlobNameRest,
 } from "@grading-system/utils/azure-storage-blob";
@@ -11,14 +19,6 @@ import logger from "@grading-system/utils/logger";
 import { zipFolderToBuffer } from "@grading-system/utils/zip";
 import { errAsync, fromPromise, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
 import { z } from "zod";
-import {
-  downloadBlobBatch,
-  IDENTIFIER_PATH_LEVELS,
-  submissionStore,
-} from "@/lib/blob-storage";
-import { cache, CacheError } from "@/lib/cache";
-import { EmptyListError } from "@/lib/error";
-import { cleanTempDirectory, symlinkFiles } from "@/lib/file";
 import { ErrorWithCriterionInfo } from "@/plugins/error";
 import { testRunnerConfigSchema } from "@/plugins/test-runner/config";
 import { prepareFile, runProgram } from "@/plugins/test-runner/go-judge";

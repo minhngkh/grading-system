@@ -1,11 +1,11 @@
 import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
 import type { Context } from "moleculer";
+import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
 import { coreMessageSchema } from "ai";
 import { ZodParams } from "moleculer-zod-validator";
 import z from "zod";
-import { getTransporter } from "@/lib/transporter";
 import {
   criterionGradingFailedEvent,
   criterionGradingSuccessEvent,

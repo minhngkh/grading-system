@@ -4,6 +4,7 @@ import type { Criterion, CriterionData } from "@/plugins/data";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { EmptyListError } from "@grading-system/plugin-shared/lib/error";
 import {
   getBlobNameParts,
   getBlobNameRest,
@@ -15,7 +16,6 @@ import { errAsync, fromPromise, okAsync, Result, ResultAsync, safeTry } from "ne
 import z from "zod";
 import { googleProviderOptions } from "@/core/llm/providers/google";
 import { registry } from "@/core/llm/registry";
-import { EmptyListError } from "@/lib/error";
 import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-files";
 import { gradingSystemPrompt } from "@/plugins/ai/prompts/grade";
 import { packFilesSubsets } from "@/plugins/ai/repomix";
