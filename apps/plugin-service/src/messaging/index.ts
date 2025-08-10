@@ -4,7 +4,13 @@ import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
 import { actionCaller } from "@grading-system/typed-moleculer/action";
 import { asError, wrapError } from "@grading-system/utils/error";
 import logger from "@grading-system/utils/logger";
-import { fromPromise, fromSafePromise, okAsync, safeTry } from "neverthrow";
+import {
+  fromPromise,
+  fromSafePromise,
+  fromThrowable,
+  okAsync,
+  safeTry,
+} from "neverthrow";
 import { criterionGradingFailedEvent, submissionStartedEvent } from "@/messaging/events";
 import { plugins, pluginsMap } from "@/plugins/info";
 import { getConfigs } from "@/services/config";
@@ -87,7 +93,9 @@ export async function initMessaging(broker: ServiceBroker) {
           continue;
         }
 
-        const criteria = [];
+        const criteria: (Omit<(typeof task.criteria)[number], "configuration"> & {
+          configuration: any;
+        })[] = [];
         for (const criterion of task.criteria) {
           if (criterion.configuration) {
             const config = configs.find(
@@ -109,27 +117,28 @@ export async function initMessaging(broker: ServiceBroker) {
         //   criterionDataList
         // });
 
-        promises.push(
-          fromPromise(
+        const func = fromThrowable(
+          () =>
             actionCaller<(typeof task)["~type"]>()(broker, task.operations.grade.action, {
               assessmentId: data.assessmentId,
               criterionDataList: criteria,
               attachments: data.attachments,
               metadata: data.metadata,
             }).then(() => undefined),
-            (error) => {
-              logger.error("Unable to communicate with plugin", error);
+          (error) => {
+            logger.error("Unable to communicate with plugin", error);
 
-              for (const criterion of task.criteria) {
-                transporter.emit(criterionGradingFailedEvent, {
-                  assessmentId: data.assessmentId,
-                  criterionName: criterion.criterionName,
-                  error: asError(error).message,
-                });
-              }
-            },
-          ),
+            for (const criterion of task.criteria) {
+              transporter.emit(criterionGradingFailedEvent, {
+                assessmentId: data.assessmentId,
+                criterionName: criterion.criterionName,
+                error: asError(error).message,
+              });
+            }
+          },
         );
+
+        promises.push(func());
       }
 
       yield* fromSafePromise(Promise.all(promises));

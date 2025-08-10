@@ -1,7 +1,7 @@
 import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
 import type { Context } from "moleculer";
 import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
-import { defaultGradeSubmissionActionParams } from "@grading-system/plugin-shared/plugin/data";
+import { createSubmissionSchemaWithConfig } from "@grading-system/plugin-shared/plugin/data";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
 import logger from "@grading-system/utils/logger";
 import { coreMessageSchema } from "ai";
@@ -11,6 +11,7 @@ import {
   criterionGradingFailedEvent,
   criterionGradingSuccessEvent,
 } from "@/messaging/events";
+import { aiConfigSchema } from "@/plugins/ai/config";
 import { gradeSubmission } from "@/plugins/ai/grade";
 import { generateChatResponse, rubricSchema } from "./core";
 
@@ -30,6 +31,9 @@ export const chatRubricActionSchema = z.object({
     .describe("Whether to stream the response or not"),
 });
 export const chatRubricActionParams = new ZodParams(chatRubricActionSchema.shape);
+
+const submissionSchema = createSubmissionSchemaWithConfig(aiConfigSchema);
+export const gradeSubmissionActionParams = new ZodParams(submissionSchema.shape);
 
 export const aiService = defineTypedService2({
   name: "ai",
@@ -56,8 +60,8 @@ export const aiService = defineTypedService2({
     },
 
     gradeSubmission: {
-      params: defaultGradeSubmissionActionParams.schema,
-      async handler(ctx: Context<typeof defaultGradeSubmissionActionParams.context>) {
+      params: gradeSubmissionActionParams.schema,
+      async handler(ctx: Context<typeof gradeSubmissionActionParams.context>) {
         const params = ctx.params;
 
         const result = await gradeSubmission({

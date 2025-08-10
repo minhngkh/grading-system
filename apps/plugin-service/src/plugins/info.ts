@@ -13,6 +13,7 @@ import { testRunnerPluginOperations } from "@grading-system/test-runner-plugin/s
 import { typeCoverageConfigSchema } from "@grading-system/type-coverage-plugin/config";
 import { typeCoveragePluginOperations } from "@grading-system/type-coverage-plugin/service";
 import { z } from "zod";
+import { aiConfigSchema } from "@/plugins/ai/config";
 import { aiPluginOperations } from "@/plugins/ai/service";
 
 export const CATEGORIES = [
@@ -42,7 +43,7 @@ export const plugins = {
     categories: ["ai", "general"],
     enabled: true,
     operations: aiPluginOperations,
-    configSchema: null,
+    configSchema: aiConfigSchema,
     checkConfig: undefined,
   },
   testRunner: {
@@ -97,4 +98,5 @@ export const pluginConfigSchema = z.discriminatedUnion("type", [
   testRunnerConfigSchema,
   baseStaticAnalysisConfigSchema,
   typeCoverageConfigSchema,
+  aiConfigSchema,
 ]);
