@@ -80,6 +80,8 @@ public class AssessmentAggregate : AggregateRoot<AssessmentAggregate, Assessment
         });
 
         FinishAutoGrading();
+
+        Task.Delay(TimeSpan.FromMinutes(4)).ContinueWith(_ => CancelAutoGrading(), TaskScheduler.Default);
     }
 
     public void CancelAutoGrading()

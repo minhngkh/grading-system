@@ -1,4 +1,5 @@
 using AssignmentFlow.Application.Assessments;
+using AssignmentFlow.Application.Assessments.AutoGrading;
 using AssignmentFlow.Application.Gradings;
 using EventFlow.EntityFramework;
 using EventFlow.EntityFramework.Extensions;
@@ -34,7 +35,6 @@ public static class ServiceCollectionExtensions
             .AddOpenApi()
             .AddJwtAuthentication(configuration)
             .AddMessageBus(configuration, typeof(Program).Assembly)
-            .AddHangfireJobScheduler(configuration)
             .AddProjectEventFlow(configuration, typeof(Program).Assembly)
             .AddProjectJsonApi(typeof(Program).Assembly)
             .AddFluentValidation()
@@ -213,20 +213,7 @@ public static class ServiceCollectionExtensions
             .UseEntityFrameworkReadModel<Grading, AssignmentFlowDbContext>()
             .UseEntityFrameworkReadModel<Assessment, AssignmentFlowDbContext>(
                 cfg => cfg.Include(a => a.ScoreAdjustmentsHistory))
-            .UseHangfireJobScheduler()
         );
-
-        return services;
-    }
-
-    private static IServiceCollection AddHangfireJobScheduler(this IServiceCollection services, IConfiguration configuration)
-    {
-        services
-            .AddHangfire(config => config.UsePostgreSqlStorage(options =>
-            {
-                options.UseNpgsqlConnection(configuration.GetConnectionString("assignmentflowdb"));
-            }))
-            .AddHangfireServer();
 
         return services;
     }
