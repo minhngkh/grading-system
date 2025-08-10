@@ -14,7 +14,7 @@ import { aiService } from "./plugins/ai/service";
 const broker = createMoleculerBroker();
 broker.createService(aiService);
 // broker.createService(staticAnalysisService);
-broker.createService(testRunnerService);
+// broker.createService(testRunnerService);
 // broker.createService(typeCoverageService);
 
 const api = createApiGateway(broker);

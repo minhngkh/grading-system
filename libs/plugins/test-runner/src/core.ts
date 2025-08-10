@@ -1,6 +1,6 @@
-import type { CriterionData } from "@/plugins/data";
-import type { TestRunnerConfig } from "@/plugins/test-runner/config";
-import type { GoJudge } from "@/plugins/test-runner/go-judge-api";
+import type { CriterionData } from "@grading-system/plugin-shared/plugin/data";
+import type { TestRunnerConfig } from "./config";
+import type { GoJudge } from "./go-judge-api";
 import path from "node:path/posix";
 import process from "node:process";
 import {
@@ -11,18 +11,17 @@ import {
 import { cache, CacheError } from "@grading-system/plugin-shared/lib/cache";
 import { EmptyListError } from "@grading-system/plugin-shared/lib/error";
 import { cleanTempDirectory, symlinkFiles } from "@grading-system/plugin-shared/lib/file";
+import { detectFileListType } from "@grading-system/plugin-shared/plugin/default";
+import { ErrorWithCriterionInfo } from "@grading-system/plugin-shared/plugin/error";
 import {
   getBlobNameParts,
   getBlobNameRest,
 } from "@grading-system/utils/azure-storage-blob";
 import logger from "@grading-system/utils/logger";
 import { zipFolderToBuffer } from "@grading-system/utils/zip";
-import { errAsync, fromPromise, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
+import { errAsync, fromPromise, okAsync, Result, safeTry } from "neverthrow";
 import { z } from "zod";
-import { ErrorWithCriterionInfo } from "@/plugins/error";
-import { testRunnerConfigSchema } from "@/plugins/test-runner/config";
-import { prepareFile, runProgram } from "@/plugins/test-runner/go-judge";
-import { getTypedConfig } from "@/services/config";
+import { prepareFile, runProgram } from "./go-judge";
 
 const FILE_STORE_PATH = process.env.GO_JUDGE_STORE_DIR!;
 
@@ -48,7 +47,7 @@ export type CachedData = {
 export function gradeSubmission(data: {
   attachments: string[];
   metadata: Record<string, unknown>;
-  criterionDataList: CriterionData[];
+  criterionDataList: CriterionData<TestRunnerConfig>[];
   attemptId: string;
 }) {
   return safeTry(async function* () {
@@ -56,7 +55,7 @@ export function gradeSubmission(data: {
       (criterionData) => criterionData.fileRefs,
     );
 
-    const { downloadDir, blobNameRoot } = yield* downloadBlobBatch(
+    let { downloadDir, blobNameRoot } = yield* downloadBlobBatch(
       submissionStore,
       allBlobNames,
       IDENTIFIER_PATH_LEVELS,
@@ -64,6 +63,16 @@ export function gradeSubmission(data: {
     );
 
     const { rest: submissionRef } = getBlobNameParts(blobNameRoot);
+
+    const submissionType = yield* detectFileListType(downloadDir);
+
+    let fileRefPrefix = submissionRef;
+    if (submissionType === "single-folder") {
+      downloadDir = path.join(downloadDir, submissionRef);
+      blobNameRoot = path.join(blobNameRoot, submissionRef);
+
+      fileRefPrefix = path.join(submissionRef, getBlobNameParts(blobNameRoot).rest);
+    }
 
     const symlinkPromises = data.criterionDataList.map((criterionData) => {
       const blobNameRestList = Result.combine(
@@ -85,18 +94,12 @@ export function gradeSubmission(data: {
         `download-${data.attemptId}-${criterionData.criterionName}`,
       );
 
-      const configPromise = getTypedConfig(
-        criterionData.configuration,
-        testRunnerConfigSchema,
-      );
-
-      return ResultAsync.combine([symlinkPromise, configPromise])
+      return symlinkPromise
         .map((value) => {
           return {
             criterionData,
             fileList: blobNameRestList.value,
-            directory: value[0].path,
-            config: value[1],
+            directory: value.path,
           };
         })
         .mapErr((error) => {
@@ -121,7 +124,7 @@ export function gradeSubmission(data: {
           criterionData: value.criterionData,
           fileList: value.fileList,
           directory: value.directory,
-          config: value.config,
+          config: value.criterionData.configuration,
         }).mapErr((error) => {
           clean();
           return new ErrorWithCriterionInfo({
@@ -145,13 +148,13 @@ const DEFAULT_LIMITATIONS = {
 
 export type CallData = {
   attemptId: string;
-  criterionData: CriterionData;
+  criterionData: CriterionData<TestRunnerConfig>;
   config: TestRunnerConfig;
 };
 
 export function uploadSubmission(data: {
   attemptId: string;
-  criterionData: CriterionData;
+  criterionData: CriterionData<TestRunnerConfig>;
   fileList: string[];
   directory: string;
   config: TestRunnerConfig;

@@ -65,18 +65,21 @@ importers:
       hono-openapi:
         specifier: ^0.4.8
         version: 0.4.8(@hono/zod-validator@0.4.3(hono@4.8.4)(zod@3.25.76))(hono@4.8.4)(openapi-types@12.1.3)(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
+      ioredis:
+        specifier: ^5.7.0
+        version: 5.7.0
       ky:
         specifier: ^1.8.1
         version: 1.8.1
       moleculer:
         specifier: ^0.14.35
-        version: 0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
+        version: 0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(ioredis@5.7.0)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
       moleculer-web:
         specifier: ^0.10.8
-        version: 0.10.8(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))
+        version: 0.10.8(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(ioredis@5.7.0)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))
       moleculer-zod-validator:
         specifier: ^3.3.1
-        version: 3.3.1(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))(zod@3.25.76)
+        version: 3.3.1(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(ioredis@5.7.0)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))(zod@3.25.76)
       mongoose:
         specifier: ~8.15.0
         version: 8.15.2
@@ -223,6 +226,9 @@ importers:
       '@grading-system/static-analysis-plugin':
         specifier: workspace:*
         version: link:../../libs/plugins/static-analysis
+      '@grading-system/test-runner-plugin':
+        specifier: workspace:*
+        version: link:../../libs/plugins/test-runner
       '@grading-system/type-coverage-plugin':
         specifier: workspace:*
         version: link:../../libs/plugins/type-coverage
@@ -487,6 +493,18 @@ importers:
         version: link:../../utils
 
   libs/plugins/static-analysis:
+    devDependencies:
+      '@grading-system/plugin-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@grading-system/typed-moleculer':
+        specifier: workspace:*
+        version: link:../../typed-moleculer
+      '@grading-system/utils':
+        specifier: workspace:*
+        version: link:../../utils
+
+  libs/plugins/test-runner:
     devDependencies:
       '@grading-system/plugin-shared':
         specifier: workspace:*
@@ -1743,6 +1761,9 @@ packages:
   '@humanwhocodes/retry@0.4.3':
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
+
+  '@ioredis/commands@1.3.0':
+    resolution: {integrity: sha512-M/T6Zewn7sDaBQEqIZ8Rb+i9y8qfGmq+5SDFSf9sA2lUZTmdDLVdOiQaeDp+Q4wElZ9HG1GAX5KhDaidp6LQsQ==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -4275,6 +4296,10 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
+  cluster-key-slot@1.1.2:
+    resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==}
+    engines: {node: '>=0.10.0'}
+
   cmdk@1.1.1:
     resolution: {integrity: sha512-Vsv7kFaXm+ptHDMZ7izaRsP70GgrW9NBNGswt9OZaVBLlE0SNpDq8eu/VGXyF9r7M0azK3Wy7OlYXsuyYLFzHg==}
     peerDependencies:
@@ -4561,6 +4586,10 @@ packages:
 
   delegates@1.0.0:
     resolution: {integrity: sha512-bd2L678uiWATM6m5Z1VzNCErI3jiGzt6HGY8OVICs40JQq/HALfbyNJmp0UDakEY4pMMaN0Ly5om/B1VI/+xfQ==}
+
+  denque@2.1.0:
+    resolution: {integrity: sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==}
+    engines: {node: '>=0.10'}
 
   depd@2.0.0:
     resolution: {integrity: sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==}
@@ -5761,6 +5790,10 @@ packages:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
 
+  ioredis@5.7.0:
+    resolution: {integrity: sha512-NUcA93i1lukyXU+riqEyPtSEkyFq8tX90uL659J+qpCZ3rEdViB/APC58oAhIh3+bJln2hzdlZbBZsGNrlsR8g==}
+    engines: {node: '>=12.22.0'}
+
   ipaddr.js@1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
     engines: {node: '>= 0.10'}
@@ -6222,6 +6255,12 @@ packages:
 
   lodash.debounce@4.0.8:
     resolution: {integrity: sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==}
+
+  lodash.defaults@4.2.0:
+    resolution: {integrity: sha512-qjxPLHd3r5DnsdGacqOMU6pb/avJzdh9tFX2ymgoZE27BmjXrNy/y4LoaiTeAb+O3gL8AfpJGtqfX/ae2leYYQ==}
+
+  lodash.isarguments@3.1.0:
+    resolution: {integrity: sha512-chi4NHZlZqZD18a0imDHnZPrDeBbTtVN7GXMwuGdRH9qotxAjYs3aVLKc7zNOG9eddR5Ksd8rvFEBc9SsggPpg==}
 
   lodash.merge@4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
@@ -7391,6 +7430,14 @@ packages:
     resolution: {integrity: sha512-fWejAmdLi7B/jipBUjTLnqId+PK+573fbGNbdaNA/AiAnQAx6OYOLCGWRs0W5+PyM1rLzZSWK2f40QpHSR49PQ==}
     hasBin: true
 
+  redis-errors@1.2.0:
+    resolution: {integrity: sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==}
+    engines: {node: '>=4'}
+
+  redis-parser@3.0.0:
+    resolution: {integrity: sha512-DJnGAeenTdpMEH6uAJRK/uiyEIH9WVsUmoLwzudwGJUwZPp80PDBWPHXSAGNPwNvIXAbe7MSUB1zQFugFml66A==}
+    engines: {node: '>=4'}
+
   refa@0.12.1:
     resolution: {integrity: sha512-J8rn6v4DBb2nnFqkqwy6/NnTYMcgLA+sLr0iIO41qpv0n+ngb7ksag2tMRl0inb1bbO/esUwzW1vbJi7K0sI0g==}
     engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
@@ -7912,6 +7959,9 @@ packages:
   stackblur-canvas@2.7.0:
     resolution: {integrity: sha512-yf7OENo23AGJhBriGx0QivY5JP6Y1HbrrDI6WLt6C5auYZXlQrheoY8hD4ibekFKz1HOfE48Ww8kMWMnJD/zcQ==}
     engines: {node: '>=0.1.14'}
+
+  standard-as-callback@2.1.0:
+    resolution: {integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==}
 
   statuses@2.0.1:
     resolution: {integrity: sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==}
@@ -10249,6 +10299,8 @@ snapshots:
   '@humanwhocodes/retry@0.3.1': {}
 
   '@humanwhocodes/retry@0.4.3': {}
+
+  '@ioredis/commands@1.3.0': {}
 
   '@isaacs/cliui@8.0.2':
     dependencies:
@@ -13182,6 +13234,8 @@ snapshots:
 
   clsx@2.1.1: {}
 
+  cluster-key-slot@1.1.2: {}
+
   cmdk@1.1.1(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.1.8)(react@19.1.0)
@@ -13438,6 +13492,8 @@ snapshots:
 
   delegates@1.0.0:
     optional: true
+
+  denque@2.1.0: {}
 
   depd@2.0.0: {}
 
@@ -14750,6 +14806,20 @@ snapshots:
 
   internmap@2.0.3: {}
 
+  ioredis@5.7.0:
+    dependencies:
+      '@ioredis/commands': 1.3.0
+      cluster-key-slot: 1.1.2
+      debug: 4.4.1
+      denque: 2.1.0
+      lodash.defaults: 4.2.0
+      lodash.isarguments: 3.1.0
+      redis-errors: 1.2.0
+      redis-parser: 3.0.0
+      standard-as-callback: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
+
   ipaddr.js@1.9.1: {}
 
   ipaddr.js@2.2.0: {}
@@ -15216,6 +15286,10 @@ snapshots:
       p-locate: 5.0.0
 
   lodash.debounce@4.0.8: {}
+
+  lodash.defaults@4.2.0: {}
+
+  lodash.isarguments@3.1.0: {}
 
   lodash.merge@4.6.2: {}
 
@@ -15790,7 +15864,7 @@ snapshots:
       pkg-types: 1.3.1
       ufo: 1.6.1
 
-  moleculer-web@0.10.8(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)):
+  moleculer-web@0.10.8(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(ioredis@5.7.0)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)):
     dependencies:
       '@fastify/busboy': 1.2.1
       body-parser: 1.20.3
@@ -15800,19 +15874,19 @@ snapshots:
       isstream: 0.1.2
       kleur: 4.1.5
       lodash: 4.17.21
-      moleculer: 0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
+      moleculer: 0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(ioredis@5.7.0)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
       path-to-regexp: 3.3.0
       qs: 6.14.0
       serve-static: 1.16.2
     transitivePeerDependencies:
       - supports-color
 
-  moleculer-zod-validator@3.3.1(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))(zod@3.25.76):
+  moleculer-zod-validator@3.3.1(moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(ioredis@5.7.0)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0))(zod@3.25.76):
     dependencies:
-      moleculer: 0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
+      moleculer: 0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(ioredis@5.7.0)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0)
       zod: 3.25.76
 
-  moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0):
+  moleculer@0.14.35(amqplib@0.10.8)(debug@4.4.1)(encoding@0.1.13)(ioredis@5.7.0)(log4js@6.9.1)(pino@9.6.0)(protobufjs@7.5.0)(winston@3.17.0):
     dependencies:
       args: 5.0.3
       eventemitter2: 6.4.9
@@ -15827,6 +15901,7 @@ snapshots:
     optionalDependencies:
       amqplib: 0.10.8
       debug: 4.4.1
+      ioredis: 5.7.0
       log4js: 6.9.1
       pino: 9.6.0
       protobufjs: 7.5.0
@@ -16431,7 +16506,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 22.15.35
+      '@types/node': 24.0.10
       long: 5.3.2
     optional: true
 
@@ -16674,6 +16749,12 @@ snapshots:
   recursive-watch@1.1.4:
     dependencies:
       ttl: 1.3.1
+
+  redis-errors@1.2.0: {}
+
+  redis-parser@3.0.0:
+    dependencies:
+      redis-errors: 1.2.0
 
   refa@0.12.1:
     dependencies:
@@ -17270,6 +17351,8 @@ snapshots:
 
   stackblur-canvas@2.7.0:
     optional: true
+
+  standard-as-callback@2.1.0: {}
 
   statuses@2.0.1: {}
 

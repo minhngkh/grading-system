@@ -245,7 +245,7 @@ type FileListType = "single-folder" | "single-file";
  * The fieList in grading info can either be a list of files inside a single folder (from
  * zip extraction) or a single file, we need to detect this
  */
-function detectFileListType(directory: string): ResultAsync<FileListType, DefaultError> {
+export function detectFileListType(directory: string): ResultAsync<FileListType, DefaultError> {
   return fromPromise(fs.readdir(directory), asError).andThen((files) => {
     const firstEntryPath = path.join(directory, files[0]);
     return fromPromise(fs.stat(firstEntryPath), asError).map((stat) => {

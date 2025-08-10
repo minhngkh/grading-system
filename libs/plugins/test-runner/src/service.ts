@@ -1,18 +1,19 @@
 import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
 import type { Context } from "moleculer";
-import type { CachedData, CallData } from "@/plugins/test-runner/core";
-import type { GoJudge } from "@/plugins/test-runner/go-judge-api";
-import { cache } from "@grading-system/plugin-shared/lib/cache";
-import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
-import { actionCaller } from "@grading-system/typed-moleculer/action";
-import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
-import logger from "@grading-system/utils/logger";
-import { expect } from "vitest";
+import type { CachedData, CallData } from "./core";
+import type { GoJudge } from "./go-judge-api";
 import {
   criterionGradingFailedEvent,
   criterionGradingSuccessEvent,
-} from "@/messaging/events";
-import { gradeSubmissionActionParams } from "@/plugins/data";
+} from "@grading-system/plugin-shared/events/index";
+import { cache } from "@grading-system/plugin-shared/lib/cache";
+import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
+import { createSubmissionSchemaWithConfig } from "@grading-system/plugin-shared/plugin/data";
+import { actionCaller } from "@grading-system/typed-moleculer/action";
+import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
+import logger from "@grading-system/utils/logger";
+import { ZodParams } from "moleculer-zod-validator";
+import { testRunnerConfigSchema } from "./config";
 import {
   CALLBACK_STEP,
   compareOutput,
@@ -20,12 +21,16 @@ import {
   gradeSubmission,
   initializeSubmission,
   runSubmission,
-} from "@/plugins/test-runner/core";
+} from "./core";
 
 type CallbackData = {
   query: { id: string };
   body: GoJudge.RunResult;
 };
+
+const submissionSchema = createSubmissionSchemaWithConfig(testRunnerConfigSchema);
+
+export const gradeSubmissionActionParams = new ZodParams(submissionSchema.shape);
 
 export const testRunnerService = defineTypedService2({
   name: "test-runner",

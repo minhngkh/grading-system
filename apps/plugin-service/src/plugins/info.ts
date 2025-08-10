@@ -1,19 +1,19 @@
 import type { StaticAnalysisService } from "@grading-system/static-analysis-plugin/service";
+import type { TestRunnerService } from "@grading-system/test-runner-plugin/service";
 import type { TypeCoverageService } from "@grading-system/type-coverage-plugin/service";
 import type { AIService } from "@/plugins/ai/service";
-import type { TestRunnerService } from "@/plugins/test-runner/service";
 import {
   baseStaticAnalysisConfigSchema,
   checkStaticAnalysisConfigSchema,
   staticAnalysisConfigSchema,
 } from "@grading-system/static-analysis-plugin/config";
 import { staticAnalysisPluginOperations } from "@grading-system/static-analysis-plugin/service";
+import { testRunnerConfigSchema } from "@grading-system/test-runner-plugin/config";
+import { testRunnerPluginOperations } from "@grading-system/test-runner-plugin/service";
 import { typeCoverageConfigSchema } from "@grading-system/type-coverage-plugin/config";
 import { typeCoveragePluginOperations } from "@grading-system/type-coverage-plugin/service";
 import { z } from "zod";
 import { aiPluginOperations } from "@/plugins/ai/service";
-import { testRunnerConfigSchema } from "@/plugins/test-runner/config";
-import { testRunnerPluginOperations } from "@/plugins/test-runner/service";
 
 export const CATEGORIES = [
   {

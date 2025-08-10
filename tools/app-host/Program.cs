@@ -230,6 +230,14 @@ if (builder.Configuration.GetValue<bool>("PluginService:Enabled", true))
         .WaitFor(submissionStore)
         .WithReference(rubricContextStore)
         .WaitFor(rubricContextStore);
+
+    var testRunnerPlugin = nx.AddProject("test-runner-plugin", "dev")
+        .WithReference(messaging)
+        .WaitFor(messaging)
+        .WithReference(submissionStore)
+        .WaitFor(submissionStore)
+        .WithReference(rubricContextStore)
+        .WaitFor(rubricContextStore);
 }
 
 // IResourceBuilder<NxMonorepoProjectResource>? gradingService = null;

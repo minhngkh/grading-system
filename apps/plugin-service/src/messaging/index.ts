@@ -118,8 +118,8 @@ export async function initMessaging(broker: ServiceBroker) {
               metadata: data.metadata,
             }).then(() => undefined),
             (error) => {
-              // Emit failure events for each criterion in the task if there is error
-              // calling the grading action
+              logger.error("Unable to communicate with plugin", error);
+
               for (const criterion of task.criteria) {
                 transporter.emit(criterionGradingFailedEvent, {
                   assessmentId: data.assessmentId,
