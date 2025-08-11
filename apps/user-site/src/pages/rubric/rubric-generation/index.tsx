@@ -1,18 +1,23 @@
-import type { Rubric } from "@/types/rubric";
 import type { Step } from "@stepperize/react";
-import { Button } from "@/components/ui/button";
-import { RubricSchema } from "@/types/rubric";
+import type { Rubric } from "@/types/rubric";
+
+import { useCallback } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "@clerk/clerk-react";
 import { defineStepper } from "@stepperize/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useAuth } from "@clerk/clerk-react";
-import { useCallback } from "react";
+
+import { Button } from "@/components/ui/button";
+import { PluginConfigDialogs } from "@/consts/plugins";
+import { RubricValidationState, validateRubric } from "@/lib/rubric-validate";
+import { PluginService } from "@/services/plugin-service";
+import { RubricSchema } from "@/types/rubric";
+
 import ChatWindow from "./chat";
 import FinalRubricTable from "./final-rubric-table";
-import { useQueryClient } from "@tanstack/react-query";
-import { RubricValidationState, validateRubric } from "@/lib/rubric-validate";
 
 type StepData = {
   title: string;
@@ -51,6 +56,26 @@ export default function RubricGenerationPage({
   const queryClient = useQueryClient();
 
   const formValues = form.watch();
+  
+  const onUpdateRubric = useCallback(
+    (updatedRubricData: Partial<Rubric>) => {
+      const updatedRubric = {
+        ...formValues,
+        ...updatedRubricData,
+      };
+
+      queryClient.invalidateQueries({
+        queryKey: ["rubric", updatedRubric.id],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["rubrics"],
+      });
+
+      form.reset(updatedRubric);
+    },
+    [formValues, form, queryClient],
+  );
 
   const handlePrev = () => {
     stepper.prev();
@@ -58,7 +83,56 @@ export default function RubricGenerationPage({
   };
 
   const handleNext = async () => {
-    const validationResult = validateRubric(formValues);
+    // Try to auto-configure any plugins with hasDefault that aren't configured yet
+    const updatedCriteria = [...formValues.criteria];
+    let needsConfigUpdate = false;
+    
+    for (let i = 0; i < updatedCriteria.length; i++) {
+      const criterion = updatedCriteria[i];
+      // Default to "ai" if no plugin is set
+      const pluginType = criterion.plugin || "ai";
+      
+      // If plugin is not set at all, set it to "ai"
+      if (!criterion.plugin) {
+        updatedCriteria[i] = {
+          ...criterion,
+          plugin: "ai",
+        };
+        needsConfigUpdate = true;
+      }
+      
+      // If the plugin is not configured and supports default configs, create one
+      if (pluginType !== "None" && 
+          (!criterion.configuration || criterion.configuration.trim().length === 0) && 
+          PluginConfigDialogs[pluginType]?.hasDefault) {
+        try {
+          const token = await auth.getToken();
+          if (token) {
+            const configId = await PluginService.createDefaultConfig(pluginType, token);
+            if (configId) {
+              updatedCriteria[i] = {
+                ...updatedCriteria[i],
+                configuration: configId
+              };
+              needsConfigUpdate = true;
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to auto-configure ${pluginType}:`, error);
+          // Continue with validation even if auto-config fails
+        }
+      }
+    }
+    
+    // If we updated any configurations, update the form
+    if (needsConfigUpdate) {
+      form.setValue('criteria', updatedCriteria);
+      onUpdateRubric({ criteria: updatedCriteria });
+      toast.success("Auto-configured plugins with default settings");
+    }
+
+    // Run validation on the potentially updated form values
+    const validationResult = validateRubric(needsConfigUpdate ? {...formValues, criteria: updatedCriteria} : formValues);
     if (validationResult.state === RubricValidationState.VALUE_ERROR) {
       toast.error(validationResult.message);
       return;
@@ -83,26 +157,6 @@ export default function RubricGenerationPage({
     stepper.next();
     sessionStorage.setItem("rubricStep", steps[currentIndex + 1].id);
   };
-
-  const onUpdateRubric = useCallback(
-    (updatedRubricData: Partial<Rubric>) => {
-      const updatedRubric = {
-        ...formValues,
-        ...updatedRubricData,
-      };
-
-      queryClient.invalidateQueries({
-        queryKey: ["rubric", updatedRubric.id],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["rubrics"],
-      });
-
-      form.reset(updatedRubric);
-    },
-    [formValues, auth],
-  );
 
   return (
     <div className="flex flex-col h-full">

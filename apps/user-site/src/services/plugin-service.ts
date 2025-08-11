@@ -29,6 +29,19 @@ export class PluginService {
     return response.data;
   }
 
+  static async createDefaultConfig(
+    pluginType: string,
+    token: string,
+  ): Promise<string> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.post(
+      `${API_URL}/${pluginType}/configs`,
+      { type: pluginType },
+      configHeaders,
+    );
+    return response.data.id;
+  }
+
   static async configTestRunner(
     config: CodeRunnerConfig,
     token: string,

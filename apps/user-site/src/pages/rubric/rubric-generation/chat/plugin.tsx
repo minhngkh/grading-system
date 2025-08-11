@@ -31,6 +31,7 @@ import {
 import { PluginConfigDialogs, PluginName } from "@/consts/plugins";
 import { getAllPluginsQueryOptions } from "@/queries/plugin-queries";
 import { updateRubricMutationOptions } from "@/queries/rubric-queries";
+import { PluginService } from "@/services/plugin-service";
 
 interface PluginTabProps {
   rubricData: Rubric;
@@ -79,15 +80,39 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
     }),
   );
 
+  const createDefaultConfig = async (pluginType: string): Promise<string | undefined> => {
+    try {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication required");
+      
+      const configId = await PluginService.createDefaultConfig(pluginType, token);
+      return configId;
+    } catch (error) {
+      console.error(`Error creating default config for ${pluginType}:`, error);
+      return undefined;
+    }
+  };
+  
   const onPluginSelect = async (index: number, plugin: string) => {
     try {
       if (rubricData.criteria[index].plugin !== plugin) {
+        // Check if the plugin has default configuration support
+        const hasDefault = plugin !== "None" && PluginConfigDialogs[plugin]?.hasDefault;
+        
+        // Prepare configuration value - will be set to a default config ID if plugin supports it
+        let configValue: string | undefined = undefined;
+        
+        // If plugin supports default configs, try to create one
+        if (hasDefault) {
+          configValue = await createDefaultConfig(plugin);
+        }
+        
         const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
           if (idx === index) {
             return {
               ...criterion,
-              plugin: criterion.plugin === plugin ? undefined : plugin,
-              configuration: undefined,
+              plugin,
+              configuration: configValue,
             };
           }
           return criterion;

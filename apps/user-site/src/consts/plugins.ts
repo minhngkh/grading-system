@@ -15,23 +15,28 @@ export const PluginName = {
 type PluginInfo = {
   view: PluginComponent;
   enableConfig: boolean;
+  hasDefault: boolean;
 };
 
 export const PluginConfigDialogs: Record<string, PluginInfo> = {
   "test-runner": {
     view: CodeRunnerConfigView,
     enableConfig: true,
+    hasDefault: false,
   },
   "static-analysis": {
     view: StaticAnalysisConfigView,
     enableConfig: true,
+    hasDefault: true,
   },
   "type-coverage": {
     view: TypeCoverageConfigView,
     enableConfig: true,
+    hasDefault: true,
   },
   ai: {
     view: AIConfigView,
     enableConfig: true,
+    hasDefault: true,
   },
 };
