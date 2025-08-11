@@ -48,10 +48,12 @@ export function RubricView({
         </thead>
         <tbody className="divide-y">
           {rubricData.criteria.map((criterion, criterionIndex) => {
-            // Check if this criterion uses an automated plugin
+            // Check if this criterion uses an automated plugin (excluding AI)
+            // AI plugins should show individual levels like manual grading
             const isAutomated =
               criterion.plugin &&
-              criterion.plugin !== "None";
+              criterion.plugin !== "None" &&
+              criterion.plugin !== "ai";
 
             return (
               <tr key={criterion.name || criterionIndex} className="border-t">
@@ -63,7 +65,7 @@ export function RubricView({
 
                 {
                   isAutomated ?
-                    // For automated plugins: span across all level columns and show plugin name
+                    // For automated plugins (excluding AI): span across all level columns and show plugin name
                     <td
                       colSpan={rubricData.tags.length + (showPlugins ? 1 : 0)}
                       className="p-2 text-center"
@@ -87,7 +89,7 @@ export function RubricView({
                         </div>
                       </div>
                     </td>
-                    // For AI/manual plugins: show normal detailed levels
+                    // For AI and manual plugins: show normal detailed levels
                   : <>
                       {rubricData.tags.map((tag, tagIndex) => {
                         const criterionLevel = criterion.levels.find(
