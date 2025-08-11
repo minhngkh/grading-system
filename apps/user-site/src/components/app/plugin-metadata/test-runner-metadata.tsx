@@ -2,6 +2,7 @@ import { CheckCircle, PlayCircle, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 
 interface TestCase {
   testCase: number;
@@ -24,6 +25,40 @@ export function TestRunnerMetadata({ metadata }: TestRunnerMetadataProps) {
   const passedCount = feedback.filter((tc) => tc.passed).length;
   const totalCount = feedback.length;
 
+  // Helper function to determine if content should be displayed as textarea
+  const shouldUseTextarea = (content: string) => {
+    return content.includes("\n") || content.length > 50;
+  };
+
+  // Helper function to render content based on length/format
+  const renderContent = (content: string, placeholder: string = "(empty)") => {
+    const displayContent = content || placeholder;
+
+    if (shouldUseTextarea(displayContent)) {
+      return (
+        <Textarea
+          value={displayContent}
+          readOnly
+          className="min-h-[60px] max-h-[120px] text-xs font-mono resize-none"
+        />
+      );
+    }
+
+    return (
+        <Textarea
+          value={displayContent}
+          readOnly
+          className="min-h-[10px] max-h-[120px] text-xs font-mono resize-none"
+        />
+      );
+
+    // return (
+    //   <code className="border px-2 py-1 block truncate text-xs border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 rounded-md">
+    //     {displayContent}
+    //   </code>
+    // );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -36,17 +71,16 @@ export function TestRunnerMetadata({ metadata }: TestRunnerMetadataProps) {
         </Badge>
       </div>
 
-      <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
+      <div className="space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
         {feedback.map((testCase) => (
-          <Card key={testCase.testCase} className="p-3">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-medium flex items-center gap-2 text-sm">
-                  Test {testCase.testCase}
-                  {testCase.passed ?
-                    <CheckCircle className="h-3 w-3 text-green-500" />
-                  : <XCircle className="h-3 w-3 text-red-500" />}
-                </span>
+          <Card key={testCase.testCase} className="p-4 gap-2">
+            {/* Test header with title and status on same line */}
+            <div className="flex items-center justify-between mb-0 pb-2 border-b border-gray-200">
+              <h4 className="font-semibold text-base">Test {testCase.testCase}</h4>
+              <div className="flex items-center gap-2">
+                {testCase.passed ?
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                : <XCircle className="h-4 w-4 text-red-500" />}
                 <Badge
                   variant={testCase.passed ? "default" : "destructive"}
                   className="text-xs"
@@ -54,26 +88,26 @@ export function TestRunnerMetadata({ metadata }: TestRunnerMetadataProps) {
                   {testCase.passed ? "PASS" : "FAIL"}
                 </Badge>
               </div>
+            </div>
 
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <div className="font-medium text-gray-600 mb-1">Input</div>
-                  <code className="bg-muted px-2 py-1 rounded block truncate">
-                    {testCase.input || "(empty)"}
-                  </code>
-                </div>
-                <div>
-                  <div className="font-medium text-gray-600 mb-1">Expected</div>
-                  <code className="bg-muted px-2 py-1 rounded block truncate">
-                    {testCase.expectedOutput}
-                  </code>
-                </div>
-                <div>
-                  <div className="font-medium text-gray-600 mb-1">Actual</div>
-                  <code className="bg-muted px-2 py-1 rounded block truncate">
-                    {testCase.output}
-                  </code>
-                </div>
+            {/* Content in 3 columns for more space */}
+            <div className="grid grid-cols-3 gap-6 items-start">
+              {/* Input column */}
+              <div>
+                <div className="font-medium text-gray-600 mb-2 text-sm">Input</div>
+                {renderContent(testCase.input, "(empty)")}
+              </div>
+
+              {/* Expected output column */}
+              <div>
+                <div className="font-medium text-gray-600 mb-2 text-sm">Expected</div>
+                {renderContent(testCase.expectedOutput)}
+              </div>
+
+              {/* Actual output column */}
+              <div>
+                <div className="font-medium text-gray-600 mb-2 text-sm">Actual</div>
+                {renderContent(testCase.output)}
               </div>
             </div>
           </Card>
