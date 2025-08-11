@@ -29,6 +29,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import type { CodeRunnerConfig } from "@/types/plugin";
 import {
@@ -70,6 +72,7 @@ export default function CodeRunnerConfigView({
     defaultValues: {
       initCommand: "",
       runCommand: "",
+      useArgsOrStdin: "stdin",
       testCases: [],
       environmentVariables: {},
       advancedSettings: {
@@ -105,14 +108,18 @@ export default function CodeRunnerConfigView({
 
   const updateCell = (
     index: number,
-    field: "input" | "expectedOutput",
-    value: string,
+    field: "input" | "expectedOutput" | "useRegex" | "description",
+    value: string | boolean,
   ) => {
     const currentTestCases = config.testCases || [];
 
     if (index >= currentTestCases.length) {
-      const newRow = { input: "", expectedOutput: "" };
-      newRow[field] = value;
+      const newRow = { input: "", expectedOutput: "", useRegex: false, description: "" };
+      if (field === "input" || field === "expectedOutput" || field === "description") {
+        (newRow as any)[field] = value as string;
+      } else if (field === "useRegex") {
+        newRow.useRegex = value as boolean;
+      }
       setValue("testCases", [...currentTestCases, newRow]);
     } else {
       const updatedTestCases = currentTestCases.map((row, i) =>
@@ -186,6 +193,16 @@ export default function CodeRunnerConfigView({
           toast.error("All test cases must have both input and expected output");
           return;
         }
+        // Validate regex patterns
+        if (testCase.useRegex) {
+          try {
+            // eslint-disable-next-line no-new
+            new RegExp(testCase.expectedOutput);
+          } catch (error) {
+            toast.error(`Invalid regex pattern in test case: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            return;
+          }
+        }
       }
 
       let resultConfigId: string;
@@ -229,7 +246,7 @@ export default function CodeRunnerConfigView({
                     name="initCommand"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Install Dependencies Command (Optional)</FormLabel>
+                        <FormLabel>Initialize Command (Optional)</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -259,12 +276,46 @@ export default function CodeRunnerConfigView({
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={control}
+                    name="useArgsOrStdin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Input Method</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="flex flex-row gap-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="stdin" id="stdin" />
+                              <Label htmlFor="stdin">Standard Input (stdin)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="args" id="args" />
+                              <Label htmlFor="args">Command Line Arguments</Label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <p className="text-sm text-gray-600">
+                          {field.value === "stdin" 
+                            ? "Input will be passed to the program via standard input (stdin)" 
+                            : "Input will be passed as command line arguments to the program"
+                          }
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 <TestCasesTable
                   testCases={config.testCases}
                   onUpdateCell={updateCell}
                   onDeleteRow={deleteRow}
+                  useArgsOrStdin={config.useArgsOrStdin}
                 />
 
                 <Collapsible open={envVarsOpen} onOpenChange={setEnvVarsOpen}>

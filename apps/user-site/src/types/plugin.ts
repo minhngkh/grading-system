@@ -36,11 +36,17 @@ export const PluginSchema = z.object({
 export const CodeRunnerTestCaseSchema = z.object({
   input: z.string().min(1, "Test case input cannot be empty"),
   expectedOutput: z.string().min(1, "Test case expected output cannot be empty"),
+  description: z.string().optional().describe("Description of the test case"),
+  useRegex: z
+    .boolean()
+    .default(false)
+    .describe("Whether to use regex for output comparison"),
 });
 
 export const CodeRunnerConfigSchema = z.object({
   initCommand: z.string().optional().describe("Install dependencies command"),
   runCommand: z.string().min(1, "Run command is required"),
+  useArgsOrStdin: z.enum(["args", "stdin"]).default("stdin"),
   environmentVariables: z.record(z.string(), z.string()).optional(),
   testCases: z
     .array(CodeRunnerTestCaseSchema)
