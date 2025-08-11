@@ -4,7 +4,6 @@ import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -13,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 
 import type { CodeRunnerTestCase } from "@/types/plugin";
 
@@ -107,45 +107,51 @@ export default function TestCasesTable({
               const rowKey = isExtraRow ? 'new-row' : `test-case-${index}`;
               return (
                 <TableRow key={rowKey}>
-                  <TableCell className="p-2 border-r">
-                    <Input
+                  <TableCell className="p-2 border-r align-top">
+                    <Textarea
                       value={row.input}
                       onChange={(e) => onUpdateCell(index, "input", e.target.value)}
                       placeholder={inputPlaceholder}
-                      className="w-full border border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                      className="w-full min-h-[60px] resize-y border border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0"
+                      rows={2}
                     />
                   </TableCell>
-                  <TableCell className="p-2 border-r">
+                  <TableCell className="p-2 border-r align-top">
                     <div className="space-y-1">
-                      <Input
+                      <Textarea
                         value={row.expectedOutput}
                         onChange={(e) => handleExpectedOutputChange(index, e.target.value)}
                         placeholder="Enter expected output..."
-                        className={`w-full border focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 ${
+                        className={`w-full min-h-[60px] resize-y border focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 ${
                           hasRegexError ? 'border-red-500' : 'border-gray-300'
                         }`}
+                        rows={2}
                       />
                       {hasRegexError && (
                         <p className="text-xs text-red-500 mt-1">{hasRegexError}</p>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="p-2 border-r text-center">
-                    <Checkbox
-                      checked={row.useRegex}
-                      onCheckedChange={(checked) => handleRegexToggle(index, checked as boolean)}
-                      disabled={isExtraRow}
-                    />
+                  <TableCell className="p-2 border-r text-center align-top">
+                    <div className="pt-2">
+                      <Checkbox
+                        checked={row.useRegex}
+                        onCheckedChange={(checked) => handleRegexToggle(index, checked as boolean)}
+                        disabled={isExtraRow}
+                      />
+                    </div>
                   </TableCell>
-                  <TableCell className="p-2 text-center">
-                    <Button
-                      disabled={isExtraRow}
-                      onClick={() => onDeleteRow(index)}
-                      variant="destructive"
-                      size="sm"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <TableCell className="p-2 text-center align-top">
+                    <div className="pt-2">
+                      <Button
+                        disabled={isExtraRow}
+                        onClick={() => onDeleteRow(index)}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );
