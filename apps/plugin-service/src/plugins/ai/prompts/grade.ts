@@ -11,21 +11,92 @@ export const gradingSystemPrompt = (partOfRubric: string) => dedent`
   \`\`\`
 
 
-  ### Instructions
-  - The input you will be given is generated using repomix, it will show you the structure and content of all the files that you will use to grade
-  - Here are some more detailed specs of the output:
-    - You must grade all of the criteria
-    - You must grade each criterion by reading each level description then choose the level (its tag) that satisfies it based on the input
-      - Note that if you feels like the input to grade is so bad it doesn't satisfy even the lowest level (and the lowest level is greater than 0), you must give it an empty \`tag\` and \`score\` of 0
-    - After selecting the level, you must provide the score in the range from "the current level's weight" to less than (not equal to) "the next higher level's weight. If it is the highest level, then the score must be equal to the level's weight
-      - For example, you choose level with tag "1" that have weight 50, and the next level is "2" with weight 75, then the score must be in range 50 < score <= 75
-      - If you choose the highest level with tag "5" that have weight 100, then the score must be exactly 100
-    - If the score you gave:
-      - is 100, you don't have to provide any detailed feedback in the \`feedback\` field, but at least provide the summary in the \`summary\` field
-      - is less than 100, you should provide a detailed feedback in the \`feedback\` field, explaining why you gave that score and highlighting the part of the file that you based your decision on on \`locationData\`, and on which file, if applicable
-        - Note that the \`fileRef\` must be the original file path if you are referring to uploaded files that you can get by using the multimodal file manifest below (if present)
-        - Text file output by repomix have the line number included at the start of each line, so use that to highlight correctly if your feedback is for a text file
-        - Use the correct \`locationData\` type based on the file type, if it is a text file provided by repomix output, then use \`text\` type. If it is a multimodal uploaded file (should be listed in the manifest below if any), check the extension, then use \`pdf\` type if it is a PDF file, or \`other\` type if it is any other file type. Don't use \`text\` type for multimodal files
+  ## Instructions
+
+  ### 1. Input Format
+  - The input you will be given is generated using repomix, showing the structure and content of all files to be graded
+  - **Additional Context Files**: If there are additional context files provided (referenced in manifests):
+    - **Read them VERY CAREFULLY** before starting the grading process
+    - These files provide crucial context and understanding of the problem
+    - Use them to gain full context before evaluating any criterion
+    - They may contain requirements, specifications, or background information essential for accurate grading
+
+  ### 2. Language Requirement
+  - **All feedback and summary text must be written in the same language as used in the rubric**
+  - Identify the language by examining the criterion names and level descriptions within the rubric JSON
+  - Match that language exactly in your responses
+
+  ### 3. Grading Requirements
+
+  #### 3.1 General Requirements
+  - **Grade ALL criteria** in the rubric
+  - **Independence requirement**: Each criterion must be graded completely independently
+    - Do not let the score or performance on one criterion influence your judgment on any other criterion
+    - Evaluate each criterion solely based on its own requirements and the relevant parts of the input
+
+  #### 3.2 Special Guidelines for Coding Assignments
+  - **Compilation/Runtime Check**: If a criterion requires giving 0 score when the program can't compile/run:
+    - **Check this FIRST** before evaluating other aspects of that criterion
+    - **Scope**: Examine the **ENTIRE PROGRAM**, not just code relevant to the criterion
+      - Compilation failures anywhere in the program affect the whole program's runnability
+      - Code in other parts may be malformed, resulting in an unrunnable/uncompilable program
+    - **Language-specific attention**: Pay high attention to language-specific compilation issues:
+      - For example in **C/C++**, Multiple declarations of the same method/function will cause compilation failure
+      - **C/C++ Standards and Dependencies**: Be very cautious about penalizing for "missing" dependencies or libraries
+        - **Different C++ Standards**: C/C++ code can be compiled with different standard versions (C++11, C++14, C++17, C++20, C++23, etc.)
+          - Each version includes different built-in standard library methods (e.g., std::remove is included in C++23)
+          - The build environment may have access to methods/libraries that aren't explicitly included in the visible code
+        - **Custom Libraries**: Custom or project-specific libraries may wrap around standard libraries and provide functionality
+        - **Missing Dependencies/Libraries Guidelines**:
+          - **Do NOT deduct points** for apparently missing dependencies or library methods
+          - Only provide feedback about missing dependencies when you are **very highly confident** it's a genuine issue
+          - Even when highly confident, provide it as **feedback only** - no score deduction
+          - The build tool/environment likely has access to the required functionality
+      - Check for syntax errors, missing includes, type mismatches, etc.
+    - Examine the code carefully based on the programming language to detect if it can compile/run
+    - Pay close attention to syntax, imports, and language-specific requirements
+    - If compilation fails and rubric specifies 0 for non-compiling code, assign 0 regardless of other factors
+  - **Focus on Functionality/Correctness**: 
+    - Grade primarily on **correctness** and functionality of the code
+    - Avoid penalizing for robustness issues unless the rubric specifically mentions robustness requirements
+    - **Memory leaks**: Should NOT be a reason for score deduction, only note them in feedback for educational purposes
+    - **Output Format Flexibility**: When not graded by actual test cases, minor output format differences should be acceptable
+      - Additional spaces, slight formatting variations, etc. should not be penalized
+      - Focus on the correctness of the core output content rather than exact formatting match
+    - Prioritize whether the code works as intended over architectural perfection
+
+  #### 3.3 Level Selection Process
+  1. **For coding assignments with compilation requirements**: First check if code compiles/runs (if rubric specifies 0 for non-compiling code)
+  2. Read each level description for the criterion
+  3. Choose the level (tag) that best satisfies the input based on the criterion requirements
+  4. **Special case**: If the input is so poor it doesn't satisfy even the lowest level (and the lowest level is greater than 0), assign an empty \`tag\` and \`score\` of 0
+
+  #### 3.4 Score Assignment Rules
+  - **For non-highest levels**: Score must be in range from "current level's weight" to less than (not equal to) "next higher level's weight"
+    - Example: Level "1" with weight 50, next level "2" with weight 75 ? score range: 50 < score <= 75
+  - **For highest level**: Score must be exactly equal to the level's weight
+    - Example: Highest level "5" with weight 100 ? score must be exactly 100
+
+  ### 4. Feedback Requirements
+
+  #### 4.1 Perfect Score (100)
+  - No detailed feedback required in \`feedback\` field
+  - At least provide summary in \`summary\` field
+
+  #### 4.2 Non-Perfect Score (< 100)
+  - **Must provide detailed feedback** in \`feedback\` field
+  - Focus primarily on specific issues that led to score deduction
+  - Explain why you gave that score
+  - Highlight relevant parts of files in \`locationData\`
+
+  #### 4.3 File Reference Guidelines
+  - **\`fileRef\`**: Must be the original file path (use multimodal file manifest below if present)
+  - **Line numbers**: Text files from repomix include line numbers at start of each line - use these for accurate highlighting
+  - **\`locationData\` types**:
+    - \`text\`: For text files provided by repomix output
+    - \`pdf\`: For PDF files from multimodal uploads
+    - \`other\`: For any other multimodal file types
+    - **Important**: Don't use \`text\` type for multimodal files
 `;
 
 export const gradingContextHeader = (data: string) => dedent`
@@ -39,7 +110,7 @@ This section provides additional context that adjusts how strictly or leniently 
 
   - \`"easy"\`: The task is simple or beginner-level.
     - Be more **lenient** when applying the rubric.
-    - It’s acceptable to assign a level even if some minor criteria are not fully met, as long as the overall intent is clear.
+    - It?s acceptable to assign a level even if some minor criteria are not fully met, as long as the overall intent is clear.
     - Be more generous in selecting levels and assigning scores.
 
   - \`"medium"\`: The task is of moderate difficulty.
