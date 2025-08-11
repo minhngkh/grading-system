@@ -47,6 +47,9 @@ export function EditAssessmentUI({
   const [activeScoringTab, setActiveScoringTab] = useState<string>(
     rubric.criteria[0]?.name || "",
   );
+  useEffect(() => {
+    setLastSaved(assessment);
+  }, [assessment]);
 
   const {
     data: fileItems,
