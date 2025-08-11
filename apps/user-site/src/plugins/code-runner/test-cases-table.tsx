@@ -145,9 +145,14 @@ export default function TestCasesTable({
                     <div className="pt-2">
                       <Button
                         disabled={isExtraRow}
-                        onClick={() => onDeleteRow(index)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDeleteRow(index);
+                        }}
                         variant="destructive"
                         size="sm"
+                        type="button"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
