@@ -4,7 +4,7 @@ import StaticAnalysisConfigView from "@/plugins/static-analysis";
 import TypeCoverageConfigView from "@/plugins/type-coverage";
 
 export const PluginName = {
-  ai: "AI Grading",
+  ai: "AI Grader",
   "test-runner": "Test Runner",
   "static-analysis": "Static Analysis",
   "type-coverage": "Type Coverage",

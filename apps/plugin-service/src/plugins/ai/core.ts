@@ -82,6 +82,8 @@ function createRubricSchema(weightInRange: boolean) {
           .describe(
             "weight of the criterion in the rubric, must be greater than 0 and less than or equal to 100",
           ),
+        plugin: z.string().default("ai").describe("when you are ask to update the rubric, just use the old rubric's value, otherwise use the default"),
+        configuration: z.string().optional().describe("when you are ask to update the rubric, just use the old rubric's value, don't define this field"),
         levels: z
           .array(
             z.object({
