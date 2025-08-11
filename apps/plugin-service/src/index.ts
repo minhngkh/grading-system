@@ -10,7 +10,14 @@ import { syncDB } from "./db/init";
 import { connectMongoDB } from "./db/mongoose";
 import { aiService } from "./plugins/ai/service";
 
-const broker = createMoleculerBroker();
+const broker = createMoleculerBroker({
+  internal: {
+    requestTimeout: 3 * 60 * 1000, // 3 minutes for long-running AI requests
+    // retryPolicy: {
+    //   enabled: false, // Disable retries to avoid duplicate grading
+    // },
+  },
+});
 broker.createService(aiService);
 // broker.createService(staticAnalysisService);
 // broker.createService(testRunnerService);

@@ -1,6 +1,6 @@
 import type { Criterion, CriterionData } from "@grading-system/plugin-shared/plugin/data";
 import type { FilePart } from "ai";
-import type { AiConfig, AIModel } from "./config";
+import type { AiConfig } from "./config";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -113,36 +113,46 @@ export function gradeCriteria(options: {
 
     const config = part[0].config;
 
-    logger.debug("ai provided requested")
+    logger.debug("ai provided requested");
+
+    const AI_TIMEOUT = 60 * 1000; // 2 minutes timeout for AI calls
 
     promises.push(
       ResultAsync.fromPromise(
-        generateObject({
-          // ...llmOptions,
-          model: registry.languageModel(config.model),
-          temperature: config.temperature,
-          output: "array",
-          schema: criterionGradingResultSchema,
-          system: systemPrompt,
-          messages: [
-            {
-              role: "user",
-              content: [
-                ...options.fileParts,
-                {
-                  type: "text",
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-        }),
+        Promise.race([
+          generateObject({
+            // ...llmOptions,
+            model: registry.languageModel(config.model),
+            temperature: config.temperature,
+            output: "array",
+            schema: criterionGradingResultSchema,
+            system: systemPrompt,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  ...options.fileParts,
+                  {
+                    type: "text",
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+          }),
+          new Promise((_, reject) => {
+            const id = setTimeout(() => {
+              clearTimeout(id);
+              reject(new Error(`AI request timeout after ${AI_TIMEOUT}ms`));
+            }, AI_TIMEOUT);
+          }) as Promise<never>,
+        ]),
         (error) =>
           new ErrorWithCriteriaInfo({
             data: {
               criterionNames: options.partOfRubric.map((c) => c.criterionName),
             },
-            message: `Failed to grade criteria`,
+            message: asError(error).message,
             cause: error,
           }),
       ).map((response) => response.object),
@@ -157,7 +167,7 @@ export function gradeCriteria(options: {
       (error) =>
         new ErrorWithCriteriaInfo({
           data: { criterionNames: options.partOfRubric.map((c) => c.criterionName) },
-          message: `Error calling AI provider`,
+          message: error.message,
           cause: error,
         }),
     );
@@ -317,7 +327,7 @@ export function gradeSubmission(data: {
             (error) =>
               new ErrorWithCriteriaInfo({
                 data: { criterionNames: value.criterionNames },
-                message: `Failed to grade criteria`,
+                message: error.message,
                 cause: error,
               }),
           )

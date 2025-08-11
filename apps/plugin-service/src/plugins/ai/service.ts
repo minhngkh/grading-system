@@ -79,7 +79,7 @@ export const aiService = defineTypedService2({
 
         const promises = result.value.map((value) =>
           value
-            .orTee((error) => {
+            .orTee(async (error) => {
               logger.debug("Failed to grade criterion", error);
 
               for (const criterion of error.data.criterionNames) {
@@ -88,9 +88,10 @@ export const aiService = defineTypedService2({
                   criterionName: criterion,
                   error: error.message,
                 });
+                await new Promise((resolve) => setTimeout(resolve, 10)); // Delay to avoid flooding the event bus
               }
             })
-            .andTee((value) => {
+            .andTee(async (value) => {
               for (const item of value) {
                 transporter.emit(criterionGradingSuccessEvent, {
                   assessmentId: params.assessmentId,
@@ -110,11 +111,21 @@ export const aiService = defineTypedService2({
                     })),
                   },
                 });
+
+                await new Promise((resolve) => setTimeout(resolve, 10));
               }
             }),
         );
 
-        await Promise.all(promises);
+        // Use allSettled to ensure all promises complete, even if some fail
+        const results = await Promise.allSettled(promises);
+
+        // Log any failures for debugging
+        results.forEach((result, index) => {
+          if (result.status === "rejected") {
+            logger.error(`Promise ${index} failed:`, result.reason);
+          }
+        });
       },
     },
   },
