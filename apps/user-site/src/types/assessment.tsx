@@ -11,6 +11,10 @@ export enum ScoreBreakdownStatus {
   Graded = "Graded",
 }
 
+export enum Author {
+  aiGrader = "aiGrader",
+  teacher = "teacher",
+}
 export const ScoreBreakdownSchema = z.object({
   criterionName: z.string(),
   performanceTag: z.string(),
@@ -22,6 +26,7 @@ export const ScoreBreakdownSchema = z.object({
 
 const BaseFeedbackSchema = z.object({
   id: z.string().optional(),
+  author: z.nativeEnum(Author),
   criterion: z.string(),
   fileRef: z.string(),
   comment: z.string(),

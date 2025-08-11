@@ -1,5 +1,11 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { Assessment, FeedbackItem, LocationData } from "@/types/assessment";
+import {
+  Assessment,
+  Author,
+  FeedbackItem,
+  Grader,
+  LocationData,
+} from "@/types/assessment";
 import { Badge } from "@/components/ui/badge";
 import { Trash, MessageSquare, Pen, Check, X } from "lucide-react";
 import { getTagColor } from "@/pages/assessment/edit-assessment/icon-utils";
@@ -81,6 +87,7 @@ export const FeedbackListPanel: React.FC<FeedbackListPanelProps> = ({
       toCol: 0,
     };
     const newFeedback: FeedbackItem = {
+      author: Author.teacher,
       criterion: addCriterion,
       comment: addComment.trim(),
       tag: addTag,

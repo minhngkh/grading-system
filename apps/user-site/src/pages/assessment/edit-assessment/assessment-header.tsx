@@ -12,7 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { ExportDialog } from "@/components/app/export-dialog";
 import { AssessmentExporter } from "@/lib/exporters";
-import { Assessment, AssessmentState } from "@/types/assessment";
+import {
+  Assessment,
+  AssessmentState,
+  FeedbackItem,
+  ScoreBreakdown,
+} from "@/types/assessment";
 import { GradingAttempt } from "@/types/grading";
 import { Rubric } from "@/types/rubric";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,12 +47,34 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   onUpdate,
   onUpdateLastSave,
 }) => {
+  function equalByCriterionAndScore(a: ScoreBreakdown[], b: ScoreBreakdown[]): boolean {
+    const mapA = a.map((x) => ({ criterion: x.criterionName, score: x.rawScore }));
+    const mapB = b.map((x) => ({ criterion: x.criterionName, score: x.rawScore }));
+    return isEqual(mapA, mapB);
+  }
+  function equalByFeedback(a: FeedbackItem[], b: FeedbackItem[]): boolean {
+    const mapA = (a ?? []).map((x) => ({
+      criterion: x.criterion,
+      fileRef: x.fileRef,
+      comment: x.comment,
+      tag: x.tag,
+      locationData: x.locationData,
+    }));
+    const mapB = (b ?? []).map((x) => ({
+      criterion: x.criterion,
+      fileRef: x.fileRef,
+      comment: x.comment,
+      tag: x.tag,
+      locationData: x.locationData,
+    }));
+
+    return isEqual(mapA, mapB);
+  }
   const [open, setOpen] = useState(false);
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
 
-  const feedbackChanged = !isEqual(assessment.feedbacks, lastSavedData.feedbacks);
-
-  const scoreChanged = !isEqual(
+  const feedbackChanged = !equalByFeedback(assessment.feedbacks, lastSavedData.feedbacks);
+  const scoreChanged = !equalByCriterionAndScore(
     assessment.scoreBreakdowns,
     lastSavedData.scoreBreakdowns,
   );
@@ -86,6 +113,7 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         queryClient.invalidateQueries({
           queryKey: ["scoreAdjustments", assessment.id],
         });
+
         onUpdateLastSave({ scoreBreakdowns });
       },
       onError: (error) => {
@@ -103,13 +131,13 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
         onUpdate({ status: AssessmentState.AutoGradingStarted });
         onUpdateLastSave({ status: AssessmentState.AutoGradingStarted });
       },
-      onSuccess: async () => {
+      onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["assessment", assessment.id] });
         queryClient.invalidateQueries({
-          queryKey: ["scoreAdjustments", assessment.id],
+          queryKey: ["allGradingAssessments", grading.id],
         });
         queryClient.invalidateQueries({
-          queryKey: ["allGradingAssessments", grading.id],
+          queryKey: ["scoreAdjustments", assessment.id],
         });
       },
       onError: (error) => {
@@ -124,28 +152,11 @@ export const AssessmentHeader: React.FC<AssessmentHeaderProps> = ({
   const handleSaveFeedback = () => {
     if (updateFeedbackMutation.isPending) return;
 
-    const feedbackChanged =
-      JSON.stringify(assessment.feedbacks) !== JSON.stringify(lastSavedData.feedbacks);
-
-    if (!feedbackChanged) {
-      toast.info("No feedback changes to save");
-      return;
-    }
-
     updateFeedbackMutation.mutate(assessment.feedbacks);
   };
 
   const handleSaveScore = async () => {
     if (updateScoreMutation.isPending) return;
-
-    const scoreChanged =
-      JSON.stringify(assessment.scoreBreakdowns) !==
-      JSON.stringify(lastSavedData.scoreBreakdowns);
-    if (!scoreChanged) {
-      toast.info("No scoring changes to save");
-      return;
-    }
-
     try {
       await updateScoreMutation.mutateAsync(assessment.scoreBreakdowns);
     } catch (error) {}

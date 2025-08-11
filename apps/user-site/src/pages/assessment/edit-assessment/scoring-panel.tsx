@@ -1,4 +1,9 @@
-import type { Assessment, FeedbackItem } from "@/types/assessment";
+import {
+  Grader,
+  type Assessment,
+  type FeedbackItem,
+  type ScoreBreakdown,
+} from "@/types/assessment";
 import type { GradingAttempt } from "@/types/grading";
 import type { Rubric } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
@@ -185,10 +190,11 @@ export const ScoringPanel: React.FC<ScoringPanelProps> = ({
           criterion.levels[0],
         );
       }
-      const updated = (assessment.scoreBreakdowns || []).map((sb: any) =>
+      const updated = (assessment.scoreBreakdowns || []).map((sb: ScoreBreakdown) =>
         sb.criterionName === criterion.name ?
           {
             ...sb,
+            grader: Grader.teacher,
             rawScore,
             performanceTag: matchedLevel ? matchedLevel.tag : "",
           }

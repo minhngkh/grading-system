@@ -36,21 +36,12 @@ export function EditAssessmentUI({
   const hubRef = useRef<SignalRService | undefined>(undefined);
   const form = useForm<Assessment>({
     resolver: zodResolver(AssessmentSchema),
-    // defaultValues: assessment,
     values: assessment,
     mode: "onChange",
   });
 
   const formData = form.watch();
   const [lastSaved, setLastSaved] = useState<Assessment>(assessment);
-  console.log(assessment, "asessment", formData, "formData");
-  console.log(
-    lastSaved.scoreBreakdowns,
-    "lastSavedsb",
-    formData.scoreBreakdowns,
-    "formDatasb",
-  );
-  console.log(lastSaved.feedbacks, "lastSavedfb", formData.feedbacks, "formDatafb");
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [showBottomPanel, setShowBottomPanel] = useState(true);
   const [activeScoringTab, setActiveScoringTab] = useState<string>(
