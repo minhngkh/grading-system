@@ -173,18 +173,20 @@ export function generateChatResponse(options: {
     const hasWeightInRange =
       typeof options.weightInRange === "undefined" ? null : options.weightInRange;
 
-    let outputSchema;
-    switch (hasWeightInRange) {
-      case null:
-        outputSchema = chatResponseSchema;
-        break;
-      case true:
-        outputSchema = chatResponseSchemaVariant.weightInRange;
-        break;
-      case false:
-        outputSchema = chatResponseSchemaVariant.weightNotInRange;
-        break;
-    }
+    // let outputSchema;
+    // switch (hasWeightInRange) {
+    //   case null:
+    //     outputSchema = chatResponseSchema;
+    //     break;
+    //   case true:
+    //     outputSchema = chatResponseSchemaVariant.weightInRange;
+    //     break;
+    //   case false:
+    //     outputSchema = chatResponseSchemaVariant.weightNotInRange;
+    //     break;
+    // }
+
+    const outputSchema = chatResponseSchemaVariant.weightNotInRange;
 
     // if (currentMessage.role !== "user") {
     //   return err(new Error("The last message must be from the user"));
