@@ -1,12 +1,12 @@
 import type { Step } from "@stepperize/react";
 import type { Rubric } from "@/types/rubric";
 
-import { useCallback } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@clerk/clerk-react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { defineStepper } from "@stepperize/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 

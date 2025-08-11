@@ -126,12 +126,12 @@ export default function AIConfigView({
       let resultConfigId: string;
 
       if (configId && initialConfig) {
-        resultConfigId = await updateConfigMutation.mutateAsync(config);
+        await updateConfigMutation.mutateAsync(config);
       } else {
         resultConfigId = await createConfigMutation.mutateAsync(config);
+        onCriterionConfigChange?.(resultConfigId);
       }
 
-      onCriterionConfigChange?.(resultConfigId);
     } catch (error) {
       toast.error("Failed to save AI configuration. Please try again.");
       console.error("Error saving AI configuration:", error);

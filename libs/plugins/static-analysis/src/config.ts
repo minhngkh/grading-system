@@ -39,7 +39,7 @@ export const baseStaticAnalysisConfigSchema = z.object({
     error: z.number().default(15),
     warning: z.number().default(2),
     info: z.number().default(0),
-  }),
+  }).default({}),
 });
 
 export const checkStaticAnalysisConfigSchema = {

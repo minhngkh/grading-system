@@ -1,6 +1,7 @@
+import { memo } from "react";
+
 import type { Rubric } from "@/types/rubric";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { memo } from "react";
 import { ChatRubricTable } from "@/pages/rubric/rubric-generation/chat/chat-rubric-table";
 import PluginConfiguration from "@/pages/rubric/rubric-generation/chat/plugin";
 

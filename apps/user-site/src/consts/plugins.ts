@@ -27,7 +27,7 @@ export const PluginConfigDialogs: Record<string, PluginInfo> = {
   "static-analysis": {
     view: StaticAnalysisConfigView,
     enableConfig: true,
-    hasDefault: true,
+    hasDefault: false,
   },
   "type-coverage": {
     view: TypeCoverageConfigView,

@@ -1,10 +1,12 @@
+import { useState } from "react";
+
+import { useAuth } from "@clerk/clerk-react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+
 import type { PluginComponent } from "@/plugins/type";
 import type { Plugin } from "@/types/plugin";
 import type { Rubric } from "@/types/rubric";
-import { useAuth } from "@clerk/clerk-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,7 +32,6 @@ import {
 } from "@/components/ui/table";
 import { PluginConfigDialogs, PluginName } from "@/consts/plugins";
 import { getAllPluginsQueryOptions } from "@/queries/plugin-queries";
-import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 import { PluginService } from "@/services/plugin-service";
 
 interface PluginTabProps {
@@ -45,13 +46,24 @@ const getPluginName = (pluginKey?: string) => {
   return PluginName[pluginKey as keyof typeof PluginName] || pluginKey;
 };
 
-function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
+function PluginConfiguration({ rubricData, onUpdate: _onUpdate }: PluginTabProps) {
   const auth = useAuth();
-  const queryClient = useQueryClient();
   const [selectedCriterionIndex, setSelectedCriterionIndex] = useState<number>();
   const [ActivePluginConfigView, setActivePluginConfigView] = useState<
     PluginComponent | undefined
   >(undefined);
+  
+  // Local state to track criteria updates for immediate UI feedback
+  const [localCriteria, setLocalCriteria] = useState(rubricData.criteria);
+  
+  // Track if the parent data has changed (new rubric loaded, etc.)
+  const [lastRubricId, setLastRubricId] = useState(rubricData.id);
+  
+  // Sync local state when switching rubrics or when significant changes occur
+  if (rubricData.id !== lastRubricId) {
+    setLocalCriteria(rubricData.criteria);
+    setLastRubricId(rubricData.id);
+  }
 
   const { isLoading, data } = useQuery(
     getAllPluginsQueryOptions(auth, {
@@ -70,16 +82,6 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
     },
   ];
 
-  const updateRubricMutation = useMutation(
-    updateRubricMutationOptions(rubricData.id, auth, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: ["rubric", rubricData.id],
-        });
-      },
-    }),
-  );
-
   const createDefaultConfig = async (pluginType: string): Promise<string | undefined> => {
     try {
       const token = await auth.getToken();
@@ -95,19 +97,19 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
   
   const onPluginSelect = async (index: number, plugin: string) => {
     try {
-      if (rubricData.criteria[index].plugin !== plugin) {
+      if (localCriteria[index].plugin !== plugin) {
         // Check if the plugin has default configuration support
         const hasDefault = plugin !== "None" && PluginConfigDialogs[plugin]?.hasDefault;
         
         // Prepare configuration value - will be set to a default config ID if plugin supports it
-        let configValue: string | undefined = undefined;
+        let configValue: string | undefined;
         
         // If plugin supports default configs, try to create one
         if (hasDefault) {
           configValue = await createDefaultConfig(plugin);
         }
         
-        const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
+        const updatedCriteria = localCriteria.map((criterion, idx) => {
           if (idx === index) {
             return {
               ...criterion,
@@ -118,8 +120,11 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
           return criterion;
         });
 
-        await updateRubricMutation.mutateAsync({ criteria: updatedCriteria });
-        onUpdate?.({ criteria: updatedCriteria });
+        // Update local state immediately for UI feedback
+        setLocalCriteria(updatedCriteria);
+        
+        // Note: We don't call onUpdate here since plugin selection is just a local UI state
+        // The actual rubric will be saved when the user progresses through the stepper
       }
     } catch (error) {
       console.error("Error selecting plugin:", error);
@@ -141,7 +146,7 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
     if (selectedCriterionIndex === undefined) return;
 
     try {
-      const updatedCriteria = rubricData.criteria.map((criterion, idx) => {
+      const updatedCriteria = localCriteria.map((criterion, idx) => {
         if (idx === selectedCriterionIndex) {
           return {
             ...criterion,
@@ -151,17 +156,18 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
         return criterion;
       });
 
-      if (rubricData.criteria[selectedCriterionIndex].configuration !== config) {
-        await updateRubricMutation.mutateAsync({ criteria: updatedCriteria });
-        onUpdate?.({ criteria: updatedCriteria });
-      }
+      // Update local state immediately for UI feedback
+      setLocalCriteria(updatedCriteria);
+      
+      // Note: We don't call onUpdate here since plugin configuration is already saved
+      // The configuration ID is just a reference and doesn't need to update the rubric backend
 
       setSelectedCriterionIndex(undefined);
       setActivePluginConfigView(undefined);
       toast.success("Configure plugin successfully!");
     } catch (error) {
-      console.error("Error updating Code Runner configuration:", error);
-      toast.error("Failed to update Code Runner configuration. Please try again.");
+      console.error("Error updating plugin configuration:", error);
+      toast.error("Failed to update plugin configuration. Please try again.");
     }
   };
 
@@ -173,7 +179,7 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
   if (ActivePluginConfigView && selectedCriterionIndex !== undefined)
     return (
       <ActivePluginConfigView
-        configId={rubricData.criteria[selectedCriterionIndex].configuration}
+        configId={localCriteria[selectedCriterionIndex].configuration}
         onCriterionConfigChange={handleConfigChange}
         onCancel={handleCancel}
       />
@@ -196,7 +202,7 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rubricData.criteria.length === 0 ?
+              {localCriteria.length === 0 ?
                 <TableRow>
                   <TableCell
                     colSpan={3}
@@ -205,14 +211,14 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
                     No criteria in rubric
                   </TableCell>
                 </TableRow>
-              : rubricData.criteria.map((criterion, index) => (
-                  <TableRow key={index}>
+              : localCriteria.map((criterion, index) => (
+                  <TableRow key={criterion.name || `criterion-${index}`}>
                     <TableCell className="font-medium">{criterion.name}</TableCell>
                     <TableCell>
                       <Select
                         value={criterion.plugin || "ai"}
                         onValueChange={(value) => onPluginSelect(index, value)}
-                        disabled={isLoading || updateRubricMutation.isPending}
+                        disabled={isLoading}
                       >
                         <SelectTrigger className="w-full">
                           <div className="flex items-center justify-between w-full">
