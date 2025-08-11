@@ -271,10 +271,13 @@ export function runSubmission(data: CallData) {
       {
         cmd: data.config.testCases.map((testCase) => {
           return {
-            args: createArgs(config.runCommand),
+            args:
+              data.config.useArgsOrStdin === "stdin" ?
+                createArgs(config.runCommand)
+              : [...createArgs(config.runCommand), testCase.input],
             env,
             files: createIOFiles({
-              stdin: testCase.input,
+              stdin: data.config.useArgsOrStdin === "stdin" ? testCase.input : undefined,
               stdout: true,
               stderr: true,
             }),
@@ -343,6 +346,7 @@ function createDirStorePath(attemptId: string) {
 export function compareOutput(
   expected: string,
   actual: string,
+  useRegex: boolean,
   config: TestRunnerConfig["outputComparison"],
 ): boolean {
   if (config.ignoreWhitespace) {
@@ -363,6 +367,15 @@ export function compareOutput(
   if (config.ignoreCase) {
     expected = expected.toLowerCase();
     actual = actual.toLowerCase();
+  }
+
+  if (useRegex) {
+    try {
+      const regex = new RegExp(expected);
+      return regex.test(actual);
+    } catch {
+      return false;
+    }
   }
 
   return expected === actual;

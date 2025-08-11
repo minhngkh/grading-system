@@ -120,10 +120,21 @@ export const testRunnerService = defineTypedService2({
 
         const initResult = body[0];
         if (initResult.exitStatus !== 0) {
-          transporter.emit(criterionGradingFailedEvent, {
+          // transporter.emit(criterionGradingFailedEvent, {
+          //   assessmentId: query.id,
+          //   criterionName: query.name,
+          //   error: `Build failed:\n ${initResult.files?.stderr}`,
+          // });
+
+          transporter.emit(criterionGradingSuccessEvent, {
             assessmentId: query.id,
             criterionName: query.name,
-            error: `Build failed:\n ${initResult.files?.stderr}`,
+            scoreBreakdown: {
+              tag: "",
+              rawScore: 0,
+              summary: `Build failed:\n${initResult.files?.stderr}`,
+              feedbackItems: [],
+            },
           });
 
           return;
@@ -190,10 +201,12 @@ export const testRunnerService = defineTypedService2({
         for (const [idx, result] of body.entries()) {
           const actualOutput = result.files!.stdout!;
           const expectedOutput = data.value.config.testCases[idx].expectedOutput;
+          const useRegex = data.value.config.testCases[idx].useRegex;
 
           const comparisonResult = compareOutput(
             actualOutput,
             expectedOutput,
+            useRegex,
             data.value.config.outputComparison,
           );
 
@@ -207,7 +220,7 @@ export const testRunnerService = defineTypedService2({
             input: data.value.config.testCases[idx].input,
             output: actualOutput,
             expectedOutput,
-            error: result.files!.stderr,
+            error: result.files?.stderr,
           });
         }
 

@@ -29,6 +29,10 @@ export const testCaseSchema = z.object({
   input: z.string().describe("stdin"),
   expectedOutput: z.string().describe("Expected stdout"),
   description: z.string().optional().describe("Description of the test case"),
+  useRegex: z
+    .boolean()
+    .default(false)
+    .describe("Whether to use regex for output comparison"),
 });
 
 export const testRunnerConfigSchema = z.object({
@@ -39,6 +43,7 @@ export const testRunnerConfigSchema = z.object({
     .string()
     .optional()
     .describe("Command to build the project before running tests"),
+  useArgsOrStdin: z.enum(["args", "stdin"]),
   testCases: z.array(testCaseSchema).describe("Test cases to run"),
   environmentVariables: z
     .record(z.string())
@@ -47,18 +52,23 @@ export const testRunnerConfigSchema = z.object({
   advancedSettings: advancedSettingsSchema
     .default({})
     .describe("Advanced settings for the test runner"),
-  outputComparison: z.object({
-    ignoreWhitespace: z
-      .boolean()
-      .default(false)
-      .describe("Ignore whitespace differences in output"),
-    ignoreLineEndings: z
-      .boolean()
-      .default(false)
-      .describe("Ignore line ending differences in output"),
-    trim: z.boolean().default(false).describe("Trim output before comparison"),
-    ignoreCase: z.boolean().default(false).describe("Ignore case differences in output"),
-  }).default({}),
+  outputComparison: z
+    .object({
+      ignoreWhitespace: z
+        .boolean()
+        .default(false)
+        .describe("Ignore whitespace differences in output"),
+      ignoreLineEndings: z
+        .boolean()
+        .default(false)
+        .describe("Ignore line ending differences in output"),
+      trim: z.boolean().default(false).describe("Trim output before comparison"),
+      ignoreCase: z
+        .boolean()
+        .default(false)
+        .describe("Ignore case differences in output"),
+    })
+    .default({}),
 });
 
 export type TestRunnerConfig = z.infer<typeof testRunnerConfigSchema>;
