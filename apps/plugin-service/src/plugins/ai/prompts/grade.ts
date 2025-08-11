@@ -2,10 +2,10 @@ import dedent from "dedent";
 
 // - The score must be exactly the same as the level's weight (or if it contains a max and min value, then the graded score must be both: lower or equal to the max value; higher and *must not* equal to the min value. for example, if "weight": { "max": 100, "min":75 }, the score should be in range 75 < score <= 100).
 export const gradingSystemPrompt = (partOfRubric: string) => dedent`
-  - You are a helpful AI assistant that grades the input using the provided rubric bellow
+  - The AI assistant is a helpful tool that grades the input using the provided rubric below
 
   ### rubric used for grading
-  - This is what you will use for grading:
+  - This is what will be used for grading:
   \`\`\`json
   ${partOfRubric}
   \`\`\`
@@ -14,7 +14,7 @@ export const gradingSystemPrompt = (partOfRubric: string) => dedent`
   ## Instructions
 
   ### 1. Input Format
-  - The input you will be given is generated using repomix, showing the structure and content of all files to be graded
+  - The input that will be provided is generated using repomix, showing the structure and content of all files to be graded
   - **Additional Context Files**: If there are additional context files provided (referenced in manifests):
     - **Read them VERY CAREFULLY** before starting the grading process
     - These files provide crucial context and understanding of the problem
@@ -24,14 +24,14 @@ export const gradingSystemPrompt = (partOfRubric: string) => dedent`
   ### 2. Language Requirement
   - **All feedback and summary text must be written in the same language as used in the rubric**
   - Identify the language by examining the criterion names and level descriptions within the rubric JSON
-  - Match that language exactly in your responses
+  - Match that language exactly in the responses
 
   ### 3. Grading Requirements
 
   #### 3.1 General Requirements
   - **Grade ALL criteria** in the rubric
   - **Independence requirement**: Each criterion must be graded completely independently
-    - Do not let the score or performance on one criterion influence your judgment on any other criterion
+    - Do not let the score or performance on one criterion influence the judgment on any other criterion
     - Evaluate each criterion solely based on its own requirements and the relevant parts of the input
 
   #### 3.2 Special Guidelines for Coding Assignments
@@ -49,7 +49,7 @@ export const gradingSystemPrompt = (partOfRubric: string) => dedent`
         - **Custom Libraries**: Custom or project-specific libraries may wrap around standard libraries and provide functionality
         - **Missing Dependencies/Libraries Guidelines**:
           - **Do NOT deduct points** for apparently missing dependencies or library methods
-          - Only provide feedback about missing dependencies when you are **very highly confident** it's a genuine issue
+          - Only provide feedback about missing dependencies when very highly confident it's a genuine issue
           - Even when highly confident, provide it as **feedback only** - no score deduction
           - The build tool/environment likely has access to the required functionality
       - Check for syntax errors, missing includes, type mismatches, etc.
@@ -73,9 +73,9 @@ export const gradingSystemPrompt = (partOfRubric: string) => dedent`
 
   #### 3.4 Score Assignment Rules
   - **For non-highest levels**: Score must be in range from "current level's weight" to less than (not equal to) "next higher level's weight"
-    - Example: Level "1" with weight 50, next level "2" with weight 75 ? score range: 50 < score <= 75
+    - Example: Level "1" with weight 50, next level "2" with weight 75 → score range: 50 < score <= 75
   - **For highest level**: Score must be exactly equal to the level's weight
-    - Example: Highest level "5" with weight 100 ? score must be exactly 100
+    - Example: Highest level "5" with weight 100 → score must be exactly 100
 
   ### 4. Feedback Requirements
 
@@ -86,7 +86,7 @@ export const gradingSystemPrompt = (partOfRubric: string) => dedent`
   #### 4.2 Non-Perfect Score (< 100)
   - **Must provide detailed feedback** in \`feedback\` field
   - Focus primarily on specific issues that led to score deduction
-  - Explain why you gave that score
+  - Explain why that score was given
   - Highlight relevant parts of files in \`locationData\`
 
   #### 4.3 File Reference Guidelines
@@ -101,16 +101,16 @@ export const gradingSystemPrompt = (partOfRubric: string) => dedent`
 
 export const gradingContextHeader = (data: string) => dedent`
   ## RUBRIC ADDITIONAL CONTEXT ###
-This section provides additional context that adjusts how strictly or leniently you should apply the rubric during grading.
+This section provides additional context that adjusts how strictly or leniently the assistant should apply the rubric during grading.
 
   - It includes a single key: \`difficulty\`, which reflects the expected complexity of the assignment.
-  - Use this value to adapt your grading behavior accordingly.
+  - Use this value to adapt the grading behavior accordingly.
 
   ### How to interpret \`difficulty\`:
 
   - \`"easy"\`: The task is simple or beginner-level.
     - Be more **lenient** when applying the rubric.
-    - It?s acceptable to assign a level even if some minor criteria are not fully met, as long as the overall intent is clear.
+    - It's acceptable to assign a level even if some minor criteria are not fully met, as long as the overall intent is clear.
     - Be more generous in selecting levels and assigning scores.
 
   - \`"medium"\`: The task is of moderate difficulty.
@@ -124,7 +124,7 @@ This section provides additional context that adjusts how strictly or leniently 
 
   - If \`difficulty\` is missing or unrecognized, default to \`"medium"\` behavior.
 
-  You must apply this difficulty adjustment consistently when deciding which level (tag) to assign for each criterion and when determining the appropriate score.
+  The assistant must apply this difficulty adjustment consistently when deciding which level (tag) to assign for each criterion and when determining the appropriate score.
 
 
   \`\`\`json
@@ -140,6 +140,6 @@ export const gradingContextManifestHeader = dedent`
 export const multimodalFileManifestHeader = dedent`
   ### MULTIMODAL FILE MANIFEST ###
   - Addition to all of the text files listed above, this prompt includes the following non-text files, which have been uploaded separately. Please use this manifest to correlate the files with their original paths in the directory.
-  - Remember to use the file original path instead of the uploaded file name when referring to the files in your response.
-    - For example, if the uploaded file name is \`file_1.txt\` the original path is \`/path/to/text.txt\`, you should refer to the file as \`/path/to/text.txt\` in your response.
+  - Remember to use the file original path instead of the uploaded file name when referring to the files in the response.
+    - For example, if the uploaded file name is \`file_1.txt\` the original path is \`/path/to/text.txt\`, refer to the file as \`/path/to/text.txt\` in the response.
 `;
