@@ -21,7 +21,7 @@ export const validateRubric = (rubric: Rubric): RubricValidationResult => {
   }
 
   for (const criterion of rubric.criteria) {
-    if (criterion.plugin && criterion.plugin !== "ai" && criterion.plugin !== "None") {
+    if (criterion.plugin && criterion.plugin !== "None") {
       if (!criterion.configuration || criterion.configuration.trim().length === 0) {
         return {
           state: RubricValidationState.PLUGIN_ERROR,

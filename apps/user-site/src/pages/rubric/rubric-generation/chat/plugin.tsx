@@ -1,10 +1,25 @@
+import type { PluginComponent } from "@/plugins/type";
+import type { Plugin } from "@/types/plugin";
+import type { Rubric } from "@/types/rubric";
+import { useAuth } from "@clerk/clerk-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -13,24 +28,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Rubric } from "@/types/rubric";
 import { PluginConfigDialogs, PluginName } from "@/consts/plugins";
 import { getAllPluginsQueryOptions } from "@/queries/plugin-queries";
-import { useAuth } from "@clerk/clerk-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plugin } from "@/types/plugin";
-import { Button } from "@/components/ui/button";
 import { updateRubricMutationOptions } from "@/queries/rubric-queries";
-import { toast } from "sonner";
-import { PluginComponent } from "@/plugins/type";
-import { useState } from "react";
 
 interface PluginTabProps {
   rubricData: Rubric;
@@ -190,7 +190,17 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
                         disabled={isLoading || updateRubricMutation.isPending}
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue>{getPluginName(criterion.plugin)}</SelectValue>
+                          <div className="flex items-center justify-between w-full">
+                            <SelectValue>{getPluginName(criterion.plugin)}</SelectValue>
+                            {(criterion.plugin || "ai") && (criterion.plugin || "ai") !== "None" && 
+                             (!criterion.configuration || criterion.configuration.trim().length === 0) && (
+                              <div className="text-orange-500 ml-2">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
                         </SelectTrigger>
                         <SelectContent>
                           {plugins.map((plugin) => (
@@ -208,17 +218,17 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    {criterion.plugin &&
-                      PluginConfigDialogs[criterion.plugin]?.enableConfig && (
-                        <TableCell>
+                    <TableCell>
+                      {(criterion.plugin || "ai") &&
+                        PluginConfigDialogs[criterion.plugin || "ai"]?.enableConfig && (
                           <Button
-                            onClick={() => handleConfig(index, criterion.plugin)}
+                            onClick={() => handleConfig(index, criterion.plugin || "ai")}
                             className="w-full"
                           >
                             Configure
                           </Button>
-                        </TableCell>
-                      )}
+                        )}
+                    </TableCell>
                   </TableRow>
                 ))
               }

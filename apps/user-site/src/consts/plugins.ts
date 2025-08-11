@@ -1,4 +1,5 @@
 import type { PluginComponent } from "@/plugins/type";
+import AIConfigView from "@/plugins/ai";
 import CodeRunnerConfigView from "@/plugins/code-runner";
 import StaticAnalysisConfigView from "@/plugins/static-analysis";
 import TypeCoverageConfigView from "@/plugins/type-coverage";
@@ -30,7 +31,7 @@ export const PluginConfigDialogs: Record<string, PluginInfo> = {
     enableConfig: true,
   },
   ai: {
-    view: () => null,
-    enableConfig: false,
+    view: AIConfigView,
+    enableConfig: true,
   },
 };
