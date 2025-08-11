@@ -46,7 +46,7 @@ const getPluginName = (pluginKey?: string) => {
   return PluginName[pluginKey as keyof typeof PluginName] || pluginKey;
 };
 
-function PluginConfiguration({ rubricData, onUpdate: _onUpdate }: PluginTabProps) {
+function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
   const auth = useAuth();
   const [selectedCriterionIndex, setSelectedCriterionIndex] = useState<number>();
   const [ActivePluginConfigView, setActivePluginConfigView] = useState<
@@ -58,11 +58,19 @@ function PluginConfiguration({ rubricData, onUpdate: _onUpdate }: PluginTabProps
   
   // Track if the parent data has changed (new rubric loaded, etc.)
   const [lastRubricId, setLastRubricId] = useState(rubricData.id);
+  const [lastCriteriaHash, setLastCriteriaHash] = useState(
+    JSON.stringify(rubricData.criteria.map(c => ({ name: c.name, plugin: c.plugin, configuration: c.configuration })))
+  );
   
-  // Sync local state when switching rubrics or when significant changes occur
-  if (rubricData.id !== lastRubricId) {
+  // Sync local state when switching rubrics or when criteria structure changes
+  const currentCriteriaHash = JSON.stringify(
+    rubricData.criteria.map(c => ({ name: c.name, plugin: c.plugin, configuration: c.configuration }))
+  );
+  
+  if (rubricData.id !== lastRubricId || currentCriteriaHash !== lastCriteriaHash) {
     setLocalCriteria(rubricData.criteria);
     setLastRubricId(rubricData.id);
+    setLastCriteriaHash(currentCriteriaHash);
   }
 
   const { isLoading, data } = useQuery(
@@ -123,8 +131,12 @@ function PluginConfiguration({ rubricData, onUpdate: _onUpdate }: PluginTabProps
         // Update local state immediately for UI feedback
         setLocalCriteria(updatedCriteria);
         
-        // Note: We don't call onUpdate here since plugin selection is just a local UI state
-        // The actual rubric will be saved when the user progresses through the stepper
+        // Update the parent rubric data to persist plugin changes
+        if (onUpdate) {
+          onUpdate({
+            criteria: updatedCriteria,
+          });
+        }
       }
     } catch (error) {
       console.error("Error selecting plugin:", error);
@@ -159,8 +171,12 @@ function PluginConfiguration({ rubricData, onUpdate: _onUpdate }: PluginTabProps
       // Update local state immediately for UI feedback
       setLocalCriteria(updatedCriteria);
       
-      // Note: We don't call onUpdate here since plugin configuration is already saved
-      // The configuration ID is just a reference and doesn't need to update the rubric backend
+      // Update the parent rubric data to persist configuration changes
+      if (onUpdate) {
+        onUpdate({
+          criteria: updatedCriteria,
+        });
+      }
 
       setSelectedCriterionIndex(undefined);
       setActivePluginConfigView(undefined);
