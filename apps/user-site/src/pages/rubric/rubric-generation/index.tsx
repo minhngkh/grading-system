@@ -4,7 +4,7 @@ import type { Rubric } from "@/types/rubric";
 import { useAuth } from "@clerk/clerk-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { defineStepper } from "@stepperize/react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import { RubricValidationState, validateRubric } from "@/lib/rubric-validate";
 import { PluginService } from "@/services/plugin-service";
 import { RubricSchema } from "@/types/rubric";
 
+import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 import ChatWindow from "./chat";
 import FinalRubricTable from "./final-rubric-table";
 
@@ -53,16 +54,22 @@ export default function RubricGenerationPage({
     defaultValues: initialRubric,
   });
 
+  // const updateRubricMutation = useMutation(updateRubricMutationOptions(rubric.id, auth));
+
+  // const { mutateAsync: updateRubric } = updateRubricMutation;
+
   const queryClient = useQueryClient();
 
   const formValues = form.watch();
-  
+
   const onUpdateRubric = useCallback(
     (updatedRubricData: Partial<Rubric>) => {
       const updatedRubric = {
         ...formValues,
         ...updatedRubricData,
       };
+
+      // console.log("Updating rubric with new data", updatedRubric);
 
       queryClient.invalidateQueries({
         queryKey: ["rubric", updatedRubric.id],
@@ -86,12 +93,12 @@ export default function RubricGenerationPage({
     // Try to auto-configure any plugins with hasDefault that aren't configured yet
     const updatedCriteria = [...formValues.criteria];
     let needsConfigUpdate = false;
-    
+
     for (let i = 0; i < updatedCriteria.length; i++) {
       const criterion = updatedCriteria[i];
       // Default to "ai" if no plugin is set
       const pluginType = criterion.plugin || "ai";
-      
+
       // If plugin is not set at all, set it to "ai"
       if (!criterion.plugin) {
         updatedCriteria[i] = {
@@ -100,11 +107,13 @@ export default function RubricGenerationPage({
         };
         needsConfigUpdate = true;
       }
-      
+
       // If the plugin is not configured and supports default configs, create one
-      if (pluginType !== "None" && 
-          (!criterion.configuration || criterion.configuration.trim().length === 0) && 
-          PluginConfigDialogs[pluginType]?.hasDefault) {
+      if (
+        pluginType !== "None" &&
+        (!criterion.configuration || criterion.configuration.trim().length === 0) &&
+        PluginConfigDialogs[pluginType]?.hasDefault
+      ) {
         try {
           const token = await auth.getToken();
           if (token) {
@@ -112,7 +121,7 @@ export default function RubricGenerationPage({
             if (configId) {
               updatedCriteria[i] = {
                 ...updatedCriteria[i],
-                configuration: configId
+                configuration: configId,
               };
               needsConfigUpdate = true;
             }
@@ -123,16 +132,18 @@ export default function RubricGenerationPage({
         }
       }
     }
-    
+
     // If we updated any configurations, update the form
     if (needsConfigUpdate) {
-      form.setValue('criteria', updatedCriteria);
+      form.setValue("criteria", updatedCriteria);
       onUpdateRubric({ criteria: updatedCriteria });
       toast.success("Auto-configured plugins with default settings");
     }
 
     // Run validation on the potentially updated form values
-    const validationResult = validateRubric(needsConfigUpdate ? {...formValues, criteria: updatedCriteria} : formValues);
+    const validationResult = validateRubric(
+      needsConfigUpdate ? { ...formValues, criteria: updatedCriteria } : formValues,
+    );
     if (validationResult.state === RubricValidationState.VALUE_ERROR) {
       toast.error(validationResult.message);
       return;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useAuth } from "@clerk/clerk-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import type { PluginComponent } from "@/plugins/type";
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { PluginConfigDialogs, PluginName } from "@/consts/plugins";
 import { getAllPluginsQueryOptions } from "@/queries/plugin-queries";
+import { updateRubricMutationOptions } from "@/queries/rubric-queries";
 import { PluginService } from "@/services/plugin-service";
 
 interface PluginTabProps {
@@ -73,6 +74,10 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
     setLastCriteriaHash(currentCriteriaHash);
   }
 
+  const updateRubricMutation = useMutation(updateRubricMutationOptions(rubricData.id, auth));
+
+  const { mutateAsync: updateRubric } = updateRubricMutation;
+
   const { isLoading, data } = useQuery(
     getAllPluginsQueryOptions(auth, {
       staleTime: Infinity,
@@ -102,7 +107,7 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
       return undefined;
     }
   };
-  
+
   const onPluginSelect = async (index: number, plugin: string) => {
     try {
       if (localCriteria[index].plugin !== plugin) {
@@ -128,11 +133,20 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
           return criterion;
         });
 
+        console.log("Updating rubric with new plugin configuration - 0", updatedCriteria)
+
+
         // Update local state immediately for UI feedback
         setLocalCriteria(updatedCriteria);
         
         // Update the parent rubric data to persist plugin changes
         if (onUpdate) {
+          console.log("Updating rubric with new plugin configuration - 1", updatedCriteria)
+
+          await updateRubric({
+            criteria: updatedCriteria,
+          })
+
           onUpdate({
             criteria: updatedCriteria,
           });
