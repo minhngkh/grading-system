@@ -74,10 +74,6 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
     setLastCriteriaHash(currentCriteriaHash);
   }
 
-  const updateRubricMutation = useMutation(updateRubricMutationOptions(rubricData.id, auth));
-
-  const { mutateAsync: updateRubric } = updateRubricMutation;
-
   const { isLoading, data } = useQuery(
     getAllPluginsQueryOptions(auth, {
       staleTime: Infinity,
@@ -143,9 +139,7 @@ function PluginConfiguration({ rubricData, onUpdate }: PluginTabProps) {
         if (onUpdate) {
           console.log("Updating rubric with new plugin configuration - 1", updatedCriteria)
 
-          await updateRubric({
-            criteria: updatedCriteria,
-          })
+          
 
           onUpdate({
             criteria: updatedCriteria,
