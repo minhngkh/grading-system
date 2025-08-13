@@ -12,7 +12,7 @@
       "dev": {
         "dependsOn": [
           {
-            "projects": "plugin-tools/static-analysis",
+            "projects": "static-analysis-plugin",
             "target": "install-deps"
           }
         ]
@@ -20,16 +20,20 @@
     }
   },
   "dependencies": {
-    "@ai-sdk/google": "^1.2.18",
-    "@ai-sdk/openai": "^1.3.22",
+    "@ai-sdk/google": "^1.2.22",
+    "@ai-sdk/openai": "^1.3.23",
     "@ai-sdk/provider": "^1.1.3",
-    "ai": "^4.3.16",
+    "ai": "^4.3.19",
     "fast-glob": "^3.3.3",
     "mime": "^4.0.7",
-    "repomix": "^0.3.8",
+    "repomix": "^1.2.1",
     "type-coverage-core": "^2.29.7"
   },
   "devDependencies": {
+    "@grading-system/plugin-shared": "workspace:*",
+    "@grading-system/static-analysis-plugin": "workspace:*",
+    "@grading-system/test-runner-plugin": "workspace:*",
+    "@grading-system/type-coverage-plugin": "workspace:*",
     "@grading-system/typed-moleculer": "workspace:*",
     "@grading-system/utils": "workspace:*"
   }

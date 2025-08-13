@@ -1,0 +1,382 @@
+import type { CriterionData } from "@grading-system/plugin-shared/plugin/data";
+import type { TestRunnerConfig } from "./config";
+import type { GoJudge } from "./go-judge-api";
+import path from "node:path/posix";
+import process from "node:process";
+import {
+  downloadBlobBatch,
+  IDENTIFIER_PATH_LEVELS,
+  submissionStore,
+} from "@grading-system/plugin-shared/lib/blob-storage";
+import { EmptyListError } from "@grading-system/plugin-shared/lib/error";
+import { cleanTempDirectory, symlinkFiles } from "@grading-system/plugin-shared/lib/file";
+import { detectFileListType } from "@grading-system/plugin-shared/plugin/default";
+import { ErrorWithCriterionInfo } from "@grading-system/plugin-shared/plugin/error";
+import {
+  getBlobNameParts,
+  getBlobNameRest,
+} from "@grading-system/utils/azure-storage-blob";
+import logger from "@grading-system/utils/logger";
+import { zipFolderToBuffer } from "@grading-system/utils/zip";
+import { errAsync, okAsync, Result, safeTry } from "neverthrow";
+import { z } from "zod";
+import { prepareFile, runProgram } from "./go-judge";
+import { TestRunnerMemory } from "./memory";
+
+const FILE_STORE_PATH = process.env.GO_JUDGE_STORE_DIR!;
+
+export const CALLBACK_STEP = {
+  UPLOAD: "upload",
+  INIT: "init",
+  RUN: "run",
+} as const;
+
+export type CallbackStep = (typeof CALLBACK_STEP)[keyof typeof CALLBACK_STEP];
+
+export const testRunnerCallbackUrlSchema = z.object({
+  type: z.enum(Object.values(CALLBACK_STEP) as [string, ...string[]]),
+  id: z.string().describe("Unique identifier for the callback"),
+  name: z.string().describe("Name of the criterion or submission"),
+});
+
+export type CachedData = {
+  config: CallData["config"];
+  criterionData: CallData["criterionData"];
+  state: (typeof CALLBACK_STEP)[keyof typeof CALLBACK_STEP];
+  processed: number;
+  total: number;
+};
+
+export function gradeSubmission(data: {
+  attachments: string[];
+  metadata: Record<string, unknown>;
+  criterionDataList: CriterionData<TestRunnerConfig>[];
+  attemptId: string;
+}) {
+  return safeTry(async function* () {
+    const allBlobNames = data.criterionDataList.flatMap(
+      (criterionData) => criterionData.fileRefs,
+    );
+
+    let { downloadDir, blobNameRoot } = yield* downloadBlobBatch(
+      submissionStore,
+      allBlobNames,
+      IDENTIFIER_PATH_LEVELS,
+      `download-${data.attemptId}`,
+    );
+
+    const { rest: submissionRef } = getBlobNameParts(blobNameRoot);
+
+    const submissionType = yield* detectFileListType(downloadDir);
+
+    let fileRefPrefix = submissionRef;
+    if (submissionType === "single-folder") {
+      downloadDir = path.join(downloadDir, submissionRef);
+      blobNameRoot = path.join(blobNameRoot, submissionRef);
+
+      fileRefPrefix = path.join(submissionRef, getBlobNameParts(blobNameRoot).rest);
+    }
+
+    const symlinkPromises = data.criterionDataList.map((criterionData) => {
+      const blobNameRestList = Result.combine(
+        criterionData.fileRefs.map((blobName) => getBlobNameRest(blobName, blobNameRoot)),
+      );
+
+      if (blobNameRestList.isErr()) {
+        return errAsync(
+          new ErrorWithCriterionInfo({
+            data: { criterionName: criterionData.criterionName },
+            cause: blobNameRestList.error,
+          }),
+        );
+      }
+
+      const symlinkPromise = symlinkFiles(
+        downloadDir,
+        blobNameRestList.value,
+        `download-${data.attemptId}-${criterionData.criterionName}`,
+      );
+
+      return symlinkPromise
+        .map((value) => {
+          return {
+            criterionData,
+            fileList: blobNameRestList.value,
+            directory: value.path,
+          };
+        })
+        .mapErr((error) => {
+          logger.info(`internal: Failed to grade ${criterionData.criterionName}:`, error);
+
+          return new ErrorWithCriterionInfo({
+            data: { criterionName: criterionData.criterionName },
+            cause: error,
+          });
+        });
+    });
+
+    const uploadSubmissionPromises = symlinkPromises.map((promise) =>
+      promise.andThen((value) => {
+        function clean() {
+          cleanTempDirectory(value.directory).orTee((error) => {
+            console.error(`Failed to clean temporary directory`, error);
+          });
+        }
+        return uploadSubmission({
+          attemptId: data.attemptId,
+          criterionData: value.criterionData,
+          fileList: value.fileList,
+          directory: value.directory,
+          config: value.criterionData.configuration,
+        }).mapErr((error) => {
+          clean();
+          return new ErrorWithCriterionInfo({
+            data: { criterionName: value.criterionData.criterionName },
+            message: error.message,
+            cause: error,
+          });
+        });
+      }),
+    );
+
+    return okAsync(uploadSubmissionPromises);
+  });
+}
+
+const DEFAULT_LIMITATIONS = {
+  cpuLimit: 10 * 1000000000, // 10s
+  memoryLimit: 256 * 1024 * 1024, // 256MB
+  procLimit: 50,
+};
+
+export type CallData = {
+  attemptId: string;
+  criterionData: CriterionData<TestRunnerConfig>;
+  config: TestRunnerConfig;
+};
+
+export function uploadSubmission(data: {
+  attemptId: string;
+  criterionData: CriterionData<TestRunnerConfig>;
+  fileList: string[];
+  directory: string;
+  config: TestRunnerConfig;
+}) {
+  return safeTry(async function* () {
+    if (data.fileList.length === 0) {
+      return errAsync(new EmptyListError({ message: "No files to run" }));
+    }
+
+    // logger.debug("zipping folder", data.directory);
+    // const firstDir = data.fileList[0].split(path.sep)[0];
+
+    const zipBuffer = yield* zipFolderToBuffer(data.directory);
+
+    cleanTempDirectory(data.directory).orTee((error) => {
+      logger.debug(`Failed to clean temporary directory`, error);
+    });
+
+    const fileId = yield* prepareFile(zipBuffer).map((value) => value.data);
+
+    logger.debug("prepared file", fileId);
+
+    yield* TestRunnerMemory.setUploadState(data.attemptId, {
+      config: data.config,
+      criterionData: data.criterionData,
+    });
+
+    yield* runProgram(
+      {
+        cmd: [
+          {
+            args: createArgs("unzip file.zip > /dev/null && rm file.zip && ls"),
+            env: createEnv({}),
+            files: createIOFiles({ stdout: true, stderr: true }),
+            copyIn: {
+              "file.zip": { fileId },
+            },
+            copyOutDir: createDirStorePath(data.attemptId),
+            ...DEFAULT_LIMITATIONS,
+          },
+        ],
+      },
+      {
+        type: CALLBACK_STEP.UPLOAD,
+        id: data.attemptId,
+        name: data.criterionData.criterionName,
+      },
+    );
+
+    // TODO: delete the uploaded file
+
+    return okAsync();
+  });
+}
+
+export function initializeSubmission(data: CallData) {
+  return safeTry(async function* () {
+    const config = data.config;
+    const env = createEnv({
+      env: config.environmentVariables,
+    });
+
+    if (config.initCommand) {
+      logger.debug("Initializing project with initCommand", config.initCommand);
+
+      yield* runProgram(
+        {
+          cmd: [
+            {
+              args: createArgs(config.initCommand),
+              env,
+              files: createIOFiles({ stdout: true, stderr: true }),
+              copyIn: {
+                ".": {
+                  src: path.join(FILE_STORE_PATH, createDirStorePath(data.attemptId)),
+                },
+              },
+              copyOutDir: createDirStorePath(data.attemptId),
+              cpuLimit: config.advancedSettings.initStep.cpuLimit,
+              clockLimit: config.advancedSettings.initStep.clockLimit,
+              memoryLimit: config.advancedSettings.initStep.memoryLimit,
+              procLimit: config.advancedSettings.initStep.procLimit,
+            },
+          ],
+        },
+        {
+          type: CALLBACK_STEP.INIT,
+          id: data.attemptId,
+          name: data.criterionData.criterionName,
+        },
+      );
+
+      return okAsync({ init: true });
+    }
+
+    // yield* runSubmission(data);
+
+    return okAsync({ init: false });
+  });
+}
+
+export function runSubmission(data: CallData) {
+  return safeTry(async function* () {
+    const config = data.config;
+    const env = createEnv({
+      env: config.environmentVariables,
+    });
+    logger.debug("run args", createArgs(config.runCommand));
+
+    yield* runProgram(
+      {
+        cmd: data.config.testCases.map((testCase) => {
+          return {
+            args:
+              data.config.useArgsOrStdin === "stdin" ?
+                createArgs(config.runCommand)
+              : [...createArgs(config.runCommand), testCase.input],
+            env,
+            files: createIOFiles({
+              stdin: data.config.useArgsOrStdin === "stdin" ? testCase.input : undefined,
+              stdout: true,
+              stderr: true,
+            }),
+            copyIn: {
+              ".": {
+                src: path.join(FILE_STORE_PATH, createDirStorePath(data.attemptId)),
+              },
+            },
+            cpuLimit: config.advancedSettings.runStep.cpuLimit,
+            clockLimit: config.advancedSettings.runStep.clockLimit,
+            memoryLimit: config.advancedSettings.runStep.memoryLimit,
+            procLimit: config.advancedSettings.runStep.procLimit,
+          };
+        }),
+      },
+      {
+        type: CALLBACK_STEP.RUN,
+        id: data.attemptId,
+        name: data.criterionData.criterionName,
+      },
+    );
+
+    return okAsync();
+  });
+}
+
+function createArgs(command: string) {
+  logger.debug("Creating command args", command);
+  return ["sh", "-c", `rm stdout stderr &> /dev/null; ${command}`];
+}
+
+const DEFAULT_PATH = "/usr/local/bin/python3.12.11-bin:/usr/bin:/bin";
+
+function createEnv(options: { paths?: string[]; env?: Record<string, string> }) {
+  return [
+    `PATH=${[...(options.paths || []), DEFAULT_PATH].join(":")}`,
+    ...Object.entries(options.env || {}).map(([key, value]) => `${key}=${value}`),
+    "HOME=/w",
+  ];
+}
+
+const OUTPUT_CAP = 1024 * 1024; // 1MB
+
+function createIOFiles(options: { stdin?: string; stdout?: boolean; stderr?: boolean }) {
+  const files: GoJudge.Cmd["files"] = [{ content: options.stdin || "" }];
+
+  if (options.stdout) {
+    files.push({ name: "stdout", max: OUTPUT_CAP });
+  } else {
+    files.push(null);
+  }
+
+  if (options.stderr) {
+    files.push({ name: "stderr", max: OUTPUT_CAP });
+  } else {
+    files.push(null);
+  }
+
+  return files;
+}
+
+function createDirStorePath(attemptId: string) {
+  return attemptId;
+}
+
+export function compareOutput(
+  expected: string,
+  actual: string,
+  useRegex: boolean,
+  config: TestRunnerConfig["outputComparison"],
+): boolean {
+  if (config.ignoreWhitespace) {
+    expected = expected.replace(/\s+/g, " ").trim();
+    actual = actual.replace(/\s+/g, " ").trim();
+  }
+
+  if (config.ignoreLineEndings) {
+    expected = expected.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    actual = actual.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  }
+
+  if (config.trim) {
+    expected = expected.trim();
+    actual = actual.trim();
+  }
+
+  if (config.ignoreCase) {
+    expected = expected.toLowerCase();
+    actual = actual.toLowerCase();
+  }
+
+  if (useRegex) {
+    try {
+      const regex = new RegExp(expected);
+      return regex.test(actual);
+    } catch {
+      return false;
+    }
+  }
+
+  return expected === actual;
+}

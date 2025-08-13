@@ -1,8 +1,13 @@
-import type { Rubric } from "@/types/rubric";
 import { useCallback, useState } from "react";
-import RubricTabs from "./tabs";
+
+import { useAuth } from "@clerk/clerk-react";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+import type { ChatMessage } from "@/types/chat";
+import type { Rubric } from "@/types/rubric";
 import { ChatInterface } from "@/components/app/chat-interface";
-import { ChatMessage } from "@/types/chat";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,11 +15,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@clerk/clerk-react";
-import { useMutation } from "@tanstack/react-query";
+import { PluginConfigDialogs } from "@/consts/plugins";
 import { sendRubricMessageMutationOptions } from "@/queries/chat-queries";
 import { updateRubricMutationOptions } from "@/queries/rubric-queries";
+import { PluginService } from "@/services/plugin-service";
+
+import RubricTabs from "./tabs";
 interface EditRubricPageProps {
   rubric: Rubric;
   onUpdate: (rubric: Partial<Rubric>) => void;
@@ -27,21 +33,74 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
   const chatMutation = useMutation(sendRubricMessageMutationOptions(rubric, auth));
   const updateRubricMutation = useMutation(updateRubricMutationOptions(rubric.id, auth));
 
+  const { mutateAsync: sendMessage } = chatMutation;
+  const { mutateAsync: updateRubric } = updateRubricMutation;
+
   const handleSendMessage = useCallback(
     async (messages: ChatMessage[]) => {
       try {
         setIsLoading(true);
-        const response = await chatMutation.mutateAsync(messages);
+        const response = await sendMessage(messages);
 
         if (response.rubric) {
           setIsApplyingEdit(true);
 
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          await updateRubricMutation.mutateAsync({
-            ...response.rubric,
-          });
+          // Auto-configure plugins with default configurations
+          const updatedCriteria = [...response.rubric.criteria];
+          let needsConfigUpdate = false;
 
-          onUpdate({ ...response.rubric });
+          for (let i = 0; i < updatedCriteria.length; i++) {
+            const criterion = updatedCriteria[i];
+            // Default to "ai" if no plugin is set
+            const pluginType = criterion.plugin || "ai";
+
+            // If plugin is not set at all, set it to "ai"
+            if (!criterion.plugin) {
+              updatedCriteria[i] = {
+                ...criterion,
+                plugin: "ai",
+              };
+              needsConfigUpdate = true;
+            }
+
+            // If the plugin is not configured and supports default configs, create one
+            if (
+              pluginType !== "None" &&
+              (!criterion.configuration || criterion.configuration.trim().length === 0) &&
+              PluginConfigDialogs[pluginType]?.hasDefault
+            ) {
+              try {
+                const token = await auth.getToken();
+                if (token) {
+                  const configId = await PluginService.createDefaultConfig(pluginType, token);
+                  if (configId) {
+                    updatedCriteria[i] = {
+                      ...updatedCriteria[i],
+                      configuration: configId,
+                    };
+                    needsConfigUpdate = true;
+                  }
+                }
+              } catch (error) {
+                console.error(`Failed to auto-configure ${pluginType}:`, error);
+                // Continue with the update even if auto-config fails
+              }
+            }
+          }
+
+          // Update the rubric with auto-configured plugins
+          const updatedRubric = needsConfigUpdate
+            ? { ...response.rubric, criteria: updatedCriteria }
+            : response.rubric;
+
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await updateRubric(updatedRubric);
+
+          onUpdate(updatedRubric);
+
+          if (needsConfigUpdate) {
+            toast.success("Rubric updated and plugins auto-configured with default settings");
+          }
         }
 
         return response.message;
@@ -53,7 +112,7 @@ export default function ChatWindow({ rubric, onUpdate }: EditRubricPageProps) {
         setIsLoading(false);
       }
     },
-    [auth, rubric, onUpdate, chatMutation],
+    [auth, onUpdate, sendMessage, updateRubric],
   );
 
   return (

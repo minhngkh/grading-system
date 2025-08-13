@@ -1,11 +1,19 @@
-import type { Entries, ExtendEntries } from "@grading-system/utils/typescript";
+import type { ExtendEntries } from "@grading-system/utils/typescript";
 import type { ServiceBroker } from "moleculer";
+import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
 import { actionCaller } from "@grading-system/typed-moleculer/action";
-import { asError } from "@grading-system/utils/error";
-import { fromPromise, fromSafePromise, okAsync, safeTry } from "neverthrow";
-import { getTransporter } from "@/lib/transporter";
+import { asError, wrapError } from "@grading-system/utils/error";
+import logger from "@grading-system/utils/logger";
+import {
+  fromPromise,
+  fromSafePromise,
+  fromThrowable,
+  okAsync,
+  safeTry,
+} from "neverthrow";
 import { criterionGradingFailedEvent, submissionStartedEvent } from "@/messaging/events";
 import { plugins, pluginsMap } from "@/plugins/info";
+import { getConfigs } from "@/services/config";
 
 export async function initMessaging(broker: ServiceBroker) {
   // All of the function above can throw and make the system exit as it should
@@ -49,12 +57,23 @@ export async function initMessaging(broker: ServiceBroker) {
         {} as ExtendEntries<typeof plugins, { criteria: typeof data.criteria }>,
       );
 
+      const configIds = [];
+
       for (const criterion of data.criteria) {
         if (pluginsMap.has(criterion.plugin)) {
           tasks[pluginsMap.get(criterion.plugin)!].criteria.push(criterion);
+
+          if (criterion.configuration) {
+            configIds.push(criterion.configuration);
+          }
         } else {
-          console.warn(`Unsupported plugin: ${criterion.plugin}, fallback to 'ai'`);
+          logger.debug(`Unsupported plugin: ${criterion.plugin}, fallback to 'ai'`);
           tasks.ai.criteria.push(criterion);
+
+          if (criterion.configuration) {
+            configIds.push(criterion.configuration);
+          }
+
           // transporter.emit(criterionGradingFailedEvent, {
           //   assessmentId: data.assessmentId,
           //   criterionName: criterion.criterionName,
@@ -63,6 +82,10 @@ export async function initMessaging(broker: ServiceBroker) {
         }
       }
 
+      const configs = yield* fromPromise(getConfigs(configIds), (error) =>
+        wrapError(error, "Failed to get plugin configs"),
+      );
+
       const promises = [];
 
       for (const [_, task] of Object.entries(tasks)) {
@@ -70,27 +93,52 @@ export async function initMessaging(broker: ServiceBroker) {
           continue;
         }
 
-        promises.push(
-          fromPromise(
+        const criteria: (Omit<(typeof task.criteria)[number], "configuration"> & {
+          configuration: any;
+        })[] = [];
+        for (const criterion of task.criteria) {
+          if (criterion.configuration) {
+            const config = configs.find(
+              (c) => c._id.toString() === criterion.configuration,
+            );
+            if (config) {
+              criterion.configuration = config.config;
+            } else {
+              logger.error(
+                `Configuration not found for criterion ${criterion.criterionName}`,
+              );
+            }
+          }
+
+          criteria.push(criterion);
+        }
+
+        // actionCaller<StaticAnalysisService>()(broker, "v1.static-analysis.gradeSubmission", {
+        //   criterionDataList
+        // });
+
+        const func = fromThrowable(
+          () =>
             actionCaller<(typeof task)["~type"]>()(broker, task.operations.grade.action, {
               assessmentId: data.assessmentId,
-              criterionDataList: task.criteria,
+              criterionDataList: criteria,
               attachments: data.attachments,
               metadata: data.metadata,
             }).then(() => undefined),
-            (error) => {
-              // Emit failure events for each criterion in the task if there is error
-              // calling the grading action
-              for (const criterion of task.criteria) {
-                transporter.emit(criterionGradingFailedEvent, {
-                  assessmentId: data.assessmentId,
-                  criterionName: criterion.criterionName,
-                  error: asError(error).message,
-                });
-              }
-            },
-          ),
+          (error) => {
+            logger.error("Unable to communicate with plugin", error);
+
+            for (const criterion of task.criteria) {
+              transporter.emit(criterionGradingFailedEvent, {
+                assessmentId: data.assessmentId,
+                criterionName: criterion.criterionName,
+                error: asError(error).message,
+              });
+            }
+          },
         );
+
+        promises.push(func());
       }
 
       yield* fromSafePromise(Promise.all(promises));

@@ -1,9 +1,12 @@
+import type { Criterion, CriterionData } from "@grading-system/plugin-shared/plugin/data";
 import type { FilePart } from "ai";
-import type { LanguageModelWithOptions } from "@/core/llm/types";
-import type { Criterion, CriterionData } from "@/plugins/data";
+import type { AiConfig } from "./config";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { EmptyListError } from "@grading-system/plugin-shared/lib/error";
+import { feedbackSchema } from "@grading-system/plugin-shared/plugin/data";
+import { ErrorWithCriteriaInfo } from "@grading-system/plugin-shared/plugin/error";
 import {
   getBlobNameParts,
   getBlobNameRest,
@@ -13,24 +16,20 @@ import logger from "@grading-system/utils/logger";
 import { generateObject } from "ai";
 import { errAsync, fromPromise, okAsync, Result, ResultAsync, safeTry } from "neverthrow";
 import z from "zod";
-import { googleProviderOptions } from "@/core/llm/providers/google";
 import { registry } from "@/core/llm/registry";
-import { EmptyListError } from "@/lib/error";
 import { createFileAliasManifest, createLlmFileParts } from "@/plugins/ai/media-files";
 import { gradingSystemPrompt } from "@/plugins/ai/prompts/grade";
 import { packFilesSubsets } from "@/plugins/ai/repomix";
 import { generateRubricContext } from "@/plugins/ai/rubric-metadata";
-import { feedbackSchema } from "@/plugins/data";
-import { ErrorWithCriteriaInfo } from "@/plugins/error";
 
-const llmOptions: LanguageModelWithOptions = {
-  model: registry.languageModel("google:gemini-2.5-flash"),
-  providerOptions: googleProviderOptions["gemini-2.5-flash"]({
-    thinking: {
-      mode: "disabled",
-    },
-  }),
-};
+// const llmOptions: LanguageModelWithOptions = {
+//   model: registry.languageModel("google:gemini-2.5-flash"),
+//   providerOptions: googleProviderOptions["gemini-2.5-flash"]({
+//     thinking: {
+//       mode: "disabled",
+//     },
+//   }),
+// };
 
 export const criterionGradingResultSchema = z.object({
   criterion: z
@@ -48,74 +47,136 @@ function createGradingSystemPrompt(partOfRubric: Criterion[]) {
   return gradingSystemPrompt(JSON.stringify(partOfRubric, null, 2));
 }
 
+type CriterionWithConfig = Criterion<AiConfig> & {
+  config: AiConfig;
+};
+
 export function gradeCriteria(options: {
-  partOfRubric: Criterion[];
+  // config: AiConfig;
+  partOfRubric: CriterionWithConfig[];
   prompt: string;
   fileParts: FilePart[];
   header?: string;
   footer?: string;
 }) {
-  const systemPrompt = createGradingSystemPrompt(options.partOfRubric);
   const prompt = `${options.header || ""}\n${options.prompt}\n${options.footer || ""}`;
 
-  if (process.env.NODE_ENV === "development") {
-    const tmpDir = path.join(process.cwd(), "tmp");
+  const configMap: Map<
+    string,
+    {
+      partOfRubric: CriterionWithConfig[];
+    }
+  > = new Map();
 
-    fromPromise(access(tmpDir), asError).orElse(() =>
-      fromPromise(mkdir(tmpDir), () => {
-        logger.debug("Failed to create tmp directory for grading system prompt");
-      }),
-    );
+  for (const criterion of options.partOfRubric) {
+    const key = JSON.stringify(criterion.config);
+    if (!configMap.has(key)) {
+      configMap.set(key, {
+        partOfRubric: [],
+      });
+    }
 
-    fromPromise(
-      writeFile(path.join(tmpDir, "grading-system-prompt.txt"), systemPrompt, "utf-8"),
-      () => {
-        logger.debug("Failed to write grading system prompt to file");
-      },
-    );
+    configMap.get(key)!.partOfRubric.push(criterion);
+  }
 
-    fromPromise(
-      writeFile(path.join(tmpDir, "grading-prompt.txt"), prompt, "utf-8"),
-      () => {
-        logger.debug("Failed to write grading prompt to file");
-      },
+  const promises = [];
+  let isFirst = true;
+
+  for (const { partOfRubric: part } of configMap.values()) {
+    const systemPrompt = createGradingSystemPrompt(part);
+
+    if (process.env.NODE_ENV === "development" && isFirst) {
+      const tmpDir = path.join(process.cwd(), "tmp");
+
+      fromPromise(access(tmpDir), asError).orElse(() =>
+        fromPromise(mkdir(tmpDir), () => {
+          logger.debug("Failed to create tmp directory for grading system prompt");
+        }),
+      );
+
+      fromPromise(
+        writeFile(path.join(tmpDir, "grading-system-prompt.txt"), systemPrompt, "utf-8"),
+        () => {
+          logger.debug("Failed to write grading system prompt to file");
+        },
+      );
+
+      fromPromise(
+        writeFile(path.join(tmpDir, "grading-prompt.txt"), prompt, "utf-8"),
+        () => {
+          logger.debug("Failed to write grading prompt to file");
+        },
+      );
+
+      isFirst = false;
+    }
+
+    const config = part[0].config;
+
+    logger.debug("ai provided requested");
+
+    const AI_TIMEOUT = 60 * 1000; // 2 minutes timeout for AI calls
+
+    promises.push(
+      ResultAsync.fromPromise(
+        Promise.race([
+          generateObject({
+            // ...llmOptions,
+            model: registry.languageModel(config.model),
+            temperature: config.temperature,
+            output: "array",
+            schema: criterionGradingResultSchema,
+            system: systemPrompt,
+            messages: [
+              {
+                role: "user",
+                content: [
+                  ...options.fileParts,
+                  {
+                    type: "text",
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+          }),
+          new Promise((_, reject) => {
+            const id = setTimeout(() => {
+              clearTimeout(id);
+              reject(new Error(`AI request timeout after ${AI_TIMEOUT}ms`));
+            }, AI_TIMEOUT);
+          }) as Promise<never>,
+        ]),
+        (error) =>
+          new ErrorWithCriteriaInfo({
+            data: {
+              criterionNames: options.partOfRubric.map((c) => c.criterionName),
+            },
+            message: asError(error).message,
+            cause: error,
+          }),
+      ).map((response) => response.object),
     );
   }
 
-  return ResultAsync.fromPromise(
-    generateObject({
-      ...llmOptions,
-      output: "array",
-      schema: criterionGradingResultSchema,
-      system: systemPrompt,
-      messages: [
-        {
-          role: "user",
-          content: [
-            ...options.fileParts,
-            {
-              type: "text",
-              text: prompt,
-            },
-          ],
-        },
-      ],
-    }),
-    (error) =>
-      new ErrorWithCriteriaInfo({
-        data: {
-          criterionNames: options.partOfRubric.map((c) => c.criterionName),
-        },
-        message: `Failed to grade criteria`,
-        cause: error,
-      }),
-  ).map((response) => response.object);
+  return ResultAsync.combine(promises)
+    .map((value) => {
+      return value.flatMap((result) => result);
+    })
+    .mapErr(
+      (error) =>
+        new ErrorWithCriteriaInfo({
+          data: { criterionNames: options.partOfRubric.map((c) => c.criterionName) },
+          message: error.message,
+          cause: error,
+        }),
+    );
 }
 
 export function gradeSubmission(data: {
   attachments: string[];
   metadata: Record<string, unknown>;
-  criterionDataList: CriterionData[];
+  criterionDataList: CriterionData<AiConfig>[];
   attemptId?: string;
 }) {
   return safeTry(async function* () {
@@ -240,11 +301,12 @@ export function gradeSubmission(data: {
     const gradeResultList = withMediaResultList.map((result) =>
       result.andThen((value) => {
         // Normal search instead of map since the number of criteria is usually small
-        const criteriaData: Criterion[] = value.criterionNames.map((name) => {
+        const criteriaData: CriterionWithConfig[] = value.criterionNames.map((name) => {
           const obj = data.criterionDataList.find((c) => c.criterionName === name)!;
           return {
             criterionName: obj.criterionName,
             levels: obj.levels,
+            config: obj.configuration,
           };
         });
 
@@ -252,6 +314,7 @@ export function gradeSubmission(data: {
           ignoreUrls: value.mediaData.ignoredNameRestList,
         });
         return gradeCriteria({
+          // config: criteriaData[0].config,
           partOfRubric: criteriaData,
           prompt: value.textData.packedContent,
           fileParts: rubricContext.llmMessageParts.concat(
@@ -264,7 +327,7 @@ export function gradeSubmission(data: {
             (error) =>
               new ErrorWithCriteriaInfo({
                 data: { criterionNames: value.criterionNames },
-                message: `Failed to grade criteria`,
+                message: error.message,
                 cause: error,
               }),
           )

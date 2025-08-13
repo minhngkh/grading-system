@@ -1,0 +1,96 @@
+import type { Feedback } from "@grading-system/plugin-shared/plugin/data";
+import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
+import type { Context } from "moleculer";
+import {
+  criterionGradingFailedEvent,
+  criterionGradingSuccessEvent,
+} from "@grading-system/plugin-shared/events/index";
+import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
+import { createSubmissionSchemaWithConfig } from "@grading-system/plugin-shared/plugin/data";
+import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
+import logger from "@grading-system/utils/logger";
+import { ZodParams } from "moleculer-zod-validator";
+import { staticAnalysisConfigSchema } from "./config";
+import { gradeSubmission } from "./core";
+
+const submissionSchema = createSubmissionSchemaWithConfig(staticAnalysisConfigSchema);
+
+export const gradeSubmissionActionParams = new ZodParams(submissionSchema.shape);
+
+export const staticAnalysisService = defineTypedService2({
+  name: "static-analysis",
+  version: 1,
+  actions: {
+    gradeSubmission: {
+      params: gradeSubmissionActionParams.schema,
+      async handler(ctx: Context<typeof gradeSubmissionActionParams.context>) {
+        const params = ctx.params;
+
+        const result = await gradeSubmission({
+          attemptId: params.assessmentId,
+          criterionDataList: params.criterionDataList,
+          attachments: params.attachments,
+          metadata: params.metadata,
+        });
+
+        if (result.isErr()) {
+          throw new Error(result.error.message);
+        }
+
+        const transporter = await getTransporter();
+
+        const promises = result.value.map((value) =>
+          value
+            .orTee((error) => {
+              logger.info(
+                `internal: Grading failed for ${error.data.criterionName}`,
+                error,
+              );
+
+              transporter.emit(criterionGradingFailedEvent, {
+                assessmentId: params.assessmentId,
+                criterionName: error.data.criterionName,
+                error: error.message,
+              });
+            })
+            .andTee((value) => {
+              transporter.emit(criterionGradingSuccessEvent, {
+                assessmentId: params.assessmentId,
+                criterionName: value.criterion,
+                metadata: {
+                  ignoredFiles: value.result.ignoredFiles,
+                },
+                scoreBreakdown: {
+                  tag: "",
+                  rawScore: value.result.score,
+                  // feedbackItems: []
+                  feedbackItems: value.result.feedback.map((feedbackItem) => ({
+                    comment: feedbackItem.message || "",
+                    fileRef: feedbackItem.fileRef,
+                    tag: feedbackItem.severity,
+                    locationData: {
+                      type: "text",
+                      fromLine: feedbackItem.position.fromLine,
+                      fromColumn: feedbackItem.position.fromCol,
+                      toLine: feedbackItem.position.toLine,
+                      toColumn: feedbackItem.position.toCol,
+                    },
+                  })) satisfies Feedback[],
+                },
+              });
+            }),
+        );
+
+        await Promise.all(promises);
+      },
+    },
+  },
+});
+
+export type StaticAnalysisService = typeof staticAnalysisService;
+
+export const staticAnalysisPluginOperations = {
+  grade: {
+    action: "v1.static-analysis.gradeSubmission",
+  },
+} satisfies PluginOperations<StaticAnalysisService>;

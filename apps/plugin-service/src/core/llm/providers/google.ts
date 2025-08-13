@@ -11,7 +11,7 @@ const originalGoogle = createGoogleGenerativeAI({
 export const google = customProvider({
   languageModels: {
     "gemini-2.5-flash": originalGoogle("gemini-2.5-flash"),
-    "gemini-2.5-flash:search": originalGoogle("gemini-2.5-flash:search", {
+    "gemini-2.5-flash:search": originalGoogle("gemini-2.5-flash", {
       useSearchGrounding: true,
     }),
     "gemini-2.5-pro": originalGoogle("gemini-2.5-pro"),

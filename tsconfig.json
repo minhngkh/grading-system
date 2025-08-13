@@ -1,14 +1,7 @@
 {
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
-  "files": [],
   "references": [
-    {
-      "path": "./examples/example-grading-service"
-    },
-    {
-      "path": "./examples/example-next-app"
-    },
     {
       "path": "./apps/plugin-service"
     },
@@ -20,6 +13,15 @@
     },
     {
       "path": "./apps/grading-service"
+    },
+    {
+      "path": "./libs/plugins/static-analysis"
+    },
+    {
+      "path": "./libs/plugins/type-coverage"
+    },
+    {
+      "path": "./libs/plugins/shared"
     }
   ]
 }

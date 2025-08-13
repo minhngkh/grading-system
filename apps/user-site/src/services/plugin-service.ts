@@ -1,5 +1,6 @@
 import type { AxiosRequestConfig } from "axios";
 import type {
+  AIConfig,
   CodeRunnerConfig,
   Plugin,
   StaticAnalysisConfig,
@@ -26,6 +27,19 @@ export class PluginService {
     const configHeaders = await this.buildHeaders(token);
     const response = await axios.get(`${API_URL}`, configHeaders);
     return response.data;
+  }
+
+  static async createDefaultConfig(
+    pluginType: string,
+    token: string,
+  ): Promise<string> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.post(
+      `${API_URL}/${pluginType}/configs`,
+      { type: pluginType },
+      configHeaders,
+    );
+    return response.data.id;
   }
 
   static async configTestRunner(
@@ -182,6 +196,57 @@ export class PluginService {
       `${API_URL}/type-coverage/configs/${configId}`,
       {
         type: "type-coverage",
+        ...restConfig,
+      },
+      configHeaders,
+    );
+    return response.data.id;
+  }
+
+  static async configAI(
+    config: AIConfig,
+    token: string,
+  ): Promise<string> {
+    const configHeaders = await this.buildHeaders(token);
+    
+    const { type, ...restConfig } = config;
+    
+    const response = await axios.post(
+      `${API_URL}/ai/configs`,
+      {
+        type: "ai",
+        ...restConfig,
+      },
+      configHeaders,
+    );
+    return response.data.id;
+  }
+
+  static async getAIConfig(
+    configId: string,
+    token: string,
+  ): Promise<AIConfig> {
+    const configHeaders = await this.buildHeaders(token);
+    const response = await axios.get(
+      `${API_URL}/ai/configs/${configId}`,
+      configHeaders,
+    );
+    return response.data;
+  }
+
+  static async updateAIConfig(
+    configId: string,
+    config: AIConfig,
+    token: string,
+  ): Promise<string> {
+    const configHeaders = await this.buildHeaders(token);
+    
+    const { type, ...restConfig } = config;
+    
+    const response = await axios.put(
+      `${API_URL}/ai/configs/${configId}`,
+      {
+        type: "ai",
         ...restConfig,
       },
       configHeaders,

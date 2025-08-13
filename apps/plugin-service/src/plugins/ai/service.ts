@@ -1,16 +1,18 @@
+import type { PluginOperations } from "@grading-system/plugin-shared/plugin/info";
 import type { Context } from "moleculer";
-import type { PluginOperations } from "@/plugins/info";
+import { getTransporter } from "@grading-system/plugin-shared/lib/transporter";
+import { createSubmissionSchemaWithConfig } from "@grading-system/plugin-shared/plugin/data";
 import { defineTypedService2 } from "@grading-system/typed-moleculer/service";
+import logger from "@grading-system/utils/logger";
 import { coreMessageSchema } from "ai";
 import { ZodParams } from "moleculer-zod-validator";
 import z from "zod";
-import { getTransporter } from "@/lib/transporter";
 import {
   criterionGradingFailedEvent,
   criterionGradingSuccessEvent,
 } from "@/messaging/events";
+import { aiConfigSchema } from "@/plugins/ai/config";
 import { gradeSubmission } from "@/plugins/ai/grade";
-import { gradeSubmissionActionParams } from "@/plugins/data";
 import { generateChatResponse, rubricSchema } from "./core";
 
 export const chatRubricActionSchema = z.object({
@@ -30,6 +32,9 @@ export const chatRubricActionSchema = z.object({
 });
 export const chatRubricActionParams = new ZodParams(chatRubricActionSchema.shape);
 
+const submissionSchema = createSubmissionSchemaWithConfig(aiConfigSchema);
+export const gradeSubmissionActionParams = new ZodParams(submissionSchema.shape);
+
 export const aiService = defineTypedService2({
   name: "ai",
   version: 1,
@@ -47,7 +52,7 @@ export const aiService = defineTypedService2({
         });
 
         if (result.isErr()) {
-          throw new Error(result.error.message);
+          throw new Error(result.error.message, { cause: result.error });
         }
 
         return result.value;
@@ -74,16 +79,19 @@ export const aiService = defineTypedService2({
 
         const promises = result.value.map((value) =>
           value
-            .orTee((error) => {
+            .orTee(async (error) => {
+              logger.debug("Failed to grade criterion", error);
+
               for (const criterion of error.data.criterionNames) {
                 transporter.emit(criterionGradingFailedEvent, {
                   assessmentId: params.assessmentId,
                   criterionName: criterion,
                   error: error.message,
                 });
+                await new Promise((resolve) => setTimeout(resolve, 10)); // Delay to avoid flooding the event bus
               }
             })
-            .andTee((value) => {
+            .andTee(async (value) => {
               for (const item of value) {
                 transporter.emit(criterionGradingSuccessEvent, {
                   assessmentId: params.assessmentId,
@@ -103,11 +111,21 @@ export const aiService = defineTypedService2({
                     })),
                   },
                 });
+
+                await new Promise((resolve) => setTimeout(resolve, 10));
               }
             }),
         );
 
-        await Promise.all(promises);
+        // Use allSettled to ensure all promises complete, even if some fail
+        const results = await Promise.allSettled(promises);
+
+        // Log any failures for debugging
+        results.forEach((result, index) => {
+          if (result.status === "rejected") {
+            logger.error(`Promise ${index} failed:`, result.reason);
+          }
+        });
       },
     },
   },

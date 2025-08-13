@@ -3,7 +3,7 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"]
-    },
+    }
   },
   "references": [
     {
@@ -11,6 +11,15 @@
     },
     {
       "path": "../../libs/typed-moleculer"
+    },
+    {
+      "path": "../../libs/plugins/type-coverage"
+    },
+    {
+      "path": "../../libs/plugins/static-analysis"
+    },
+    {
+      "path": "../../libs/plugins/shared"
     }
   ]
 }

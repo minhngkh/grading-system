@@ -1,4 +1,5 @@
-import { Rubric, RubricSchema } from "@/types/rubric";
+import type { Rubric } from "@/types/rubric";
+import { RubricSchema } from "@/types/rubric";
 
 export enum RubricValidationState {
   VALID,
@@ -21,11 +22,14 @@ export const validateRubric = (rubric: Rubric): RubricValidationResult => {
   }
 
   for (const criterion of rubric.criteria) {
-    if (criterion.plugin && criterion.plugin !== "ai" && criterion.plugin !== "None") {
+    // Default to "ai" if no plugin is set
+    const effectivePlugin = criterion.plugin || "ai";
+    
+    if (effectivePlugin && effectivePlugin !== "None") {
       if (!criterion.configuration || criterion.configuration.trim().length === 0) {
         return {
           state: RubricValidationState.PLUGIN_ERROR,
-          message: `Plugin ${criterion.plugin} is not configured properly.`,
+          message: `Plugin ${effectivePlugin} is not configured properly.`,
         };
       }
     }

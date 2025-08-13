@@ -1,6 +1,7 @@
 import type { useAuth } from "@clerk/clerk-react";
 import type { UseMutationOptions, UseQueryOptions } from "@tanstack/react-query";
 import type {
+  AIConfig,
   Plugin,
   StaticAnalysisConfig,
   CodeRunnerConfig as TestRunnerConfig,
@@ -161,6 +162,52 @@ export function updateTypeCoverageConfigMutationOptions(
       const token = await auth.getToken();
       if (!token) throw new Error("Authentication token is required");
       return PluginService.updateTypeCoverageConfig(configId, config, token);
+    },
+    ...options,
+  };
+}
+
+// AI Plugin Query Options
+export function getAIConfigQueryOptions(
+  configId: string,
+  auth: Auth,
+  options?: Partial<UseQueryOptions<AIConfig, unknown>>,
+): UseQueryOptions<AIConfig, unknown> {
+  return {
+    queryKey: ["ai-config", configId],
+    queryFn: async () => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication required");
+      return PluginService.getAIConfig(configId, token);
+    },
+    ...options,
+  };
+}
+
+export function createAIConfigMutationOptions(
+  auth: Auth,
+  options?: Partial<UseMutationOptions<string, Error, AIConfig>>,
+): UseMutationOptions<string, Error, AIConfig> {
+  return {
+    mutationFn: async (config: AIConfig) => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication required");
+      return PluginService.configAI(config, token);
+    },
+    ...options,
+  };
+}
+
+export function updateAIConfigMutationOptions(
+  configId: string,
+  auth: Auth,
+  options?: Partial<UseMutationOptions<string, Error, AIConfig>>,
+): UseMutationOptions<string, Error, AIConfig> {
+  return {
+    mutationFn: async (config: AIConfig) => {
+      const token = await auth.getToken();
+      if (!token) throw new Error("Authentication required");
+      return PluginService.updateAIConfig(configId, config, token);
     },
     ...options,
   };

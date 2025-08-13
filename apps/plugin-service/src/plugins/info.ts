@@ -1,31 +1,20 @@
-import type { ServiceActionPath } from "@grading-system/typed-moleculer/action";
-import type { TypedServiceSchema } from "@grading-system/typed-moleculer/service";
+import type { StaticAnalysisService } from "@grading-system/static-analysis-plugin/service";
+import type { TestRunnerService } from "@grading-system/test-runner-plugin/service";
+import type { TypeCoverageService } from "@grading-system/type-coverage-plugin/service";
 import type { AIService } from "@/plugins/ai/service";
-import type { StaticAnalysisService } from "@/plugins/static-analysis/service";
-import type { TestRunnerService } from "@/plugins/test-runner/service";
-import type { TypeCoverageService } from "@/plugins/type-coverage/service";
-import { z } from "zod";
-import { aiPluginOperations } from "@/plugins/ai/service";
 import {
   baseStaticAnalysisConfigSchema,
   checkStaticAnalysisConfigSchema,
   staticAnalysisConfigSchema,
-} from "@/plugins/static-analysis/config";
-import { staticAnalysisPluginOperations } from "@/plugins/static-analysis/service";
-import { testRunnerConfigSchema } from "@/plugins/test-runner/config";
-import { testRunnerPluginOperations } from "@/plugins/test-runner/service";
-import { typeCoverageConfigSchema } from "@/plugins/type-coverage/config";
-import { typeCoveragePluginOperations } from "@/plugins/type-coverage/service";
-
-type PluginOperation<T extends TypedServiceSchema> = {
-  action: ServiceActionPath<T>;
-};
-
-export interface PluginOperations<T extends TypedServiceSchema>
-  extends Record<string, PluginOperation<T> | undefined> {
-  grade: PluginOperation<T>;
-  config?: PluginOperation<T>;
-}
+} from "@grading-system/static-analysis-plugin/config";
+import { staticAnalysisPluginOperations } from "@grading-system/static-analysis-plugin/service";
+import { testRunnerConfigSchema } from "@grading-system/test-runner-plugin/config";
+import { testRunnerPluginOperations } from "@grading-system/test-runner-plugin/service";
+import { typeCoverageConfigSchema } from "@grading-system/type-coverage-plugin/config";
+import { typeCoveragePluginOperations } from "@grading-system/type-coverage-plugin/service";
+import { z } from "zod";
+import { aiConfigSchema } from "@/plugins/ai/config";
+import { aiPluginOperations } from "@/plugins/ai/service";
 
 export const CATEGORIES = [
   {
@@ -54,7 +43,7 @@ export const plugins = {
     categories: ["ai", "general"],
     enabled: true,
     operations: aiPluginOperations,
-    configSchema: null,
+    configSchema: aiConfigSchema,
     checkConfig: undefined,
   },
   testRunner: {
@@ -109,4 +98,5 @@ export const pluginConfigSchema = z.discriminatedUnion("type", [
   testRunnerConfigSchema,
   baseStaticAnalysisConfigSchema,
   typeCoverageConfigSchema,
+  aiConfigSchema,
 ]);
