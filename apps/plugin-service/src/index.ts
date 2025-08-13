@@ -16,6 +16,9 @@ const broker = createMoleculerBroker({
     // retryPolicy: {
     //   enabled: false, // Disable retries to avoid duplicate grading
     // },
+    circuitBreaker: {
+      enabled: true,
+    }
   },
 });
 broker.createService(aiService);
